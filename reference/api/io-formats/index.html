@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="The readers and writers of each file format in Larmor: NIfTI, MIF, TCK, TRK, VTK, FreeSurfer and GIfTI." name="description" />
+<meta property="og:title" content="larmor.io.formats" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://larmor.org/reference/api/io-formats/" />
+<meta property="og:site_name" content="Larmor" />
+<meta property="og:description" content="The readers and writers of each file format in Larmor: NIfTI, MIF, TCK, TRK, VTK, FreeSurfer and GIfTI." />
+<meta property="og:image" content="https://larmor.org/_static/larmor-card.png" />
+<meta property="og:image:alt" content="Larmor: a Python library and viewer for diffusion MRI" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<title>larmor.io.formats - Larmor</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery.css?v=c83e6b79" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/larmor.css?v=f0153430" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="../../../_static/documentation_options.js?v=b21b538c"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../_static/sg-tags.js?v=d80f6fa4"></script>
+    <script defer="defer" src="../../../_static/larmor-carousel.js?v=7f65fbb2"></script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'reference/api/io-formats';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://larmor.org/versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.0.0';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://larmor.org/reference/api/io-formats/" />
+    <link rel="icon" href="../../../_static/larmor-symbol.svg"/>
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="larmor.dwi" href="../dwi/" />
+    <link rel="prev" title="larmor.io" href="../io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="2.0" />
+  
+    
+    <script src="../../../_static/searchtools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script src="../../../searchindex.js"></script>
+  
+<link rel="icon" type="image/png" sizes="32x32" href="../../../_static/favicon-32.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="../../../_static/apple-touch-icon.png" />
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search/"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/larmor-symbol.svg" class="logo__image only-light" alt=""/>
+    <img src="../../../_static/larmor-symbol.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">Larmor</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../install/">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../quick-start/">
+    Quick start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../simulation/">
+    Simulation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../gallery/">
+    Gallery
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../guides/">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../viewer/">
+    Viewer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../background/">
+    Background
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../">
+    Reference
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../../agents/">
+    Agents
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../../about/">
+    About
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+      
+        <div class="navbar-item">
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../install/">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../quick-start/">
+    Quick start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../simulation/">
+    Simulation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../gallery/">
+    Gallery
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../guides/">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../viewer/">
+    Viewer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../background/">
+    Background
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../">
+    Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../agents/">
+    Agents
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../about/">
+    About
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button type="button" id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../cli/">Command line</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../">Python API</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../larmor/">larmor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../types/">larmor.types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../io/">larmor.io</a></li>
+<li class="toctree-l2 current active"><a aria-current="page" class="current reference internal" href="#">larmor.io.formats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dwi/">larmor.dwi</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sd/">larmor.sd</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tractography/">larmor.tractography</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../registration/">larmor.registration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../simulation/">larmor.simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../plot/">larmor.plot</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../surfaces/">larmor.surfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../data/">larmor.data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../viewer/">larmor.viewer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../../file-formats/">File formats</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../" class="nav-link">Reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../" class="nav-link">Python API</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">larmor.io.formats</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-larmor.io.formats">
+<span id="larmor-io-formats"></span><h1>larmor.io.formats<a class="headerlink" href="#module-larmor.io.formats" title="Link to this heading">#</a></h1>
+<p>Readers and writers of each file format, with the options only one format has.</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.io.formats.read_freesurfer_label" title="larmor.io.formats.read_freesurfer_label"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_freesurfer_label</span></code></a></p></td>
+<td><p>Reads the vertex indices of a FreeSurfer label file, such as <code class="xref py py-obj docutils literal notranslate"><span class="pre">lh.cortex.label</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.io.formats.read_freesurfer_surface" title="larmor.io.formats.read_freesurfer_surface"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_freesurfer_surface</span></code></a></p></td>
+<td><p>Reads a FreeSurfer triangle surface, such as <code class="xref py py-obj docutils literal notranslate"><span class="pre">lh.white</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">lh.pial</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.io.formats.read_freesurfer_values" title="larmor.io.formats.read_freesurfer_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_freesurfer_values</span></code></a></p></td>
+<td><p>Reads a FreeSurfer file of values per vertex, such as <code class="xref py py-obj docutils literal notranslate"><span class="pre">lh.curv</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.io.formats.read_gifti_surface" title="larmor.io.formats.read_gifti_surface"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_gifti_surface</span></code></a></p></td>
+<td><p>Reads a GIfTI surface (.surf.gii) and any values per vertex stored with it.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.io.formats.read_gifti_values" title="larmor.io.formats.read_gifti_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_gifti_values</span></code></a></p></td>
+<td><p>Reads the values per vertex of a GIfTI file (.shape.gii, .func.gii, .label.gii).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.io.formats.read_mif" title="larmor.io.formats.read_mif"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_mif</span></code></a></p></td>
+<td><p>Reads a MIF file (<code class="xref py py-obj docutils literal notranslate"><span class="pre">mif</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">mif.gz</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">mih</span></code>) into a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Volume</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.io.formats.read_mif_gradients" title="larmor.io.formats.read_mif_gradients"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_mif_gradients</span></code></a></p></td>
+<td><p>Reads the gradient table (<code class="xref py py-obj docutils literal notranslate"><span class="pre">dw_scheme</span></code>) of a MIF file, from its header only.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.io.formats.read_mif_header" title="larmor.io.formats.read_mif_header"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_mif_header</span></code></a></p></td>
+<td><p>Reads only the header of a MIF file, without the data.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.io.formats.read_nifti" title="larmor.io.formats.read_nifti"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_nifti</span></code></a></p></td>
+<td><p>Reads a NIfTI-1 or NIfTI-2 file, plain or gzip, into a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Volume</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.io.formats.read_nifti_header" title="larmor.io.formats.read_nifti_header"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_nifti_header</span></code></a></p></td>
+<td><p>Reads only the header of a NIfTI file, without the data.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.io.formats.read_tck" title="larmor.io.formats.read_tck"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_tck</span></code></a></p></td>
+<td><p>Reads a TCK file, an MRtrix tractogram, into a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Tractogram</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.io.formats.read_trk" title="larmor.io.formats.read_trk"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_trk</span></code></a></p></td>
+<td><p>Reads a TRK file, a TrackVis tractogram, into a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Tractogram</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.io.formats.read_vtk" title="larmor.io.formats.read_vtk"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_vtk</span></code></a></p></td>
+<td><p>Reads a legacy VTK polydata file of lines (<code class="xref py py-obj docutils literal notranslate"><span class="pre">vtk</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">fib</span></code>) into a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Tractogram</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.io.formats.write_freesurfer_surface" title="larmor.io.formats.write_freesurfer_surface"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_freesurfer_surface</span></code></a></p></td>
+<td><p>Writes a surface as a FreeSurfer triangle file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.io.formats.write_freesurfer_values" title="larmor.io.formats.write_freesurfer_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_freesurfer_values</span></code></a></p></td>
+<td><p>Writes values per vertex as a FreeSurfer &quot;new curv&quot; file, such as <code class="xref py py-obj docutils literal notranslate"><span class="pre">lh.curv</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.io.formats.write_gifti_surface" title="larmor.io.formats.write_gifti_surface"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_gifti_surface</span></code></a></p></td>
+<td><p>Writes a surface and its values per vertex to a GIfTI file (.surf.gii).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.io.formats.write_gifti_values" title="larmor.io.formats.write_gifti_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_gifti_values</span></code></a></p></td>
+<td><p>Writes named values per vertex to a GIfTI file (.shape.gii or .func.gii).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.io.formats.write_mif" title="larmor.io.formats.write_mif"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_mif</span></code></a></p></td>
+<td><p>Writes a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Volume</span></code>, and optionally its gradient table, as MIF.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.io.formats.write_nifti" title="larmor.io.formats.write_nifti"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_nifti</span></code></a></p></td>
+<td><p>Writes a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Volume</span></code> as a NIfTI file, compressed if the name ends in &quot;.gz&quot;.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.io.formats.write_tck" title="larmor.io.formats.write_tck"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_tck</span></code></a></p></td>
+<td><p>Writes a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Tractogram</span></code> as a TCK file of float32 points.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.io.formats.write_trk" title="larmor.io.formats.write_trk"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_trk</span></code></a></p></td>
+<td><p>Writes a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Tractogram</span></code> as a TRK file, version 2.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.io.formats.write_vtk" title="larmor.io.formats.write_vtk"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_vtk</span></code></a></p></td>
+<td><p>Writes a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Tractogram</span></code> as a legacy VTK polydata file (<code class="xref py py-obj docutils literal notranslate"><span class="pre">vtk</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">fib</span></code>).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.io.formats.read_freesurfer_label">
+<span class="sig-prename descclassname"><span class="pre">larmor.io.formats.</span></span><span class="sig-name descname"><span class="pre">read_freesurfer_label</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.formats.read_freesurfer_label" title="Link to this definition">#</a></dt>
+<dd><p>Reads the vertex indices of a FreeSurfer label file, such as <code class="xref py py-obj docutils literal notranslate"><span class="pre">lh.cortex.label</span></code>.</p>
+<p>Only the indices are returned, not the coordinates and values of the file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The label file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>np.ndarray</em> – (N,) int64 vertex indices, in the file’s order.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the file is not text, the count is not a number or is
+    negative, or the file has fewer vertex lines than its count or a
+    malformed one.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.io.formats.read_freesurfer_surface">
+<span class="sig-prename descclassname"><span class="pre">larmor.io.formats.</span></span><span class="sig-name descname"><span class="pre">read_freesurfer_surface</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.formats.read_freesurfer_surface" title="Link to this definition">#</a></dt>
+<dd><p>Reads a FreeSurfer triangle surface, such as <code class="xref py py-obj docutils literal notranslate"><span class="pre">lh.white</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">lh.pial</span></code>.</p>
+<p>FreeSurfer stores vertices in tkregister RAS, centred on the volume the surface
+was made on, and describes that volume in a footer. With a valid footer the
+vertices are converted to scanner RAS, unless the footer says they already are,
+and the footer’s volume becomes the reference. Without one they are kept as
+stored and the reference is None.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Surface</em> – The mesh, with no values per vertex.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the file is not a FreeSurfer triangle file or is truncated.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="../types/#larmor.types.Surface" title="larmor.types.surface.Surface"><em>Surface</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.io.formats.read_freesurfer_values">
+<span class="sig-prename descclassname"><span class="pre">larmor.io.formats.</span></span><span class="sig-name descname"><span class="pre">read_freesurfer_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.formats.read_freesurfer_values" title="Link to this definition">#</a></dt>
+<dd><p>Reads a FreeSurfer file of values per vertex, such as <code class="xref py py-obj docutils literal notranslate"><span class="pre">lh.curv</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The per-vertex file, such as <code class="xref py py-obj docutils literal notranslate"><span class="pre">lh.curv</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>np.ndarray</em> – (V,) float32, one value per vertex.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the file is not in the “new curv” format, holds more than
+    one value per vertex, or is truncated.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.io.formats.read_gifti_surface">
+<span class="sig-prename descclassname"><span class="pre">larmor.io.formats.</span></span><span class="sig-name descname"><span class="pre">read_gifti_surface</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.formats.read_gifti_surface" title="Link to this definition">#</a></dt>
+<dd><p>Reads a GIfTI surface (.surf.gii) and any values per vertex stored with it.</p>
+<p>When the pointset has FreeSurfer’s VolGeom metadata, its vertices are taken as
+tkregister RAS and converted to scanner RAS, and that volume becomes the
+reference, unless the pointset’s DataSpace already says scanner space. Other
+vertices are taken as stored, in scanner RAS; the file’s coordinate transform is
+not applied.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Surface</em> – The mesh, with the file’s other arrays in <code class="xref py py-obj docutils literal notranslate"><span class="pre">vertex_data</span></code>, named
+after their “Name” metadata or “data&lt;index&gt;”. The reference is the VolGeom
+volume, or None without one.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the file is not GIfTI XML, does not hold exactly one pointset
+    and one triangle array, an array cannot be decoded, or its VolGeom
+    metadata is malformed.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="../types/#larmor.types.Surface" title="larmor.types.surface.Surface"><em>Surface</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.io.formats.read_gifti_values">
+<span class="sig-prename descclassname"><span class="pre">larmor.io.formats.</span></span><span class="sig-name descname"><span class="pre">read_gifti_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">unnamed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.formats.read_gifti_values" title="Link to this definition">#</a></dt>
+<dd><p>Reads the values per vertex of a GIfTI file (.shape.gii, .func.gii, .label.gii).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The file.</p></li>
+<li><p><strong>unnamed</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – The name of an array without “Name” metadata; with several such
+arrays, the array’s index is added. Defaults to None, “data&lt;index&gt;”.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>dict[str, np.ndarray]</em> – Each array that is not a mesh, by its “Name”
+metadata or as <code class="xref py py-obj docutils literal notranslate"><span class="pre">unnamed</span></code> says. Label files give the integer keys; their
+label table is not read.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the file is not GIfTI XML or an array cannot be decoded.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.io.formats.read_mif">
+<span class="sig-prename descclassname"><span class="pre">larmor.io.formats.</span></span><span class="sig-name descname"><span class="pre">read_mif</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.formats.read_mif" title="Link to this definition">#</a></dt>
+<dd><p>Reads a MIF file (<code class="xref py py-obj docutils literal notranslate"><span class="pre">mif</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">mif.gz</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">mih</span></code>) into a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Volume</span></code>.</p>
+<p>The axes are those of the header’s <code class="xref py py-obj docutils literal notranslate"><span class="pre">dim</span></code>, whatever the layout on disk. The data
+keeps its type on disk, with Bit as bool; <code class="xref py py-obj docutils literal notranslate"><span class="pre">scaling</span></code> is stored on the <code class="xref py py-obj docutils literal notranslate"><span class="pre">Volume</span></code>,
+not applied.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The MIF file.</p></li>
+<li><p><strong>on_progress</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.15)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>]</em><em>, </em><em>None</em><em>] </em><em>| </em><em>None</em>) – Called as the file is read, see <code class="xref py py-obj docutils literal notranslate"><span class="pre">load_volume</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Volume</em> – The volume.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the file is not a MIF file Larmor can read, or is too short.</p></li>
+<li><p><a class="reference internal" href="../io/#larmor.io.ReadCancelledError" title="larmor.io.ReadCancelledError"><strong>ReadCancelledError</strong></a> – If on_progress raises it.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="../types/#larmor.types.Volume" title="larmor.types.volume.Volume"><em>Volume</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.io.formats.read_mif_gradients">
+<span class="sig-prename descclassname"><span class="pre">larmor.io.formats.</span></span><span class="sig-name descname"><span class="pre">read_mif_gradients</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.formats.read_mif_gradients" title="Link to this definition">#</a></dt>
+<dd><p>Reads the gradient table (<code class="xref py py-obj docutils literal notranslate"><span class="pre">dw_scheme</span></code>) of a MIF file, from its header only.</p>
+<p>The directions are already in world coordinates, so nothing is converted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The MIF file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>GradientTable</em> – The table.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the header has no <code class="xref py py-obj docutils literal notranslate"><span class="pre">dw_scheme</span></code>, a line is not 4 numbers, or
+    the number of lines differs from the fourth dimension.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="../types/#larmor.types.GradientTable" title="larmor.types.gradient_table.GradientTable"><em>GradientTable</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.io.formats.read_mif_header">
+<span class="sig-prename descclassname"><span class="pre">larmor.io.formats.</span></span><span class="sig-name descname"><span class="pre">read_mif_header</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.formats.read_mif_header" title="Link to this definition">#</a></dt>
+<dd><p>Reads only the header of a MIF file, without the data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The <code class="xref py py-obj docutils literal notranslate"><span class="pre">mif</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">mif.gz</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">mih</span></code> file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>The grid, and the full shape of the data</em> – (X, Y, Z) or (X, Y, Z, N).</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the file is not a MIF file Larmor can read.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a>[<a class="reference internal" href="../types/#larmor.types.Grid" title="larmor.types.grid.Grid"><em>Grid</em></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a>, …]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.io.formats.read_nifti">
+<span class="sig-prename descclassname"><span class="pre">larmor.io.formats.</span></span><span class="sig-name descname"><span class="pre">read_nifti</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.formats.read_nifti" title="Link to this definition">#</a></dt>
+<dd><p>Reads a NIfTI-1 or NIfTI-2 file, plain or gzip, into a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Volume</span></code>.</p>
+<p>The data keeps its type on disk; <code class="xref py py-obj docutils literal notranslate"><span class="pre">scl_slope</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">scl_inter</span></code> are stored on the
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">Volume</span></code>, not applied. The sform and qform codes are kept in
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">Volume.xform_codes</span></code>, with an unknown code (0) taken as 1.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The <code class="xref py py-obj docutils literal notranslate"><span class="pre">nii</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">nii.gz</span></code> file.</p></li>
+<li><p><strong>on_progress</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.15)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>]</em><em>, </em><em>None</em><em>] </em><em>| </em><em>None</em>) – Called as the file is read, see <code class="xref py py-obj docutils literal notranslate"><span class="pre">load_volume</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Volume</em> – The image, with its scaling not applied.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the file is not a NIfTI file Larmor can read, or is too short.</p></li>
+<li><p><a class="reference internal" href="../io/#larmor.io.ReadCancelledError" title="larmor.io.ReadCancelledError"><strong>ReadCancelledError</strong></a> – If on_progress raises it.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="../types/#larmor.types.Volume" title="larmor.types.volume.Volume"><em>Volume</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.io.formats.read_nifti_header">
+<span class="sig-prename descclassname"><span class="pre">larmor.io.formats.</span></span><span class="sig-name descname"><span class="pre">read_nifti_header</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.formats.read_nifti_header" title="Link to this definition">#</a></dt>
+<dd><p>Reads only the header of a NIfTI file, without the data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The <code class="xref py py-obj docutils literal notranslate"><span class="pre">nii</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">nii.gz</span></code> file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>The grid, and the full shape of the data</em> – (X, Y, Z) or (X, Y, Z, N).</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the file is not a NIfTI file Larmor can read.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a>[<a class="reference internal" href="../types/#larmor.types.Grid" title="larmor.types.grid.Grid"><em>Grid</em></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a>, …]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.io.formats.read_tck">
+<span class="sig-prename descclassname"><span class="pre">larmor.io.formats.</span></span><span class="sig-name descname"><span class="pre">read_tck</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.formats.read_tck" title="Link to this definition">#</a></dt>
+<dd><p>Reads a TCK file, an MRtrix tractogram, into a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Tractogram</span></code>.</p>
+<p>The data is read to the end, whatever the header’s <code class="xref py py-obj docutils literal notranslate"><span class="pre">count</span></code> says; a last
+streamline cut short by an interrupted write is dropped with a warning. The
+points are float32 and the tractogram has no reference grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The <code class="xref py py-obj docutils literal notranslate"><span class="pre">tck</span></code> file.</p></li>
+<li><p><strong>on_progress</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.15)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>]</em><em>, </em><em>None</em><em>] </em><em>| </em><em>None</em>) – Called as the file is read, see <code class="xref py py-obj docutils literal notranslate"><span class="pre">load_volume</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The streamlines of the file.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the file is not a TCK file Larmor can read.</p></li>
+<li><p><a class="reference internal" href="../io/#larmor.io.ReadCancelledError" title="larmor.io.ReadCancelledError"><strong>ReadCancelledError</strong></a> – If on_progress raises it.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="../types/#larmor.types.Tractogram" title="larmor.types.tractogram.Tractogram"><em>Tractogram</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.io.formats.read_trk">
+<span class="sig-prename descclassname"><span class="pre">larmor.io.formats.</span></span><span class="sig-name descname"><span class="pre">read_trk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.formats.read_trk" title="Link to this definition">#</a></dt>
+<dd><p>Reads a TRK file, a TrackVis tractogram, into a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Tractogram</span></code>.</p>
+<p>Points are converted from TrackVis voxel mm to world coordinates. Scalars go
+into <code class="xref py py-obj docutils literal notranslate"><span class="pre">point_data</span></code> and properties into <code class="xref py py-obj docutils literal notranslate"><span class="pre">streamline_data</span></code>, named as in the
+header. The data is read to the end, whatever <code class="xref py py-obj docutils literal notranslate"><span class="pre">n_count</span></code> says; a last
+streamline cut short by an interrupted write is dropped with a warning. A file
+whose writing was not finished, or whose <code class="xref py py-obj docutils literal notranslate"><span class="pre">n_count</span></code> is not 0 and disagrees with
+the data, gives a warning that it may be incomplete.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The <code class="xref py py-obj docutils literal notranslate"><span class="pre">trk</span></code> file.</p></li>
+<li><p><strong>reference</strong> (<a class="reference internal" href="../types/#larmor.types.Grid" title="larmor.types.grid.Grid"><em>Grid</em></a><em> | </em><em>None</em>) – The grid of the image the tractogram belongs to. Needed when the
+file has no vox_to_ras (version 1); otherwise it must match the file’s.
+Defaults to None.</p></li>
+<li><p><strong>on_progress</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.15)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>]</em><em>, </em><em>None</em><em>] </em><em>| </em><em>None</em>) – Called as the file is read, see <code class="xref py py-obj docutils literal notranslate"><span class="pre">load_volume</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Tractogram</em> – The streamlines, in world coordinates, with the file’s scalars and
+properties.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the file is not a TRK file Larmor can read, has no vox_to_ras
+    and no reference is given, or the reference does not match the file.</p></li>
+<li><p><a class="reference internal" href="../io/#larmor.io.ReadCancelledError" title="larmor.io.ReadCancelledError"><strong>ReadCancelledError</strong></a> – If on_progress raises it.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="../types/#larmor.types.Tractogram" title="larmor.types.tractogram.Tractogram"><em>Tractogram</em></a></p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<p>Converts points to world coordinates as nibabel does.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.io.formats.read_vtk">
+<span class="sig-prename descclassname"><span class="pre">larmor.io.formats.</span></span><span class="sig-name descname"><span class="pre">read_vtk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">space</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.formats.read_vtk" title="Link to this definition">#</a></dt>
+<dd><p>Reads a legacy VTK polydata file of lines (<code class="xref py py-obj docutils literal notranslate"><span class="pre">vtk</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">fib</span></code>) into a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Tractogram</span></code>.</p>
+<p>The points are world coordinates in mm, gathered in line order; points no line
+uses are dropped. <code class="xref py py-obj docutils literal notranslate"><span class="pre">POINT_DATA</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">CELL_DATA</span></code> arrays go into <code class="xref py py-obj docutils literal notranslate"><span class="pre">point_data</span></code> and
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">streamline_data</span></code>.</p>
+<p>The format does not fix the space of the points: some tools write RAS and
+others LPS, which differs by the sign of x and y. The space comes from <code class="xref py py-obj docutils literal notranslate"><span class="pre">space</span></code>
+when it is given, else from a <code class="xref py py-obj docutils literal notranslate"><span class="pre">SPACE=RAS</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">SPACE=LPS</span></code> tag in the file’s
+title line, else it is taken as RAS. LPS points are converted to RAS.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The <code class="xref py py-obj docutils literal notranslate"><span class="pre">vtk</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">fib</span></code> file.</p></li>
+<li><p><strong>space</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – “RAS” or “LPS” (any case), the space the file’s points are in.
+Defaults to None, which follows the file’s tag.</p></li>
+<li><p><strong>on_progress</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.15)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>]</em><em>, </em><em>None</em><em>] </em><em>| </em><em>None</em>) – Called as the file is read, see <code class="xref py py-obj docutils literal notranslate"><span class="pre">load_volume</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Tractogram</em> – The streamlines, in world (RAS) coordinates.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If <code class="xref py py-obj docutils literal notranslate"><span class="pre">space</span></code> is not RAS or LPS, or the file is not a legacy VTK
+    polydata of lines Larmor can read.</p></li>
+<li><p><a class="reference internal" href="../io/#larmor.io.ReadCancelledError" title="larmor.io.ReadCancelledError"><strong>ReadCancelledError</strong></a> – If on_progress raises it.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="../types/#larmor.types.Tractogram" title="larmor.types.tractogram.Tractogram"><em>Tractogram</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.io.formats.write_freesurfer_surface">
+<span class="sig-prename descclassname"><span class="pre">larmor.io.formats.</span></span><span class="sig-name descname"><span class="pre">write_freesurfer_surface</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">surface</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.formats.write_freesurfer_surface" title="Link to this definition">#</a></dt>
+<dd><p>Writes a surface as a FreeSurfer triangle file.</p>
+<p>With a reference, the vertices are converted back to tkregister RAS and the
+reference is written in the footer. Values per vertex are not written; use
+<a class="reference internal" href="#larmor.io.formats.write_freesurfer_values" title="larmor.io.formats.write_freesurfer_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_freesurfer_values</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>surface</strong> (<a class="reference internal" href="../types/#larmor.types.Surface" title="larmor.types.surface.Surface"><em>Surface</em></a>) – The surface to write.</p></li>
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The file to write.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.io.formats.write_freesurfer_values">
+<span class="sig-prename descclassname"><span class="pre">larmor.io.formats.</span></span><span class="sig-name descname"><span class="pre">write_freesurfer_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_faces</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.formats.write_freesurfer_values" title="Link to this definition">#</a></dt>
+<dd><p>Writes values per vertex as a FreeSurfer “new curv” file, such as <code class="xref py py-obj docutils literal notranslate"><span class="pre">lh.curv</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>values</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – (V,) values, written as float32.</p></li>
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The file.</p></li>
+<li><p><strong>num_faces</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – The number of faces of the mesh, stored in the header.
+Defaults to 0.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If <code class="xref py py-obj docutils literal notranslate"><span class="pre">values</span></code> is not one-dimensional.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.io.formats.write_gifti_surface">
+<span class="sig-prename descclassname"><span class="pre">larmor.io.formats.</span></span><span class="sig-name descname"><span class="pre">write_gifti_surface</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">surface</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.formats.write_gifti_surface" title="Link to this definition">#</a></dt>
+<dd><p>Writes a surface and its values per vertex to a GIfTI file (.surf.gii).</p>
+<p>Vertices are written as float32 in scanner space, faces as int32, and each
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">vertex_data</span></code> array as its own data array named by its key. The reference is
+not written, since GIfTI has no place for it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>surface</strong> (<a class="reference internal" href="../types/#larmor.types.Surface" title="larmor.types.surface.Surface"><em>Surface</em></a>) – The surface to write.</p></li>
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The file.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If a <code class="xref py py-obj docutils literal notranslate"><span class="pre">vertex_data</span></code> array holds integers beyond int32.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.io.formats.write_gifti_values">
+<span class="sig-prename descclassname"><span class="pre">larmor.io.formats.</span></span><span class="sig-name descname"><span class="pre">write_gifti_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.formats.write_gifti_values" title="Link to this definition">#</a></dt>
+<dd><p>Writes named values per vertex to a GIfTI file (.shape.gii or .func.gii).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>values</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a><em>]</em>) – Arrays whose first axis is the vertices.</p></li>
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The file.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If an array is a scalar or holds integers beyond int32.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.io.formats.write_mif">
+<span class="sig-prename descclassname"><span class="pre">larmor.io.formats.</span></span><span class="sig-name descname"><span class="pre">write_mif</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">volume</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">gradients</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.formats.write_mif" title="Link to this definition">#</a></dt>
+<dd><p>Writes a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Volume</span></code>, and optionally its gradient table, as MIF.</p>
+<p>A <code class="xref py py-obj docutils literal notranslate"><span class="pre">mif</span></code> holds header and data, compressed if the name ends in “.gz”; a <code class="xref py py-obj docutils literal notranslate"><span class="pre">mih</span></code>
+holds the header, with the data in a <code class="xref py py-obj docutils literal notranslate"><span class="pre">dat</span></code> of the same name. The data keeps
+its type, with bool as Bit. No other metadata is written.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>volume</strong> (<a class="reference internal" href="../types/#larmor.types.Volume" title="larmor.types.volume.Volume"><em>Volume</em></a>) – The volume to write.</p></li>
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The <code class="xref py py-obj docutils literal notranslate"><span class="pre">mif</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">mif.gz</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">mih</span></code> file; existing files are
+overwritten.</p></li>
+<li><p><strong>gradients</strong> (<a class="reference internal" href="../types/#larmor.types.GradientTable" title="larmor.types.gradient_table.GradientTable"><em>GradientTable</em></a><em> | </em><em>None</em>) – Written into the header as <code class="xref py py-obj docutils literal notranslate"><span class="pre">dw_scheme</span></code>, in world coordinates.
+Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If MIF cannot store the data’s type (complex, float16), or
+    <code class="xref py py-obj docutils literal notranslate"><span class="pre">gradients</span></code> does not have one entry per volume.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.io.formats.write_nifti">
+<span class="sig-prename descclassname"><span class="pre">larmor.io.formats.</span></span><span class="sig-name descname"><span class="pre">write_nifti</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">volume</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.formats.write_nifti" title="Link to this definition">#</a></dt>
+<dd><p>Writes a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Volume</span></code> as a NIfTI file, compressed if the name ends in “.gz”.</p>
+<p>The file is NIfTI-1, or NIfTI-2 when a dimension is larger than 32767. The data
+keeps its type, with bool as uint8, and the header holds the volume’s slope,
+intercept and sform and qform codes. No other metadata is written.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>volume</strong> (<a class="reference internal" href="../types/#larmor.types.Volume" title="larmor.types.volume.Volume"><em>Volume</em></a>) – The volume to write.</p></li>
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The <code class="xref py py-obj docutils literal notranslate"><span class="pre">nii</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">nii.gz</span></code> file; an existing file is overwritten.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If NIfTI cannot store the data’s type (for example float16).</p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<p>Follows MRtrix3 in when to write NIfTI-2 and in the units written.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.io.formats.write_tck">
+<span class="sig-prename descclassname"><span class="pre">larmor.io.formats.</span></span><span class="sig-name descname"><span class="pre">write_tck</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tractogram</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.formats.write_tck" title="Link to this definition">#</a></dt>
+<dd><p>Writes a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Tractogram</span></code> as a TCK file of float32 points.</p>
+<p>Only the points are written, since TCK holds no <code class="xref py py-obj docutils literal notranslate"><span class="pre">point_data</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">streamline_data</span></code>
+or reference grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tractogram</strong> (<a class="reference internal" href="../types/#larmor.types.Tractogram" title="larmor.types.tractogram.Tractogram"><em>Tractogram</em></a>) – The tractogram to write.</p></li>
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The <code class="xref py py-obj docutils literal notranslate"><span class="pre">tck</span></code> file; an existing file is overwritten.</p></li>
+<li><p><strong>timestamp</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – The header’s <code class="xref py py-obj docutils literal notranslate"><span class="pre">timestamp</span></code>, which MRtrix uses to pair the file
+with its TSF files; pass the same value to <code class="xref py py-obj docutils literal notranslate"><span class="pre">write_tsf</span></code>. Defaults to
+None, no timestamp.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If a point is NaN or infinite, which TCK reads as the end of a
+    streamline or of the file, or <code class="xref py py-obj docutils literal notranslate"><span class="pre">timestamp</span></code> has a ‘#’ or a line break.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.io.formats.write_trk">
+<span class="sig-prename descclassname"><span class="pre">larmor.io.formats.</span></span><span class="sig-name descname"><span class="pre">write_trk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tractogram</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.formats.write_trk" title="Link to this definition">#</a></dt>
+<dd><p>Writes a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Tractogram</span></code> as a TRK file, version 2.</p>
+<p>The header’s grid comes from the reference. <code class="xref py py-obj docutils literal notranslate"><span class="pre">point_data</span></code> is written as scalars
+and <code class="xref py py-obj docutils literal notranslate"><span class="pre">streamline_data</span></code> as properties, at most 10 names of each.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tractogram</strong> (<a class="reference internal" href="../types/#larmor.types.Tractogram" title="larmor.types.tractogram.Tractogram"><em>Tractogram</em></a>) – The tractogram to write.</p></li>
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The <code class="xref py py-obj docutils literal notranslate"><span class="pre">trk</span></code> file; an existing file is overwritten.</p></li>
+<li><p><strong>reference</strong> (<a class="reference internal" href="../types/#larmor.types.Grid" title="larmor.types.grid.Grid"><em>Grid</em></a><em> | </em><em>None</em>) – The grid of the image the tractogram belongs to. Defaults to
+the tractogram’s own <code class="xref py py-obj docutils literal notranslate"><span class="pre">reference</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If there is no reference grid, its shape does not fit TRK, or
+    there are too many or too long names.</p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<p>Names the scalars and properties as nibabel does.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.io.formats.write_vtk">
+<span class="sig-prename descclassname"><span class="pre">larmor.io.formats.</span></span><span class="sig-name descname"><span class="pre">write_vtk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tractogram</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">binary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.formats.write_vtk" title="Link to this definition">#</a></dt>
+<dd><p>Writes a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Tractogram</span></code> as a legacy VTK polydata file (<code class="xref py py-obj docutils literal notranslate"><span class="pre">vtk</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">fib</span></code>).</p>
+<p>The points are written as float32 in world (RAS) coordinates, and the title line
+says so with the tag <code class="xref py py-obj docutils literal notranslate"><span class="pre">SPACE=RAS</span></code>. <code class="xref py py-obj docutils literal notranslate"><span class="pre">point_data</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">streamline_data</span></code> are
+written as FIELD arrays under <code class="xref py py-obj docutils literal notranslate"><span class="pre">POINT_DATA</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">CELL_DATA</span></code>, each in its own
+type, with bool as unsigned_char.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tractogram</strong> (<a class="reference internal" href="../types/#larmor.types.Tractogram" title="larmor.types.tractogram.Tractogram"><em>Tractogram</em></a>) – The tractogram to write.</p></li>
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The <code class="xref py py-obj docutils literal notranslate"><span class="pre">vtk</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">fib</span></code> file; an existing file is overwritten.</p></li>
+<li><p><strong>binary</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – If True, write binary data; otherwise ASCII. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If a data name is empty or has whitespace, a data array has more
+    than 2 dimensions or a type VTK cannot store, or the tractogram is too
+    large for VTK’s int32 indices.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.io.formats.read_freesurfer_label"><code class="docutils literal notranslate"><span class="pre">read_freesurfer_label()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.io.formats.read_freesurfer_surface"><code class="docutils literal notranslate"><span class="pre">read_freesurfer_surface()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.io.formats.read_freesurfer_values"><code class="docutils literal notranslate"><span class="pre">read_freesurfer_values()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.io.formats.read_gifti_surface"><code class="docutils literal notranslate"><span class="pre">read_gifti_surface()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.io.formats.read_gifti_values"><code class="docutils literal notranslate"><span class="pre">read_gifti_values()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.io.formats.read_mif"><code class="docutils literal notranslate"><span class="pre">read_mif()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.io.formats.read_mif_gradients"><code class="docutils literal notranslate"><span class="pre">read_mif_gradients()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.io.formats.read_mif_header"><code class="docutils literal notranslate"><span class="pre">read_mif_header()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.io.formats.read_nifti"><code class="docutils literal notranslate"><span class="pre">read_nifti()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.io.formats.read_nifti_header"><code class="docutils literal notranslate"><span class="pre">read_nifti_header()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.io.formats.read_tck"><code class="docutils literal notranslate"><span class="pre">read_tck()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.io.formats.read_trk"><code class="docutils literal notranslate"><span class="pre">read_trk()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.io.formats.read_vtk"><code class="docutils literal notranslate"><span class="pre">read_vtk()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.io.formats.write_freesurfer_surface"><code class="docutils literal notranslate"><span class="pre">write_freesurfer_surface()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.io.formats.write_freesurfer_values"><code class="docutils literal notranslate"><span class="pre">write_freesurfer_values()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.io.formats.write_gifti_surface"><code class="docutils literal notranslate"><span class="pre">write_gifti_surface()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.io.formats.write_gifti_values"><code class="docutils literal notranslate"><span class="pre">write_gifti_values()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.io.formats.write_mif"><code class="docutils literal notranslate"><span class="pre">write_mif()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.io.formats.write_nifti"><code class="docutils literal notranslate"><span class="pre">write_nifti()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.io.formats.write_tck"><code class="docutils literal notranslate"><span class="pre">write_tck()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.io.formats.write_trk"><code class="docutils literal notranslate"><span class="pre">write_trk()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.io.formats.write_vtk"><code class="docutils literal notranslate"><span class="pre">write_vtk()</span></code></a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

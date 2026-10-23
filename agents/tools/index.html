@@ -1,0 +1,1930 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="Every tool that BrainViewer offers agents through MCP, with its arguments and description." name="description" />
+<meta property="og:title" content="Tools" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://larmor.org/agents/tools/" />
+<meta property="og:site_name" content="Larmor" />
+<meta property="og:description" content="Every tool that BrainViewer offers agents through MCP, with its arguments and description." />
+<meta property="og:image" content="https://larmor.org/_static/larmor-card.png" />
+<meta property="og:image:alt" content="Larmor: a Python library and viewer for diffusion MRI" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<title>Tools - Larmor</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=c83e6b79" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/larmor.css?v=f0153430" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="../../_static/documentation_options.js?v=b21b538c"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+    <script defer="defer" src="../../_static/larmor-carousel.js?v=7f65fbb2"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'agents/tools';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://larmor.org/versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.0.0';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://larmor.org/agents/tools/" />
+    <link rel="icon" href="../../_static/larmor-symbol.svg"/>
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Security" href="../security/" />
+    <link rel="prev" title="Driving the viewer from an agent" href="../connecting/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="2.0" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+<link rel="icon" type="image/png" sizes="32x32" href="../../_static/favicon-32.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="../../_static/apple-touch-icon.png" />
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search/"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/larmor-symbol.svg" class="logo__image only-light" alt=""/>
+    <img src="../../_static/larmor-symbol.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">Larmor</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../install/">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../quick-start/">
+    Quick start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../simulation/">
+    Simulation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../gallery/">
+    Gallery
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../guides/">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../viewer/">
+    Viewer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../background/">
+    Background
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../reference/">
+    Reference
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" current active">
+  <a class="nav-link dropdown-item nav-internal" href="../">
+    Agents
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../about/">
+    About
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+      
+        <div class="navbar-item">
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../install/">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../quick-start/">
+    Quick start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../simulation/">
+    Simulation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../gallery/">
+    Gallery
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../guides/">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../viewer/">
+    Viewer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../background/">
+    Background
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../reference/">
+    Reference
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../">
+    Agents
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../about/">
+    About
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button type="button" id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../connecting/">Connecting an agent</a></li>
+<li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../security/">Security</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../" class="nav-link">Agents</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Tools</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="tools">
+<h1>Tools<a class="headerlink" href="#tools" title="Link to this heading">#</a></h1>
+<p>This page lists the tools the viewer offers an agent, with the descriptions the agent is given. Each tool is one
+of the viewer’s actions, the same method that the window and Python call, so <code class="docutils literal notranslate"><span class="pre">load</span></code> here is <code class="docutils literal notranslate"><span class="pre">Viewer.load</span></code> in
+Python. The arguments are sent as JSON. An enum is sent as its text (<code class="docutils literal notranslate"><span class="pre">&quot;volumes&quot;</span></code>), a position as a list of numbers
+in world coordinates (mm, RAS+), and an item by the id that <code class="docutils literal notranslate"><span class="pre">scene</span></code> gives it. Paths are on the computer the viewer
+runs on.</p>
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">add_bundle_point</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">position</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Adds a control point at the end of the bundle being drawn.</p>
+<p>The bundle is drawn again from its points, once per frame in a window.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>position</strong> – The point (x, y, z), world mm.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If no bundle is being drawn, or position is not three
+finite numbers inside the phantom’s grid box.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">add_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">role</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'include'</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Adds a mask to the regions a tractogram’s streamlines are filtered by.</p>
+<p>With the filter on (<code class="docutils literal notranslate"><span class="pre">OptionName.REGION_FILTER</span></code>, on by default), only the
+streamlines that pass through every include region, through no exclude
+region and stay within every within region are drawn; a point is inside
+a mask when it lies in a voxel whose value rounds to a non-zero integer.
+A streamline passes through a region when one of its points is inside
+it, and stays within it when all of them are. The subset and the points
+per streamline then apply to the streamlines kept.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>item_id</strong> – The tractogram’s id.</p></li>
+<li><p><strong>mask_id</strong> – The mask: a volume or an overlay with one volume, on any
+grid, one of <code class="docutils literal notranslate"><span class="pre">item_choices</span></code>.</p></li>
+<li><p><strong>role</strong> – <code class="docutils literal notranslate"><span class="pre">RegionRole.INCLUDE</span></code> to keep the streamlines that pass through
+it, <code class="docutils literal notranslate"><span class="pre">EXCLUDE</span></code> to drop them, <code class="docutils literal notranslate"><span class="pre">WITHIN</span></code> to keep only those that stay
+within it.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If there is no item with either id.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If role is not a RegionRole.</p></li>
+<li><p><a class="reference internal" href="../../reference/api/viewer/#larmor.viewer.OptionError" title="larmor.viewer.OptionError"><strong>OptionError</strong></a> – If the item is not a tractogram or the mask is not one it
+can be filtered by.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">add_sphere</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">centre</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">role</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'include'</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Adds a sphere to the regions a tractogram’s streamlines are filtered by.</p>
+<p>As <code class="docutils literal notranslate"><span class="pre">add_mask</span></code>; a point is inside the sphere when it is at most <code class="docutils literal notranslate"><span class="pre">radius</span></code>
+from the centre.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>item_id</strong> – The tractogram’s id.</p></li>
+<li><p><strong>radius</strong> – The sphere’s radius in mm, positive.</p></li>
+<li><p><strong>centre</strong> – Its centre in world coordinates, mm; the cursor if None.</p></li>
+<li><p><strong>role</strong> – <code class="docutils literal notranslate"><span class="pre">RegionRole.INCLUDE</span></code> to keep the streamlines that pass through
+it, <code class="docutils literal notranslate"><span class="pre">EXCLUDE</span></code> to drop them, <code class="docutils literal notranslate"><span class="pre">WITHIN</span></code> to keep only those that stay
+within it.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If there is no item with that id.</p></li>
+<li><p><a class="reference internal" href="../../reference/api/viewer/#larmor.viewer.OptionError" title="larmor.viewer.OptionError"><strong>OptionError</strong></a> – If the item is not a tractogram, the centre or the
+radius is not a finite number, or the radius is not positive.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">cancel_bundle</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span></dt>
+<dd><p>Leaves draw mode: a new bundle is dropped, an edited one kept as it was.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If no bundle is being drawn.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">check_phantom</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span></dt>
+<dd><p>Returns what stops the phantom from running, one sentence each.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The problems; empty if it can run.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If no phantom is open.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">clear_regions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Removes every region a tractogram is filtered by, so all are drawn.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>item_id</strong> – The tractogram.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If there is no item with that id.</p></li>
+<li><p><a class="reference internal" href="../../reference/api/viewer/#larmor.viewer.OptionError" title="larmor.viewer.OptionError"><strong>OptionError</strong></a> – If the item is not a tractogram.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">close_phantom</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span></dt>
+<dd><p>Closes the phantom: its bundles and proxy maps are removed.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">data_choices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Returns the names an option that names some of an item’s data can take.</p>
+<p>For <code class="docutils literal notranslate"><span class="pre">OptionName.COLOUR_BY</span></code>: the surface’s values per vertex, one number
+per vertex each, such as “curv” or “thickness”.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>item_id</strong> – The item whose option it is.</p></li>
+<li><p><strong>name</strong> – An option that names some of the item’s data.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The names, in the data’s order; None, for no data, is always allowed.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If item_id or name is of the wrong type.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If there is no item with that id.</p></li>
+<li><p><a class="reference internal" href="../../reference/api/viewer/#larmor.viewer.OptionError" title="larmor.viewer.OptionError"><strong>OptionError</strong></a> – If the item has no such option, or it names no data.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">edit_bundle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Draws a finished bundle again: its points come back into draw mode.</p>
+<p>Its item is changed in place, keeping its id and options.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>item_id</strong> – The bundle’s tractogram item.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If it is not a drawn bundle of the phantom.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">finish_bundle</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span></dt>
+<dd><p>Makes the bundle being drawn a bundle of the phantom, and leaves draw mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The bundle’s tractogram item, coloured per tractogram.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If no bundle is being drawn, or it has fewer than two
+points.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">item_choices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Returns the items an option that names an item can name, for one item.</p>
+<p>For <code class="docutils literal notranslate"><span class="pre">OptionName.MODULATE</span></code>: the other volumes and overlays that are 3D
+and on the same grid (shape and affine) as the item. For
+<code class="docutils literal notranslate"><span class="pre">OptionName.VALUES_VOLUME</span></code>, and the masks a tractogram is filtered by
+(<code class="docutils literal notranslate"><span class="pre">INCLUDE_MASKS</span></code>, <code class="docutils literal notranslate"><span class="pre">EXCLUDE_MASKS</span></code>, <code class="docutils literal notranslate"><span class="pre">WITHIN_MASKS</span></code>): the volumes and
+overlays with one volume (3D, or 4D with a single volume), on any grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>item_id</strong> – The item whose option it is.</p></li>
+<li><p><strong>name</strong> – An option that names an item, such as <code class="docutils literal notranslate"><span class="pre">OptionName.MODULATE</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The items, in Layers order.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If item_id or name is of the wrong type.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If there is no item with that id.</p></li>
+<li><p><a class="reference internal" href="../../reference/api/viewer/#larmor.viewer.OptionError" title="larmor.viewer.OptionError"><strong>OptionError</strong></a> – If the item has no such option, or it names no item.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">kept_streamlines</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Counts how many of a tractogram’s streamlines its regions keep.</p>
+<p>Counted over the streamlines loaded, before the subset is taken.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>item_id</strong> – The tractogram.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The number of streamlines kept.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If there is no item with that id.</p></li>
+<li><p><a class="reference internal" href="../../reference/api/viewer/#larmor.viewer.OptionError" title="larmor.viewer.OptionError"><strong>OptionError</strong></a> – If the item is not a tractogram.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">labels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Returns the labels in an overlay’s shown volume.</p>
+<p>The surfaces of the 3D view are chosen among these (<code class="docutils literal notranslate"><span class="pre">SURFACE_LABELS</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>item_id</strong> – An overlay’s id.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The values other than 0 in the volume at the overlay’s volume index,
+in scaled units rounded to whole numbers, sorted; none for an image
+with more distinct values than a parcellation can show (8192).</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If there is no item with that id, or it is not an overlay.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">category</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_streamlines</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transforms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inverse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warp_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fsl_input_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fsl_reference_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Reads a file into a new item of <code class="docutils literal notranslate"><span class="pre">category</span></code>, as <code class="docutils literal notranslate"><span class="pre">add</span></code> adds it.</p>
+<p>The file is read before the method returns. Volumes, overlays, FODs and
+peaks are NIfTI (.nii, .nii.gz) or MRtrix (.mif, .mif.gz, .mih) images;
+tractograms are TCK, TRK or VTK files; surfaces are GIfTI (.gii) or
+FreeSurfer surfaces (such as lh.white). For a FreeSurfer surface,
+lh.curv in its folder is read as its values “curv”, and
+../label/lh.cortex.label as its cortex, when they exist.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – The file to read.</p></li>
+<li><p><strong>category</strong> – Where the item goes: <code class="docutils literal notranslate"><span class="pre">Category.VOLUMES</span></code>, <code class="docutils literal notranslate"><span class="pre">OVERLAYS</span></code> (masks,
+maps, parcellations), <code class="docutils literal notranslate"><span class="pre">TRACTOGRAMS</span></code>, <code class="docutils literal notranslate"><span class="pre">FODS</span></code>, <code class="docutils literal notranslate"><span class="pre">PEAKS</span></code> (from
+<code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">peaks</span></code>) or <code class="docutils literal notranslate"><span class="pre">SURFACES</span></code>.</p></li>
+<li><p><strong>max_streamlines</strong> – A tractogram with more streamlines keeps a random
+subset of this size; the same file always gives the same subset.
+None keeps all. Ignored for images.</p></li>
+<li><p><strong>transforms</strong> – Bring the item into another space through a registration
+computed by ANTs, FSL or MRtrix3: its transform files, listed as
+antsApplyTransforms lists them (an affine, a warp, or a warp and
+the inverse warp its tool wrote as “warp,inverse_warp”). The
+files are those that resample an image into the reference space;
+tractograms and surfaces are brought into the same space. FODs
+cannot be brought through a registration. None loads the file
+as it is.</p></li>
+<li><p><strong>reference</strong> – With transforms: an image of the reference space, whose
+grid images are resampled onto (needed for images).</p></li>
+<li><p><strong>inverse</strong> – With transforms: go the other way, from the reference
+space into the space the transforms bring images from.</p></li>
+<li><p><strong>interpolation</strong> – With transforms, for images: “nearest”, “linear” or
+“cubic”; None is linear for volumes and nearest for overlays and
+peaks (whose directions are reoriented).</p></li>
+<li><p><strong>format</strong> – With transforms: the tool that wrote them, “ants”, “fsl” or
+“mrtrix”; None guesses from the files (a 4D NIfTI warp can be
+FSL’s or MRtrix3’s, so it needs format).</p></li>
+<li><p><strong>warp_type</strong> – With transforms: the warp fields’ type, “deformation” (the
+default) or “displacement” for MRtrix3, “relative” (the default)
+or “absolute” for FSL; checked against the fields’ values.</p></li>
+<li><p><strong>fsl_input_path</strong> – With FSL transforms: the input image of the FLIRT or
+FNIRT run; defaults to the item when it is an image (to the
+reference with inverse). Tractograms and surfaces need it.</p></li>
+<li><p><strong>fsl_reference_path</strong> – With FSL transforms: the run’s reference image;
+defaults to <code class="docutils literal notranslate"><span class="pre">reference</span></code> (to the item with inverse). Tractograms
+and surfaces need it with inverse.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The new item; its <code class="docutils literal notranslate"><span class="pre">id</span></code> names it in the other actions.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If category is not a Category.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the file’s extension is not one the category reads,
+the file cannot be read as that format, an FOD’s number of
+coefficients fits no SH layout, or the registration cannot be
+applied (a transform file it cannot read, an image without a
+reference, an FOD).</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#OSError" title="(in Python v3.15)"><strong>OSError</strong></a> – If the file cannot be opened.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">load_matlab</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variables</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tractogram_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_streamlines</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000000</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Reads what a MATLAB .mat file holds into new items, as chosen.</p>
+<p>The presets read MRIToolkit’s results. <code class="docutils literal notranslate"><span class="pre">TENSOR_FIT</span></code> (a DTI or DKI fit)
+adds FA, MD and the eigenvalues as volumes, the first eigenvector as a
+volume with DTI colours modulated by the FA, and the DWI. <code class="docutils literal notranslate"><span class="pre">FOD_FIT</span></code> (a GRL
+or mFOD result) adds its FODs (SH, MRtrix basis) and its fractions and
+residuals as volumes. <code class="docutils literal notranslate"><span class="pre">TRACTOGRAPHY</span></code> adds the tracts as a tractogram.
+<code class="docutils literal notranslate"><span class="pre">MANUAL</span></code> reads the variables named in <code class="docutils literal notranslate"><span class="pre">variables</span></code> (paths as in
+<code class="docutils literal notranslate"><span class="pre">read_matlab</span></code>, such as “FA”, “DT{1}” or “GRL_Results.FOD”) each as its
+<code class="docutils literal notranslate"><span class="pre">LoadAs</span></code>: an image (MRIToolkit’s layout) as a volume, overlay, FODs or
+peaks; a cell of (N, 3) points as a tractogram; a struct with vertices
+and faces as a surface; or a cell of one value per point as the values
+<code class="docutils literal notranslate"><span class="pre">tractogram_id</span></code> is coloured by. A choice that does not fit its variable’s
+shape is refused. The file is read before the method returns; sessions
+reopen the items from the same variables.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – The .mat file.</p></li>
+<li><p><strong>preset</strong> – <code class="docutils literal notranslate"><span class="pre">MatlabPreset.TENSOR_FIT</span></code>, <code class="docutils literal notranslate"><span class="pre">FOD_FIT</span></code>, <code class="docutils literal notranslate"><span class="pre">TRACTOGRAPHY</span></code> or <code class="docutils literal notranslate"><span class="pre">MANUAL</span></code>.</p></li>
+<li><p><strong>reference</strong> – The grid of files that store none (FOD results, tracts, and
+images of files without a header): the MRIToolkit fit (.mat) they
+came from, or a NIfTI or MIF file of its image.</p></li>
+<li><p><strong>variables</strong> – For <code class="docutils literal notranslate"><span class="pre">MANUAL</span></code>, what to read each variable as.</p></li>
+<li><p><strong>tractogram_id</strong> – The tractogram item coloured by a variable read as
+<code class="docutils literal notranslate"><span class="pre">LoadAs.POINT_VALUES</span></code>.</p></li>
+<li><p><strong>max_streamlines</strong> – As in <code class="docutils literal notranslate"><span class="pre">load</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The new items, in the order added.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the preset does not fit the file, a reference is
+needed and not given, or a variable cannot be read as chosen.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#OSError" title="(in Python v3.15)"><strong>OSError</strong></a> – If a file cannot be opened.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">load_phantom</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Opens a phantom file, replacing the phantom open.</p>
+<p>Each bundle is drawn once and added as a tractogram item; the tissue
+maps are added as overlays.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – A phantom file.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If it is not a phantom file or holds invalid values.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#OSError" title="(in Python v3.15)"><strong>OSError</strong></a> – If a file cannot be read.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">load_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_streamlines</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000000</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Replaces the scene with the one a session file holds.</p>
+<p>Each file is looked for at its path from the session file’s folder,
+then at its absolute path, and read before the method returns, as
+<code class="docutils literal notranslate"><span class="pre">load</span></code> reads it. A file that is missing or cannot be read, and an
+option or a view-state field that is no longer allowed, are reported
+(and logged), and the rest of the session still opens.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – A session file written by <code class="docutils literal notranslate"><span class="pre">save_session</span></code>.</p></li>
+<li><p><strong>max_streamlines</strong> – A tractogram with more streamlines keeps a random
+subset of this size, as in <code class="docutils literal notranslate"><span class="pre">load</span></code>; None keeps all.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The items opened and the problems met, one sentence each.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="../../reference/api/viewer/#larmor.viewer.SessionError" title="larmor.viewer.SessionError"><strong>SessionError</strong></a> – If the file is not a session, or was saved by a newer
+Larmor; the scene is then unchanged.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#OSError" title="(in Python v3.15)"><strong>OSError</strong></a> – If the session file cannot be read.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">move_cursor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">position</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Moves the cursor, and so the crosshair and the slices, to a position.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>position</strong> – The world position (x, y, z) in mm, RAS+. It may lie
+outside the images.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If position is not three finite numbers.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">new_phantom</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size_mm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[60.0,</span> <span class="pre">60.0,</span> <span class="pre">60.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">voxel_mm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_of</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Starts a phantom to simulate, replacing the one open.</p>
+<p>A phantom is a voxel grid with named tissues (WM, GM and CSF to start
+with), bundles drawn in the 2D views (each an ordinary tractogram item)
+or loaded tractograms used as bundles, tissue maps and a scan. The
+views are fitted to its grid. The items the old phantom made are removed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size_mm</strong> – The grid’s box (x, y, z) in mm, centred on the origin.</p></li>
+<li><p><strong>voxel_mm</strong> – The voxel size in mm.</p></li>
+<li><p><strong>grid_of</strong> – Use the grid of this loaded image instead of a box.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If a size is not positive, or grid_of is not an image.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">open_simulation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Opens a simulation folder, its phantom in the phantom editor.</p>
+<p>The folder is one <code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">simulate</span></code> or Run writes. Its phantom file opens
+in the phantom editor, replacing the phantom open, with each bundle as
+a tractogram item referring to the bundle’s streamline file; the DWI
+opens as a volume, the tissue masks as overlays and the ground-truth
+fibre directions as peaks.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>folder</strong> – The simulation folder, holding simulation.json.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>The items opened</em> – the bundles, the DWI, the masks and the peaks.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If it is not a simulation folder, or its phantom file
+is not valid.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#OSError" title="(in Python v3.15)"><strong>OSError</strong></a> – If a file cannot be read.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">pan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">right</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">up</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Moves what a 2D view shows, as a drag does.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>view</strong> – <code class="docutils literal notranslate"><span class="pre">ViewKind.AXIAL</span></code>, <code class="docutils literal notranslate"><span class="pre">CORONAL</span></code> or <code class="docutils literal notranslate"><span class="pre">SAGITTAL</span></code>.</p></li>
+<li><p><strong>right</strong> – How far the view’s centre moves towards the screen’s right, in
+mm (negative: left).</p></li>
+<li><p><strong>up</strong> – How far it moves towards the screen’s top, in mm (negative: down).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If view is not a ViewKind.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If view is the 3D view, or right or up is not a finite
+number.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">readout</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span></dt>
+<dd><p>Returns what the crosshair reports, as the 2D views show it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The cursor’s position (mm, RAS+) and, with a main volume, its name,
+the nearest voxel (i, j, k, with the volume index for a 4D image) and
+the value there in scaled units, interpolated if the volume is shown
+interpolated; voxel and value are None outside its grid.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">record_rotation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[800,</span> <span class="pre">800]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlay</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transparent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Records the 3D view turning, off screen, as an animated WebP or GIF.</p>
+<p>The scene turns about the screen’s up axis, starting from the 3D view’s
+camera, which is left as it is: with a window open, its 3D view does not
+move. The frames are written as they are drawn, except that a GIF keeps
+every frame in memory until it is written.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – The file to write: .webp or .gif. An existing file is replaced
+once the video is complete, and kept if it is cancelled.</p></li>
+<li><p><strong>size</strong> – The 3D view’s width and height in logical pixels.</p></li>
+<li><p><strong>scale</strong> – Pixels per logical pixel in the frames.</p></li>
+<li><p><strong>speed</strong> – Degrees the scene turns per second, towards the screen’s
+right; negative turns it to the left.</p></li>
+<li><p><strong>duration</strong> – Seconds of video; the default, at the default speed, is
+one full turn.</p></li>
+<li><p><strong>fps</strong> – Frames per second, a whole number; a GIF takes at most 50. GIF
+frame times are whole hundredths of a second, so at 30 fps its
+frames last 30 or 40 ms.</p></li>
+<li><p><strong>overlay</strong> – Whether to draw the information overlay; None follows
+<code class="docutils literal notranslate"><span class="pre">toggle_overlay</span></code>’s switch.</p></li>
+<li><p><strong>transparent</strong> – Whether the background is transparent; needs WebP.</p></li>
+<li><p><strong>on_progress</strong> – Called after each frame with the number of frames drawn
+and their total, for example to show progress; it returns True
+to go on, or False to cancel.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The path written, or None if on_progress cancelled the video.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="../../reference/api/viewer/#larmor.viewer.ViewerUnavailableError" title="larmor.viewer.ViewerUnavailableError"><strong>ViewerUnavailableError</strong></a> – If the viewer’s dependencies are not installed.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If overlay or transparent is not a bool, speed or
+duration is not a real number, or fps is not a whole number.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If size or scale is not positive, the frames are larger
+than the GPU draws, the extension is neither .webp nor .gif (or
+is .gif with a transparent background or fps above 50), speed
+is not finite, duration is not positive, or fps is not positive.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#OSError" title="(in Python v3.15)"><strong>OSError</strong></a> – If the file cannot be written.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Removes an item, or every item of a category.</p>
+<p>When the main volume is removed, the next volume in Layers order becomes
+the main volume, and is shown if the removed one was. The views keep
+their field of view.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>target</strong> – An item’s id, or a Category to remove all its items.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If target is neither an item id nor a Category.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If there is no item with that id.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">remove_bundle_point</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span></dt>
+<dd><p>Removes the last control point of the bundle being drawn.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If no bundle is being drawn.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">remove_tissue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Removes a tissue that no bundle, map or background uses.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> – The tissue’s name.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If no phantom is open, or the tissue is unknown or used.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">reset_camera</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">view</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Shows a view’s whole field of view again, at zoom 1 and centred.</p>
+<p>The 3D view also returns to its starting direction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>view</strong> – The view to reset.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If view is not a ViewKind.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">rotate_camera</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">right</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">up</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Turns the 3D view’s scene, as a drag in that view does.</p>
+<p>The turn is about the camera’s own axes, so it never locks up when
+looking straight down.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>right</strong> – Degrees to turn the scene towards the screen’s right (about
+the screen’s up axis).</p></li>
+<li><p><strong>up</strong> – Degrees to turn it towards the screen’s top (about the screen’s
+right axis).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If right or up is not a finite number.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">run_phantom</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Simulates the phantom, saves the simulation folder and opens it.</p>
+<p>The folder is the one <code class="docutils literal notranslate"><span class="pre">larmor.simulation.save_simulation</span></code> writes. The
+DWI (with its .bval and .bvec) opens as a volume, the tissue masks as
+overlays and the ground-truth fibre directions as peaks; the bundles’
+items then refer to the streamline files written, so a session keeps
+everything. In the window, Run (Ctrl+R) does this in the background,
+with a Cancel button.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>folder</strong> – The output folder; made if missing.</p></li>
+<li><p><strong>overwrite</strong> – Replace outputs already in the folder.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The items opened.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If no phantom is open or it cannot run.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#FileExistsError" title="(in Python v3.15)"><strong>FileExistsError</strong></a> – If outputs exist and overwrite is False.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">save_item</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Writes an item’s data to a file, which the item then refers to.</p>
+<p>The format follows the extension. Tractograms are written as TCK, TRK,
+VTK or FIB; a TRK is written for the tractogram’s reference grid, else
+for the grid the 2D views slice along. Volumes, overlays, FODs and peaks
+are written as NIfTI (.nii, .nii.gz) or MIF (.mif, .mif.gz, .mih).
+Afterwards the item refers to the new file, so a session saved later
+reopens it from there, also when it was added without a file. A
+tractogram read as a random subset of a larger file is written as that
+subset. Surfaces cannot be saved.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>item_id</strong> – The item to save.</p></li>
+<li><p><strong>path</strong> – The file to write; an existing file is replaced.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The item, now referring to the file.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If there is no item with that id, it is a surface, or the
+extension is not one its category writes.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#OSError" title="(in Python v3.15)"><strong>OSError</strong></a> – If the file cannot be written.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">save_phantom</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Writes the phantom to a phantom file, with the viewer’s settings.</p>
+<p>The file is <code class="docutils literal notranslate"><span class="pre">write_phantom</span></code>’s JSON: grid, tissues, bundles (geometries,
+or the files of loaded tractograms), tissue maps (their files),
+background and scan, plus a viewer block with the tissue presets, the
+scan settings, the bundles’ names and options and the proxy maps.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – The file to write, such as “scene.phantom.json”.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If no phantom is open, or a loaded bundle or a map has
+no file.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#OSError" title="(in Python v3.15)"><strong>OSError</strong></a> – If the file cannot be written.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">save_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Saves the items and the state of the views to a session file.</p>
+<p>The file is JSON (<code class="docutils literal notranslate"><span class="pre">.lar.json</span></code> is the usual extension). It holds each
+item’s category, name, file (its absolute path and its path from the
+session file’s folder, so a project folder can be moved) and options,
+and the view state: cursor, cameras, main volume, selection, maximised
+view, convention and the overlay and crosshair switches, and the phantom
+being edited, if any, whose bundles and proxy maps are made again when
+the session opens. The application’s settings are not saved. Items
+added from Python without a file cannot be saved and are left out, with
+a warning in the log.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – The session file to write; an existing file is replaced.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The names of the items left out, in Layers order.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#OSError" title="(in Python v3.15)"><strong>OSError</strong></a> – If the file cannot be written.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If an option holds a value JSON cannot store, such as
+an infinite number.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">scene</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span></dt>
+<dd><p>The items in the scene, in Layers order (id, category, name, source file, number of volumes, value range and options), and the state of the views (cursor, main volume, selection, cameras, …). Other tools name items by these ids.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">screenshot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[800,</span> <span class="pre">800]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlay</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transparent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Draws one view, or all of them, off screen, as the window shows them.</p>
+<p>Needs no window and no Qt, only the viewer’s drawing library (pygfx) and
+a GPU or a software renderer. With a window open, the image is drawn
+separately, at the given size, and the window is not changed. To draw
+many images of one scene, an <code class="docutils literal notranslate"><span class="pre">OffscreenRenderer</span></code> (in
+<code class="docutils literal notranslate"><span class="pre">larmor.viewer.render.offscreen</span></code>) is faster: it is set up once.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>view</strong> – The view to draw, or None for the whole window’s layout: the
+maximised view if there is one, else the four views in the
+window’s 2 x 2 grid (axial, coronal; sagittal, 3D), with a thin
+grey line between them.</p></li>
+<li><p><strong>path</strong> – The image file to write; its extension sets the format (.png,
+.jpg, .tif, …). An existing file is replaced.</p></li>
+<li><p><strong>size</strong> – Each view’s width and height in logical pixels, the units of
+the window’s views; text and lines keep their size in them.</p></li>
+<li><p><strong>scale</strong> – Pixels per logical pixel in the image, for example 2 for twice
+the resolution with the same layout.</p></li>
+<li><p><strong>overlay</strong> – Whether to draw the information overlay (text, labels and
+colour bars); None follows <code class="docutils literal notranslate"><span class="pre">toggle_overlay</span></code>’s switch, which the
+screenshot leaves as it is.</p></li>
+<li><p><strong>transparent</strong> – Whether the background is transparent (an RGBA image)
+rather than the views’ background colour; needs PNG or TIFF.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The path written. The image is RGB, or RGBA if transparent; each view
+in it is size times scale pixels.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="../../reference/api/viewer/#larmor.viewer.ViewerUnavailableError" title="larmor.viewer.ViewerUnavailableError"><strong>ViewerUnavailableError</strong></a> – If the viewer’s dependencies are not installed.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If view is neither a ViewKind nor None, or overlay or
+transparent is not a bool.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If size or scale is not positive, the image is larger
+than the GPU draws, or the extension is not an image format (or
+is JPEG with a transparent background).</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#OSError" title="(in Python v3.15)"><strong>OSError</strong></a> – If the file cannot be written.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">screenshot_views</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[800,</span> <span class="pre">800]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlay</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transparent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Draws the three 2D views off screen, each into its own file.</p>
+<p>The images are those <code class="docutils literal notranslate"><span class="pre">screenshot</span></code> draws of each 2D view, drawn with one
+renderer, so they are faster than three screenshots.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – The name the files are made from, the view’s name added to
+its stem: “fig.png” gives “fig_axial.png”, “fig_coronal.png”
+and “fig_sagittal.png”. Existing files are replaced.</p></li>
+<li><p><strong>size</strong> – Each view’s width and height in logical pixels.</p></li>
+<li><p><strong>scale</strong> – Pixels per logical pixel in the images.</p></li>
+<li><p><strong>overlay</strong> – Whether to draw the information overlay; None follows
+<code class="docutils literal notranslate"><span class="pre">toggle_overlay</span></code>’s switch, which is left as it is.</p></li>
+<li><p><strong>transparent</strong> – Whether the background is transparent (RGBA images);
+needs PNG or TIFF.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>The paths written</em> – axial, coronal, sagittal.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="../../reference/api/viewer/#larmor.viewer.ViewerUnavailableError" title="larmor.viewer.ViewerUnavailableError"><strong>ViewerUnavailableError</strong></a> – If the viewer’s dependencies are not installed.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If overlay or transparent is not a bool.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – As for <code class="docutils literal notranslate"><span class="pre">screenshot</span></code>.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#OSError" title="(in Python v3.15)"><strong>OSError</strong></a> – If a file cannot be written.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">select</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Selects an item or a category, as a click in Layers does.</p>
+<p>The selection is what the Options panel shows, and the image the left
+and right arrows step through.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>target</strong> – An item’s id, a Category, or None to select nothing.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If target is neither an item id nor a Category.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If there is no item with that id.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">select_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">view</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Makes a view the selected one, as a click in it does; shortcuts act there.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>view</strong> – The view.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If view is not a ViewKind.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Changes one option of an item, or of every item of a category.</p>
+<p>Showing a volume makes it the main volume and hides the others; setting
+the Volumes category’s visibility shows or hides the main volume only.
+A new volume index drops the surface labels its volume does not hold.
+Minimum, maximum and threshold are in the image’s scaled units. DTI
+colours need a 4D image with 3 volumes (a direction’s x, y and z), and
+the image that modulates them must be one of <code class="docutils literal notranslate"><span class="pre">item_choices</span></code>. A
+surface’s values to colour by must be one of <code class="docutils literal notranslate"><span class="pre">data_choices</span></code>; a new one
+also sets the colormap and range: for “curv” and “sulc” white to black
+from -0.3 to 0.3, for others the image default over the values’ range.
+A tractogram’s TSF file (<code class="docutils literal notranslate"><span class="pre">VALUES_FILE</span></code>) must hold a value per point of
+its streamlines, and its sampled volume (<code class="docutils literal notranslate"><span class="pre">VALUES_VOLUME</span></code>) must be one of
+<code class="docutils literal notranslate"><span class="pre">item_choices</span></code>; setting either clears the other, colours the tractogram
+by value and sets the range to the values’ (for a volume, its data’s).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target</strong> – An item’s id, or a Category to change all its items.</p></li>
+<li><p><strong>name</strong> – The option, such as <code class="docutils literal notranslate"><span class="pre">OptionName.COLORMAP</span></code>.</p></li>
+<li><p><strong>value</strong> – The new value, of the option’s type: a bool, a number, a
+<code class="docutils literal notranslate"><span class="pre">Colormap</span></code>, a path for a lookup table (”” for the built-in
+colours) or a TSF file (”” for none), label numbers for
+<code class="docutils literal notranslate"><span class="pre">SURFACE_LABELS</span></code>, which must be among the overlay’s <code class="docutils literal notranslate"><span class="pre">labels</span></code>,
+or another item’s id (or None) for an option that names an
+item, such as <code class="docutils literal notranslate"><span class="pre">OptionName.MODULATE</span></code> or <code class="docutils literal notranslate"><span class="pre">VALUES_VOLUME</span></code>, or a
+name (or None) for <code class="docutils literal notranslate"><span class="pre">OptionName.COLOUR_BY</span></code>. A tractogram’s
+<code class="docutils literal notranslate"><span class="pre">INCLUDE_MASKS</span></code>, <code class="docutils literal notranslate"><span class="pre">EXCLUDE_MASKS</span></code> and <code class="docutils literal notranslate"><span class="pre">WITHIN_MASKS</span></code> are items’
+ids, each one of <code class="docutils literal notranslate"><span class="pre">item_choices</span></code>, and <code class="docutils literal notranslate"><span class="pre">INCLUDE_SPHERES</span></code>,
+<code class="docutils literal notranslate"><span class="pre">EXCLUDE_SPHERES</span></code> and <code class="docutils literal notranslate"><span class="pre">WITHIN_SPHERES</span></code> are (x, y, z, radius) in
+world coordinates, mm.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If target or name is of the wrong type.</p></li>
+<li><p><a class="reference internal" href="../../reference/api/viewer/#larmor.viewer.OptionError" title="larmor.viewer.OptionError"><strong>OptionError</strong></a> – If the items have no such option, the value is outside
+the option’s range or choices, the option (such as the volume
+index) is set per item and target is a category, DTI colours are
+asked of an image without 3 volumes, the item named is not
+one the option can name, a surface has no such values, or a TSF
+file cannot be read or does not match the tractogram.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If there is no item with that id.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">set_background_tissue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tissue</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Fills what the bundles and maps leave of each voxel with a tissue.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>tissue</strong> – A tissue without a fibre direction, or None for no signal.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If no phantom is open or the tissue cannot fill space.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">set_bundle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Changes one setting of a bundle; a drawn one is drawn again.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>item_id</strong> – The bundle’s tractogram item, or None for the bundle being
+drawn.</p></li>
+<li><p><strong>name</strong> – <code class="docutils literal notranslate"><span class="pre">BundleField.TISSUE</span></code> (a tissue’s name), <code class="docutils literal notranslate"><span class="pre">NUM_STREAMLINES</span></code>,
+<code class="docutils literal notranslate"><span class="pre">RADIUS</span></code> (mm), <code class="docutils literal notranslate"><span class="pre">NUM_POINTS</span></code>, <code class="docutils literal notranslate"><span class="pre">FAN_START</span></code>, <code class="docutils literal notranslate"><span class="pre">FAN_END</span></code>,
+<code class="docutils literal notranslate"><span class="pre">FAN_SHARPNESS</span></code>, <code class="docutils literal notranslate"><span class="pre">DISPERSION</span></code> (mm), <code class="docutils literal notranslate"><span class="pre">SEED</span></code>, <code class="docutils literal notranslate"><span class="pre">STREAMLINE_AREA</span></code>
+(mm^2 per streamline, None for the default: the bundle’s
+cross-section shared by its streamlines) or <code class="docutils literal notranslate"><span class="pre">DENSEST_FILL</span></code> (the
+fill of a loaded tractogram’s dense voxels, in (0, 1]).</p></li>
+<li><p><strong>value</strong> – The new value.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If name is not a BundleField.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the bundle or the value is refused.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">set_bundle_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Replaces the control points of the bundle being drawn.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>points</strong> – The points (x, y, z), world mm, in order.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If no bundle is being drawn, or a point is not three
+finite numbers.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">set_camera</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preset</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Moves the 3D view’s camera to a standard position, keeping its zoom.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>view</strong> – <code class="docutils literal notranslate"><span class="pre">ViewKind.THREE_D</span></code>, the only view with camera positions.</p></li>
+<li><p><strong>preset</strong> – Axial (from above), coronal (from the front) or sagittal
+(from the subject’s right).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If view is not a ViewKind or preset not a CameraPreset.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If view is a 2D view.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">set_compartments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compartments</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Makes a tissue of compartments, as a custom tissue.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – The tissue’s name; a new one is added.</p></li>
+<li><p><strong>compartments</strong> – One dict each: “kind” (the value of a
+<code class="docutils literal notranslate"><span class="pre">larmor.simulation.CompartmentModel</span></code>: stick, zeppelin, ball,
+powder_stick, sphere, watson_stick, cylinder, dot or
+free_water), “fraction”, “diffusivity” (mm^2/s), “t1_ms”,
+“t2_ms”, “t2star_ms”, and optionally
+“proton_density”, “perpendicular_diffusivity” (mm^2/s),
+“radius_um” and “kappa”. The fractions sum to 1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If no phantom is open, or the compartments make no valid
+tissue.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">set_convention</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">convention</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Shows the subject’s right on the screen’s right or on its left.</p>
+<p>Each 2D view stays centred on the same place.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>convention</strong> – <code class="docutils literal notranslate"><span class="pre">Convention.RAS</span></code> (neurological, right on the right) or
+<code class="docutils literal notranslate"><span class="pre">Convention.LAS</span></code> (radiological, right on the left).</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If convention is not a Convention.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">set_default</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">category</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Sets the value an option starts with on the items added to a category.</p>
+<p>Items already in the scene keep their value. The Settings panel uses it
+for the default interpolation of new images.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>category</strong> – The category whose new items start with the value.</p></li>
+<li><p><strong>name</strong> – The option.</p></li>
+<li><p><strong>value</strong> – Its starting value, checked as <code class="docutils literal notranslate"><span class="pre">set</span></code> checks it.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If category or name is not its enum.</p></li>
+<li><p><a class="reference internal" href="../../reference/api/viewer/#larmor.viewer.OptionError" title="larmor.viewer.OptionError"><strong>OptionError</strong></a> – If the category has no such option, the option is set
+per item, or the value is not allowed.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">set_phantom_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size_mm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[60.0,</span> <span class="pre">60.0,</span> <span class="pre">60.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">voxel_mm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_of</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Moves the phantom onto a new grid; bundles keep their place in mm.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size_mm</strong> – The grid’s box (x, y, z) in mm, centred on the origin.</p></li>
+<li><p><strong>voxel_mm</strong> – The voxel size in mm.</p></li>
+<li><p><strong>grid_of</strong> – Use the grid of this loaded image instead of a box.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If no phantom is open, a size is not positive, grid_of
+is not an image, or a tissue map is not on the new grid.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">set_run_folder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Sets the folder a run of the phantom writes its outputs to.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>folder</strong> – The folder, or None to be asked at the next run.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If no phantom is open.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">set_scan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Changes one setting of the phantom’s scan.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – <code class="docutils literal notranslate"><span class="pre">ScanField.SHELLS</span></code> ((b-value s/mm^2, directions) pairs),
+<code class="docutils literal notranslate"><span class="pre">NUM_B0</span></code>, <code class="docutils literal notranslate"><span class="pre">GRADIENT_SEED</span></code> (of the directions), <code class="docutils literal notranslate"><span class="pre">GRADIENT_FILES</span></code>
+(bvals and bvecs paths, directions in world coordinates, used
+instead of the shells; None for the shells), <code class="docutils literal notranslate"><span class="pre">SMALL_DELTA_MS</span></code>,
+<code class="docutils literal notranslate"><span class="pre">BIG_DELTA_MS</span></code>, <code class="docutils literal notranslate"><span class="pre">TE_MS</span></code> (one or several echo times), <code class="docutils literal notranslate"><span class="pre">TR_MS</span></code>,
+<code class="docutils literal notranslate"><span class="pre">SEQUENCE</span></code> (<code class="docutils literal notranslate"><span class="pre">EchoKind</span></code>), <code class="docutils literal notranslate"><span class="pre">SNR</span></code> (None for no noise) or <code class="docutils literal notranslate"><span class="pre">SEED</span></code> (of
+the noise).</p></li>
+<li><p><strong>value</strong> – The new value.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If name is not a ScanField.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If no phantom is open or the value is refused.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">set_tissue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Adds a named tissue, or changes one; every bundle using it follows.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – The tissue’s name, such as “WM”.</p></li>
+<li><p><strong>preset</strong> – <code class="docutils literal notranslate"><span class="pre">TissuePreset.STANDARD_MODEL</span></code> (stick, zeppelin, free water),
+<code class="docutils literal notranslate"><span class="pre">SANDI</span></code> (sphere, powder-averaged stick, ball), <code class="docutils literal notranslate"><span class="pre">NODDI</span></code>
+(Watson-dispersed sticks, zeppelin, free water), <code class="docutils literal notranslate"><span class="pre">FREE_WATER</span></code>
+(free water alone) or <code class="docutils literal notranslate"><span class="pre">CUSTOM</span></code> (its compartments, see
+<code class="docutils literal notranslate"><span class="pre">set_compartments</span></code>; a preset tissue turned custom keeps its
+compartments).</p></li>
+<li><p><strong>values</strong> – Parameters of the preset to change, by the names of
+<code class="docutils literal notranslate"><span class="pre">larmor.simulation.standard_model_tissue</span></code>, <code class="docutils literal notranslate"><span class="pre">sandi_tissue</span></code>,
+<code class="docutils literal notranslate"><span class="pre">noddi_tissue</span></code> or <code class="docutils literal notranslate"><span class="pre">free_water_tissue</span></code> (such as “intra_t2_ms” or
+“proton_density”); the others keep their values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If no phantom is open, a parameter is unknown, or the
+values make no valid tissue.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">set_tissue_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tissue</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Makes an overlay the map of a tissue’s fraction in each voxel.</p>
+<p>The bundles fill each voxel first; the maps share what they leave.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tissue</strong> – The tissue, one without a fibre direction (such as GM).</p></li>
+<li><p><strong>item_id</strong> – A 3D overlay on the phantom’s grid with values in [0, 1];
+None clears the tissue’s map.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If no phantom is open, or the tissue or overlay is not one
+a map can use.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">show_grid_box</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shown</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Outlines the phantom’s grid box in the views, or hides it.</p>
+<p>The box is outlined while a bundle is drawn whatever this says; a
+session keeps the choice.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>shown</strong> – Outline it, or hide it.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If no phantom is open.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">show_proxy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shown</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Shows or hides a map of what the phantom gives, without a run.</p>
+<p>The maps are overlays updated as the phantom changes: <code class="docutils literal notranslate"><span class="pre">ProxyMap.FILL</span></code>
+(volume 0 the fraction of each voxel all bundles fill, then one volume
+per bundle), <code class="docutils literal notranslate"><span class="pre">PARTITION</span></code> (one volume per tissue’s fraction, then the
+background) and <code class="docutils literal notranslate"><span class="pre">EXPECTED_B0</span></code> (the noise-free signal at b = 0 and the
+first echo time).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kind</strong> – The map.</p></li>
+<li><p><strong>shown</strong> – Show it, or remove it.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The overlay item when shown, else None.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If kind is not a ProxyMap.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If no phantom is open or it cannot be made.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">start_bundle</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span></dt>
+<dd><p>Starts drawing a new bundle: clicks in the 2D views add its points.</p>
+<p>Starts a phantom on the views’ grid if none is open. A bundle being
+drawn is finished first if it has two points, else dropped. The new
+bundle starts with the last bundle’s settings and a new seed.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">step_slice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Moves a 2D view’s slice by n steps along the view’s axis.</p>
+<p>A step is the reference grid’s voxel size along the world axis closest
+to the view’s (x for sagittal, y for coronal, z for axial), or 1 mm with
+no grid. Positive n moves towards right, anterior or superior.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>view</strong> – <code class="docutils literal notranslate"><span class="pre">ViewKind.AXIAL</span></code>, <code class="docutils literal notranslate"><span class="pre">CORONAL</span></code> or <code class="docutils literal notranslate"><span class="pre">SAGITTAL</span></code>.</p></li>
+<li><p><strong>n</strong> – The number of steps, negative to go back.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If view is not a ViewKind.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If view is the 3D view.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">step_volume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Moves a 4D image’s volume index by n, as the left and right arrows do.</p>
+<p>The image is the selected one if it is 4D, else the main volume. The
+index stops at the first and the last volume; without a main volume,
+nothing happens.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>n</strong> – The number of volumes, negative to go back.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If n is not a whole number.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">toggle_crosshair</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span></dt>
+<dd><p>Shows or hides the crosshair in the 2D views.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">toggle_maximised</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">view</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Makes a view fill the window, or, if it already does, shows all four.</p>
+<p>The view filling the window is also selected, so the shortcuts act on it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>view</strong> – The view.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If view is not a ViewKind.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">toggle_overlay</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span></dt>
+<dd><p>Shows or hides the text and colour bars drawn over the views.</p>
+<p>The text is the orientation letters at the edges and the crosshair’s
+readout.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">use_as_bundle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tissue</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'WM'</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Makes a loaded tractogram a bundle of the phantom, its streamlines as is.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>item_id</strong> – The tractogram item.</p></li>
+<li><p><strong>tissue</strong> – The tissue that fills it.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If no phantom is open, or the item or tissue is unknown.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">view_centre</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">view</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Returns the world position at the centre of a 2D view, in its slice plane.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>view</strong> – <code class="docutils literal notranslate"><span class="pre">ViewKind.AXIAL</span></code>, <code class="docutils literal notranslate"><span class="pre">CORONAL</span></code> or <code class="docutils literal notranslate"><span class="pre">SAGITTAL</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The position (x, y, z) in mm, RAS+.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If view is not a ViewKind.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If view is the 3D view.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">zoom</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">about</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Zooms a view in or out, keeping a point where it is on the screen.</p>
+<p>The zoom stays within <code class="docutils literal notranslate"><span class="pre">ZOOM_RANGE</span></code> (0.25 to 64 times the field of view at
+zoom 1). The 3D view always zooms about its centre.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>view</strong> – The view to zoom.</p></li>
+<li><p><strong>factor</strong> – How much to multiply the zoom by: above 1 zooms in, below 1
+zooms out.</p></li>
+<li><p><strong>about</strong> – The world position (mm) that stays in place, such as the
+point under the mouse; the view’s centre if None. Not allowed
+for the 3D view.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If view is not a ViewKind.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If factor is not a positive number, about is not three
+finite numbers, or about is given for the 3D view.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

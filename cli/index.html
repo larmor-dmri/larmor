@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="Every command and option of lar, the Larmor command line for diffusion MRI: DTI, DKI, denoising, FODs, peaks, tracking and connectomes." name="description" />
+<meta property="og:title" content="Command-line reference" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://larmor.org/cli/" />
+<meta property="og:site_name" content="Larmor" />
+<meta property="og:description" content="Every command and option of lar, the Larmor command line for diffusion MRI: DTI, DKI, denoising, FODs, peaks, tracking and connectomes." />
+<meta property="og:image" content="https://larmor.org/_static/larmor-card.png" />
+<meta property="og:image:alt" content="Larmor: a Python library and viewer for diffusion MRI" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<title>Command-line reference - Larmor</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=c83e6b79" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/larmor.css?v=f0153430" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="../_static/documentation_options.js?v=b21b538c"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/sg-tags.js?v=d80f6fa4"></script>
+    <script defer="defer" src="../_static/larmor-carousel.js?v=7f65fbb2"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'cli';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://larmor.org/versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.0.0';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://larmor.org/cli/" />
+    <link rel="icon" href="../_static/larmor-symbol.svg"/>
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="Python API" href="../reference/api/" />
+    <link rel="prev" title="Reference" href="../reference/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="2.0" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+<link rel="icon" type="image/png" sizes="32x32" href="../_static/favicon-32.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="../_static/apple-touch-icon.png" />
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search/"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/larmor-symbol.svg" class="logo__image only-light" alt=""/>
+    <img src="../_static/larmor-symbol.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">Larmor</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../install/">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quick-start/">
+    Quick start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../simulation/">
+    Simulation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../gallery/">
+    Gallery
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guides/">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../viewer/">
+    Viewer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../background/">
+    Background
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../reference/">
+    Reference
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../agents/">
+    Agents
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../about/">
+    About
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+      
+        <div class="navbar-item">
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../install/">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quick-start/">
+    Quick start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../simulation/">
+    Simulation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../gallery/">
+    Gallery
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guides/">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../viewer/">
+    Viewer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../background/">
+    Background
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../reference/">
+    Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../agents/">
+    Agents
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../about/">
+    About
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button type="button" id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">Command line</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../reference/api/">Python API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../reference/api/larmor/">larmor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../reference/api/types/">larmor.types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../reference/api/io/">larmor.io</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../reference/api/io-formats/">larmor.io.formats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../reference/api/dwi/">larmor.dwi</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../reference/api/sd/">larmor.sd</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../reference/api/tractography/">larmor.tractography</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../reference/api/registration/">larmor.registration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../reference/api/simulation/">larmor.simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../reference/api/plot/">larmor.plot</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../reference/api/surfaces/">larmor.surfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../reference/api/data/">larmor.data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../reference/api/viewer/">larmor.viewer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/file-formats/">File formats</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../reference/" class="nav-link">Reference</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Command-line reference</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="lar">
+<h1><code class="docutils literal notranslate"><span class="pre">lar</span></code><a class="headerlink" href="#lar" title="Link to this heading">#</a></h1>
+<p>Command line tools of Larmor, for diffusion MRI analysis, tractography and simulation.</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>lar<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>COMMAND<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>...
+</pre></div>
+</div>
+<p><strong>Options</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--version</span></code>: Show the version and exit.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--install-completion</span></code>: Install completion for the current shell.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--show-completion</span></code>: Show completion for the current shell, to copy it or customize the installation.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--help</span></code>: Show this message and exit.</p></li>
+</ul>
+<p><strong>Commands</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">dti</span></code>: Fit the diffusion tensor (DTI) in every…</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dki</span></code>: Fit diffusion kurtosis imaging (DKI) to…</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">denoise</span></code>: Denoise a DWI volume with MP-PCA and…</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mask</span></code>: Compute a binary brain mask from the mean…</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">degibbs</span></code>: Remove Gibbs ringing from an image by…</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fod</span></code>: Estimate fibre orientation distributions…</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">info</span></code>: Print a short summary of an image or a…</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">convert</span></code>: Convert an image or a tractogram to…</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sh-convert</span></code>: Convert an FOD image from one spherical…</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">peaks</span></code>: Find the peaks (local maxima) of an FOD…</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">track</span></code>: Track streamlines through an FOD image.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tract-edit</span></code>: Select, crop and resample the streamlines…</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tract-profile</span></code>: Write the profile of maps (FA, MD and so…</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tract-density</span></code>: Compute a track density image, the number…</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">connectome</span></code>: Count the streamlines between each pair of…</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">transform</span></code>: Apply an ANTs, FSL or MRtrix3 registration…</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">simulate</span></code>: Simulate the diffusion-weighted images of…</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bv</span></code>: Open the Larmor viewer, with the given…</p></li>
+</ul>
+<section id="lar-dti">
+<h2><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">dti</span></code><a class="headerlink" href="#lar-dti" title="Link to this heading">#</a></h2>
+<p>Fit the diffusion tensor (DTI) in every voxel and write its maps.</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>lar<span class="w"> </span>dti<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">{</span>volume<span class="o">}</span><span class="w"> </span><span class="o">{</span>output<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Arguments</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">volume</span></code>: Path to the diffusion volume (.nii, .nii.gz, .mif, .mif.gz or .mih).  [required]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output</span></code>: Prefix of the output maps. ‘out’ writes the fractional anisotropy to out_fa.nii.gz, the mean, axial and radial diffusivity in mm^2/s to out_md, out_ad and out_rd, the principal eigenvector to out_pe and a mask of the voxels whose tensor is not positive definite to out_npd, all as .nii.gz. The eigenvector is in world coordinates (RAS), not in the voxel frame of the image.  [required]</p></li>
+</ul>
+<p><strong>Options</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--bvals</span> <span class="pre">&lt;str&gt;</span></code>: Path to the b-values file. It is not needed for a .mif file with a gradient table in its header; given with such a file, –bvals and –bvecs replace that table.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--bvecs</span> <span class="pre">&lt;str&gt;</span></code>: Path to the b-vectors file. It is not needed for a .mif file with a gradient table in its header; given with such a file, –bvals and –bvecs replace that table.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--bvec-frame</span> <span class="pre">&lt;fsl|world&gt;</span></code>: Coordinate frame of the b-vectors. ‘fsl’ means the frame of FSL bvecs files, along the image axes with x flipped when the affine determinant is positive, and ‘world’ means scanner coordinates (RAS).  [default: fsl]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-m,</span> <span class="pre">--mask</span> <span class="pre">&lt;str&gt;</span></code>: Brain mask; voxels outside it are not fitted. Without it, a mask is computed from the mean b = 0 image.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--fit</span> <span class="pre">&lt;ols|wls&gt;</span></code>: Fitting method. ‘ols’ is ordinary least squares, and ‘wls’ is iterated weighted least squares, weighted by the predicted signal.  [default: ols]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--force</span></code>: Overwrite existing output files. Without it, the command stops before any work when an output exists.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--nt</span> <span class="pre">&lt;int&gt;</span></code>: Number of threads; -1 uses all CPU cores.  [default: -1]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--quiet</span></code>: Show only errors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--info</span></code>: Show progress and informational messages.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--debug</span></code>: Show debug messages and full tracebacks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--help</span></code>: Show this message and exit.</p></li>
+</ul>
+</section>
+<section id="lar-dki">
+<h2><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">dki</span></code><a class="headerlink" href="#lar-dki" title="Link to this heading">#</a></h2>
+<p>Fit diffusion kurtosis imaging (DKI) to multi-shell data and write its maps.</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>lar<span class="w"> </span>dki<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">{</span>volume<span class="o">}</span><span class="w"> </span><span class="o">{</span>output<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Arguments</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">volume</span></code>: Path to the diffusion volume (.nii, .nii.gz, .mif, .mif.gz or .mih).  [required]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output</span></code>: Prefix of the output maps. ‘out’ writes the tensor maps of lar dti (out_fa, out_md, out_ad, out_rd, out_pe and out_npd) and the mean, axial and radial kurtosis and the kurtosis anisotropy to out_mk, out_ak, out_rk and out_ka, all as .nii.gz.  [required]</p></li>
+</ul>
+<p><strong>Options</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--bvals</span> <span class="pre">&lt;str&gt;</span></code>: Path to the b-values file. It is not needed for a .mif file with a gradient table in its header; given with such a file, –bvals and –bvecs replace that table.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--bvecs</span> <span class="pre">&lt;str&gt;</span></code>: Path to the b-vectors file. It is not needed for a .mif file with a gradient table in its header; given with such a file, –bvals and –bvecs replace that table.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--bvec-frame</span> <span class="pre">&lt;fsl|world&gt;</span></code>: Coordinate frame of the b-vectors. ‘fsl’ means the frame of FSL bvecs files, along the image axes with x flipped when the affine determinant is positive, and ‘world’ means scanner coordinates (RAS).  [default: fsl]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-m,</span> <span class="pre">--mask</span> <span class="pre">&lt;str&gt;</span></code>: Brain mask; voxels outside it are not fitted. Without it, a mask is computed from the mean b = 0 image.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--fit</span> <span class="pre">&lt;ols|wls&gt;</span></code>: Fitting method. ‘wls’ is iterated weighted least squares, weighted by the predicted signal, and ‘ols’ is ordinary least squares.  [default: wls]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--unconstrained</span></code>: Fit without constraints. By default, the diffusivity D(n) and the kurtosis K(n) along every direction n are kept within D(n) &gt;= 0 and 0 &lt;= K(n) &lt;= 3 / (b_max D(n)).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--force</span></code>: Overwrite existing output files. Without it, the command stops before any work when an output exists.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--nt</span> <span class="pre">&lt;int&gt;</span></code>: Number of threads; -1 uses all CPU cores.  [default: -1]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--quiet</span></code>: Show only errors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--info</span></code>: Show progress and informational messages.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--debug</span></code>: Show debug messages and full tracebacks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--help</span></code>: Show this message and exit.</p></li>
+</ul>
+</section>
+<section id="lar-denoise">
+<h2><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">denoise</span></code><a class="headerlink" href="#lar-denoise" title="Link to this heading">#</a></h2>
+<p>Denoise a DWI volume with MP-PCA and estimate its noise level.</p>
+<p>MP-PCA (Marchenko-Pastur principal component analysis) removes, in each
+patch of voxels, the signal components that cannot be told apart from noise.</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>lar<span class="w"> </span>denoise<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">{</span>volume<span class="o">}</span><span class="w"> </span><span class="o">{</span>output<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Arguments</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">volume</span></code>: Path to the diffusion volume (.nii, .nii.gz, .mif, .mif.gz or .mih).  [required]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output</span></code>: Path of the denoised volume. A .mif output keeps the gradient table of a .mif input; any other output has none.  [required]</p></li>
+</ul>
+<p><strong>Options</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--noise</span> <span class="pre">&lt;str&gt;</span></code>: Also write the noise map, the estimated noise standard deviation (sigma) of each voxel, to this path.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-m,</span> <span class="pre">--mask</span> <span class="pre">&lt;str&gt;</span></code>: Denoise only the voxels inside this mask and set the others to 0. Without it, every voxel is denoised.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--patch-size</span> <span class="pre">&lt;int&gt;</span></code>: Width in voxels, odd, of the cubic patch denoised around each voxel. Defaults to the smallest odd width whose cube is at least the number of volumes (5 for up to 125 volumes, 7 for up to 343).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--force</span></code>: Overwrite existing output files. Without it, the command stops before any work when an output exists.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--nt</span> <span class="pre">&lt;int&gt;</span></code>: Number of threads; -1 uses all CPU cores.  [default: -1]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--quiet</span></code>: Show only errors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--info</span></code>: Show progress and informational messages.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--debug</span></code>: Show debug messages and full tracebacks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--help</span></code>: Show this message and exit.</p></li>
+</ul>
+</section>
+<section id="lar-mask">
+<h2><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">mask</span></code><a class="headerlink" href="#lar-mask" title="Link to this heading">#</a></h2>
+<p>Compute a binary brain mask from the mean b = 0 image of a DWI volume.</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>lar<span class="w"> </span>mask<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">{</span>volume<span class="o">}</span><span class="w"> </span><span class="o">{</span>output<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Arguments</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">volume</span></code>: Path to the diffusion volume (.nii, .nii.gz, .mif, .mif.gz or .mih).  [required]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output</span></code>: Path of the mask image to write.  [required]</p></li>
+</ul>
+<p><strong>Options</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--bvals</span> <span class="pre">&lt;str&gt;</span></code>: Path to the b-values file. It is not needed for a .mif file with a gradient table in its header; given with such a file, –bvals and –bvecs replace that table.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--bvecs</span> <span class="pre">&lt;str&gt;</span></code>: Path to the b-vectors file. It is not needed for a .mif file with a gradient table in its header; given with such a file, –bvals and –bvecs replace that table.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--bvec-frame</span> <span class="pre">&lt;fsl|world&gt;</span></code>: Coordinate frame of the b-vectors. ‘fsl’ means the frame of FSL bvecs files, along the image axes with x flipped when the affine determinant is positive, and ‘world’ means scanner coordinates (RAS).  [default: fsl]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--force</span></code>: Overwrite existing output files. Without it, the command stops before any work when an output exists.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--quiet</span></code>: Show only errors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--info</span></code>: Show progress and informational messages.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--debug</span></code>: Show debug messages and full tracebacks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--help</span></code>: Show this message and exit.</p></li>
+</ul>
+</section>
+<section id="lar-degibbs">
+<h2><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">degibbs</span></code><a class="headerlink" href="#lar-degibbs" title="Link to this heading">#</a></h2>
+<p>Remove Gibbs ringing from an image by local sub-voxel shifts.</p>
+<p>Each voxel is resampled at the sub-voxel shift that minimises the ringing
+around it.</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>lar<span class="w"> </span>degibbs<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">{</span>volume<span class="o">}</span><span class="w"> </span><span class="o">{</span>output<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Arguments</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">volume</span></code>: Image to correct, 3D or 4D (.nii, .nii.gz, .mif, .mif.gz or .mih).  [required]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output</span></code>: Path of the corrected image.  [required]</p></li>
+</ul>
+<p><strong>Options</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--slice-axis</span> <span class="pre">&lt;int</span> <span class="pre">range&gt;</span></code>: Voxel axis (0, 1 or 2) along which the slices were acquired. The ringing is removed within each slice, along the other two axes.  [default: 2; 0&lt;=x&lt;=2]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--shifts</span> <span class="pre">&lt;int</span> <span class="pre">range&gt;</span></code>: Number of sub-voxel shifts tried on each side of zero, spaced 1 / (2 x shifts) voxel apart.  [default: 20; x&gt;=1]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--window</span> <span class="pre">&lt;int</span> <span class="pre">int&gt;...</span></code>: Distances in voxels of the nearest and the farthest neighbours over which the ringing around each voxel is measured.  [default: 1, 3]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--force</span></code>: Overwrite existing output files. Without it, the command stops before any work when an output exists.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--nt</span> <span class="pre">&lt;int&gt;</span></code>: Number of threads; -1 uses all CPU cores.  [default: -1]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--quiet</span></code>: Show only errors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--info</span></code>: Show progress and informational messages.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--debug</span></code>: Show debug messages and full tracebacks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--help</span></code>: Show this message and exit.</p></li>
+</ul>
+</section>
+<section id="lar-fod">
+<h2><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">fod</span></code><a class="headerlink" href="#lar-fod" title="Link to this heading">#</a></h2>
+<p>Estimate fibre orientation distributions (FODs) by spherical deconvolution.</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>lar<span class="w"> </span>fod<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">{</span>volume<span class="o">}</span><span class="w"> </span><span class="o">{</span>mask<span class="o">}</span><span class="w"> </span><span class="o">{</span>output<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Arguments</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">volume</span></code>: Path to the diffusion volume (.nii, .nii.gz, .mif, .mif.gz or .mih).  [required]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mask</span></code>: Path to a brain mask on the grid of the diffusion volume.  [required]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output</span></code>: Prefix of the output files. ‘out’ writes the FOD to out.nii.gz. A fit with a NODDI grey matter response (–gm-rf noddi, the default for mFOD) writes two FODs instead, to out_fod1.nii.gz and out_fod2.nii.gz. A multi-tissue fit also writes the tissue fractions to out_tissue_fraction.nii.gz.  [required]</p></li>
+</ul>
+<p><strong>Options</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--bvals</span> <span class="pre">&lt;str&gt;</span></code>: Path to the b-values file. It is not needed for a .mif file with a gradient table in its header; given with such a file, –bvals and –bvecs replace that table.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--bvecs</span> <span class="pre">&lt;str&gt;</span></code>: Path to the b-vectors file. It is not needed for a .mif file with a gradient table in its header; given with such a file, –bvals and –bvecs replace that table.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--method</span> <span class="pre">&lt;grl|mfod|csd|msmt-csd&gt;</span></code>: Spherical deconvolution method. GRL is generalised Richardson-Lucy, mFOD fits one FOD per anisotropic response, CSD is constrained spherical deconvolution of one shell and MSMT-CSD is multi-shell multi-tissue CSD.  [default: GRL]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--solver</span> <span class="pre">&lt;drl|l2nnls|lasso&gt;</span></code>: Solver of GRL and mFOD. dRL is damped Richardson-Lucy, L2NNLS is non-negative least squares with an L2 penalty, and LASSO has an L1 penalty. Defaults to dRL for GRL and L2NNLS for mFOD.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--reg</span> <span class="pre">&lt;float&gt;</span></code>: Weight of the penalty of the L2NNLS and LASSO solvers. Defaults to the solver’s own value.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--inner-shell-weight</span> <span class="pre">&lt;float&gt;</span></code>: Weight, above 0 and at most 1, of the measurements outside the highest shell in a multi-tissue GRL or mFOD fit; the highest shell has weight 1. Defaults to 0.2 for GRL and 1 for mFOD.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--bvec-frame</span> <span class="pre">&lt;fsl|world&gt;</span></code>: Coordinate frame of the b-vectors. ‘fsl’ means the frame of FSL bvecs files, along the image axes with x flipped when the affine determinant is positive, and ‘world’ means scanner coordinates (RAS).  [default: fsl]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--lmax</span> <span class="pre">&lt;int&gt;</span></code>: Maximum spherical harmonic (SH) degree of the FOD, even and at least 2. GRL and mFOD lower it when the highest shell has too few directions, and MSMT-CSD lowers it to that of the white matter response; CSD keeps it.  [default: 8]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--wm-rf</span> <span class="pre">&lt;float</span> <span class="pre">float</span> <span class="pre">float&gt;...</span></code>: Eigenvalues in mm^2/s of the white matter response of GRL and mFOD, the first along the fibre, such as 1.7e-3 0.2e-3 0.2e-3. Without it, the response is estimated from the data in the mask.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--gm-rf</span> <span class="pre">&lt;float|none|noddi|auto&gt;</span></code>: Grey matter response of GRL and mFOD: an isotropic diffusivity in mm^2/s, ‘none’ to leave grey matter out, or ‘noddi’ for an anisotropic NODDI response with its own FOD. ‘auto’ means ‘noddi’ for mFOD and 0.7e-3 for GRL.  [default: auto]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--csf-rf</span> <span class="pre">&lt;float|none&gt;</span></code>: Isotropic diffusivity in mm^2/s of the CSF response of GRL and mFOD, or ‘none’ to leave CSF out.  [default: 0.003]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--mk</span> <span class="pre">&lt;float&gt;</span></code>: Mean kurtosis of the white matter response of GRL and mFOD. Defaults to the kurtosis estimated with the response (0 with fewer than two shells above b = 500), or to 0 with –wm-rf.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--response</span> <span class="pre">&lt;file&gt;</span></code>: White matter response for CSD, a text file of zonal SH coefficients with one row per shell, as MRtrix3’s dwi2response writes it. Without it, the response is estimated from the single-fibre voxels in the mask.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--wm-response</span> <span class="pre">&lt;file&gt;</span></code>: White matter response for MSMT-CSD, a text file with one row per shell, as MRtrix3’s dwi2response writes it. Without any of the three responses, all three are estimated from the data in the mask; –gm-response and –csf-response need –wm-response.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--gm-response</span> <span class="pre">&lt;file&gt;</span></code>: Grey matter response for MSMT-CSD, a text file with one row per shell, as MRtrix3’s dwi2response writes it. Without any of the three responses, all three are estimated from the data in the mask; –gm-response and –csf-response need –wm-response.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--csf-response</span> <span class="pre">&lt;file&gt;</span></code>: CSF response for MSMT-CSD, a text file with one row per shell, as MRtrix3’s dwi2response writes it. Without any of the three responses, all three are estimated from the data in the mask; –gm-response and –csf-response need –wm-response.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--basis</span> <span class="pre">&lt;tournier|descoteaux|leemans&gt;</span></code>: SH basis to write the FOD in. The file does not record it, so give the same basis to the commands that read the FOD.  [default: tournier]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--force</span></code>: Overwrite existing output files. Without it, the command stops before any work when an output exists.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--nt</span> <span class="pre">&lt;int&gt;</span></code>: Number of threads; -1 uses all CPU cores.  [default: -1]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--quiet</span></code>: Show only errors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--info</span></code>: Show progress and informational messages.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--debug</span></code>: Show debug messages and full tracebacks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--help</span></code>: Show this message and exit.</p></li>
+</ul>
+</section>
+<section id="lar-info">
+<h2><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">info</span></code><a class="headerlink" href="#lar-info" title="Link to this heading">#</a></h2>
+<p>Print a short summary of an image or a tractogram.</p>
+<p>For an image, the summary comes from the header: its shape, voxel size,
+orientation and affine, and the shells of a MIF gradient table. For a
+tractogram, the whole file is read to count its streamlines and points and
+list the data stored with them.</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>lar<span class="w"> </span>info<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">{</span>path<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Arguments</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">path</span></code>: Path to an image or tractogram file.  [required]</p></li>
+</ul>
+<p><strong>Options</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--quiet</span></code>: Show only errors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--info</span></code>: Show progress and informational messages.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--debug</span></code>: Show debug messages and full tracebacks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--help</span></code>: Show this message and exit.</p></li>
+</ul>
+</section>
+<section id="lar-convert">
+<h2><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">convert</span></code><a class="headerlink" href="#lar-convert" title="Link to this heading">#</a></h2>
+<p>Convert an image or a tractogram to another file format of the same kind.</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>lar<span class="w"> </span>convert<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">{</span>input_path<span class="o">}</span><span class="w"> </span><span class="o">{</span>output_path<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Arguments</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">input_path</span></code>: Path to the image or tractogram to convert, or a MATLAB .mat file with an MRIToolkit result (a DTI or DKI fit, a GRL or mFOD result, or tractography).  [required]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output_path</span></code>: Path of the converted file, of the same kind (image or tractogram) as the input; its extension sets the format. A .mat input also writes files next to it, with the same extension. From a DTI or DKI fit, ‘out.nii.gz’ receives the DWI, and out_fa, out_md, out_ad, out_rd, out_pe, out_dt and, for DKI, out_kt receive the maps. From a GRL or mFOD result, ‘out.nii.gz’ receives the FOD in the tournier basis (out_fod1, out_fod2 and so on for several FODs), and out_tissue_fraction and out_rss receive the tissue fractions and the residual sum of squares.  [required]</p></li>
+</ul>
+<p><strong>Options</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--bvals</span> <span class="pre">&lt;str&gt;</span></code>: b-values file of the input image, given with –bvecs. The gradient table goes into the header of a .mif output, and to –bvals-out and –bvecs-out if they are given.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--bvecs</span> <span class="pre">&lt;str&gt;</span></code>: b-vectors file of the input image, given with –bvals.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--bvec-frame</span> <span class="pre">&lt;fsl|world&gt;</span></code>: Coordinate frame of the b-vectors. ‘fsl’ means the frame of FSL bvecs files, along the image axes with x flipped when the affine determinant is positive, and ‘world’ means scanner coordinates (RAS).  [default: fsl]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--bvals-out</span> <span class="pre">&lt;path&gt;</span></code>: Write the b-values of the gradient table to this file, in FSL format. Give it with –bvecs-out.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--bvecs-out</span> <span class="pre">&lt;path&gt;</span></code>: Write the b-vectors of the gradient table to this file, in FSL format. Give it with –bvals-out.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--reference</span> <span class="pre">&lt;path&gt;</span></code>: Image whose grid a .trk output is written for, or that a .trk input is checked against. It is needed for a .trk output unless the input is a .trk, and for MRIToolkit tracts and GRL or mFOD results (.mat), which store no grid; for these, give the fit (.mat) they came from, or a NIfTI or MIF file of its image.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--to-ras</span></code>: Reorient an image to the closest RAS orientation by permuting and flipping its voxel axes; every voxel keeps its world position.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--vtk-space</span> <span class="pre">&lt;RAS|LPS&gt;</span></code>: Space of the points of a .vtk or .fib input, RAS or LPS (x and y negated); LPS is converted to RAS. Defaults to the SPACE= tag of the file’s title line, or to RAS for a file without one.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--force</span></code>: Overwrite existing output files. Without it, the command stops before any work when an output exists.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--quiet</span></code>: Show only errors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--info</span></code>: Show progress and informational messages.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--debug</span></code>: Show debug messages and full tracebacks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--help</span></code>: Show this message and exit.</p></li>
+</ul>
+</section>
+<section id="lar-sh-convert">
+<h2><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">sh-convert</span></code><a class="headerlink" href="#lar-sh-convert" title="Link to this heading">#</a></h2>
+<p>Convert an FOD image from one spherical harmonic (SH) basis to another.</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>lar<span class="w"> </span>sh-convert<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">{</span>input_path<span class="o">}</span><span class="w"> </span><span class="o">{</span>output_path<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Arguments</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">input_path</span></code>: Path to the FOD image, with its spherical harmonic (SH) coefficients along the 4th axis.  [required]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output_path</span></code>: Path of the converted FOD image.  [required]</p></li>
+</ul>
+<p><strong>Options</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--from</span> <span class="pre">&lt;tournier|descoteaux|leemans&gt;</span></code>: SH basis the input is stored in, which the file does not record.  [required]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--to</span> <span class="pre">&lt;tournier|descoteaux|leemans&gt;</span></code>: SH basis to convert to.  [required]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--force</span></code>: Overwrite existing output files. Without it, the command stops before any work when an output exists.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--quiet</span></code>: Show only errors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--info</span></code>: Show progress and informational messages.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--debug</span></code>: Show debug messages and full tracebacks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--help</span></code>: Show this message and exit.</p></li>
+</ul>
+</section>
+<section id="lar-peaks">
+<h2><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">peaks</span></code><a class="headerlink" href="#lar-peaks" title="Link to this heading">#</a></h2>
+<p>Find the peaks (local maxima) of an FOD image in every voxel.</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>lar<span class="w"> </span>peaks<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">{</span>fod_path<span class="o">}</span><span class="w"> </span><span class="o">{</span>output_path<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Arguments</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">fod_path</span></code>: Path to the FOD image, with its spherical harmonic (SH) coefficients along the 4th axis. An FOD that stores all SH degrees, not only the even ones, is read as asymmetric.  [required]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output_path</span></code>: Path of the peaks image. Each peak takes three volumes, the x, y and z of its direction in world coordinates (RAS), scaled by its amplitude, largest peak first; unused volumes are NaN. For an asymmetric FOD, a peak and its opposite are two peaks, and the sign of a direction matters.  [required]</p></li>
+</ul>
+<p><strong>Options</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">-m,</span> <span class="pre">--mask</span> <span class="pre">&lt;path&gt;</span></code>: Only find peaks inside this mask; voxels outside it are NaN.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--basis</span> <span class="pre">&lt;tournier|descoteaux|leemans&gt;</span></code>: SH basis the FOD is stored in, which the file does not record.  [default: tournier]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--num</span> <span class="pre">&lt;int&gt;</span></code>: Maximum number of peaks per voxel. Defaults to 3, or to 6 for an asymmetric FOD.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--relative-threshold</span> <span class="pre">&lt;float&gt;</span></code>: Drop peaks whose amplitude is below this fraction, from 0 to 1, of the voxel’s largest peak. Defaults to 0.2 for GRL and mFOD FODs and 0.1 for CSD and MSMT-CSD ones (see –fod-method).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--fod-method</span> <span class="pre">&lt;grl|mfod|csd|msmt-csd&gt;</span></code>: Method that fitted the FOD, as given to lar fod –method, which the file does not record. It sets the default –relative-threshold. Give CSD for FODs from other software.  [default: GRL]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--threshold</span> <span class="pre">&lt;float&gt;</span></code>: Drop peaks whose amplitude is below this value.  [default: 0.0]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--force</span></code>: Overwrite existing output files. Without it, the command stops before any work when an output exists.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--nt</span> <span class="pre">&lt;int&gt;</span></code>: Number of threads; -1 uses all CPU cores.  [default: -1]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--quiet</span></code>: Show only errors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--info</span></code>: Show progress and informational messages.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--debug</span></code>: Show debug messages and full tracebacks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--help</span></code>: Show this message and exit.</p></li>
+</ul>
+</section>
+<section id="lar-track">
+<h2><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">track</span></code><a class="headerlink" href="#lar-track" title="Link to this heading">#</a></h2>
+<p>Track streamlines through an FOD image.</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>lar<span class="w"> </span>track<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">{</span>fod_path<span class="o">}</span><span class="w"> </span><span class="o">{</span>output_path<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Arguments</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">fod_path</span></code>: Path to the FOD image, with its spherical harmonic (SH) coefficients along the 4th axis. An FOD that stores all SH degrees, not only the even ones, is read as asymmetric.  [required]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output_path</span></code>: Path of the tractogram, .tck or .trk, written while tracking runs. A .trk file also stores why each streamline ended.  [required]</p></li>
+</ul>
+<p><strong>Options</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--algorithm</span> <span class="pre">&lt;det|prob&gt;</span></code>: Tracking algorithm. ‘det’ (deterministic) follows the FOD peak nearest the current direction, and ‘prob’ (probabilistic) draws each new direction at random from the FOD.  [default: det]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--seed-image</span> <span class="pre">&lt;path&gt;</span></code>: Start streamlines at random positions inside this mask until –select streamlines are accepted. Give exactly one of –seed-image, –seed-random-per-voxel and –seed-file.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--seed-random-per-voxel</span> <span class="pre">&lt;path</span> <span class="pre">int&gt;...</span></code>: Takes a mask image and a number N, and starts streamlines from N random positions in every voxel of the mask.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--seed-file</span> <span class="pre">&lt;path&gt;</span></code>: Start streamlines from the seeds in a file written by –output-seeds. With the same –seed, it tracks the same streamlines again.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--select</span> <span class="pre">&lt;int&gt;</span></code>: Track until this many streamlines are accepted. It is required with –seed-image; without it, the other seed options track every seed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-m,</span> <span class="pre">--mask</span> <span class="pre">&lt;path&gt;</span></code>: Tracking mask. A streamline stops where it leaves the mask, and a point is inside where the mask’s nearest voxel is at least 0.5.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--unidirectional</span></code>: Track from each seed in one direction only, not both.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--step-size</span> <span class="pre">&lt;float&gt;</span></code>: Step size in mm. Defaults to 0.1 x the voxel size.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--angle</span> <span class="pre">&lt;float&gt;</span></code>: Maximum angle between two consecutive steps, in degrees. The same angle allows tighter curves at a smaller step. Defaults to 15 for prob, and for det to the angle that allows curves down to a radius of 0.65 x the voxel size, 2 asin(step / (1.3 x voxel)), about 8.8 degrees at the default step.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--min-length</span> <span class="pre">&lt;float&gt;</span></code>: Reject streamlines shorter than this length, in mm. Defaults to 5 x the voxel size.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--max-length</span> <span class="pre">&lt;float&gt;</span></code>: Stop streamlines when they reach this length, in mm. Defaults to 100 x the voxel size.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--cutoff</span> <span class="pre">&lt;str&gt;</span></code>: FOD amplitude below which a streamline stops, a number or ‘auto’. ‘auto’ is 0.2 x the mean largest FOD peak of a fixed random sample of up to 5000 voxels, inside the tracking mask if one is given.  [default: auto]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--basis</span> <span class="pre">&lt;tournier|descoteaux|leemans&gt;</span></code>: SH basis the FOD is stored in, which the file does not record.  [default: tournier]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--seed</span> <span class="pre">&lt;int&gt;</span></code>: Seed of the random number generator, from 0 to 2^64 - 1. The same seed gives the same tractogram, whatever the number of threads. Without it, a seed is drawn at random; –info shows it and –json saves it.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--json</span> <span class="pre">&lt;path&gt;</span></code>: Save a record of the run as JSON: every parameter used, the counts of seeds and streamlines, and the software versions.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--output-seeds</span> <span class="pre">&lt;path&gt;</span></code>: Save the seed point of each accepted streamline, in the order of the output, to a file that –seed-file reads.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--force</span></code>: Overwrite existing output files. Without it, the command stops before any work when an output exists.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--nt</span> <span class="pre">&lt;int&gt;</span></code>: Number of threads; -1 uses all CPU cores.  [default: -1]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--quiet</span></code>: Show only errors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--info</span></code>: Show progress and informational messages.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--debug</span></code>: Show debug messages and full tracebacks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--help</span></code>: Show this message and exit.</p></li>
+</ul>
+</section>
+<section id="lar-tract-edit">
+<h2><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">tract-edit</span></code><a class="headerlink" href="#lar-tract-edit" title="Link to this heading">#</a></h2>
+<p>Select, crop and resample the streamlines of one or more tractograms.</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>lar<span class="w"> </span>tract-edit<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">{</span>INPUT...<span class="w"> </span>OUTPUT<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Arguments</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">INPUT...</span> <span class="pre">OUTPUT</span></code>: One or more input tractograms, joined in the order given, then the output tractogram. Each file can be .tck, .trk, .vtk or .fib, also gzipped (.gz); an input can also be MRIToolkit tracts (.mat).  [required]</p></li>
+</ul>
+<p><strong>Options</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--include</span> <span class="pre">&lt;str&gt;</span></code>: Keep the streamlines that pass through this region. A region is a sphere x,y,z,r in mm (world coordinates) or a mask image; repeat the option for several regions.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--include-ordered</span> <span class="pre">&lt;str&gt;</span></code>: Keep the streamlines that pass through these regions in the order given. A region is a sphere x,y,z,r in mm (world coordinates) or a mask image; repeat the option for several regions.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--exclude</span> <span class="pre">&lt;str&gt;</span></code>: Drop the streamlines that pass through this region. A region is a sphere x,y,z,r in mm (world coordinates) or a mask image; repeat the option for several regions.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--within</span> <span class="pre">&lt;str&gt;</span></code>: Keep the streamlines that stay entirely inside this region. A region is a sphere x,y,z,r in mm (world coordinates) or a mask image; repeat the option for several regions.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-m,</span> <span class="pre">--mask</span> <span class="pre">&lt;str&gt;</span></code>: Crop the streamlines to their parts inside these regions. A region is a sphere x,y,z,r in mm (world coordinates) or a mask image; repeat the option for several regions.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--ends-only</span></code>: Test only the two endpoints against –include, –include-ordered, –exclude and –within.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--inverse</span></code>: Invert the selection: keep the streamlines that fail at least one length, weight or region test, and crop them to their parts outside –mask.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--min-length</span> <span class="pre">&lt;float&gt;</span></code>: Keep streamlines at least this long, in mm.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--max-length</span> <span class="pre">&lt;float&gt;</span></code>: Keep streamlines at most this long, in mm.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--min-weight</span> <span class="pre">&lt;float&gt;</span></code>: Keep streamlines with at least this weight. The weights come from –weights-in or from the weight property of .trk inputs.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--max-weight</span> <span class="pre">&lt;float&gt;</span></code>: Keep streamlines with at most this weight.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--skip</span> <span class="pre">&lt;int&gt;</span></code>: Drop the first N selected streamlines.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--every</span> <span class="pre">&lt;int&gt;</span></code>: Keep every N-th selected streamline, starting with the first one after –skip.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--number</span> <span class="pre">&lt;int&gt;</span></code>: Keep the first N selected streamlines.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--subsample</span> <span class="pre">&lt;int&gt;</span></code>: Keep N selected streamlines chosen at random. It cannot be combined with –number.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--seed</span> <span class="pre">&lt;int&gt;</span></code>: Seed of the random choice of –subsample, and valid only with it. The same seed gives the same subset.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--step-size</span> <span class="pre">&lt;float&gt;</span></code>: Resample the output streamlines to this step size, in mm. It cannot be combined with –num-points.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--num-points</span> <span class="pre">&lt;int&gt;</span></code>: Resample the output streamlines to this many points each, at least 2.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--weights-in</span> <span class="pre">&lt;path&gt;</span></code>: Text file with one weight per streamline of a single input, such as the output of tcksift2. It replaces the weight property of a .trk input.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--weights-out</span> <span class="pre">&lt;path&gt;</span></code>: Write the weights of the output streamlines to this file.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--tsf-in</span> <span class="pre">&lt;path&gt;</span></code>: TSF file with one value per point of a single input. The values are named after the file name without its extension. Repeat the option for several files.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--tsf-out</span> <span class="pre">&lt;str&gt;</span></code>: Name of the per-point values to write for the output streamlines, a –tsf-in name or a .trk scalar. They go to &lt;output&gt;_&lt;name&gt;.tsf, where &lt;output&gt; is the output path without its extension. Repeat the option for several names.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--reference</span> <span class="pre">&lt;path&gt;</span></code>: Image whose grid a .trk output is written for; it is needed unless every input is a .trk. MRIToolkit tracts (.mat) store no grid and need it too; for them, give the fit (.mat) they came from, or a NIfTI or MIF file of its image.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--lazy</span></code>: Read, edit and write the streamlines in batches, for files too large for memory. It works with uncompressed .tck and .trk files only, and not with –subsample or TSF files.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--force</span></code>: Overwrite existing output files. Without it, the command stops before any work when an output exists.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--quiet</span></code>: Show only errors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--info</span></code>: Show progress and informational messages.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--debug</span></code>: Show debug messages and full tracebacks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--help</span></code>: Show this message and exit.</p></li>
+</ul>
+</section>
+<section id="lar-tract-profile">
+<h2><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">tract-profile</span></code><a class="headerlink" href="#lar-tract-profile" title="Link to this heading">#</a></h2>
+<p>Write the profile of maps (FA, MD and so on) along a bundle as a CSV table.</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>lar<span class="w"> </span>tract-profile<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">{</span>BUNDLE<span class="w"> </span>MAP...<span class="w"> </span>OUTPUT<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Arguments</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">BUNDLE</span> <span class="pre">MAP...</span> <span class="pre">OUTPUT</span></code>: The bundle (.tck, .trk, .vtk or .fib, also gzipped), then one or more maps (.nii, .nii.gz, .mif, .mif.gz or .mih), then the output table (.csv). Each map’s column in the table is named after its file name.  [required]</p></li>
+</ul>
+<p><strong>Options</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--num-points</span> <span class="pre">&lt;int&gt;</span></code>: Number of points, at least 2, at which the profile samples the bundle.  [default: 100]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--weighting</span> <span class="pre">&lt;gaussian|mean&gt;</span></code>: How the streamlines’ values are averaged at each profile point: ‘gaussian’ weights each streamline by its distance from the bundle’s core, and ‘mean’ weights all streamlines the same.  [default: gaussian]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--start</span> <span class="pre">&lt;str&gt;</span></code>: A point x,y,z in mm (world coordinates) near the end of the bundle where the profile starts. By default, the profile starts at the left, posterior or inferior end along the bundle’s main axis.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--tsf-prefix</span> <span class="pre">&lt;str&gt;</span></code>: Also write TSF files with one value per point of the bundle. &lt;prefix&gt;<em>segment.tsf holds the index of the profile point each point belongs to, and &lt;prefix&gt;</em>&lt;map&gt;.tsf holds the map’s profile value there.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--reference</span> <span class="pre">&lt;path&gt;</span></code>: Image whose grid MRIToolkit tracts (.mat) are read on, since they store none; give the fit (.mat) they came from, or a NIfTI or MIF file of its image.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--force</span></code>: Overwrite existing output files. Without it, the command stops before any work when an output exists.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--nt</span> <span class="pre">&lt;int&gt;</span></code>: Number of threads; -1 uses all CPU cores.  [default: -1]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--quiet</span></code>: Show only errors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--info</span></code>: Show progress and informational messages.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--debug</span></code>: Show debug messages and full tracebacks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--help</span></code>: Show this message and exit.</p></li>
+</ul>
+</section>
+<section id="lar-tract-density">
+<h2><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">tract-density</span></code><a class="headerlink" href="#lar-tract-density" title="Link to this heading">#</a></h2>
+<p>Compute a track density image, the number of streamlines in each voxel.</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>lar<span class="w"> </span>tract-density<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">{</span>tractogram<span class="o">}</span><span class="w"> </span><span class="o">{</span>reference<span class="o">}</span><span class="w"> </span><span class="o">{</span>output<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Arguments</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">tractogram</span></code>: Input tractogram (.tck, .trk, .vtk, .fib, each also .gz).  [required]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reference</span></code>: Image whose grid the density is computed on (.nii, .nii.gz, .mif, .mif.gz, .mih); only its header is read.  [required]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output</span></code>: Path of the density image (.nii, .nii.gz, .mif, .mif.gz, .mih).  [required]</p></li>
+</ul>
+<p><strong>Options</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--voxel-size</span> <span class="pre">&lt;str&gt;</span></code>: Voxel size of the output in mm, one value or three as x,y,z. The output grid then covers the reference’s field of view at this voxel size.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--ends-only</span></code>: Count the two endpoints of the streamlines in each voxel instead (endpoint density).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--weights-in</span> <span class="pre">&lt;path&gt;</span></code>: Text file with one weight per streamline, such as the output of tcksift2. Each streamline then adds its weight instead of 1.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--upsample</span> <span class="pre">&lt;int&gt;</span></code>: Number of pieces each segment between two points of a streamline is split into, at least 1 (1 adds no points). By default, each segment gets the fewest pieces that are shorter than a third of the smallest voxel size. Not used with –ends-only.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--lazy</span></code>: Read the tractogram in batches, for files too large for memory. It works with uncompressed .tck and .trk files only.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--nt</span> <span class="pre">&lt;int&gt;</span></code>: Number of threads; -1 uses all CPU cores.  [default: -1]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--force</span></code>: Overwrite existing output files. Without it, the command stops before any work when an output exists.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--quiet</span></code>: Show only errors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--info</span></code>: Show progress and informational messages.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--debug</span></code>: Show debug messages and full tracebacks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--help</span></code>: Show this message and exit.</p></li>
+</ul>
+</section>
+<section id="lar-connectome">
+<h2><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">connectome</span></code><a class="headerlink" href="#lar-connectome" title="Link to this heading">#</a></h2>
+<p>Count the streamlines between each pair of regions (a structural connectome).</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>lar<span class="w"> </span>connectome<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">{</span>tractogram<span class="o">}</span><span class="w"> </span><span class="o">{</span>parcellation<span class="o">}</span><span class="w"> </span><span class="o">{</span>output<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Arguments</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">tractogram</span></code>: Input tractogram (.tck, .trk, .vtk, .fib, each also .gz).  [required]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">parcellation</span></code>: Parcellation image of integer region labels, with 0 for no region (.nii, .nii.gz, .mif, .mif.gz or .mih). The matrix has a row for every label from 1 to the largest, so relabel sparse labels first.  [required]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output</span></code>: Path of the matrix. A .csv file is comma-separated, with the region names in the first row and column; any other extension gives a space-separated file with the names on a comment line.  [required]</p></li>
+</ul>
+<p><strong>Options</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--lut</span> <span class="pre">&lt;path&gt;</span></code>: Lookup table, in FreeSurfer or MRtrix layout, whose names label the rows and columns. Without it, they are labelled with the label numbers.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--assignment</span> <span class="pre">&lt;radial|end-voxel&gt;</span></code>: How each streamline endpoint is assigned to a region. ‘radial’ takes the labelled voxel whose centre is nearest the endpoint, if it is within –radius (the endpoint’s own voxel included), and no region otherwise; ‘end-voxel’ takes the endpoint’s own voxel only.  [default: radial]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--radius</span> <span class="pre">&lt;float&gt;</span></code>: Search radius of –assignment radial, in mm. Defaults to 4. It cannot be combined with –assignment end-voxel.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--weights-in</span> <span class="pre">&lt;path&gt;</span></code>: Text file with one weight per streamline, such as the output of tcksift2. Each entry is then the sum of the weights instead of the number of streamlines.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--mean-length</span></code>: Make each entry the mean length in mm of the streamlines between the two regions, weighted by –weights-in if given. It cannot be combined with –mean-values.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--mean-values</span> <span class="pre">&lt;path&gt;</span></code>: File with one value per streamline, in the format of a weights file. Each entry is then the mean of these values over the streamlines between the two regions, weighted by –weights-in if given.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--symmetric</span></code>: Write the full symmetric matrix. By default, only the upper triangle is filled and the lower triangle is 0.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--zero-diagonal</span></code>: Set the diagonal (streamlines within one region) to 0.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--assignments-out</span> <span class="pre">&lt;path&gt;</span></code>: Write the two regions assigned to the endpoints of each streamline to this file, one streamline per line.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--nt</span> <span class="pre">&lt;int&gt;</span></code>: Number of threads; -1 uses all CPU cores.  [default: -1]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--force</span></code>: Overwrite existing output files. Without it, the command stops before any work when an output exists.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--quiet</span></code>: Show only errors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--info</span></code>: Show progress and informational messages.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--debug</span></code>: Show debug messages and full tracebacks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--help</span></code>: Show this message and exit.</p></li>
+</ul>
+</section>
+<section id="lar-transform">
+<h2><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">transform</span></code><a class="headerlink" href="#lar-transform" title="Link to this heading">#</a></h2>
+<p>Apply an ANTs, FSL or MRtrix3 registration to an image, tracts or surface.</p>
+<p>An image is resampled onto the reference grid. The points of a tractogram or
+surface are moved into the same space.</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>lar<span class="w"> </span>transform<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">{</span>input_path<span class="o">}</span><span class="w"> </span><span class="o">{</span>output_path<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Arguments</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">input_path</span></code>: File to bring into the reference space, an image, a tractogram (.tck, .trk, .vtk or .fib) or a surface (GIfTI .gii or FreeSurfer).  [required]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output_path</span></code>: Path of the output file, of the same kind as the input.  [required]</p></li>
+</ul>
+<p><strong>Options</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">-t,</span> <span class="pre">--transform</span> <span class="pre">&lt;str&gt;</span></code>: A transform file. Repeat the option for several transforms, in the order in which they map points from the reference space, so the first one applies to the reference grid; for an ANTs registration, this is -t 1Warp.nii.gz -t 0GenericAffine.mat. The files can be ANTs affines (.mat, .txt) and warps (5D NIfTI), FLIRT matrices (.mat), FSL warp fields, and MRtrix3 linear transforms (.txt) and deformation fields. A warp can be given with its inverse as ‘warp.nii.gz,inverse_warp.nii.gz’; otherwise it is inverted numerically where needed.  [required]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--reference</span> <span class="pre">&lt;path&gt;</span></code>: An image of the reference space, usually the fixed image of the registration. Images are resampled onto its grid, and a tractogram or surface takes it as its reference grid. It is needed for an image input and for a .trk output.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--inverse</span></code>: Apply the transforms the other way: bring the input from the reference space into the space of the registration’s moving image.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--interp</span> <span class="pre">&lt;nearest|linear|cubic&gt;</span></code>: Interpolation used to resample an image: ‘nearest’ (for labels), ‘linear’ or ‘cubic’ (B-spline).  [default: linear]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--reorient</span> <span class="pre">&lt;peaks|tensor&gt;</span></code>: Reorient the directions stored in an image. ‘peaks’ is for a peaks image as lar peaks writes it and needs –interp nearest, and ‘tensor’ is for a diffusion tensor image of the 6 elements xx, xy, xz, yy, yz and zz.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--format</span> <span class="pre">&lt;ants|fsl|mrtrix&gt;</span></code>: Tool that wrote the transforms, for files that do not tell, such as a 4D NIfTI warp or a 4x4 text matrix not named .mat and without an MRtrix3 command_history comment, which can come from FSL or MRtrix3.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--warp-type</span> <span class="pre">&lt;deformation|displacement|relative|absolute&gt;</span></code>: How the warp fields store where each voxel comes from. MRtrix3 fields store positions (‘deformation’, the default) or offsets (‘displacement’), and FSL fields relative offsets (‘relative’, the default) or absolute positions (‘absolute’). The type is checked against the field’s values.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--fsl-input</span> <span class="pre">&lt;path&gt;</span></code>: Input image of the FLIRT or FNIRT run, for FSL transforms. Defaults to the input file when it is an image, or to –reference with –inverse.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--fsl-reference</span> <span class="pre">&lt;path&gt;</span></code>: Reference image of the FLIRT run, for FLIRT matrices. Defaults to –reference, or to the input file with –inverse.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--force</span></code>: Overwrite existing output files. Without it, the command stops before any work when an output exists.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--quiet</span></code>: Show only errors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--info</span></code>: Show progress and informational messages.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--debug</span></code>: Show debug messages and full tracebacks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--help</span></code>: Show this message and exit.</p></li>
+</ul>
+</section>
+<section id="lar-simulate">
+<h2><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">simulate</span></code><a class="headerlink" href="#lar-simulate" title="Link to this heading">#</a></h2>
+<p>Simulate the diffusion-weighted images of a phantom.</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>lar<span class="w"> </span>simulate<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">{</span>phantom_path<span class="o">}</span><span class="w"> </span><span class="o">{</span>output_path<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Arguments</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">phantom_path</span></code>: Path to the phantom file (.phantom.json), which describes a voxel grid, its tissues, fibre bundles and a scan protocol. It can also be the name of a phantom that ships with Larmor (crossing), used when no file has that name.  [required]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output_path</span></code>: Output folder, created if needed. It receives the DWI with its bvals and bvecs, the ground truth (tissue and bundle fractions, fibre directions and masks), the bundles as .tck files, a copy of the phantom file and simulation.json, which together are enough to run the simulation again.  [required]</p></li>
+</ul>
+<p><strong>Options</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--shell</span> <span class="pre">&lt;str&gt;</span></code>: A shell as B:N, its b-value B in s/mm^2 and its number of directions N, such as 1000:32. Repeat the option for several shells. The shells replace the gradients of the phantom file.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--num-b0</span> <span class="pre">&lt;int&gt;</span></code>: Number of b = 0 volumes added to the –shell gradients. Defaults to 1.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--bvals</span> <span class="pre">&lt;path&gt;</span></code>: Path to a b-values file, given with –bvecs. The two files replace the gradients of the phantom file.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--bvecs</span> <span class="pre">&lt;path&gt;</span></code>: Path to a b-vectors file, given with –bvals.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--bvec-frame</span> <span class="pre">&lt;fsl|world&gt;</span></code>: Coordinate frame of the –bvecs file. ‘fsl’ means the frame of FSL bvecs files, along the axes of the phantom’s grid with x flipped when the affine determinant is positive, and ‘world’ means RAS coordinates. Defaults to fsl.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--snr</span> <span class="pre">&lt;float&gt;</span></code>: Add Rician noise with this signal-to-noise ratio, relative to the b = 0 signal of the –noise-reference tissue. Without it, no noise is added.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--noise-reference</span> <span class="pre">&lt;str&gt;</span></code>: Name of the phantom tissue whose b = 0 signal –snr refers to.  [default: WM]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--seed</span> <span class="pre">&lt;int&gt;</span></code>: Seed of the random numbers of the noise, the –shell directions and the bundles that have no seed of their own. The same seed gives the same result.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--force</span></code>: Overwrite existing output files. Without it, the command stops before any work when an output exists.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--nt</span> <span class="pre">&lt;int&gt;</span></code>: Number of threads; -1 uses all CPU cores.  [default: -1]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--quiet</span></code>: Show only errors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--info</span></code>: Show progress and informational messages.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--debug</span></code>: Show debug messages and full tracebacks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--help</span></code>: Show this message and exit.</p></li>
+</ul>
+</section>
+<section id="lar-bv">
+<h2><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">bv</span></code><a class="headerlink" href="#lar-bv" title="Link to this heading">#</a></h2>
+<p>Open the Larmor viewer, with the given files loaded.</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>lar<span class="w"> </span>bv<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>files<span class="o">]</span>...
+</pre></div>
+</div>
+<p><strong>Arguments</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">files...</span></code>: Files to open, sorted by extension into tractograms (.tck, .trk, .vtk, .fib), a session (.lar.json) and volumes (any other file). Other .json files are skipped.</p></li>
+</ul>
+<p><strong>Options</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">-v,</span> <span class="pre">--volumes</span> <span class="pre">&lt;path&gt;</span></code>: Volume files, such as a T1 or an FA map. Repeat the option for several files.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-o,</span> <span class="pre">--overlays</span> <span class="pre">&lt;path&gt;</span></code>: Overlay files shown over the volumes, such as masks, maps and parcellations. Repeat the option for several files.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--tracts</span> <span class="pre">&lt;path&gt;</span></code>: Tractogram files. Repeat the option for several files.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-f,</span> <span class="pre">--fods</span> <span class="pre">&lt;path&gt;</span></code>: FOD files, drawn as glyphs in the 2D views, with their SH coefficients along the 4th axis. They are read in the tournier basis unless another basis is chosen in the viewer. Repeat the option for several files.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-p,</span> <span class="pre">--peaks</span> <span class="pre">&lt;path&gt;</span></code>: Peaks files as lar peaks writes them, drawn as lines in the 2D views. Repeat the option for several files.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--surfaces</span> <span class="pre">&lt;path&gt;</span></code>: Surface files, GIfTI (.gii) or FreeSurfer. A FreeSurfer surface such as lh.white is read together with its lh.curv and ../label/lh.cortex.label when they exist. Repeat the option for several files.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--max-streamlines</span> <span class="pre">&lt;int</span> <span class="pre">range&gt;</span></code>: A tractogram with more streamlines is reduced to a random subset of this size when read, the same subset every time. Defaults to the read limit in the viewer’s Settings (1,000,000 unless changed).  [x&gt;=0]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-s,</span> <span class="pre">--session</span> <span class="pre">&lt;path&gt;</span></code>: Session saved from the viewer (File &gt; Save Session). It is opened first, and the files of the other options are added to it.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--phantom</span> <span class="pre">&lt;path&gt;</span></code>: Phantom file (.phantom.json) to open in the Phantom panel, to edit and simulate.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--simulation</span> <span class="pre">&lt;path&gt;</span></code>: Simulation folder written by lar simulate. The viewer opens its DWI, tissue masks, ground-truth peaks and bundles, and shows its phantom in the Phantom panel.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--mcp</span></code>: Let AI agents control the viewer through the Model Context Protocol (MCP), served at http://127.0.0.1:&lt;port&gt;/mcp. The URL and the access token are printed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--mcp-port</span> <span class="pre">&lt;int</span> <span class="pre">range&gt;</span></code>: Port for –mcp; giving it also turns on –mcp. Defaults to the port in the viewer’s Settings (8765 unless changed).  [1024&lt;=x&lt;=65535]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--install-launcher</span></code>: Add a launcher for the viewer of this Larmor installation to the desktop (the application menu on Linux, ~/Applications on macOS, the Start menu on Windows), then exit.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--uninstall-launcher</span></code>: Remove what –install-launcher added, then exit.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--quiet</span></code>: Show only errors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--info</span></code>: Show progress and informational messages.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--debug</span></code>: Show debug messages and full tracebacks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--help</span></code>: Show this message and exit.</p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-dti"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">dti</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-dki"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">dki</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-denoise"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">denoise</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-mask"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">mask</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-degibbs"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">degibbs</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-fod"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">fod</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-info"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">info</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-convert"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">convert</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-sh-convert"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">sh-convert</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-peaks"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">peaks</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-track"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">track</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-tract-edit"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">tract-edit</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-tract-profile"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">tract-profile</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-tract-density"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">tract-density</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-connectome"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">connectome</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-transform"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">transform</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-simulate"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">simulate</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-bv"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">bv</span></code></a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

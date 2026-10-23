@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="This example builds two straight fibre bundles that cross at 90 degrees, simulates their diffusion-weighted images with noise, saves the result with save_simulation, and draws the b = 0 image, one diffusion-weighted image and the ground-truth fibre directions." name="description" />
+<meta property="og:title" content="Simulating two crossing bundles" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://larmor.org/gallery/simulation/simulate_crossing_bundles/" />
+<meta property="og:site_name" content="Larmor" />
+<meta property="og:description" content="This example builds two straight fibre bundles that cross at 90 degrees, simulates their diffusion-weighted images with noise, saves the result with save_simulation, and draws the b = 0 image, one diffusion-weighted image and the ground-truth fibre directions." />
+<meta property="og:image" content="https://larmor.org/_static/larmor-card.png" />
+<meta property="og:image:alt" content="Larmor: a Python library and viewer for diffusion MRI" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<title>Simulating two crossing bundles - Larmor</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery.css?v=c83e6b79" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/larmor.css?v=f0153430" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="../../../_static/documentation_options.js?v=b21b538c"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../_static/sg-tags.js?v=d80f6fa4"></script>
+    <script defer="defer" src="../../../_static/larmor-carousel.js?v=7f65fbb2"></script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'gallery/simulation/simulate_crossing_bundles';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://larmor.org/versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.0.0';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://larmor.org/gallery/simulation/simulate_crossing_bundles/" />
+    <link rel="icon" href="../../../_static/larmor-symbol.svg"/>
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Preprocessing" href="../../preprocessing/" />
+    <link rel="prev" title="The signal of one voxel, step by step" href="../signal_breakdown/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="2.0" />
+  
+    
+    <script src="../../../_static/searchtools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script src="../../../searchindex.js"></script>
+  
+<link rel="icon" type="image/png" sizes="32x32" href="../../../_static/favicon-32.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="../../../_static/apple-touch-icon.png" />
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search/"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/larmor-symbol.svg" class="logo__image only-light" alt=""/>
+    <img src="../../../_static/larmor-symbol.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">Larmor</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../install/">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../quick-start/">
+    Quick start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../simulation/">
+    Simulation
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../">
+    Gallery
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../guides/">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../viewer/">
+    Viewer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../background/">
+    Background
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../reference/">
+    Reference
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../../agents/">
+    Agents
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../../about/">
+    About
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+      
+        <div class="navbar-item">
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../install/">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../quick-start/">
+    Quick start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../simulation/">
+    Simulation
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../">
+    Gallery
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../guides/">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../viewer/">
+    Viewer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../background/">
+    Background
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../reference/">
+    Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../agents/">
+    Agents
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../about/">
+    About
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button type="button" id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../">Simulation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pipeline_ground_truth/">Check a pipeline against the ground truth</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../signal_breakdown/">The signal of one voxel, step by step</a></li>
+<li class="toctree-l2 current active"><a aria-current="page" class="current reference internal" href="#">Simulating two crossing bundles</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../preprocessing/">Preprocessing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../preprocessing/dwi_denoise_mppca/">Denoising a DWI with MP-PCA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../preprocessing/gibbs_ringing_removal/">Denoising, then removing Gibbs ringing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../models/">Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../models/dki_real_data/">Fitting DKI to a real brain</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../models/dki_synthetic_kurtosis/">Fitting DKI to a synthetic signal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../models/dti_ismrm/">DTI of a simulated brain</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../models/dti_synthetic_tensor/">Fitting DTI to a synthetic tensor</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../sd/">Spherical deconvolution and peaks</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../sd/fod_fit_synthetic/">Fitting FODs to a synthetic signal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../sd/fods_ismrm/">FODs, peaks and asymmetric FODs of a simulated brain</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../sd/msmt_csd_cfin/">Multi-tissue FODs of a multi-shell brain scan</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../sd/peaks_synthetic/">Finding the peaks of FODs</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../tractography/">Tractography</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../tractography/connectome_synthetic/">Structural connectomes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tractography/registration_atlas_region/">Bringing an atlas region into diffusion space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tractography/track_density_synthetic/">Track density images</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tractography/tracking_ismrm/">Whole-brain tractography of a simulated brain</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tractography/tracking_synthetic/">Tracking streamlines through crossing bundles</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tractography/tract_profiles/">Tract profiles: FA along a bundle</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tractography/tractogram_batch_writing/">Writing a tractogram batch by batch</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../files/">Files</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../files/file_io/">Reading and writing files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../files/mritoolkit_files/">Reading MRIToolkit results from MATLAB files</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../viewer/">Viewer</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../viewer/viewer_2d_views/">Moving around the 2D views</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../viewer/viewer_3d_view/">The 3D view</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../viewer/viewer_4d_volumes/">4D images in the viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../viewer/viewer_dti/">DTI colours in the viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../viewer/viewer_fod_glyphs/">FOD glyphs in the viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../viewer/viewer_parcellation/">A parcellation in the viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../viewer/viewer_peaks/">Peaks in the viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../viewer/viewer_real_brain/">A brain in the viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../viewer/viewer_screenshot_modes/">Separate views and rotation videos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../viewer/viewer_sessions/">Saving and reopening a viewer session</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../viewer/viewer_surfaces/">Surfaces in the viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../viewer/viewer_tractograms/">Tractograms in the viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../viewer/viewer_tubes/">Streamlines as tubes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../viewer/viewer_volumes_and_overlays/">Volumes and overlays in the viewer</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../" class="nav-link">Gallery</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../" class="nav-link">Simulation</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Simulating two crossing bundles</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-gallery-simulation-simulate-crossing-bundles-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="simulating-two-crossing-bundles">
+<span id="sphx-glr-gallery-simulation-simulate-crossing-bundles-py"></span><h1>Simulating two crossing bundles<a class="headerlink" href="#simulating-two-crossing-bundles" title="Link to this heading">#</a></h1>
+<p>This example builds two straight fibre bundles that cross at 90 degrees, simulates
+their diffusion-weighted images with noise, saves the result with <code class="xref py py-obj docutils literal notranslate"><span class="pre">save_simulation</span></code>,
+and draws the b = 0 image, one diffusion-weighted image and the ground-truth fibre
+directions.</p>
+<p>A phantom is an object to scan. It is made of tissues, each with compartments that
+have their own diffusion and relaxation, and fibre bundles that place the tissues on
+a voxel grid. <code class="xref py py-obj docutils literal notranslate"><span class="pre">simulate</span></code> turns a phantom into diffusion-weighted images with the
+instant engine, which evaluates the signal of each voxel in closed form. It also
+keeps the ground truth: how much of each voxel each tissue and bundle fills, and
+where the fibres point.</p>
+<p>The two bundles here have different parameters of the standard model of white matter
+and different T2, so the b = 0 image tells them apart. The scan has one b = 0 volume
+and one shell of 32 directions at b = 1000 s/mm^2.</p>
+<p>The simulation builds on SymDWI, by the same author. The models and their papers
+are listed in the Background page on simulation.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span><span class="w">
+</span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <a class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="pathlib.Path"><span class="n">Path</span></a><span class="w">
+</span><span class="w">
+</span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span><span class="w">
+</span><span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="nn">.</span><span class="nn">figure</span><span class="w"> </span><span class="kn">import</span> <span class="n">Figure</span><span class="w">
+</span><span class="w">
+</span><span class="kn">from</span><span class="w"> </span><span class="nn">larmor</span><span class="nn">.</span><span class="nn">io</span><span class="w"> </span><span class="kn">import</span> <a class="sphx-glr-backref-module-larmor sphx-glr-backref-type-py-function reference internal" href="../../../reference/api/io/#larmor.io.load_volume" title="larmor.load_volume"><span class="n">load_volume</span></a><span class="w">
+</span><span class="kn">from</span><span class="w"> </span><span class="nn">larmor</span><span class="nn">.</span><span class="nn">simulation</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class reference internal" href="../../../reference/api/simulation/#larmor.simulation.Bundle" title="larmor.simulation.Bundle"><span class="n">Bundle</span></a><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class reference internal" href="../../../reference/api/simulation/#larmor.simulation.BundleGeometry" title="larmor.simulation.BundleGeometry"><span class="n">BundleGeometry</span></a><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class reference internal" href="../../../reference/api/simulation/#larmor.simulation.Phantom" title="larmor.simulation.Phantom"><span class="n">Phantom</span></a><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class reference internal" href="../../../reference/api/simulation/#larmor.simulation.Protocol" title="larmor.simulation.Protocol"><span class="n">Protocol</span></a><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-function reference internal" href="../../../reference/api/simulation/#larmor.simulation.create_gradient_table" title="larmor.simulation.create_gradient_table"><span class="n">create_gradient_table</span></a><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-function reference internal" href="../../../reference/api/simulation/#larmor.simulation.save_simulation" title="larmor.simulation.save_simulation"><span class="n">save_simulation</span></a><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-function reference internal" href="../../../reference/api/simulation/#larmor.simulation.simulate" title="larmor.simulation.simulate"><span class="n">simulate</span></a><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-function reference internal" href="../../../reference/api/simulation/#larmor.simulation.standard_model_tissue" title="larmor.simulation.standard_model_tissue"><span class="n">standard_model_tissue</span></a><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><span class="kn">from</span><span class="w"> </span><span class="nn">larmor</span><span class="nn">.</span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <a class="sphx-glr-backref-module-larmor sphx-glr-backref-type-py-class reference internal" href="../../../reference/api/types/#larmor.types.Grid" title="larmor.Grid"><span class="n">Grid</span></a><span class="w">
+</span></pre></div></div>
+<section id="the-bundles">
+<h2>The bundles<a class="headerlink" href="#the-bundles" title="Link to this heading">#</a></h2>
+<p>The phantom is a 40 x 40 x 40 grid of 1 mm voxels. The first bundle runs along x.
+The second is 25 mm long, crosses the first at its middle and runs along y, so the
+crossing is at 90 degrees. Control points and radii are in mm, in world
+coordinates. The seeds make the streamlines the same on every run.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-larmor sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../reference/api/types/#larmor.types.Grid" title="larmor.Grid"><span class="n">grid</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-larmor sphx-glr-backref-type-py-class reference internal" href="../../../reference/api/types/#larmor.types.Grid" title="larmor.Grid"><span class="n">Grid</span></a><span class="p">(</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">40</span><span class="p">)</span><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.eye.html#numpy.eye" title="numpy.eye"><span class="n">np</span><span class="o">.</span><span class="n">eye</span></a><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="p">)</span><span class="w">
+</span><span class="w">
+</span><a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../reference/api/simulation/#larmor.simulation.BundleGeometry" title="larmor.simulation.BundleGeometry"><span class="n">first</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class reference internal" href="../../../reference/api/simulation/#larmor.simulation.BundleGeometry" title="larmor.simulation.BundleGeometry"><span class="n">BundleGeometry</span></a><span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy.array" title="numpy.array"><span class="n">np</span><span class="o">.</span><span class="n">array</span></a><span class="p">(</span><span class="p">[</span><span class="p">[</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">]</span><span class="p">,</span> <span class="p">[</span><span class="mf">17.5</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">]</span><span class="p">,</span> <span class="p">[</span><span class="mf">30.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">]</span><span class="p">]</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span>    <span class="n">num_streamlines</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span><span class="w">
+</span>    <span class="n">radius</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span><span class="w">
+</span>    <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">half</span></a> <span class="o">=</span> <span class="mf">12.5</span> <span class="o">*</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy.array" title="numpy.array"><span class="n">np</span><span class="o">.</span><span class="n">array</span></a><span class="p">(</span><span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">middle</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy.array" title="numpy.array"><span class="n">np</span><span class="o">.</span><span class="n">array</span></a><span class="p">(</span><span class="p">[</span><span class="mf">17.5</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">]</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../reference/api/simulation/#larmor.simulation.BundleGeometry" title="larmor.simulation.BundleGeometry"><span class="n">second</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class reference internal" href="../../../reference/api/simulation/#larmor.simulation.BundleGeometry" title="larmor.simulation.BundleGeometry"><span class="n">BundleGeometry</span></a><span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy.array" title="numpy.array"><span class="n">np</span><span class="o">.</span><span class="n">array</span></a><span class="p">(</span><span class="p">[</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">middle</span></a> <span class="o">-</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">half</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">middle</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">middle</span></a> <span class="o">+</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">half</span></a><span class="p">]</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span>    <span class="n">num_streamlines</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span><span class="w">
+</span>    <span class="n">radius</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span><span class="w">
+</span>    <span class="n">seed</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+</section>
+<section id="the-tissues">
+<h2>The tissues<a class="headerlink" href="#the-tissues" title="Link to this heading">#</a></h2>
+<p>Each bundle is filled by a white matter tissue made of a stick (intra-axonal
+water) and a zeppelin (extra-axonal water). The second has a lower axial and a
+higher radial diffusivity, and shorter T2 times, so it is darker at b = 0.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../reference/api/simulation/#larmor.simulation.Tissue" title="larmor.simulation.Tissue"><span class="n">wm1</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-function reference internal" href="../../../reference/api/simulation/#larmor.simulation.standard_model_tissue" title="larmor.simulation.standard_model_tissue"><span class="n">standard_model_tissue</span></a><span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">name</span></a><span class="o">=</span><span class="s2">&quot;</span><span class="s2">WM1</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">intra_fraction</span><span class="o">=</span><span class="mf">0.75</span><span class="p">,</span><span class="w">
+</span>    <span class="n">intra_diffusivity</span><span class="o">=</span><span class="mf">1.7e-3</span><span class="p">,</span><span class="w">
+</span>    <span class="n">extra_parallel_diffusivity</span><span class="o">=</span><span class="mf">1.7e-3</span><span class="p">,</span><span class="w">
+</span>    <span class="n">extra_perpendicular_diffusivity</span><span class="o">=</span><span class="mf">0.35e-3</span><span class="p">,</span><span class="w">
+</span>    <span class="n">intra_t2_ms</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span><span class="w">
+</span>    <span class="n">extra_t2_ms</span><span class="o">=</span><span class="mf">60.0</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../reference/api/simulation/#larmor.simulation.Tissue" title="larmor.simulation.Tissue"><span class="n">wm2</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-function reference internal" href="../../../reference/api/simulation/#larmor.simulation.standard_model_tissue" title="larmor.simulation.standard_model_tissue"><span class="n">standard_model_tissue</span></a><span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">name</span></a><span class="o">=</span><span class="s2">&quot;</span><span class="s2">WM2</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">intra_fraction</span><span class="o">=</span><span class="mf">0.75</span><span class="p">,</span><span class="w">
+</span>    <span class="n">intra_diffusivity</span><span class="o">=</span><span class="mf">1.5e-3</span><span class="p">,</span><span class="w">
+</span>    <span class="n">extra_parallel_diffusivity</span><span class="o">=</span><span class="mf">1.3e-3</span><span class="p">,</span><span class="w">
+</span>    <span class="n">extra_perpendicular_diffusivity</span><span class="o">=</span><span class="mf">0.75e-3</span><span class="p">,</span><span class="w">
+</span>    <span class="n">intra_t2_ms</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span><span class="w">
+</span>    <span class="n">extra_t2_ms</span><span class="o">=</span><span class="mf">30.0</span><span class="p">,</span><span class="w">
+</span>    <span class="n">t2star_ms</span><span class="o">=</span><span class="mf">35.0</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../reference/api/simulation/#larmor.simulation.Phantom" title="larmor.simulation.Phantom"><span class="n">phantom</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class reference internal" href="../../../reference/api/simulation/#larmor.simulation.Phantom" title="larmor.simulation.Phantom"><span class="n">Phantom</span></a><span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-larmor sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../reference/api/types/#larmor.types.Grid" title="larmor.Grid"><span class="n">grid</span></a><span class="p">,</span><span class="w">
+</span>    <span class="n">tissues</span><span class="o">=</span><span class="p">(</span><a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../reference/api/simulation/#larmor.simulation.Tissue" title="larmor.simulation.Tissue"><span class="n">wm1</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../reference/api/simulation/#larmor.simulation.Tissue" title="larmor.simulation.Tissue"><span class="n">wm2</span></a><span class="p">)</span><span class="p">,</span><span class="w">
+</span>    <span class="n">bundles</span><span class="o">=</span><span class="p">(</span><a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class reference internal" href="../../../reference/api/simulation/#larmor.simulation.Bundle" title="larmor.simulation.Bundle"><span class="n">Bundle</span></a><span class="p">(</span><a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../reference/api/simulation/#larmor.simulation.BundleGeometry" title="larmor.simulation.BundleGeometry"><span class="n">first</span></a><span class="p">,</span> <span class="n">tissue</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">WM1</span><span class="s2">&quot;</span><span class="p">)</span><span class="p">,</span> <a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class reference internal" href="../../../reference/api/simulation/#larmor.simulation.Bundle" title="larmor.simulation.Bundle"><span class="n">Bundle</span></a><span class="p">(</span><a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../reference/api/simulation/#larmor.simulation.BundleGeometry" title="larmor.simulation.BundleGeometry"><span class="n">second</span></a><span class="p">,</span> <span class="n">tissue</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">WM2</span><span class="s2">&quot;</span><span class="p">)</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+</section>
+<section id="the-scan">
+<h2>The scan<a class="headerlink" href="#the-scan" title="Link to this heading">#</a></h2>
+<p>The scan has one b = 0 volume and 32 directions at b = 1000 s/mm^2. The pulses are
+15 ms long and 30 ms apart, the echo time is 80 ms and the repetition time 3000 ms.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-larmor sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../reference/api/types/#larmor.types.GradientTable" title="larmor.GradientTable"><span class="n">gradients</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-function reference internal" href="../../../reference/api/simulation/#larmor.simulation.create_gradient_table" title="larmor.simulation.create_gradient_table"><span class="n">create_gradient_table</span></a><span class="p">(</span><span class="p">[</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">32</span><span class="p">)</span><span class="p">]</span><span class="p">,</span> <span class="n">num_b0</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../reference/api/simulation/#larmor.simulation.Protocol" title="larmor.simulation.Protocol"><span class="n">protocol</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class reference internal" href="../../../reference/api/simulation/#larmor.simulation.Protocol" title="larmor.simulation.Protocol"><span class="n">Protocol</span></a><span class="p">(</span><a class="sphx-glr-backref-module-larmor sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../reference/api/types/#larmor.types.GradientTable" title="larmor.GradientTable"><span class="n">gradients</span></a><span class="p">,</span> <span class="mf">15.0</span><span class="p">,</span> <span class="mf">30.0</span><span class="p">,</span> <span class="mf">80.0</span><span class="p">,</span> <span class="mf">3000.0</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+</section>
+<section id="simulating">
+<h2>Simulating<a class="headerlink" href="#simulating" title="Link to this heading">#</a></h2>
+<p>With an SNR of 30 the noise level is a thirtieth of the b = 0 signal of a voxel
+filled with WM1, and it is the same in every voxel. The same seed gives the same
+images.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../reference/api/simulation/#larmor.simulation.SimulatedDWI" title="larmor.simulation.SimulatedDWI"><span class="n">result</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-function reference internal" href="../../../reference/api/simulation/#larmor.simulation.simulate" title="larmor.simulation.simulate"><span class="n">simulate</span></a><span class="p">(</span><a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../reference/api/simulation/#larmor.simulation.Phantom" title="larmor.simulation.Phantom"><span class="n">phantom</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../reference/api/simulation/#larmor.simulation.Protocol" title="larmor.simulation.Protocol"><span class="n">protocol</span></a><span class="p">,</span> <span class="n">snr</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">noise_reference</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">WM1</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">dwi</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="tuple"><span class="n">result</span><span class="o">.</span><span class="n">echoes</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="w">
+</span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="s2">DWI: </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="tuple"><span class="n">dwi</span><span class="o">.</span><span class="n">shape</span></a><span class="si">}</span><span class="s2">, noise sigma </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">result</span><span class="o">.</span><span class="n">sigma</span></a><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><span class="w">
+</span><span class="k">for</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">name</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="tuple"><span class="n">voxel</span></a> <span class="ow">in</span> <span class="p">(</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">first bundle only</span><span class="s2">&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span><span class="p">)</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;</span><span class="s2">crossing</span><span class="s2">&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">17</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span><span class="p">)</span><span class="p">)</span><span class="p">:</span><span class="w">
+</span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="s2">b = 0 signal, </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">name</span></a><span class="si">}</span><span class="s2">: </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="tuple"><span class="n">result</span><span class="o">.</span><span class="n">noise_free</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="tuple"><span class="n">voxel</span></a><span class="p">]</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>DWI: (40, 40, 40, 33), noise sigma 0.0085
+b = 0 signal, first bundle only: 0.255
+b = 0 signal, crossing: 0.185
+</pre></div>
+</div>
+</section>
+<section id="the-files">
+<h2>The files<a class="headerlink" href="#the-files" title="Link to this heading">#</a></h2>
+<p><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_simulation</span></code> writes one folder. It holds the images with their bvals and
+bvecs, the ground truth, the bundles, and the phantom file with the protocol, which
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">lar</span> <span class="pre">simulate</span></code> can run again. The ground-truth peaks are in the layout that
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">lar</span> <span class="pre">peaks</span></code> writes: 3 volumes per peak, each peak’s direction scaled by its
+amplitude.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span class="k">with</span> <a class="sphx-glr-backref-module-tempfile sphx-glr-backref-type-py-class reference external" href="https://docs.python.org/3/library/tempfile.html#tempfile.TemporaryDirectory" title="tempfile.TemporaryDirectory"><span class="n">tempfile</span><span class="o">.</span><span class="n">TemporaryDirectory</span></a><span class="p">(</span><span class="p">)</span> <span class="k">as</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">folder</span></a><span class="p">:</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../reference/api/simulation/#larmor.simulation.SimulationFiles" title="larmor.simulation.SimulationFiles"><span class="n">files</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-function reference internal" href="../../../reference/api/simulation/#larmor.simulation.save_simulation" title="larmor.simulation.save_simulation"><span class="n">save_simulation</span></a><span class="p">(</span><a class="sphx-glr-backref-module-larmor-simulation sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../reference/api/simulation/#larmor.simulation.SimulatedDWI" title="larmor.simulation.SimulatedDWI"><span class="n">result</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">folder</span></a><span class="p">)</span><span class="w">
+</span>    <span class="nb">print</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <a class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="pathlib.Path"><span class="n">Path</span></a><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">folder</span></a><span class="p">)</span><span class="o">.</span><span class="n">iterdir</span><span class="p">(</span><span class="p">)</span><span class="p">)</span><span class="p">)</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">peaks</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-larmor sphx-glr-backref-type-py-function reference internal" href="../../../reference/api/io/#larmor.io.load_volume" title="larmor.load_volume"><span class="n">load_volume</span></a><span class="p">(</span><a class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath"><span class="n">files</span><span class="o">.</span><span class="n">peaks</span></a><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="w">
+</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">crossing</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">peaks</span></a><span class="p">[</span><span class="mi">17</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float32" title="numpy.float32"><span class="n">cosine</span></a> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">crossing</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&#64;</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">crossing</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="p">)</span> <span class="o">/</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.prod.html#numpy.prod" title="numpy.prod"><span class="n">np</span><span class="o">.</span><span class="n">prod</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy-linalg sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.linalg.norm.html#numpy.linalg.norm" title="numpy.linalg.norm"><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">crossing</span></a><span class="p">[</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="p">)</span><span class="w">
+</span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="s2">Peaks at the crossing: </span><span class="si">{</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ufunc.html#numpy.ufunc" title="numpy.ufunc"><span class="n">np</span><span class="o">.</span><span class="n">degrees</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ufunc.html#numpy.ufunc" title="numpy.ufunc"><span class="n">np</span><span class="o">.</span><span class="n">arccos</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float32" title="numpy.float32"><span class="n">cosine</span></a><span class="p">)</span><span class="p">)</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> degrees apart</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>['background_fraction.nii.gz', 'bundle_1.tck', 'bundle_2.tck', 'bundle_fractions.nii.gz', 'compartment_fractions.nii.gz', 'dwi.bval', 'dwi.bvec', 'dwi.nii.gz', 'dwi_noise_free.nii.gz', 'free_water_fraction.nii.gz', 'free_water_signal_fraction.nii.gz', 'mask_WM1.nii.gz', 'mask_WM2.nii.gz', 'mask_bundles.nii.gz', 'peaks.nii.gz', 'phantom.json', 'signal_fractions.nii.gz', 'simulation.json', 'tissue_fractions.nii.gz']
+Peaks at the crossing: 90 degrees apart
+</pre></div>
+</div>
+</section>
+<section id="the-images-and-the-ground-truth">
+<h2>The images and the ground truth<a class="headerlink" href="#the-images-and-the-ground-truth" title="Link to this heading">#</a></h2>
+<p>The plane z = 10 holds both bundles. At b = 0 the first, with the longer T2, is
+brighter. With the gradient along x, the first bundle loses most of its signal,
+since its fibres run along the gradient, and the second, across it, loses
+less. Both images share one grey scale. The third panel draws the
+ground-truth peaks as lines, red for the largest peak of a voxel and blue for the
+next, over the fraction of the voxel the bundles fill. The figure is drawn with
+matplotlib.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">along_x</span></a> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.argmax.html#numpy.argmax" title="numpy.argmax"><span class="n">np</span><span class="o">.</span><span class="n">argmax</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ufunc.html#numpy.ufunc" title="numpy.ufunc"><span class="n">np</span><span class="o">.</span><span class="n">abs</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">gradients</span><span class="o">.</span><span class="n">bvecs</span></a><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="p">)</span><span class="p">)</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">planes</span></a> <span class="o">=</span> <span class="p">[</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">dwi</span></a><span class="p">[</span><span class="p">:</span><span class="p">,</span> <span class="p">:</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">dwi</span></a><span class="p">[</span><span class="p">:</span><span class="p">,</span> <span class="p">:</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">along_x</span></a><span class="p">]</span><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">result</span><span class="o">.</span><span class="n">partition</span><span class="o">.</span><span class="n">tissue_fractions</span></a><span class="p">[</span><span class="p">:</span><span class="p">,</span> <span class="p">:</span><span class="p">,</span> <span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span><span class="p">]</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">titles</span></a> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="s2">b = 0</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s2">b = 1000, along x</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s2">Ground-truth peaks</span><span class="s2">&quot;</span><span class="p">]</span><span class="w">
+</span><span class="n">figure</span> <span class="o">=</span> <span class="n">Figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mf">3.2</span><span class="p">)</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">constrained</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><span class="k">for</span> <span class="n">axes</span><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">plane</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">title</span></a> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">figure</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">planes</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">titles</span></a><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="p">:</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">top</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">planes</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="p">)</span> <span class="k">if</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">plane</span></a> <span class="ow">is</span> <span class="ow">not</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">planes</span></a><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">else</span> <span class="mf">1.0</span><span class="w">
+</span>    <span class="n">axes</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">plane</span><span class="o">.</span><span class="n">T</span></a><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">lower</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">gray</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">top</span></a><span class="p">)</span><span class="w">
+</span>    <span class="n">axes</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">title</span></a><span class="p">)</span><span class="w">
+</span>    <span class="n">axes</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">(</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">x</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">y</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.meshgrid.html#numpy.meshgrid" title="numpy.meshgrid"><span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><span class="mi">40</span><span class="p">)</span><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><span class="mi">40</span><span class="p">)</span><span class="p">,</span> <span class="n">indexing</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">ij</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><span class="k">for</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">k</span></a> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="tuple"><span class="n">peaks</span><span class="o">.</span><span class="n">shape</span></a><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="p">:</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">u</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">w</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">peaks</span></a><span class="p">[</span><span class="p">:</span><span class="p">,</span> <span class="p">:</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">k</span></a><span class="p">]</span><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">peaks</span></a><span class="p">[</span><span class="p">:</span><span class="p">,</span> <span class="p">:</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">k</span></a> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span><span class="w">
+</span>    <span class="n">figure</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">quiver</span><span class="p">(</span><span class="w">
+</span>        <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">x</span></a><span class="p">,</span><span class="w">
+</span>        <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">y</span></a><span class="p">,</span><span class="w">
+</span>        <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">u</span></a><span class="p">,</span><span class="w">
+</span>        <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">w</span></a><span class="p">,</span><span class="w">
+</span>        <span class="n">angles</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">xy</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>        <span class="n">scale_units</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">xy</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>        <span class="n">scale</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span><span class="w">
+</span>        <span class="n">pivot</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">mid</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>        <span class="n">headwidth</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="w">
+</span>        <span class="n">headlength</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="w">
+</span>        <span class="n">headaxislength</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="w">
+</span>        <span class="n">color</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">tab:red</span><span class="s2">&quot;</span> <span class="k">if</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">k</span></a> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="s2">&quot;</span><span class="s2">tab:blue</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>        <span class="n">width</span><span class="o">=</span><span class="mf">0.004</span><span class="p">,</span><span class="w">
+</span>    <span class="p">)</span><span class="w">
+</span><span class="n">figure</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">simulate_crossing_bundles.png</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">150</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<img alt="Three panels of the plane that holds two simulated bundles crossing at 90 degrees, one along x and one along y. The first panel is the b = 0 image, where the horizontal bundle is brighter. The second is a diffusion-weighted image with the gradient along x, where both bundles are dark and the horizontal one is darker. The third draws the ground-truth peaks as lines along each bundle, with two lines in the crossing" class="sphx-glr-single-img" src="../../../_images/sphx_glr_simulate_crossing_bundles_001.webp" />
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-gallery-simulation-simulate-crossing-bundles-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../../_downloads/2643ddfad1603f5ec36acd594c8320dd/simulate_crossing_bundles.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">simulate_crossing_bundles.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../../_downloads/897b2e5796798e459e11e14d71d7207d/simulate_crossing_bundles.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">simulate_crossing_bundles.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../../_downloads/684a93fa32f959ee997fdc295bfd6c0a/simulate_crossing_bundles.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">simulate_crossing_bundles.zip</span></code></a></p>
+</div>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-bundles">The bundles</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-tissues">The tissues</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-scan">The scan</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#simulating">Simulating</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-files">The files</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-images-and-the-ground-truth">The images and the ground truth</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

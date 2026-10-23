@@ -1,0 +1,208 @@
+/* Larmor's additions to the PyData Sphinx Theme. The colours are the theme's own. */
+
+/* Landing page: title, tagline, carousel, buttons and cards; then lists, install and citation. */
+.bd-article:has(.lar-carousel) > section > h1,
+.lar-tagline,
+.lar-actions {
+  text-align: center;
+}
+
+.lar-tagline {
+  font-size: 1.25rem;
+  color: var(--pst-color-text-muted);
+  margin-top: -0.5rem;
+}
+
+/* The carousel: images 3:2 on black, a caption under each, controls once the
+   script runs (without it, the first slide shows alone). */
+.lar-carousel {
+  max-width: 40rem;
+  margin: 1.5rem auto 0;
+}
+
+.lar-carousel:focus-visible {
+  outline: 2px solid var(--pst-color-primary);
+  outline-offset: 4px;
+}
+
+.lar-carousel img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  background: #000;
+  border-radius: 6px;
+}
+
+.lar-carousel .lar-carousel-caption {
+  min-height: 3.3em;
+  line-height: 1.6;
+  margin: 0.5rem 0 0;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--pst-color-text-base);
+}
+
+.lar-carousel .carousel-control-prev,
+.lar-carousel .carousel-control-next {
+  bottom: 3.3em;
+  width: 12%;
+}
+
+.lar-carousel .carousel-indicators {
+  position: static;
+  margin: 0.25rem 0 0;
+}
+
+.lar-carousel .carousel-indicators [data-bs-target] {
+  background-color: var(--pst-color-text-muted);
+}
+
+.lar-carousel:not(.lar-ready) .carousel-control-prev,
+.lar-carousel:not(.lar-ready) .carousel-control-next,
+.lar-carousel:not(.lar-ready) .carousel-indicators {
+  display: none;
+}
+
+.lar-carousel-note {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--pst-color-text-muted);
+}
+
+.lar-credit {
+  font-size: 0.8rem;
+  color: var(--pst-color-text-muted);
+}
+
+.lar-carousel-note + .lar-credit {
+  text-align: center;
+  margin-top: -0.5rem;
+}
+
+.lar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 1rem 0 2rem;
+}
+
+.lar-actions > p {
+  margin: 0;
+}
+
+.lar-actions .sd-btn {
+  min-width: 8rem;
+}
+
+/* Lists of methods, files and viewer features, under the cards. */
+.lar-lists {
+  margin-top: 1.5rem;
+}
+
+.lar-lists ul {
+  padding-left: 1.1rem;
+  font-size: 0.9rem;
+}
+
+/* The quick install box: one tab per way to install. */
+.lar-install div.highlight pre {
+  margin-bottom: 0;
+}
+
+.lar-install-note {
+  font-size: 0.8rem;
+  color: var(--pst-color-text-muted);
+}
+
+/* The citation, in a box. */
+.lar-cite {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--pst-color-border);
+  border-radius: 6px;
+  background: var(--pst-color-surface);
+  font-size: 0.9rem;
+}
+
+.lar-areas .sd-card-title {
+  margin-bottom: 0.25rem;
+}
+
+.lar-areas .sd-card-text {
+  font-size: 0.9rem;
+  color: var(--pst-color-text-muted);
+}
+
+/* Five area cards: one row on wide screens; two per row on narrow ones, where the
+   last card fills its row alone. */
+@media (max-width: 767.98px) {
+  .lar-areas .sd-row > .sd-col:last-child {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+}
+
+/* Headings a little smaller than the theme's, sections ruled off. */
+.bd-article h1 {
+  font-size: 2.25rem;
+}
+
+.bd-article h2 {
+  font-size: 1.5rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--pst-color-border);
+}
+
+/* Inner pages: the text column is kept to a readable width. */
+.bd-article-container {
+  max-width: 50rem;
+}
+
+/* The landing page is a little wider, for its five cards. */
+.bd-article-container:has(.lar-carousel) {
+  max-width: 56rem;
+  margin: 0 auto;
+}
+
+/* Sections that are not written yet. */
+.admonition.lar-coming {
+  border-color: var(--pst-color-secondary);
+}
+
+.admonition.lar-coming > .admonition-title {
+  background-color: color-mix(in srgb, var(--pst-color-secondary) 12%, transparent);
+}
+
+.admonition.lar-coming > .admonition-title::after {
+  color: var(--pst-color-secondary);
+}
+
+/* Gallery tiles are square; the tile of an example without images is a grey symbol on
+   a transparent background, so it reads in light and dark mode. */
+.sphx-glr-thumbcontainer img {
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+
+/* In dark mode the theme puts every image on white and dims it; renders and gallery
+   tiles are drawn for a dark page already. */
+html[data-theme="dark"] .bd-content .sphx-glr-thumbcontainer img,
+html[data-theme="dark"] .bd-content img.sphx-glr-single-img,
+html[data-theme="dark"] .bd-content .lar-carousel img {
+  background-color: transparent;
+  filter: none;
+}
+
+/* API signatures: a primary-coloured top border. */
+dl.py > dt {
+  border-top: 3px solid var(--pst-color-primary);
+  background-color: var(--pst-color-surface);
+  padding: 0.5rem 0.75rem;
+}
+
+/* No footer: it would be empty. */
+.bd-footer {
+  display: none;
+}

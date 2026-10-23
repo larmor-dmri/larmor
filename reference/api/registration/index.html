@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="Applying and inverting registrations computed by ANTs, FSL and MRtrix3 to images, tractograms and surfaces in Larmor." name="description" />
+<meta property="og:title" content="larmor.registration" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://larmor.org/reference/api/registration/" />
+<meta property="og:site_name" content="Larmor" />
+<meta property="og:description" content="Applying and inverting registrations computed by ANTs, FSL and MRtrix3 to images, tractograms and surfaces in Larmor." />
+<meta property="og:image" content="https://larmor.org/_static/larmor-card.png" />
+<meta property="og:image:alt" content="Larmor: a Python library and viewer for diffusion MRI" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<title>larmor.registration - Larmor</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery.css?v=c83e6b79" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/larmor.css?v=f0153430" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="../../../_static/documentation_options.js?v=b21b538c"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../_static/sg-tags.js?v=d80f6fa4"></script>
+    <script defer="defer" src="../../../_static/larmor-carousel.js?v=7f65fbb2"></script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'reference/api/registration';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://larmor.org/versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.0.0';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://larmor.org/reference/api/registration/" />
+    <link rel="icon" href="../../../_static/larmor-symbol.svg"/>
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="larmor.simulation" href="../simulation/" />
+    <link rel="prev" title="larmor.tractography" href="../tractography/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="2.0" />
+  
+    
+    <script src="../../../_static/searchtools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script src="../../../searchindex.js"></script>
+  
+<link rel="icon" type="image/png" sizes="32x32" href="../../../_static/favicon-32.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="../../../_static/apple-touch-icon.png" />
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search/"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/larmor-symbol.svg" class="logo__image only-light" alt=""/>
+    <img src="../../../_static/larmor-symbol.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">Larmor</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../install/">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../quick-start/">
+    Quick start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../simulation/">
+    Simulation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../gallery/">
+    Gallery
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../guides/">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../viewer/">
+    Viewer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../background/">
+    Background
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../">
+    Reference
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../../agents/">
+    Agents
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../../about/">
+    About
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+      
+        <div class="navbar-item">
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../install/">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../quick-start/">
+    Quick start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../simulation/">
+    Simulation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../gallery/">
+    Gallery
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../guides/">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../viewer/">
+    Viewer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../background/">
+    Background
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../">
+    Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../agents/">
+    Agents
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../about/">
+    About
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button type="button" id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../cli/">Command line</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../">Python API</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../larmor/">larmor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../types/">larmor.types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../io/">larmor.io</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../io-formats/">larmor.io.formats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dwi/">larmor.dwi</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sd/">larmor.sd</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tractography/">larmor.tractography</a></li>
+<li class="toctree-l2 current active"><a aria-current="page" class="current reference internal" href="#">larmor.registration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../simulation/">larmor.simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../plot/">larmor.plot</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../surfaces/">larmor.surfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../data/">larmor.data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../viewer/">larmor.viewer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../../file-formats/">File formats</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../" class="nav-link">Reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../" class="nav-link">Python API</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">larmor.registration</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-larmor.registration">
+<span id="larmor-registration"></span><h1>larmor.registration<a class="headerlink" href="#module-larmor.registration" title="Link to this heading">#</a></h1>
+<p>Reading the transforms of ANTs, FSL and MRtrix3 registrations and applying them.</p>
+<p>Transforms map points in world coordinates (RAS+), in mm. A transform read
+from a file maps points of the reference space to the input space, the
+direction used to resample an image. Streamlines and surfaces move the other
+way, so they need the inverse to follow the image.</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.registration.AffineTransform" title="larmor.registration.AffineTransform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AffineTransform</span></code></a></p></td>
+<td><p>An affine transform, which maps p to A p + t.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.registration.DisplacementField" title="larmor.registration.DisplacementField"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DisplacementField</span></code></a></p></td>
+<td><p>A non-linear transform, which maps p to p + d(p) with d sampled on a grid.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.registration.InverseDisplacementField" title="larmor.registration.InverseDisplacementField"><code class="xref py py-obj docutils literal notranslate"><span class="pre">InverseDisplacementField</span></code></a></p></td>
+<td><p>The inverse of a displacement field, found by iteration at each point.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.registration.Transform" title="larmor.registration.Transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Transform</span></code></a></p></td>
+<td><p>A map of points from one space to another, in world coordinates (RAS+) in mm.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.registration.TransformChain" title="larmor.registration.TransformChain"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TransformChain</span></code></a></p></td>
+<td><p>Transforms applied one after the other, starting with the first in the list.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.registration.TransformPair" title="larmor.registration.TransformPair"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TransformPair</span></code></a></p></td>
+<td><p>A transform given together with its inverse, such as a tool's inverse warp.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.registration.apply_transform" title="larmor.registration.apply_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">apply_transform</span></code></a></p></td>
+<td><p>Brings an image, tractogram or surface into a reference space.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.registration.load_registration" title="larmor.registration.load_registration"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_registration</span></code></a></p></td>
+<td><p>Reads the files of a registration as one transform into a reference space.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.registration.load_transform" title="larmor.registration.load_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_transform</span></code></a></p></td>
+<td><p>Reads a transform file of any supported format, chosen from the file if needed.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.registration.read_ants_transform" title="larmor.registration.read_ants_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_ants_transform</span></code></a></p></td>
+<td><p>Reads an affine or a displacement field written by ANTs.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.registration.read_flirt_transform" title="larmor.registration.read_flirt_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_flirt_transform</span></code></a></p></td>
+<td><p>Reads an FSL FLIRT matrix (<code class="xref py py-obj docutils literal notranslate"><span class="pre">-omat</span></code>) as a transform of world points.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.registration.read_fsl_warp" title="larmor.registration.read_fsl_warp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_fsl_warp</span></code></a></p></td>
+<td><p>Reads an FSL warp field (fnirt <code class="xref py py-obj docutils literal notranslate"><span class="pre">--fout</span></code>, convertwarp, invwarp) as a transform.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.registration.read_mrtrix_transform" title="larmor.registration.read_mrtrix_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_mrtrix_transform</span></code></a></p></td>
+<td><p>Reads an MRtrix3 linear transform (mrregister, transformconvert).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.registration.read_mrtrix_warp" title="larmor.registration.read_mrtrix_warp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_mrtrix_warp</span></code></a></p></td>
+<td><p>Reads an MRtrix3 deformation or displacement field as a transform.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.registration.transform_file" title="larmor.registration.transform_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_file</span></code></a></p></td>
+<td><p>Brings an image, tractogram or surface file into a reference space.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.registration.transform_points" title="larmor.registration.transform_points"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_points</span></code></a></p></td>
+<td><p>Maps points with a transform.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.registration.transform_surface" title="larmor.registration.transform_surface"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_surface</span></code></a></p></td>
+<td><p>Moves every vertex of a surface with a transform.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.registration.transform_tractogram" title="larmor.registration.transform_tractogram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_tractogram</span></code></a></p></td>
+<td><p>Moves every point of a tractogram with a transform.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.registration.transform_tractogram_file" title="larmor.registration.transform_tractogram_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_tractogram_file</span></code></a></p></td>
+<td><p>Moves the points of a tractogram file with a transform, into a new file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.registration.transform_volume" title="larmor.registration.transform_volume"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_volume</span></code></a></p></td>
+<td><p>Resamples an image onto a reference grid through a transform.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="larmor.registration.AffineTransform">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.registration.</span></span><span class="sig-name descname"><span class="pre">AffineTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">matrix</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.AffineTransform" title="Link to this definition">#</a></dt>
+<dd><p>An affine transform, which maps p to A p + t.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.registration.AffineTransform.matrix">
+<span class="sig-name descname"><span class="pre">matrix</span></span><a class="headerlink" href="#larmor.registration.AffineTransform.matrix" title="Link to this definition">#</a></dt>
+<dd><p>The (4, 4) float64 matrix holding A and t, read only, with last row
+[0, 0, 0, 1].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.registration.AffineTransform.map_points">
+<span class="sig-name descname"><span class="pre">map_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.AffineTransform.map_points" title="Link to this definition">#</a></dt>
+<dd><p>Maps points to the other space.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>points</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – The points, shape (N, 3), in mm, world coordinates (RAS+).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The mapped points, shape (N, 3).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.registration.AffineTransform.jacobians">
+<span class="sig-name descname"><span class="pre">jacobians</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.AffineTransform.jacobians" title="Link to this definition">#</a></dt>
+<dd><p>Returns the (N, 3, 3) derivative at the points, A everywhere.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>points</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – The points, shape (N, 3), in mm, world coordinates (RAS+).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The Jacobian matrices, shape (N, 3, 3).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.registration.AffineTransform.inverse">
+<span class="sig-name descname"><span class="pre">inverse</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.AffineTransform.inverse" title="Link to this definition">#</a></dt>
+<dd><p>Returns the exact inverse.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The inverse transform.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#larmor.registration.AffineTransform" title="larmor.registration.transforms.AffineTransform"><em>AffineTransform</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="larmor.registration.DisplacementField">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.registration.</span></span><span class="sig-name descname"><span class="pre">DisplacementField</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">displacements</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.DisplacementField" title="Link to this definition">#</a></dt>
+<dd><p>A non-linear transform, which maps p to p + d(p) with d sampled on a grid.</p>
+<p>d is interpolated trilinearly between the voxel centres. A point up to half a
+voxel beyond the outer centres takes the edge values, and a point further out
+is not moved.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.registration.DisplacementField.grid">
+<span class="sig-name descname"><span class="pre">grid</span></span><a class="headerlink" href="#larmor.registration.DisplacementField.grid" title="Link to this definition">#</a></dt>
+<dd><p>The grid the displacements are sampled on.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="../types/#larmor.types.Grid" title="larmor.types.grid.Grid">larmor.types.grid.Grid</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.registration.DisplacementField.displacements">
+<span class="sig-name descname"><span class="pre">displacements</span></span><a class="headerlink" href="#larmor.registration.DisplacementField.displacements" title="Link to this definition">#</a></dt>
+<dd><p>The (X, Y, Z, 3) float64 displacement d at each voxel
+centre, read only, in world coordinates (RAS+) in mm. NaN where the
+field is undefined.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.registration.DisplacementField.map_points">
+<span class="sig-name descname"><span class="pre">map_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.DisplacementField.map_points" title="Link to this definition">#</a></dt>
+<dd><p>Maps points to the other space.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>points</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – The points, shape (N, 3), in mm, world coordinates (RAS+).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The mapped points, shape (N, 3).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.registration.DisplacementField.jacobians">
+<span class="sig-name descname"><span class="pre">jacobians</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.DisplacementField.jacobians" title="Link to this definition">#</a></dt>
+<dd><p>Returns the (N, 3, 3) derivative at the points, I + grad d.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>points</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – The points, shape (N, 3), in mm, world coordinates (RAS+).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The Jacobian matrices, shape (N, 3, 3).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.registration.DisplacementField.inverse">
+<span class="sig-name descname"><span class="pre">inverse</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.DisplacementField.inverse" title="Link to this definition">#</a></dt>
+<dd><p>Returns the inverse, computed point by point when it is used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>InverseDisplacementField</em> – The inverse field.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#larmor.registration.InverseDisplacementField" title="larmor.registration.transforms.InverseDisplacementField"><em>InverseDisplacementField</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="larmor.registration.InverseDisplacementField">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.registration.</span></span><span class="sig-name descname"><span class="pre">InverseDisplacementField</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.InverseDisplacementField" title="Link to this definition">#</a></dt>
+<dd><p>The inverse of a displacement field, found by iteration at each point.</p>
+<p>The iteration converges where the field is invertible and smooth
+(<code class="xref py py-obj docutils literal notranslate"><span class="pre">|grad</span> <span class="pre">d|</span> <span class="pre">&lt;</span> <span class="pre">1</span></code>), as fields from diffeomorphic registration are. A warning
+reports the points where it does not converge within <a class="reference internal" href="#larmor.registration.InverseDisplacementField.max_iterations" title="larmor.registration.InverseDisplacementField.max_iterations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">max_iterations</span></code></a>.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.registration.InverseDisplacementField.field">
+<span class="sig-name descname"><span class="pre">field</span></span><a class="headerlink" href="#larmor.registration.InverseDisplacementField.field" title="Link to this definition">#</a></dt>
+<dd><p>The field being inverted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#larmor.registration.DisplacementField" title="larmor.registration.transforms.DisplacementField">larmor.registration.transforms.DisplacementField</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.registration.InverseDisplacementField.tolerance">
+<span class="sig-name descname"><span class="pre">tolerance</span></span><a class="headerlink" href="#larmor.registration.InverseDisplacementField.tolerance" title="Link to this definition">#</a></dt>
+<dd><p>The largest residual <code class="xref py py-obj docutils literal notranslate"><span class="pre">|x</span> <span class="pre">+</span> <span class="pre">d(x)</span> <span class="pre">-</span> <span class="pre">y|</span></code> accepted, in mm.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.registration.InverseDisplacementField.max_iterations">
+<span class="sig-name descname"><span class="pre">max_iterations</span></span><a class="headerlink" href="#larmor.registration.InverseDisplacementField.max_iterations" title="Link to this definition">#</a></dt>
+<dd><p>The most iterations per point.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.registration.InverseDisplacementField.map_points">
+<span class="sig-name descname"><span class="pre">map_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.InverseDisplacementField.map_points" title="Link to this definition">#</a></dt>
+<dd><p>Maps points to the other space.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>points</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – The points, shape (N, 3), in mm, world coordinates (RAS+).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The mapped points, shape (N, 3).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.registration.InverseDisplacementField.jacobians">
+<span class="sig-name descname"><span class="pre">jacobians</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.InverseDisplacementField.jacobians" title="Link to this definition">#</a></dt>
+<dd><p>Returns the (N, 3, 3) derivative at the points, the inverse of I + grad d.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>points</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – The points, shape (N, 3), in mm, world coordinates (RAS+).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The Jacobian matrices, shape (N, 3, 3).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.registration.InverseDisplacementField.inverse">
+<span class="sig-name descname"><span class="pre">inverse</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.InverseDisplacementField.inverse" title="Link to this definition">#</a></dt>
+<dd><p>Returns the field itself.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The field being inverted.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#larmor.registration.DisplacementField" title="larmor.registration.transforms.DisplacementField"><em>DisplacementField</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="larmor.registration.Transform">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.registration.</span></span><span class="sig-name descname"><span class="pre">Transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.Transform" title="Link to this definition">#</a></dt>
+<dd><p>A map of points from one space to another, in world coordinates (RAS+) in mm.</p>
+<p>Every transform Larmor reads maps points of the reference space (the grid an
+image is resampled onto) to the input space (where the image’s data lives).
+Moving points such as streamlines from the input space into the reference
+space therefore needs the inverse.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.registration.Transform.map_points">
+<span class="sig-name descname"><span class="pre">map_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.Transform.map_points" title="Link to this definition">#</a></dt>
+<dd><p>Maps points to the other space.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>points</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – The points, shape (N, 3), in mm, world coordinates (RAS+).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The mapped points, shape (N, 3).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.registration.Transform.jacobians">
+<span class="sig-name descname"><span class="pre">jacobians</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.Transform.jacobians" title="Link to this definition">#</a></dt>
+<dd><p>Returns the (N, 3, 3) derivative of <a class="reference internal" href="#larmor.registration.Transform.map_points" title="larmor.registration.Transform.map_points"><code class="xref py py-obj docutils literal notranslate"><span class="pre">map_points</span></code></a> at each of the points.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>points</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – The points, shape (N, 3), in mm, world coordinates (RAS+).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The Jacobian matrices, shape (N, 3, 3).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.registration.Transform.inverse">
+<span class="sig-name descname"><span class="pre">inverse</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.Transform.inverse" title="Link to this definition">#</a></dt>
+<dd><p>Returns the transform that maps the points back.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The inverse transform.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#larmor.registration.Transform" title="larmor.registration.transforms.Transform"><em>Transform</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="larmor.registration.TransformChain">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.registration.</span></span><span class="sig-name descname"><span class="pre">TransformChain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transforms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.TransformChain" title="Link to this definition">#</a></dt>
+<dd><p>Transforms applied one after the other, starting with the first in the list.</p>
+<p>This is the order antsApplyTransforms lists its <code class="xref py py-obj docutils literal notranslate"><span class="pre">-t</span></code> options in: the first
+transform takes the reference grid’s points, the last gives positions in the
+input image. An ANTs registration written as <code class="xref py py-obj docutils literal notranslate"><span class="pre">1Warp.nii.gz</span></code> and
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">0GenericAffine.mat</span></code> is the chain [warp, affine].</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.registration.TransformChain.transforms">
+<span class="sig-name descname"><span class="pre">transforms</span></span><a class="headerlink" href="#larmor.registration.TransformChain.transforms" title="Link to this definition">#</a></dt>
+<dd><p>The transforms, in the order they are applied to points.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence" title="(in Python v3.15)">collections.abc.Sequence</a>[<a class="reference internal" href="#larmor.registration.Transform" title="larmor.registration.transforms.Transform">larmor.registration.transforms.Transform</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.registration.TransformChain.map_points">
+<span class="sig-name descname"><span class="pre">map_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.TransformChain.map_points" title="Link to this definition">#</a></dt>
+<dd><p>Maps points through every transform in turn.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>points</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – The points, shape (N, 3), in mm, world coordinates (RAS+).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The mapped points, shape (N, 3).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.registration.TransformChain.jacobians">
+<span class="sig-name descname"><span class="pre">jacobians</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.TransformChain.jacobians" title="Link to this definition">#</a></dt>
+<dd><p>Returns the (N, 3, 3) derivative at the points, by the chain rule.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>points</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – The points, shape (N, 3), in mm, world coordinates (RAS+).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The Jacobian matrices, shape (N, 3, 3).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.registration.TransformChain.inverse">
+<span class="sig-name descname"><span class="pre">inverse</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.TransformChain.inverse" title="Link to this definition">#</a></dt>
+<dd><p>Returns the chain of the inverses, in the reverse order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The inverse chain.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#larmor.registration.TransformChain" title="larmor.registration.transforms.TransformChain"><em>TransformChain</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="larmor.registration.TransformPair">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.registration.</span></span><span class="sig-name descname"><span class="pre">TransformPair</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forward</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backward</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.TransformPair" title="Link to this definition">#</a></dt>
+<dd><p>A transform given together with its inverse, such as a tool’s inverse warp.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.registration.TransformPair.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><a class="headerlink" href="#larmor.registration.TransformPair.forward" title="Link to this definition">#</a></dt>
+<dd><p>The transform <a class="reference internal" href="#larmor.registration.TransformPair.map_points" title="larmor.registration.TransformPair.map_points"><code class="xref py py-obj docutils literal notranslate"><span class="pre">map_points</span></code></a> applies.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#larmor.registration.Transform" title="larmor.registration.transforms.Transform">larmor.registration.transforms.Transform</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.registration.TransformPair.backward">
+<span class="sig-name descname"><span class="pre">backward</span></span><a class="headerlink" href="#larmor.registration.TransformPair.backward" title="Link to this definition">#</a></dt>
+<dd><p>Its inverse, which <a class="reference internal" href="#larmor.registration.TransformPair.inverse" title="larmor.registration.TransformPair.inverse"><code class="xref py py-obj docutils literal notranslate"><span class="pre">inverse</span></code></a> returns as the swapped pair.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#larmor.registration.Transform" title="larmor.registration.transforms.Transform">larmor.registration.transforms.Transform</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.registration.TransformPair.map_points">
+<span class="sig-name descname"><span class="pre">map_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.TransformPair.map_points" title="Link to this definition">#</a></dt>
+<dd><p>Maps points with <a class="reference internal" href="#larmor.registration.TransformPair.forward" title="larmor.registration.TransformPair.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>points</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – The points, shape (N, 3), in mm, world coordinates (RAS+).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The mapped points, shape (N, 3).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.registration.TransformPair.jacobians">
+<span class="sig-name descname"><span class="pre">jacobians</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.TransformPair.jacobians" title="Link to this definition">#</a></dt>
+<dd><p>Returns the (N, 3, 3) derivative of <a class="reference internal" href="#larmor.registration.TransformPair.forward" title="larmor.registration.TransformPair.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a> at the points.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>points</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – The points, shape (N, 3), in mm, world coordinates (RAS+).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The Jacobian matrices, shape (N, 3, 3).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.registration.TransformPair.inverse">
+<span class="sig-name descname"><span class="pre">inverse</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.TransformPair.inverse" title="Link to this definition">#</a></dt>
+<dd><p>Returns the pair swapped, so that <a class="reference internal" href="#larmor.registration.TransformPair.backward" title="larmor.registration.TransformPair.backward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">backward</span></code></a> becomes the forward map.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The pair with <a class="reference internal" href="#larmor.registration.TransformPair.backward" title="larmor.registration.TransformPair.backward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">backward</span></code></a> and <a class="reference internal" href="#larmor.registration.TransformPair.forward" title="larmor.registration.TransformPair.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a> swapped.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#larmor.registration.TransformPair" title="larmor.registration.transforms.TransformPair"><em>TransformPair</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.registration.apply_transform">
+<span class="sig-prename descclassname"><span class="pre">larmor.registration.</span></span><span class="sig-name descname"><span class="pre">apply_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reorient</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.apply_transform" title="Link to this definition">#</a></dt>
+<dd><p>Brings an image, tractogram or surface into a reference space.</p>
+<p><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform</span></code> maps reference points to the data’s space, as <a class="reference internal" href="#larmor.registration.load_registration" title="larmor.registration.load_registration"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_registration</span></code></a>
+returns it. An image is resampled with it; the points of a tractogram or
+surface move with its inverse, so that every kind of data lands in the same
+space.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<a class="reference internal" href="../types/#larmor.types.Volume" title="larmor.types.volume.Volume"><em>Volume</em></a><em> | </em><a class="reference internal" href="../types/#larmor.types.Tractogram" title="larmor.types.tractogram.Tractogram"><em>Tractogram</em></a><em> | </em><a class="reference internal" href="../types/#larmor.types.Surface" title="larmor.types.surface.Surface"><em>Surface</em></a>) – A <code class="xref py py-obj docutils literal notranslate"><span class="pre">Volume</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Tractogram</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">Surface</span></code>, in world coordinates (RAS+).</p></li>
+<li><p><strong>transform</strong> (<a class="reference internal" href="#larmor.registration.Transform" title="larmor.registration.transforms.Transform"><em>Transform</em></a>) – Maps reference points to the data’s points, in mm.</p></li>
+<li><p><strong>reference</strong> (<a class="reference internal" href="../types/#larmor.types.Grid" title="larmor.types.grid.Grid"><em>Grid</em></a><em> | </em><em>None</em>) – The reference grid; needed for an image, stored as the
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">reference</span></code> of a tractogram or surface.</p></li>
+<li><p><strong>interpolation</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.15)"><em>Literal</em></a><em>[</em><em>'nearest'</em><em>, </em><em>'linear'</em><em>, </em><em>'cubic'</em><em>]</em>) – For an image, as in <a class="reference internal" href="#larmor.registration.transform_volume" title="larmor.registration.transform_volume"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_volume</span></code></a>.</p></li>
+<li><p><strong>reorient</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.15)"><em>Literal</em></a><em>[</em><em>'peaks'</em><em>, </em><em>'tensor'</em><em>] </em><em>| </em><em>None</em>) – For an image, as in <a class="reference internal" href="#larmor.registration.transform_volume" title="larmor.registration.transform_volume"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_volume</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The data in the reference space, of the same type.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If an image has no reference grid, or as the function used.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="../types/#larmor.types.Volume" title="larmor.types.volume.Volume"><em>Volume</em></a> | <a class="reference internal" href="../types/#larmor.types.Tractogram" title="larmor.types.tractogram.Tractogram"><em>Tractogram</em></a> | <a class="reference internal" href="../types/#larmor.types.Surface" title="larmor.types.surface.Surface"><em>Surface</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.registration.load_registration">
+<span class="sig-prename descclassname"><span class="pre">larmor.registration.</span></span><span class="sig-name descname"><span class="pre">load_registration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inverse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warp_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fsl_input_grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fsl_reference_grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.load_registration" title="Link to this definition">#</a></dt>
+<dd><p>Reads the files of a registration as one transform into a reference space.</p>
+<p>Pass the result to <a class="reference internal" href="#larmor.registration.apply_transform" title="larmor.registration.apply_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">apply_transform</span></code></a> to bring an image, tractogram or surface
+into the reference space. The result maps reference points to data points,
+the direction <a class="reference internal" href="#larmor.registration.transform_volume" title="larmor.registration.transform_volume"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_volume</span></code></a> takes.</p>
+<p>The files are those that resample an image into the reference space, listed
+in the order antsApplyTransforms takes its <code class="xref py py-obj docutils literal notranslate"><span class="pre">-t</span></code> options, so the first file
+takes the reference grid’s points. A warp can be given as a pair (file,
+inverse_file) with the inverse its tool wrote (ANTs’ <code class="xref py py-obj docutils literal notranslate"><span class="pre">InverseWarp</span></code>,
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">invwarp</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">warpinvert</span></code>), which is then used instead of inverting the warp
+numerically. With <code class="xref py py-obj docutils literal notranslate"><span class="pre">inverse</span></code> the data goes the other way, from the reference
+space into the space the files bring images from.</p>
+<p>FSL files need the grids of the FLIRT or FNIRT run’s input and reference
+images. They default to the data’s grid and <code class="xref py py-obj docutils literal notranslate"><span class="pre">reference_grid</span></code>, swapped with
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">inverse</span></code>; data without a grid (streamlines, surfaces) needs
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">fsl_input_grid</span></code> going forward and <code class="xref py py-obj docutils literal notranslate"><span class="pre">fsl_reference_grid</span></code> with <code class="xref py py-obj docutils literal notranslate"><span class="pre">inverse</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>files</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence" title="(in Python v3.15)"><em>Sequence</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a><em>]</em><em>]</em>) – The files, or pairs of a warp and the inverse its tool wrote.</p></li>
+<li><p><strong>data_grid</strong> (<a class="reference internal" href="../types/#larmor.types.Grid" title="larmor.types.grid.Grid"><em>Grid</em></a><em> | </em><em>None</em>) – The grid of the data, if it is an image.</p></li>
+<li><p><strong>reference_grid</strong> (<a class="reference internal" href="../types/#larmor.types.Grid" title="larmor.types.grid.Grid"><em>Grid</em></a><em> | </em><em>None</em>) – The grid of the reference space.</p></li>
+<li><p><strong>inverse</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Go from the reference space into the space of the files’ inputs.</p></li>
+<li><p><strong>format</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – “ants”, “fsl” or “mrtrix”, when the files alone do not tell.</p></li>
+<li><p><strong>warp_type</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – The warp type of the warp fields, as in <a class="reference internal" href="#larmor.registration.load_transform" title="larmor.registration.load_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_transform</span></code></a>.</p></li>
+<li><p><strong>fsl_input_grid</strong> (<a class="reference internal" href="../types/#larmor.types.Grid" title="larmor.types.grid.Grid"><em>Grid</em></a><em> | </em><em>None</em>) – The FSL run’s input image grid, if not the default.</p></li>
+<li><p><strong>fsl_reference_grid</strong> (<a class="reference internal" href="../types/#larmor.types.Grid" title="larmor.types.grid.Grid"><em>Grid</em></a><em> | </em><em>None</em>) – The FSL run’s reference image grid, if not the
+default.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The transform, reference points to data points.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – As <a class="reference internal" href="#larmor.registration.load_transform" title="larmor.registration.load_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_transform</span></code></a>.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#larmor.registration.Transform" title="larmor.registration.transforms.Transform"><em>Transform</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.registration.load_transform">
+<span class="sig-prename descclassname"><span class="pre">larmor.registration.</span></span><span class="sig-name descname"><span class="pre">load_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warp_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fsl_input_grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fsl_reference_grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.load_transform" title="Link to this definition">#</a></dt>
+<dd><p>Reads a transform file of any supported format, chosen from the file if needed.</p>
+<p>Without <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#format" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">format</span></code></a>: an ITK text header or a binary <code class="xref py py-obj docutils literal notranslate"><span class="pre">mat</span></code> is ANTs, a text <code class="xref py py-obj docutils literal notranslate"><span class="pre">mat</span></code>
+is a FLIRT matrix, and other text files are MRtrix3 when they have MRtrix3’s
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">#</span> <span class="pre">command_history:</span></code> comment or 3 rows of 4 numbers. Any other 4x4 text matrix
+can be FLIRT or MRtrix3, so it needs <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#format" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">format</span></code></a>. A 5D NIfTI is an ANTs warp and a
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">mif</span></code> an MRtrix3 deformation field; a 4D NIfTI warp can come from FSL or
+MRtrix3, so it needs <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#format" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">format</span></code></a> too. Every transform maps reference points to
+input points, as the tools use them for images.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The transform file.</p></li>
+<li><p><strong>format</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – “ants”, “fsl” or “mrtrix”, when the file alone does not tell.</p></li>
+<li><p><strong>warp_type</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – For a warp field, how it stores where each voxel comes from:
+“deformation” (positions, MRtrix3’s default) or “displacement” for
+MRtrix3, “relative” (FSL’s default) or “absolute” for FSL. Checked
+against the field’s values. ANTs warps are always displacements.</p></li>
+<li><p><strong>fsl_input_grid</strong> (<a class="reference internal" href="../types/#larmor.types.Grid" title="larmor.types.grid.Grid"><em>Grid</em></a><em> | </em><em>None</em>) – The grid of the FSL run’s input image, needed for FSL
+files.</p></li>
+<li><p><strong>fsl_reference_grid</strong> (<a class="reference internal" href="../types/#larmor.types.Grid" title="larmor.types.grid.Grid"><em>Grid</em></a><em> | </em><em>None</em>) – The grid of the FSL run’s reference image, needed for
+a FLIRT matrix.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The transform.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the format is unknown or cannot be told, an FSL file
+    lacks a grid, or the warp type does not fit the format or the data.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#larmor.registration.Transform" title="larmor.registration.transforms.Transform"><em>Transform</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.registration.read_ants_transform">
+<span class="sig-prename descclassname"><span class="pre">larmor.registration.</span></span><span class="sig-name descname"><span class="pre">read_ants_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.read_ants_transform" title="Link to this definition">#</a></dt>
+<dd><p>Reads an affine or a displacement field written by ANTs.</p>
+<p>The transform maps points of the fixed image (the reference grid, <code class="xref py py-obj docutils literal notranslate"><span class="pre">-r</span></code> of
+antsApplyTransforms) to the moving image, the direction antsApplyTransforms
+uses for images as listed with <code class="xref py py-obj docutils literal notranslate"><span class="pre">-t</span></code>, and antsApplyTransformsToPoints for
+points. Bringing streamlines from the moving into the fixed space needs its
+inverse (for a warp, the <code class="xref py py-obj docutils literal notranslate"><span class="pre">InverseWarp</span></code> file antsRegistration writes beside it).</p>
+<p>The transform is converted from ITK’s LPS coordinates to RAS+ as read.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – An affine as a binary <code class="xref py py-obj docutils literal notranslate"><span class="pre">mat</span></code> file (<code class="xref py py-obj docutils literal notranslate"><span class="pre">0GenericAffine.mat</span></code>, MATLAB
+version 4) or an ITK text file (<code class="xref py py-obj docutils literal notranslate"><span class="pre">txt</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">tfm</span></code>), of type
+AffineTransform or MatrixOffsetTransformBase in 3D; or a displacement
+field as a NIfTI file (<code class="xref py py-obj docutils literal notranslate"><span class="pre">1Warp.nii.gz</span></code>, (X, Y, Z, 1, 3), mm, LPS).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The affine or the displacement field, in world coordinates (RAS+) in mm.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the file is not one of those, or holds another transform
+    type (convert it with <code class="xref py py-obj docutils literal notranslate"><span class="pre">ConvertTransformFile</span> <span class="pre">--convertToAffineType</span></code>).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#larmor.registration.AffineTransform" title="larmor.registration.transforms.AffineTransform"><em>AffineTransform</em></a> | <a class="reference internal" href="#larmor.registration.DisplacementField" title="larmor.registration.transforms.DisplacementField"><em>DisplacementField</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.registration.read_flirt_transform">
+<span class="sig-prename descclassname"><span class="pre">larmor.registration.</span></span><span class="sig-name descname"><span class="pre">read_flirt_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_grid</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.read_flirt_transform" title="Link to this definition">#</a></dt>
+<dd><p>Reads an FSL FLIRT matrix (<code class="xref py py-obj docutils literal notranslate"><span class="pre">-omat</span></code>) as a transform of world points.</p>
+<p>FLIRT’s matrix works in FSL’s scaled voxel coordinates of the input and
+reference images, so it needs both grids. The transform returned maps points of
+the reference image to the input image, the inverse of FLIRT’s matrix and the
+direction <code class="xref py py-obj docutils literal notranslate"><span class="pre">flirt</span> <span class="pre">-applyxfm</span></code> uses to resample the input. Moving points from the
+input into the reference space needs its inverse.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The text file of 4 rows of 4 numbers.</p></li>
+<li><p><strong>input_grid</strong> (<a class="reference internal" href="../types/#larmor.types.Grid" title="larmor.types.grid.Grid"><em>Grid</em></a>) – The grid of FLIRT’s <code class="xref py py-obj docutils literal notranslate"><span class="pre">-in</span></code> image.</p></li>
+<li><p><strong>reference_grid</strong> (<a class="reference internal" href="../types/#larmor.types.Grid" title="larmor.types.grid.Grid"><em>Grid</em></a>) – The grid of FLIRT’s <code class="xref py py-obj docutils literal notranslate"><span class="pre">-ref</span></code> image.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The affine, reference to input, in world coordinates (RAS+) in mm.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the file is not a 4x4 matrix of numbers.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#larmor.registration.AffineTransform" title="larmor.registration.transforms.AffineTransform"><em>AffineTransform</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.registration.read_fsl_warp">
+<span class="sig-prename descclassname"><span class="pre">larmor.registration.</span></span><span class="sig-name descname"><span class="pre">read_fsl_warp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_grid</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">relative</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.read_fsl_warp" title="Link to this definition">#</a></dt>
+<dd><p>Reads an FSL warp field (fnirt <code class="xref py py-obj docutils literal notranslate"><span class="pre">--fout</span></code>, convertwarp, invwarp) as a transform.</p>
+<p>The field lies on the reference image’s grid and holds where each reference
+voxel comes from in the input image, in FSL’s scaled voxel coordinates, as a
+displacement (relative, FSL’s default) or as the coordinates themselves
+(absolute, <code class="xref py py-obj docutils literal notranslate"><span class="pre">--abs</span></code>). The transform maps points of the reference image to the
+input image, the direction applywarp uses to resample the input. Moving points
+the other way needs its inverse (invwarp’s output, or the numerical inverse).</p>
+<p>Fields of spline coefficients (fnirt <code class="xref py py-obj docutils literal notranslate"><span class="pre">--cout</span></code>) are not read; convert them with
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">fnirtfileutils</span> <span class="pre">--withaff</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">convertwarp</span></code> first.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The NIfTI file, (X, Y, Z, 3).</p></li>
+<li><p><strong>input_grid</strong> (<a class="reference internal" href="../types/#larmor.types.Grid" title="larmor.types.grid.Grid"><em>Grid</em></a>) – The grid of the input image (applywarp’s <code class="xref py py-obj docutils literal notranslate"><span class="pre">-i</span></code>).</p></li>
+<li><p><strong>relative</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether the field holds displacements (True) or absolute
+coordinates. The values are checked against it: absolute coordinates
+lie near each voxel’s own coordinates, displacements near zero.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The displacement field, in world coordinates (RAS+) in mm.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the file is not a 4D image with 3 volumes, or its values
+    look like the other kind of field.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#larmor.registration.DisplacementField" title="larmor.registration.transforms.DisplacementField"><em>DisplacementField</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.registration.read_mrtrix_transform">
+<span class="sig-prename descclassname"><span class="pre">larmor.registration.</span></span><span class="sig-name descname"><span class="pre">read_mrtrix_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.read_mrtrix_transform" title="Link to this definition">#</a></dt>
+<dd><p>Reads an MRtrix3 linear transform (mrregister, transformconvert).</p>
+<p>The matrix is in scanner coordinates (RAS+, mm) and, as mrtransform <code class="xref py py-obj docutils literal notranslate"><span class="pre">-linear</span></code>
+uses it, maps points of the template (reference) image to the input image.
+Moving points from the input into the template space needs its inverse.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – A text file of 3 or 4 rows of 4 numbers; <code class="xref py py-obj docutils literal notranslate"><span class="pre">#</span></code> starts a comment.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The affine, in world coordinates (RAS+) in mm.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the file is not a 3x4 or 4x4 matrix of numbers.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#larmor.registration.AffineTransform" title="larmor.registration.transforms.AffineTransform"><em>AffineTransform</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.registration.read_mrtrix_warp">
+<span class="sig-prename descclassname"><span class="pre">larmor.registration.</span></span><span class="sig-name descname"><span class="pre">read_mrtrix_warp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">displacement</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.read_mrtrix_warp" title="Link to this definition">#</a></dt>
+<dd><p>Reads an MRtrix3 deformation or displacement field as a transform.</p>
+<p>A deformation field holds, at each voxel of the template grid, the position
+in the input image it comes from (scanner coordinates, RAS+, mm); a
+displacement field holds that position minus the voxel’s own. Either way the
+transform maps template points to input points, as mrtransform <code class="xref py py-obj docutils literal notranslate"><span class="pre">-warp</span></code> uses it
+to resample an image; tcktransform moves streamlines from the template space
+into the input space with the same <code class="xref py py-obj docutils literal notranslate"><span class="pre">map_points</span></code>. NaN marks voxels without a
+position.</p>
+<p>mrregister’s 5D warps (both halves of a symmetric registration) are not read;
+convert one with <code class="xref py py-obj docutils literal notranslate"><span class="pre">warpconvert</span> <span class="pre">-type</span> <span class="pre">warpfull2deformation</span></code> first.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The image (<code class="xref py py-obj docutils literal notranslate"><span class="pre">mif</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">nii</span></code>, …), (X, Y, Z, 3).</p></li>
+<li><p><strong>displacement</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether the field holds displacements instead of positions.
+The values are checked against it: positions lie near each voxel’s
+own position, displacements near zero.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The displacement field, in world coordinates (RAS+) in mm.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the image is not (X, Y, Z, 3), or its values look like
+    the other kind of field.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#larmor.registration.DisplacementField" title="larmor.registration.transforms.DisplacementField"><em>DisplacementField</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.registration.transform_file">
+<span class="sig-prename descclassname"><span class="pre">larmor.registration.</span></span><span class="sig-name descname"><span class="pre">transform_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inverse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reorient</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warp_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fsl_input_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fsl_reference_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.transform_file" title="Link to this definition">#</a></dt>
+<dd><p>Brings an image, tractogram or surface file into a reference space.</p>
+<p>The transform files are read with <a class="reference internal" href="#larmor.registration.load_registration" title="larmor.registration.load_registration"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_registration</span></code></a> and applied as
+<a class="reference internal" href="#larmor.registration.apply_transform" title="larmor.registration.apply_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">apply_transform</span></code></a> does, so an image is resampled as antsApplyTransforms,
+flirt, applywarp or mrtransform would with the same files and reference.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – An image, a tractogram, or a surface (<code class="xref py py-obj docutils literal notranslate"><span class="pre">gii</span></code> or FreeSurfer).</p></li>
+<li><p><strong>output_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – Where to write the result, of the same kind.</p></li>
+<li><p><strong>files</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence" title="(in Python v3.15)"><em>Sequence</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a><em>]</em><em>]</em>) – The transform files, as in <a class="reference internal" href="#larmor.registration.load_registration" title="larmor.registration.load_registration"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_registration</span></code></a>.</p></li>
+<li><p><strong>reference_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a><em> | </em><em>None</em>) – An image of the reference space; needed for images and
+for a <code class="xref py py-obj docutils literal notranslate"><span class="pre">trk</span></code> output.</p></li>
+<li><p><strong>inverse</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Go from the reference space into the space of the files’ inputs.</p></li>
+<li><p><strong>interpolation</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.15)"><em>Literal</em></a><em>[</em><em>'nearest'</em><em>, </em><em>'linear'</em><em>, </em><em>'cubic'</em><em>]</em>) – For images, as in <a class="reference internal" href="#larmor.registration.transform_volume" title="larmor.registration.transform_volume"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_volume</span></code></a>.</p></li>
+<li><p><strong>reorient</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.15)"><em>Literal</em></a><em>[</em><em>'peaks'</em><em>, </em><em>'tensor'</em><em>] </em><em>| </em><em>None</em>) – For images, as in <a class="reference internal" href="#larmor.registration.transform_volume" title="larmor.registration.transform_volume"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_volume</span></code></a>.</p></li>
+<li><p><strong>format</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – “ants”, “fsl” or “mrtrix”, when the files alone do not tell.</p></li>
+<li><p><strong>warp_type</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – The warp type of the warp fields, as in <a class="reference internal" href="#larmor.registration.load_transform" title="larmor.registration.load_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_transform</span></code></a>.</p></li>
+<li><p><strong>fsl_input_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a><em> | </em><em>None</em>) – An image of the FSL run’s input, if not the default.</p></li>
+<li><p><strong>fsl_reference_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a><em> | </em><em>None</em>) – An image of the FSL run’s reference, if not the
+default.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the output is the input, an image has no reference, or as
+    the functions used.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.registration.transform_points">
+<span class="sig-prename descclassname"><span class="pre">larmor.registration.</span></span><span class="sig-name descname"><span class="pre">transform_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.transform_points" title="Link to this definition">#</a></dt>
+<dd><p>Maps points with a transform.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>points</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – (N, 3) points in world coordinates (RAS+) in mm.</p></li>
+<li><p><strong>transform</strong> (<a class="reference internal" href="#larmor.registration.Transform" title="larmor.registration.transforms.Transform"><em>Transform</em></a>) – The transform; each point p becomes transform(p).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>(N, 3) float64, the mapped points.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.registration.transform_surface">
+<span class="sig-prename descclassname"><span class="pre">larmor.registration.</span></span><span class="sig-name descname"><span class="pre">transform_surface</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">surface</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.transform_surface" title="Link to this definition">#</a></dt>
+<dd><p>Moves every vertex of a surface with a transform.</p>
+<p>Each vertex p becomes transform(p), the same direction as
+<a class="reference internal" href="#larmor.registration.transform_tractogram" title="larmor.registration.transform_tractogram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_tractogram</span></code></a> and the opposite of <a class="reference internal" href="#larmor.registration.transform_volume" title="larmor.registration.transform_volume"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_volume</span></code></a>. Where the
+transform reflects at every vertex, such as an affine with a flip, the
+triangles’ vertex order is reversed so that normals still point out.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>surface</strong> (<a class="reference internal" href="../types/#larmor.types.Surface" title="larmor.types.surface.Surface"><em>Surface</em></a>) – The mesh, in world coordinates (RAS+) in mm.</p></li>
+<li><p><strong>transform</strong> (<a class="reference internal" href="#larmor.registration.Transform" title="larmor.registration.transforms.Transform"><em>Transform</em></a>) – Maps the surface’s space to the output space.</p></li>
+<li><p><strong>reference</strong> (<a class="reference internal" href="../types/#larmor.types.Grid" title="larmor.types.grid.Grid"><em>Grid</em></a><em> | </em><em>None</em>) – The grid of the output space, stored as the result’s
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">reference</span></code>. None leaves it unknown.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A new surface with the moved vertices and the same <code class="xref py py-obj docutils literal notranslate"><span class="pre">vertex_data</span></code>.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If a vertex lands where the transform is undefined (NaN).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="../types/#larmor.types.Surface" title="larmor.types.surface.Surface"><em>Surface</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.registration.transform_tractogram">
+<span class="sig-prename descclassname"><span class="pre">larmor.registration.</span></span><span class="sig-name descname"><span class="pre">transform_tractogram</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tractogram</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.transform_tractogram" title="Link to this definition">#</a></dt>
+<dd><p>Moves every point of a tractogram with a transform.</p>
+<p>Each point p becomes transform(p). This is the opposite direction of
+<a class="reference internal" href="#larmor.registration.transform_volume" title="larmor.registration.transform_volume"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_volume</span></code></a>: to bring a tractogram into the space an image is resampled
+into, pass <code class="xref py py-obj docutils literal notranslate"><span class="pre">transform.inverse()</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tractogram</strong> (<a class="reference internal" href="../types/#larmor.types.Tractogram" title="larmor.types.tractogram.Tractogram"><em>Tractogram</em></a>) – The streamlines, in world coordinates (RAS+) in mm.</p></li>
+<li><p><strong>transform</strong> (<a class="reference internal" href="#larmor.registration.Transform" title="larmor.registration.transforms.Transform"><em>Transform</em></a>) – Maps the tractogram’s space to the output space.</p></li>
+<li><p><strong>reference</strong> (<a class="reference internal" href="../types/#larmor.types.Grid" title="larmor.types.grid.Grid"><em>Grid</em></a><em> | </em><em>None</em>) – The grid of the output space, stored as the result’s
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">reference</span></code> (a TRK file needs one). None leaves it unknown.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A new tractogram with the moved points and the same offsets,
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">point_data</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">streamline_data</span></code>.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If a point lands where the transform is undefined (NaN).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="../types/#larmor.types.Tractogram" title="larmor.types.tractogram.Tractogram"><em>Tractogram</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.registration.transform_tractogram_file">
+<span class="sig-prename descclassname"><span class="pre">larmor.registration.</span></span><span class="sig-name descname"><span class="pre">transform_tractogram_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.transform_tractogram_file" title="Link to this definition">#</a></dt>
+<dd><p>Moves the points of a tractogram file with a transform, into a new file.</p>
+<p>As in <a class="reference internal" href="#larmor.registration.transform_tractogram" title="larmor.registration.transform_tractogram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_tractogram</span></code></a>, each point p becomes transform(p). Uncompressed
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">tck</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">trk</span></code> files are read and written in batches; other formats are
+read whole. The streamlines keep their order, so weights and TSF files of the
+input still match the output.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The tractogram file.</p></li>
+<li><p><strong>output_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The file to write; its extension chooses the format.</p></li>
+<li><p><strong>transform</strong> (<a class="reference internal" href="#larmor.registration.Transform" title="larmor.registration.transforms.Transform"><em>Transform</em></a>) – Maps the input’s space to the output space.</p></li>
+<li><p><strong>reference</strong> (<a class="reference internal" href="../types/#larmor.types.Grid" title="larmor.types.grid.Grid"><em>Grid</em></a><em> | </em><em>None</em>) – The grid of the output space; a <code class="xref py py-obj docutils literal notranslate"><span class="pre">trk</span></code> output needs it.</p></li>
+<li><p><strong>batch_size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Streamlines per batch when streaming.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The number of streamlines written.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – As <a class="reference internal" href="#larmor.registration.transform_tractogram" title="larmor.registration.transform_tractogram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_tractogram</span></code></a>, or if a <code class="xref py py-obj docutils literal notranslate"><span class="pre">trk</span></code> output has no
+    reference.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.registration.transform_volume">
+<span class="sig-prename descclassname"><span class="pre">larmor.registration.</span></span><span class="sig-name descname"><span class="pre">transform_volume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">volume</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reorient</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.registration.transform_volume" title="Link to this definition">#</a></dt>
+<dd><p>Resamples an image onto a reference grid through a transform.</p>
+<p>Each voxel of the reference grid, at world position p, takes the image’s value
+at transform(p). The transform therefore maps points of the reference space to
+the image’s space, the direction transform files store, so the same file and
+reference image give the result of antsApplyTransforms, <code class="xref py py-obj docutils literal notranslate"><span class="pre">flirt</span> <span class="pre">-applyxfm</span></code>,
+applywarp or mrtransform.</p>
+<p>A point within half a voxel beyond the image’s outer voxel centres takes the
+edge value; a point further out gets <code class="xref py py-obj docutils literal notranslate"><span class="pre">fill</span></code>.</p>
+<p>Directions stored in the image are reoriented when <code class="xref py py-obj docutils literal notranslate"><span class="pre">reorient</span></code> says how they
+are stored, following Alexander et al. (2001):</p>
+<ul class="simple">
+<li><p>“peaks”: vectors in groups of 3 per voxel, shape (X, Y, Z, 3K), each turned
+by the local transform and kept at its length. Needs
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">interpolation=&quot;nearest&quot;</span></code>.</p></li>
+<li><p>“tensor”: diffusion tensors as their 6 elements (xx, xy, xz, yy, yz, zz),
+interpolated element by element, then rotated by finite strain.</p></li>
+</ul>
+<p>FODs are not reoriented.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>volume</strong> (<a class="reference internal" href="../types/#larmor.types.Volume" title="larmor.types.volume.Volume"><em>Volume</em></a>) – The image, 3D or 4D; each volume of a 4D image is resampled alike.</p></li>
+<li><p><strong>transform</strong> (<a class="reference internal" href="#larmor.registration.Transform" title="larmor.registration.transforms.Transform"><em>Transform</em></a>) – Maps reference points to image points, in world mm (RAS+).</p></li>
+<li><p><strong>reference</strong> (<a class="reference internal" href="../types/#larmor.types.Grid" title="larmor.types.grid.Grid"><em>Grid</em></a>) – The output grid. The result takes its NIfTI sform and qform
+codes, so an image resampled onto a template is labelled in the
+template’s space.</p></li>
+<li><p><strong>interpolation</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.15)"><em>Literal</em></a><em>[</em><em>'nearest'</em><em>, </em><em>'linear'</em><em>, </em><em>'cubic'</em><em>]</em>) – “nearest” (for labels; keeps the data type), “linear” (the
+default) or “cubic” (B-spline of order 3).</p></li>
+<li><p><strong>reorient</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.15)"><em>Literal</em></a><em>[</em><em>'peaks'</em><em>, </em><em>'tensor'</em><em>] </em><em>| </em><em>None</em>) – How directions are stored, if they are: “peaks” or “tensor”.</p></li>
+<li><p><strong>fill</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The value outside the image.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The resampled image on <code class="xref py py-obj docutils literal notranslate"><span class="pre">reference</span></code>, float32 (float64 for a float64 image)
+unless the interpolation is “nearest”, which keeps the stored values and
+their scaling.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If <code class="xref py py-obj docutils literal notranslate"><span class="pre">reorient</span></code> does not match the image’s last axis, or “peaks”
+    is asked for with an interpolation other than “nearest”.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="../types/#larmor.types.Volume" title="larmor.types.volume.Volume"><em>Volume</em></a></p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<p>Alexander DC, Pierpaoli C, Basser PJ, Gee JC. Spatial transformations of
+diffusion tensor magnetic resonance images. IEEE Trans Med Imaging 20
+(2001) 1131-1139.</p>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.AffineTransform"><code class="docutils literal notranslate"><span class="pre">AffineTransform</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.AffineTransform.matrix"><code class="docutils literal notranslate"><span class="pre">AffineTransform.matrix</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.AffineTransform.map_points"><code class="docutils literal notranslate"><span class="pre">AffineTransform.map_points()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.AffineTransform.jacobians"><code class="docutils literal notranslate"><span class="pre">AffineTransform.jacobians()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.AffineTransform.inverse"><code class="docutils literal notranslate"><span class="pre">AffineTransform.inverse()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.DisplacementField"><code class="docutils literal notranslate"><span class="pre">DisplacementField</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.DisplacementField.grid"><code class="docutils literal notranslate"><span class="pre">DisplacementField.grid</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.DisplacementField.displacements"><code class="docutils literal notranslate"><span class="pre">DisplacementField.displacements</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.DisplacementField.map_points"><code class="docutils literal notranslate"><span class="pre">DisplacementField.map_points()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.DisplacementField.jacobians"><code class="docutils literal notranslate"><span class="pre">DisplacementField.jacobians()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.DisplacementField.inverse"><code class="docutils literal notranslate"><span class="pre">DisplacementField.inverse()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.InverseDisplacementField"><code class="docutils literal notranslate"><span class="pre">InverseDisplacementField</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.InverseDisplacementField.field"><code class="docutils literal notranslate"><span class="pre">InverseDisplacementField.field</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.InverseDisplacementField.tolerance"><code class="docutils literal notranslate"><span class="pre">InverseDisplacementField.tolerance</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.InverseDisplacementField.max_iterations"><code class="docutils literal notranslate"><span class="pre">InverseDisplacementField.max_iterations</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.InverseDisplacementField.map_points"><code class="docutils literal notranslate"><span class="pre">InverseDisplacementField.map_points()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.InverseDisplacementField.jacobians"><code class="docutils literal notranslate"><span class="pre">InverseDisplacementField.jacobians()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.InverseDisplacementField.inverse"><code class="docutils literal notranslate"><span class="pre">InverseDisplacementField.inverse()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.Transform"><code class="docutils literal notranslate"><span class="pre">Transform</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.Transform.map_points"><code class="docutils literal notranslate"><span class="pre">Transform.map_points()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.Transform.jacobians"><code class="docutils literal notranslate"><span class="pre">Transform.jacobians()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.Transform.inverse"><code class="docutils literal notranslate"><span class="pre">Transform.inverse()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.TransformChain"><code class="docutils literal notranslate"><span class="pre">TransformChain</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.TransformChain.transforms"><code class="docutils literal notranslate"><span class="pre">TransformChain.transforms</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.TransformChain.map_points"><code class="docutils literal notranslate"><span class="pre">TransformChain.map_points()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.TransformChain.jacobians"><code class="docutils literal notranslate"><span class="pre">TransformChain.jacobians()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.TransformChain.inverse"><code class="docutils literal notranslate"><span class="pre">TransformChain.inverse()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.TransformPair"><code class="docutils literal notranslate"><span class="pre">TransformPair</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.TransformPair.forward"><code class="docutils literal notranslate"><span class="pre">TransformPair.forward</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.TransformPair.backward"><code class="docutils literal notranslate"><span class="pre">TransformPair.backward</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.TransformPair.map_points"><code class="docutils literal notranslate"><span class="pre">TransformPair.map_points()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.TransformPair.jacobians"><code class="docutils literal notranslate"><span class="pre">TransformPair.jacobians()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.TransformPair.inverse"><code class="docutils literal notranslate"><span class="pre">TransformPair.inverse()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.apply_transform"><code class="docutils literal notranslate"><span class="pre">apply_transform()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.load_registration"><code class="docutils literal notranslate"><span class="pre">load_registration()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.load_transform"><code class="docutils literal notranslate"><span class="pre">load_transform()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.read_ants_transform"><code class="docutils literal notranslate"><span class="pre">read_ants_transform()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.read_flirt_transform"><code class="docutils literal notranslate"><span class="pre">read_flirt_transform()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.read_fsl_warp"><code class="docutils literal notranslate"><span class="pre">read_fsl_warp()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.read_mrtrix_transform"><code class="docutils literal notranslate"><span class="pre">read_mrtrix_transform()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.read_mrtrix_warp"><code class="docutils literal notranslate"><span class="pre">read_mrtrix_warp()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.transform_file"><code class="docutils literal notranslate"><span class="pre">transform_file()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.transform_points"><code class="docutils literal notranslate"><span class="pre">transform_points()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.transform_surface"><code class="docutils literal notranslate"><span class="pre">transform_surface()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.transform_tractogram"><code class="docutils literal notranslate"><span class="pre">transform_tractogram()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.transform_tractogram_file"><code class="docutils literal notranslate"><span class="pre">transform_tractogram_file()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.registration.transform_volume"><code class="docutils literal notranslate"><span class="pre">transform_volume()</span></code></a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
