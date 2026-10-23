@@ -10,7 +10,7 @@ myst:
 
 If you use Larmor in your work, please cite it, together with the papers of the methods you used, listed below.
 There is no paper about Larmor yet, so cite the software itself, with the version you used (`lar --version`
-prints it). Cite it as follows:
+prints it). The DOI 10.5281/zenodo.23604584 is that of version 2.0.0. Cite it as follows:
 
 ```{include} ../_snippets/cite-larmor.md
 ```
@@ -23,6 +23,7 @@ In BibTeX:
   title   = {Larmor: a Python library and viewer for diffusion MRI},
   version = {x.y.z},
   year    = {YYYY},
+  doi     = {10.5281/zenodo.23604584},
   url     = {https://larmor.org},
 }
 ```
