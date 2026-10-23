@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 280" width="280" height="280">
+  <title>larmor</title>
+  <!-- The larmor symbol without the name, white, on the dark rounded tile of the logo: the
+       favicon and the mark beside the name on the website. -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a2d34"/>
+      <stop offset="1" stop-color="#121317"/>
+    </linearGradient>
+    <mask id="gap" maskUnits="userSpaceOnUse" x="0" y="0" width="600" height="240">
+      <rect width="600" height="240" fill="#fff"/>
+      <circle cx="100" cy="128" r="42" fill="#000"/>
+      <rect x="80" y="65.99" width="40" height="12" fill="#000"/>
+      <rect x="80" y="189.43" width="40" height="12" fill="#000"/>
+    </mask>
+    <mask id="orb" maskUnits="userSpaceOnUse" x="0" y="0" width="600" height="240">
+      <rect width="600" height="240" fill="#fff"/>
+      <circle cx="63" cy="63.91" r="16" fill="#000"/>
+      <rect x="88" y="44.99" width="24" height="15" fill="#000"/>
+      <rect x="88" y="170.43" width="24" height="14" fill="#000"/>
+    </mask>
+    <mask id="shine" maskUnits="userSpaceOnUse" x="0" y="0" width="600" height="240">
+      <rect width="600" height="240" fill="#fff"/>
+      <path d="M105.2 103.55 A25 25 0 0 1 123.18 118.63" fill="none" stroke="#000" stroke-width="7" stroke-linecap="round"/>
+    </mask>
+  </defs>
+  <rect width="280" height="280" rx="64" fill="url(#tile)"/>
+  <!-- The symbol spans x 58 to 142 and y 4 to 236; scaled and centred on the tile. -->
+  <g transform="translate(50 32) scale(0.9)">
+  <g fill="#f2f2f2" stroke="#f2f2f2">
+    <!-- precession orbits (back halves pass behind the axis) -->
+    <g mask="url(#orb)">
+      <ellipse cx="100" cy="60.99" rx="42" ry="11" fill="none" stroke-width="6"/>
+      <ellipse cx="100" cy="185.43" rx="33" ry="10" fill="none" stroke-width="6"/>
+    </g>
+    <!-- B0 axis and spin axis, separated from the proton -->
+    <g mask="url(#gap)">
+      <line x1="100" y1="236" x2="100" y2="34" stroke-width="10"/>
+      <line x1="69" y1="74.31" x2="132" y2="183.43" stroke-width="8" stroke-linecap="round"/>
+    </g>
+    <polygon stroke="none" points="100,4 84,38 116,38"/>
+    <polygon stroke="none" points="59,56.99 78.53,68.81 59.47,79.81"/>
+    <!-- proton with a cut-out highlight -->
+    <circle cx="100" cy="128" r="36" stroke="none" mask="url(#shine)"/>
+  </g>
+  </g>
+</svg>

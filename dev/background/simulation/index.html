@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="What Larmor's diffusion MRI simulation computes, from compartment models, tissues and partial volume to relaxation and Rician noise, and what it does not model." name="description" />
+<meta property="og:title" content="Simulating diffusion MRI" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://larmor.org/background/simulation/" />
+<meta property="og:site_name" content="Larmor" />
+<meta property="og:description" content="What Larmor's diffusion MRI simulation computes, from compartment models, tissues and partial volume to relaxation and Rician noise, and what it does not model." />
+<meta property="og:image" content="https://larmor.org/_static/larmor-card.png" />
+<meta property="og:image:alt" content="Larmor: a Python library and viewer for diffusion MRI" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<title>Simulating diffusion MRI - Larmor</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=c83e6b79" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/larmor.css?v=f0153430" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="../../_static/documentation_options.js?v=b21b538c"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+    <script defer="defer" src="../../_static/larmor-carousel.js?v=7f65fbb2"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'background/simulation';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://larmor.org/versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://larmor.org/background/simulation/" />
+    <link rel="icon" href="../../_static/larmor-symbol.svg"/>
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Reference" href="../../reference/" />
+    <link rel="prev" title="Conventions" href="../conventions/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="2.0" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+<link rel="icon" type="image/png" sizes="32x32" href="../../_static/favicon-32.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="../../_static/apple-touch-icon.png" />
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search/"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/larmor-symbol.svg" class="logo__image only-light" alt=""/>
+    <img src="../../_static/larmor-symbol.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">Larmor</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../install/">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../quick-start/">
+    Quick start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../simulation/">
+    Simulation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../gallery/">
+    Gallery
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../guides/">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../viewer/">
+    Viewer
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../">
+    Background
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../reference/">
+    Reference
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../agents/">
+    Agents
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../about/">
+    About
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+      
+        <div class="navbar-item">
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../install/">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../quick-start/">
+    Quick start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../simulation/">
+    Simulation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../gallery/">
+    Gallery
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../guides/">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../viewer/">
+    Viewer
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../">
+    Background
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../reference/">
+    Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../agents/">
+    Agents
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../about/">
+    About
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button type="button" id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../conventions/">Conventions</a></li>
+<li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">Simulating diffusion MRI</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../" class="nav-link">Background</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Simulating diffusion MRI</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="simulating-diffusion-mri">
+<h1>Simulating diffusion MRI<a class="headerlink" href="#simulating-diffusion-mri" title="Link to this heading">#</a></h1>
+<p>This page describes what <a class="reference internal" href="../../reference/api/simulation/#larmor.simulation.simulate" title="larmor.simulation.simulate"><code class="xref py py-func docutils literal notranslate"><span class="pre">simulate()</span></code></a> computes, so that you know what the simulated
+images contain and what they leave out. The simulation uses the instant engine, which evaluates the signal of every
+voxel in closed form, as if the whole acquisition happened at one instant. The sections below describe the signal
+of a voxel as a sum over compartments, how tissues share a voxel, how relaxation weights the signal, and how noise
+is added. The <a class="reference internal" href="../../guides/simulation/"><span class="std std-doc">simulation guide</span></a> shows how to run a simulation. The simulation builds on
+SymDWI, a simulator by Larmor’s author, relicensed under the LGPL-3.0-only. Where this page gives a source for a
+model or a default value, it is listed under <a class="reference internal" href="#references">References</a>; a value marked as a choice has no source.</p>
+<section id="the-signal">
+<h2>The signal<a class="headerlink" href="#the-signal" title="Link to this heading">#</a></h2>
+<p>The signal of a voxel is the sum of the signals of its compartments, each weighted by the fraction of the voxel it
+fills and by its relaxation. For echo time e and gradient n, it is</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">S</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span> <span class="o">=</span> <span class="nb">sum</span> <span class="n">over</span> <span class="n">compartments</span> <span class="n">c</span> <span class="n">of</span>  <span class="n">f_c</span> <span class="o">*</span> <span class="n">A_c</span><span class="p">(</span><span class="n">b_n</span><span class="p">,</span> <span class="n">g_n</span><span class="p">)</span> <span class="o">*</span> <span class="n">w_c</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">f_c</span></code> is the fraction of the voxel that compartment c fills, <code class="docutils literal notranslate"><span class="pre">A_c</span></code> its diffusion attenuation for the
+b-value <code class="docutils literal notranslate"><span class="pre">b_n</span></code> and the unit gradient direction <code class="docutils literal notranslate"><span class="pre">g_n</span></code>, and <code class="docutils literal notranslate"><span class="pre">w_c(e)</span></code> its relaxation weight. The sum runs over all
+compartments of all tissues in the voxel. An oriented compartment (a stick, a zeppelin, Watson-dispersed sticks or
+a cylinder) is evaluated along each fibre direction in the voxel, and the results are weighted by the share of the
+voxel each fibre fills.</p>
+</section>
+<section id="compartments">
+<h2>Compartments<a class="headerlink" href="#compartments" title="Link to this heading">#</a></h2>
+<p>A compartment is one pool of water that follows a diffusion model. The table below gives the attenuation of each
+model, where D is the diffusivity, <code class="docutils literal notranslate"><span class="pre">b</span></code> the b-value in s/mm^2, <code class="docutils literal notranslate"><span class="pre">g</span></code> the gradient direction and <code class="docutils literal notranslate"><span class="pre">n</span></code> the fibre
+direction.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Model</p></th>
+<th class="head"><p>Attenuation</p></th>
+<th class="head"><p>Source</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Stick</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">exp(-b</span> <span class="pre">D</span> <span class="pre">(g.n)^2)</span></code></p></td>
+<td><p>Behrens et al. 2003</p></td>
+</tr>
+<tr class="row-odd"><td><p>Zeppelin</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">exp(-b</span> <span class="pre">(D_perp</span> <span class="pre">+</span> <span class="pre">(D</span> <span class="pre">-</span> <span class="pre">D_perp)</span> <span class="pre">(g.n)^2))</span></code></p></td>
+<td><p>Kaden et al. 2016, Eq. 5; Novikov et al. 2019, Eq. 3.5</p></td>
+</tr>
+<tr class="row-even"><td><p>Ball</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">exp(-b</span> <span class="pre">D)</span></code></p></td>
+<td><p>Novikov et al. 2019, Eq. 3.5</p></td>
+</tr>
+<tr class="row-odd"><td><p>Powder-averaged stick</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">sqrt(pi)</span> <span class="pre">/</span> <span class="pre">(2</span> <span class="pre">sqrt(b</span> <span class="pre">D))</span> <span class="pre">*</span> <span class="pre">erf(sqrt(b</span> <span class="pre">D))</span></code>, the stick averaged over all directions</p></td>
+<td><p>Kroenke et al. 2004; Kaden et al. 2016</p></td>
+</tr>
+<tr class="row-even"><td><p>Sphere</p></td>
+<td><p>Diffusion restricted to an impermeable sphere, in the Gaussian phase approximation for rectangular pulses</p></td>
+<td><p>Palombo et al. 2020, Eq. 8</p></td>
+</tr>
+<tr class="row-odd"><td><p>Watson-dispersed sticks</p></td>
+<td><p>The stick averaged over directions spread about the fibre by a Watson density</p></td>
+<td><p>Zhang et al. 2012</p></td>
+</tr>
+<tr class="row-even"><td><p>Cylinder</p></td>
+<td><p>Diffusion restricted to an impermeable cylinder across the fibre, in the Gaussian phase approximation for rectangular pulses, and free along it</p></td>
+<td><p>Van Gelderen et al. 1994; De Santis et al. 2016, Eq. 3</p></td>
+</tr>
+<tr class="row-odd"><td><p>Dot</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
+<td><p>Panagiotaki et al. 2012</p></td>
+</tr>
+<tr class="row-even"><td><p>Free water</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">exp(-b</span> <span class="pre">D)</span></code>, with D = 3e-3 mm^2/s in the presets</p></td>
+<td><p>Pasternak et al. 2009; Zhang et al. 2012</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The stick has diffusion along the fibre only, and the zeppelin is an axially symmetric tensor. The signals of the
+sphere and the cylinder depend on the pulse timings and the radius, while the others do not. Compartments do not
+exchange water.</p>
+<p>The Watson-dispersed sticks describe neurites that do not all point the same way. Their directions n follow the
+Watson density <code class="docutils literal notranslate"><span class="pre">f(n)</span> <span class="pre">=</span> <span class="pre">exp(kappa</span> <span class="pre">(mu.n)^2)</span> <span class="pre">/</span> <span class="pre">M(1/2,</span> <span class="pre">3/2,</span> <span class="pre">kappa)</span></code>, centred on the fibre direction mu, where M is
+the confluent hypergeometric function that makes f integrate to 1. The concentration kappa sets how tightly the
+sticks follow mu. At kappa = 0 they spread evenly over all directions and give the powder-averaged stick, and as
+kappa grows they gather along mu and tend to the stick. The signal is the stick’s attenuation averaged over f
+(Zhang et al. 2012, Eqs. 2 and 3).</p>
+<p>The cylinder models an axon of radius R. Along the axon, water diffuses freely, so the cylinder attenuates like
+the stick, <code class="docutils literal notranslate"><span class="pre">exp(-b</span> <span class="pre">D</span> <span class="pre">(g.n)^2)</span></code>. Across it, water is restricted by the wall, and in the Gaussian phase
+approximation the logarithm of the signal is a sum over the roots of the derivative of the Bessel function J1
+(Van Gelderen et al. 1994, written as in De Santis et al. 2016, Eq. 3). The gradient across the axon carries the
+share <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">-</span> <span class="pre">(g.n)^2</span></code> of the b-value. As R shrinks, the cylinder becomes the stick, and with short pulses far apart
+its signal across the axon tends to <code class="docutils literal notranslate"><span class="pre">exp(-q^2</span> <span class="pre">R^2</span> <span class="pre">/</span> <span class="pre">4)</span></code>, with <code class="docutils literal notranslate"><span class="pre">q</span> <span class="pre">=</span> <span class="pre">gamma</span> <span class="pre">G</span> <span class="pre">delta</span></code>.</p>
+<p>The dot is stationary water trapped in glial cells and other small structures, so its signal is 1 at every b-value.
+It was introduced as one of the compartments of a taxonomy of white matter models (Panagiotaki et al. 2012). Free
+water is a ball with the diffusivity of water at body temperature, 3e-3 mm^2/s, the value NODDI fixes for its CSF
+compartment (Zhang et al. 2012) and SANDI for free water at 37 C (Palombo et al. 2020). It differs from a ball only
+in that the ground truth of a simulation counts it. <code class="docutils literal notranslate"><span class="pre">free_water_fraction.nii.gz</span></code> gives the share of each voxel’s
+volume that free water fills, and <code class="docutils literal notranslate"><span class="pre">free_water_signal_fraction.nii.gz</span></code> (one per echo time) its share of the voxel’s
+signal at b = 0, in which each compartment is weighted by its proton density and relaxation. The signal fraction is
+the quantity that free-water imaging estimates (Pasternak et al. 2009).</p>
+</section>
+<section id="tissues">
+<h2>Tissues<a class="headerlink" href="#tissues" title="Link to this heading">#</a></h2>
+<p>A tissue is a set of compartments with fractions that sum to 1, and each compartment has its own relaxation.
+Three are predefined, with defaults for 3 T:</p>
+<ul class="simple">
+<li><p><strong>White matter</strong> follows the standard model, with a stick for the intra-axonal water, a zeppelin for the
+extra-axonal water, and optionally a ball of free water (Novikov et al. 2019).</p></li>
+<li><p><strong>Grey matter</strong> follows SANDI, with a sphere for the somas, a powder-averaged stick for the neurites and a ball
+for the extracellular space (Palombo et al. 2020). It does not depend on the gradient direction.</p></li>
+<li><p><strong>CSF</strong> is free water alone (Pasternak et al. 2009).</p></li>
+</ul>
+<p>Two more presets can be used in their place. <strong>NODDI</strong> describes white or grey matter with three pools (Zhang et
+al. 2012, Eq. 1). The neurites are Watson-dispersed sticks with fraction <code class="docutils literal notranslate"><span class="pre">(1</span> <span class="pre">-</span> <span class="pre">v_iso)</span> <span class="pre">v_ic</span></code>. The space around them
+is a zeppelin with fraction <code class="docutils literal notranslate"><span class="pre">(1</span> <span class="pre">-</span> <span class="pre">v_iso)</span> <span class="pre">(1</span> <span class="pre">-</span> <span class="pre">v_ic)</span></code>, and free water has fraction <code class="docutils literal notranslate"><span class="pre">v_iso</span></code>. The zeppelin’s
+diffusivity across a neurite follows a tortuosity model, <code class="docutils literal notranslate"><span class="pre">d</span> <span class="pre">(1</span> <span class="pre">-</span> <span class="pre">v_ic)</span></code>, so denser neurites hinder the water around
+them more. Averaged over the Watson density, it becomes a zeppelin along the fibre with
+<code class="docutils literal notranslate"><span class="pre">d_par</span> <span class="pre">=</span> <span class="pre">d</span> <span class="pre">-</span> <span class="pre">d</span> <span class="pre">v_ic</span> <span class="pre">(1</span> <span class="pre">-</span> <span class="pre">tau1)</span></code> and <code class="docutils literal notranslate"><span class="pre">d_perp</span> <span class="pre">=</span> <span class="pre">d</span> <span class="pre">-</span> <span class="pre">d</span> <span class="pre">v_ic</span> <span class="pre">(1</span> <span class="pre">+</span> <span class="pre">tau1)</span> <span class="pre">/</span> <span class="pre">2</span></code>, where tau1 is the mean squared cosine
+between a neurite and the fibre direction (Eqs. 5 to 7). More dispersion therefore lowers the anisotropy of both
+the neurites and the space around them. The diffusivities default to the values NODDI fixes, 1.7e-3 mm^2/s along
+the neurites and 3e-3 mm^2/s for free water. <strong>Free water</strong> is one free-water compartment, a tissue of its own.</p>
+<p>The docstrings of <code class="docutils literal notranslate"><span class="pre">standard_model_tissue</span></code>, <code class="docutils literal notranslate"><span class="pre">sandi_tissue</span></code>, <code class="docutils literal notranslate"><span class="pre">noddi_tissue</span></code>, <code class="docutils literal notranslate"><span class="pre">free_water_tissue</span></code> and <code class="docutils literal notranslate"><span class="pre">csf_tissue</span></code>
+give the source or the reason for each default. The standard model’s extra-axonal diffusivities follow the NODDI
+constraints listed by Novikov et al. (2019, Sec. 3.4.2), which are 1.7e-3 mm^2/s along the fibre and the
+tortuosity <code class="docutils literal notranslate"><span class="pre">(1</span> <span class="pre">-</span> <span class="pre">f)</span> <span class="pre">1.7e-3</span></code>, about 0.5e-3 mm^2/s, across it at the intra-axonal fraction f = 0.7. A few defaults
+are choices without a source, namely the intra-axonal fraction and the SANDI fractions and radius.</p>
+</section>
+<section id="tissues-in-a-voxel">
+<h2>Tissues in a voxel<a class="headerlink" href="#tissues-in-a-voxel" title="Link to this heading">#</a></h2>
+<p>A voxel is shared between tissues in three steps, and a fraction is never scaled up.</p>
+<ol class="arabic simple">
+<li><p>Each bundle fills a fraction of the voxel, its occupancy, which is the length of its streamlines in the voxel
+times the cross-section each streamline stands for, divided by the voxel’s volume, and at most 1. Where bundles
+together fill more than 1, as in a crossing, their occupancies are scaled down to sum to 1.</p></li>
+<li><p>The tissue maps share what the bundles leave. Where their values add up to more than that, they are scaled down.</p></li>
+<li><p>What remains goes to the background tissue, or gives no signal.</p></li>
+</ol>
+<p>A voxel filled by one tissue therefore has exactly that tissue’s signal, and a voxel with a grey matter map value of
+0.05 and nothing else is 5% grey matter and 95% background. This is how partial volume is modelled: the signals of
+the tissues add in proportion to what they fill, each with its own relaxation weight.</p>
+<p>The fibres of a bundle in a voxel are the directions of its streamlines there, grouped in cells of about 7
+degrees, each with its share of the bundle’s length. A bundle that fans or bends in a voxel therefore has several
+fibre directions, and its signal is their average.</p>
+</section>
+<section id="relaxation">
+<h2>Relaxation<a class="headerlink" href="#relaxation" title="Link to this heading">#</a></h2>
+<p>Each compartment has a proton density PD, a T1, a T2 and a T2*, which together set how much it contributes to the
+signal. Its relaxation weight at echo time TE, with repetition time TR, is</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">w_c</span> <span class="o">=</span> <span class="n">PD</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">TR</span> <span class="o">/</span> <span class="n">T1</span><span class="p">))</span> <span class="o">*</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">TE</span> <span class="o">/</span> <span class="n">T2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>for a spin echo, with T2* in place of T2 for a gradient echo. The proton density is the water content relative to
+pure water, and its defaults are approximate choices for white matter, grey matter and CSF
+(source to be added).</p>
+<p>T2* is shorter than T2 because of reversible dephasing, T2’, with <code class="docutils literal notranslate"><span class="pre">1/T2*</span> <span class="pre">=</span> <span class="pre">1/T2</span> <span class="pre">+</span> <span class="pre">1/T2'</span></code>. Dephasing comes from the
+field in the voxel, so the compartments of a tissue share one T2’, derived from the tissue’s T2* and the mean T2
+of its stick and zeppelin (or from the shared T2* and T2 of the NODDI sticks and zeppelin), and each compartment’s
+T2* follows from its own T2. This includes the free water of the white matter tissues, whose T2* is therefore much
+shorter inside a tissue than in CSF. The T2* of a tissue cannot exceed its mean T2.</p>
+<p>The defaults are in vivo values at 3 T: T1 and T2* from Wansapura et al. (1999), and T2 from frontal white and
+grey matter in Lu et al. (2005, Table 1).
+The longer intra-axonal than extra-axonal T2 of white matter agrees with Veraart et al. (2018). The T1, T2 and T2*
+of CSF are choices.</p>
+<p>Several echo times share one diffusion block: the attenuation is the same at every echo, and only the relaxation
+weight changes.</p>
+</section>
+<section id="the-scan">
+<h2>The scan<a class="headerlink" href="#the-scan" title="Link to this heading">#</a></h2>
+<p>The diffusion weighting is a pair of rectangular gradient pulses of strength G, each delta long and Delta apart, so
+that the b-value is <code class="docutils literal notranslate"><span class="pre">b</span> <span class="pre">=</span> <span class="pre">gamma^2</span> <span class="pre">G^2</span> <span class="pre">delta^2</span> <span class="pre">(Delta</span> <span class="pre">-</span> <span class="pre">delta</span> <span class="pre">/</span> <span class="pre">3)</span></code>. A gradient echo has no refocusing pulse, so it
+is assumed to use a bipolar pair instead: a lobe of +G and one of -G, each delta long and Delta apart. Its
+effective waveform is the same, so its b-value and its restricted signal are those of the spin echo; only the
+relaxation uses T2*.</p>
+<p>A protocol is checked when it is made: delta must not exceed Delta, Delta + delta must be shorter than the echo
+time, and TR must be longer than the last echo time. It warns when the largest b-value is outside 100 to 50 000
+s/mm^2, which is probably a wrong unit. Gradient directions made by <code class="docutils literal notranslate"><span class="pre">create_gradient_table</span></code> are spread by
+electrostatic repulsion (Jones et al. 1999).</p>
+</section>
+<section id="noise">
+<h2>Noise<a class="headerlink" href="#noise" title="Link to this heading">#</a></h2>
+<p>With <code class="docutils literal notranslate"><span class="pre">snr</span></code> set, noise is added to the noise-free signal. Each value S becomes <code class="docutils literal notranslate"><span class="pre">sqrt((S</span> <span class="pre">+</span> <span class="pre">n1)^2</span> <span class="pre">+</span> <span class="pre">n2^2)</span></code>, with n1
+and n2 independent and normal with standard deviation sigma. This is the magnitude of a complex signal with
+Gaussian noise, which follows a Rician distribution (Gudbjartsson and Patz 1995). It is the noise of a single
+coil, so it describes an image combined from several coils only roughly.</p>
+<p>There is one sigma for the whole image and all volumes and echoes: <code class="docutils literal notranslate"><span class="pre">sigma</span> <span class="pre">=</span> <span class="pre">S0_ref</span> <span class="pre">/</span> <span class="pre">snr</span></code>, with S0_ref the b = 0
+signal of a voxel filled with the reference tissue (“WM” unless given) at the first echo time. Thermal noise does
+not depend on the signal, so the SNR of a voxel falls with its signal. Where there is no signal the magnitude has
+a mean of <code class="docutils literal notranslate"><span class="pre">sigma</span> <span class="pre">*</span> <span class="pre">sqrt(pi</span> <span class="pre">/</span> <span class="pre">2)</span></code>, so the background is not zero, and later echoes are noisier relative to their
+signal.</p>
+</section>
+<section id="what-the-instant-engine-does-not-model">
+<h2>What the instant engine does not model<a class="headerlink" href="#what-the-instant-engine-does-not-model" title="Link to this heading">#</a></h2>
+<p>Because the instant engine evaluates the signal of each voxel as if the whole acquisition happened at one instant,
+it does not model the following effects.</p>
+<ul class="simple">
+<li><p>k-space: sampling, the readout and its duration, partial Fourier, parallel imaging and coil sensitivities.</p></li>
+<li><p>Gibbs ringing and the blurring along the phase-encoding direction.</p></li>
+<li><p>Distortion from susceptibility, B0 inhomogeneity and eddy currents, ghosting, and motion.</p></li>
+<li><p>Exchange of water between compartments, and the dependence of the Gaussian compartments on the diffusion time.</p></li>
+<li><p>The slice profile.</p></li>
+</ul>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Behrens TEJ, Woolrich MW, Jenkinson M, et al. Characterization and propagation of uncertainty in
+diffusion-weighted MR imaging. Magn Reson Med 50 (2003) 1077-1088.</p></li>
+<li><p>Kroenke CD, Ackerman JJH, Yablonskiy DA. On the nature of the NAA diffusion attenuated MR signal in the central
+nervous system. Magn Reson Med 52 (2004) 1052-1059.</p></li>
+<li><p>Kaden E, Kelm ND, Carson RP, Does MD, Alexander DC. Multi-compartment microscopic diffusion imaging.
+NeuroImage 139 (2016) 346-359.</p></li>
+<li><p>Palombo M, Ianus A, Guerreri M, et al. SANDI: a compartment-based model for non-invasive apparent soma and
+neurite imaging by diffusion MRI. NeuroImage 215 (2020) 116835.</p></li>
+<li><p>Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC. NODDI: Practical in vivo neurite orientation
+dispersion and density imaging of the human brain. NeuroImage 61 (2012) 1000-1016.</p></li>
+<li><p>Van Gelderen P, DesPres D, van Zijl PCM, Moonen CTW. Evaluation of restricted diffusion in cylinders.
+Phosphocreatine in rabbit leg muscle. J Magn Reson B 103 (1994) 255-260.</p></li>
+<li><p>De Santis S, Jones DK, Roebroeck A. Including diffusion time dependence in the extra-axonal space improves in
+vivo estimates of axonal diameter and density in human white matter. NeuroImage 130 (2016) 91-103.</p></li>
+<li><p>Panagiotaki E, Schneider T, Siow B, Hall MG, Lythgoe MF, Alexander DC. Compartment models of the diffusion MR
+signal in brain white matter: A taxonomy and comparison. NeuroImage 59 (2012) 2241-2254.</p></li>
+<li><p>Novikov DS, Fieremans E, Jespersen SN, Kiselev VG. Quantifying brain microstructure with diffusion MRI: Theory
+and parameter estimation. NMR Biomed 32 (2019) e3998.</p></li>
+<li><p>Pasternak O, Sochen N, Gur Y, Intrator N, Assaf Y. Free water elimination and mapping from diffusion MRI. Magn
+Reson Med 62 (2009) 717-730.</p></li>
+<li><p>Wansapura JP, Holland SK, Dunn RS, Ball WS. NMR relaxation times in the human brain at 3.0 tesla. J Magn Reson
+Imaging 9 (1999) 531-538.</p></li>
+<li><p>Veraart J, Novikov DS, Fieremans E. TE dependent Diffusion Imaging (TEdDI) distinguishes between compartmental
+T2 relaxation times. NeuroImage 182 (2018) 360-369.</p></li>
+<li><p>Lu H, Nagae-Poetscher LM, Golay X, Lin D, Pomper M, van Zijl PCM. Routine clinical brain MRI sequences for use
+at 3.0 Tesla. J Magn Reson Imaging 22 (2005) 13-22.</p></li>
+<li><p>Gudbjartsson H, Patz S. The Rician distribution of noisy MRI data. Magn Reson Med 34 (1995) 910-914.</p></li>
+<li><p>Jones DK, Horsfield MA, Simmons A. Optimal strategies for measuring diffusion in anisotropic systems by
+magnetic resonance imaging. Magn Reson Med 42 (1999) 515-525.</p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-signal">The signal</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#compartments">Compartments</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tissues">Tissues</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tissues-in-a-voxel">Tissues in a voxel</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#relaxation">Relaxation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-scan">The scan</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#noise">Noise</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-the-instant-engine-does-not-model">What the instant engine does not model</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#references">References</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

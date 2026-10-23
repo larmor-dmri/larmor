@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="The phantom editor in BrainViewer: draw bundles, set tissues and the scan, see proxy maps and the signal breakdown of a voxel, and run a simulation." name="description" />
+<meta property="og:title" content="Phantoms" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://larmor.org/viewer/phantoms/" />
+<meta property="og:site_name" content="Larmor" />
+<meta property="og:description" content="The phantom editor in BrainViewer: draw bundles, set tissues and the scan, see proxy maps and the signal breakdown of a voxel, and run a simulation." />
+<meta property="og:image" content="https://larmor.org/_static/larmor-card.png" />
+<meta property="og:image:alt" content="Larmor: a Python library and viewer for diffusion MRI" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<title>Phantoms - Larmor</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=c83e6b79" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/larmor.css?v=f0153430" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="../../_static/documentation_options.js?v=b21b538c"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+    <script defer="defer" src="../../_static/larmor-carousel.js?v=7f65fbb2"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'viewer/phantoms';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://larmor.org/versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://larmor.org/viewer/phantoms/" />
+    <link rel="icon" href="../../_static/larmor-symbol.svg"/>
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Keyboard shortcuts" href="../shortcuts/" />
+    <link rel="prev" title="MATLAB files" href="../matlab-files/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="2.0" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+<link rel="icon" type="image/png" sizes="32x32" href="../../_static/favicon-32.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="../../_static/apple-touch-icon.png" />
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search/"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/larmor-symbol.svg" class="logo__image only-light" alt=""/>
+    <img src="../../_static/larmor-symbol.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">Larmor</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../install/">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../quick-start/">
+    Quick start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../simulation/">
+    Simulation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../gallery/">
+    Gallery
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../guides/">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../">
+    Viewer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../background/">
+    Background
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../reference/">
+    Reference
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../agents/">
+    Agents
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../about/">
+    About
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+      
+        <div class="navbar-item">
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../install/">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../quick-start/">
+    Quick start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../simulation/">
+    Simulation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../gallery/">
+    Gallery
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../guides/">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../">
+    Viewer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../background/">
+    Background
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../reference/">
+    Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../agents/">
+    Agents
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../about/">
+    About
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button type="button" id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../2d-views/">The 2D views</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../volumes-and-overlays/">Volumes and overlays</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parcellations/">Parcellations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tractograms/">Tractograms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../3d-view/">The 3D view</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../fod-glyphs/">FOD glyphs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../peaks/">Peaks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../settings/">Settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../screenshots/">Screenshots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sessions/">Sessions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../surfaces/">Surfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../matlab-files/">MATLAB files</a></li>
+<li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">Phantoms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../shortcuts/">Keyboard shortcuts</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../" class="nav-link">Viewer</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Phantoms</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="phantoms">
+<h1>Phantoms<a class="headerlink" href="#phantoms" title="Link to this heading">#</a></h1>
+<p>A phantom is a made-up subject with a known structure, from which Larmor computes the diffusion images that a
+scanner would record. Because you know what is in every voxel, a phantom lets you test a method against the truth.</p>
+<p>The Phantom panel edits a phantom for Larmor’s simulation module. Open it with the spline icon on the left or
+<strong>Ctrl+5</strong>. A phantom consists of a voxel grid, tissues, fibre bundles (loaded from files or drawn in the 2D
+views), tissue maps and a scanning protocol. The panel opens as a window of its own, which you can move and
+resize, or dock beside the views like any other panel. When you run the phantom, the viewer simulates the
+diffusion images and opens the results as ordinary items. The File menu has the same commands: New Phantom, Open
+Phantom…, Save Phantom…, Run Phantom and Open Simulation….</p>
+<section id="a-first-simulation-step-by-step">
+<h2>A first simulation, step by step<a class="headerlink" href="#a-first-simulation-step-by-step" title="Link to this heading">#</a></h2>
+<p>The editor has two layouts, chosen with the switch at its top right. <strong>Guided</strong>, the default, takes you through a
+first simulation one step at a time, and <strong>All settings</strong> shows every section of the editor at once. View &gt;
+Guided phantom editor and the Settings panel change the layout too, and the editor remembers your choice.</p>
+<p><img alt="The guided phantom editor while a bundle is drawn" src="../../_images/phantom-guided.png" /></p>
+<p>In Guided, a list on the left names the five steps of a simulation: Grid, Bundle, Tissue, Scan and Run. A blue
+check mark next to a step shows that it is done, and a short line under it says where it stands, such as the size
+of the grid, the number of points of the bundle being drawn, or the b-value and the number of directions of the
+scan. The default grid, tissues and scan already work, so those three steps are ticked from the start, and a new
+phantom needs only a bundle before it can run.</p>
+<p>The page on the right shows the step you are on: a heading, a few sentences on what the step does and whether its
+defaults are fine, and the sections of the editor that belong to it. <strong>Next</strong> and <strong>Back</strong> move between the
+steps, and clicking a step in the list opens it. You can go to any step at any time and in any order.</p>
+<p>A first simulation follows the steps in their order.</p>
+<ol class="arabic simple">
+<li><p>Click <strong>New</strong> to start a phantom. It opens on the Grid step, and the grid works as it is, so click <strong>Next</strong>.</p></li>
+<li><p>On the Bundle step, click <strong>Draw (N)</strong>, place three or four points in a 2D view and press <strong>Enter</strong> to finish
+the bundle. The new bundle is filled with the WM tissue, a standard model of white matter. To fill it with
+another tissue, choose one in the bundle’s row of the bundles table.</p></li>
+<li><p>The Tissue step edits the tissues themselves. You can keep them as they are.</p></li>
+<li><p>On the Scan step, the default scan is a single-shell acquisition at b = 1000 s/mm^2 with 32 directions and no
+noise, which you can also keep. <strong>Add shell</strong> adds a shell to the table, and the fields around the table set
+the timings, the sequence and the noise.</p></li>
+<li><p>On the Run step, <strong>Run</strong> starts the simulation. If no output folder is set, it first asks for a folder to save
+the results in. The results open as items when the run ends.</p></li>
+</ol>
+<p>Under “Optional, any time”, the list also links to the tissue maps and the proxy maps, which a first simulation
+does not need. In All settings, the five steps form a row above the sections, each with its check mark, and
+clicking a step scrolls to its section. Both layouts show the same fields, so a change made in one shows in the
+other.</p>
+</section>
+<section id="grid-and-tissues">
+<h2>Grid and tissues<a class="headerlink" href="#grid-and-tissues" title="Link to this heading">#</a></h2>
+<p>The Grid section sets the voxel grid of the phantom. Type the size of a box in millimetres and a voxel size, then
+click <strong>Use this box</strong>, or take the grid of an image you have loaded. A new phantom starts on the grid of the main
+volume when there is one. The grid’s box is outlined in every view while you draw; at other times, <strong>Show the grid
+box</strong> in the Grid section, or View &gt; Phantom grid box, shows or hides the outline, and a session remembers your
+choice.</p>
+<p>The phantom starts with three tissues: white matter (WM), grey matter (GM) and cerebrospinal fluid (CSF). Each
+tissue is either a preset whose parameters you can change, or a list of compartments that you build yourself. A
+compartment is one pool of water with its own diffusion model, such as the water inside axons or the water
+around them. The presets are the standard model and NODDI (neurite orientation dispersion and density imaging)
+for white matter, SANDI (soma and neurite density imaging) for grey matter, and free water for CSF. NODDI spreads
+its neurites around the fibre direction, and its kappa parameter sets how tightly they follow it.</p>
+<p>In the compartment table, each row picks one of these models:</p>
+<ul class="simple">
+<li><p>the stick, the zeppelin, the ball, the powder-averaged stick and the sphere;</p></li>
+<li><p>the Watson-dispersed sticks of NODDI, which use the kappa column;</p></li>
+<li><p>the cylinder, which uses the radius column;</p></li>
+<li><p>the dot, whose water does not move;</p></li>
+<li><p>free water, whose share a run reports as the free-water fraction of its ground truth.</p></li>
+</ul>
+<p>The bar below the table shows the fraction of each compartment, and the tissue is accepted only once the
+fractions add up to 1. When you change a tissue, every bundle that uses it changes with it.</p>
+<p>A tissue map gives a tissue its share of each voxel from a loaded overlay, which must hold values between 0 and 1
+on the phantom’s grid. The Background setting chooses the tissue that fills what is left of each voxel, or leaves
+that part without signal. Only a tissue without a fibre direction, such as GM, can have a map or be the
+background, because sticks, zeppelins, Watson-dispersed sticks and cylinders need the fibre direction that a
+bundle gives them, while the dot, the ball, free water, the sphere and the powder-averaged stick do not.</p>
+</section>
+<section id="drawing-bundles">
+<h2>Drawing bundles<a class="headerlink" href="#drawing-bundles" title="Link to this heading">#</a></h2>
+<p>To draw a bundle, click <strong>Draw (N)</strong> or press <strong>N</strong>. Each click in a 2D view then adds a control point at that
+place in the view’s slice and moves the crosshair there, so the other views follow it. A click outside the grid
+box adds no point, and the status bar says why. Scrolling still changes the slice, and Ctrl+drag still pans. The
+bundle is drawn again from its points as you add them. The keys below work only while you draw, so at other times
+they keep their usual meaning in Layers and in dialogs.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>What it does while drawing</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>N</strong></p></td>
+<td><p>Starts a new bundle; the one being drawn is finished first</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Enter</strong></p></td>
+<td><p>Finishes the bundle</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Backspace</strong></p></td>
+<td><p>Removes the last point</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Escape</strong></p></td>
+<td><p>Stops drawing; a new bundle is dropped and an edited one is kept as it was</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>A finished bundle is an ordinary tractogram in Layers, so all the tractogram options apply to it. Its row in the
+bundles table chooses the tissue that fills it. When you select a bundle, the editor shows its shape (the number
+of streamlines, the radius, the fanning, the dispersion and the seed) so that you can change it, and <strong>Edit</strong>
+brings its points back into draw mode. The bundle keeps its place in Layers and its options while you edit it.
+You can also make a loaded tractogram a bundle of the phantom with <strong>Use a tractogram…</strong>.</p>
+</section>
+<section id="proxy-maps">
+<h2>Proxy maps<a class="headerlink" href="#proxy-maps" title="Link to this heading">#</a></h2>
+<p>A full simulation takes a while, so the Proxy maps section can show three overlays that follow every edit
+without a run. The bundle fill map shows how much of each voxel the bundles fill; its first volume is all
+bundles together, followed by one volume per bundle. The tissue partition shows the share of each tissue in each
+voxel, with the background last. The expected b0 map shows the signal that a run without noise would give at
+b = 0, which lets you check the effect of a tissue’s T2 or proton density before you run.</p>
+</section>
+<section id="signal-breakdown">
+<h2>Signal breakdown<a class="headerlink" href="#signal-breakdown" title="Link to this heading">#</a></h2>
+<p>The Signal breakdown panel shows how the signal of one voxel comes about. Open it with the chart icon on the
+right or <strong>Ctrl+6</strong>. It splits the signal into the factors that the simulation multiplies together and draws
+them as three stacked bars, with the total of each bar above it.</p>
+<ul class="simple">
+<li><p>The first bar, labelled No decay, is the water in the voxel before any decay: each tissue’s share of the voxel
+times the fraction and proton density of each of its compartments.</p></li>
+<li><p>The second bar, labelled T1/T2 decay with the echo time, is the signal after the T1 and T2 decay at the echo
+time. For a gradient echo, T2* takes the place of T2 in both the decay and the label.</p></li>
+<li><p>The third bar, labelled Diffusion with the b-value, is the signal after the diffusion weighting of the chosen
+volume.</p></li>
+</ul>
+<p>Each bar is split into the voxel’s compartments, named in plain words such as WM axons, GM soma, WM neurites,
+still water or CSF, and each bundle has colours of its own. When the scan has noise, a dashed line marks the
+noise floor, the mean magnitude of pure noise. The legend below the chart names the compartments, and when two
+bundles cross, each of its two columns lists one bundle.</p>
+<p><img alt="The Signal breakdown panel for a voxel where two bundles cross: the table lists WM and under it each bundle with its share and fibre angle, and the bars split into the compartments of the voxel" src="../../_images/signal-breakdown.png" /></p>
+<p>Above the chart, a heading names the voxel, such as “Voxel (42, 57, 30)”. Below it, a small table lists what
+fills the voxel. Each tissue has a row with its share of the voxel; a tissue that leaves the voxel empty is not
+listed. Under a tissue that fills bundles, each bundle has an indented row with its name from the Bundles table
+and its own share of the voxel, so two crossing bundles show as two rows. The last column of a bundle’s row gives
+the angle between the bundle’s fibres and the gradient of the volume chosen in the Direction list. At 0 deg the
+fibres run along the gradient and lose the most signal to diffusion, and at 90 deg they lose the least. The
+column is blank for the tissue rows and at b = 0.</p>
+<p>The panel follows the voxel under the pointer in the 2D views. Clicking the phantom pins the panel to that voxel,
+which is then outlined in every view, and <strong>Escape</strong> unpins it so that it follows the pointer again. You can also
+right-click a voxel and choose <strong>Signal breakdown here</strong>, which opens the panel pinned to that voxel. The b-value
+and Direction lists choose the volume of the scan that the third bar shows.</p>
+<p>The panel updates whenever a tissue, a bundle, a tissue map or the scan changes, without running a simulation, so
+the bars show at once what, for example, a longer echo time or a smaller soma radius does to the voxel. The
+breakdown gives the same value as the noise-free image of a run, since both come from the same compartment
+models. From Python, <code class="docutils literal notranslate"><span class="pre">larmor.simulation.signal_breakdown</span></code> computes the breakdown and
+<code class="docutils literal notranslate"><span class="pre">larmor.plot.plot_signal_breakdown</span></code> draws the same chart.</p>
+</section>
+<section id="running-and-saving">
+<h2>Running and saving<a class="headerlink" href="#running-and-saving" title="Link to this heading">#</a></h2>
+<p>The Scan section sets the sequence, the echo and repetition times, the gradient timing, the shells (or a pair of
+bvals and bvecs files) and the noise. <strong>Run</strong> (<strong>Ctrl+R</strong>) checks the phantom and asks for an output folder if
+none is set, and asks before it replaces the outputs of an earlier run. The simulation then runs in the
+background, with its progress and a Cancel button in the status bar. A cancelled run opens nothing.</p>
+<p>The output folder has the same contents as the one that <code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">simulate</span></code> writes. When the run ends, the diffusion
+images open as the main volume, the tissue masks as overlays and the true fibre directions as peaks. The bundles
+then refer to the streamline files in the folder, so a session saved afterwards keeps everything.</p>
+<p><strong>Save…</strong> writes the phantom to a phantom file, and <strong>Open…</strong> reads it back. From the command line,
+<code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">bv</span> <span class="pre">--phantom</span> <span class="pre">scene.phantom.json</span></code> opens a phantom file, and <code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">bv</span> <span class="pre">--simulation</span> <span class="pre">folder</span></code> opens a simulation
+folder with its phantom in the editor. A saved session also keeps the phantom, and opening the session restores
+the editor. A bundle that you are still drawing is not saved with the session, so finish it first.</p>
+<p>The same steps from Python look like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">larmor.viewer</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProxyMap</span><span class="p">,</span> <span class="n">Viewer</span>
+
+<span class="n">viewer</span> <span class="o">=</span> <span class="n">Viewer</span><span class="p">()</span>
+<span class="n">viewer</span><span class="o">.</span><span class="n">new_phantom</span><span class="p">((</span><span class="mi">60</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">60</span><span class="p">),</span> <span class="mf">2.0</span><span class="p">)</span>
+<span class="n">viewer</span><span class="o">.</span><span class="n">start_bundle</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="p">[(</span><span class="o">-</span><span class="mi">25</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">25</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)]:</span>
+    <span class="n">viewer</span><span class="o">.</span><span class="n">add_bundle_point</span><span class="p">(</span><span class="n">point</span><span class="p">)</span>
+<span class="n">bundle</span> <span class="o">=</span> <span class="n">viewer</span><span class="o">.</span><span class="n">finish_bundle</span><span class="p">()</span>
+<span class="n">viewer</span><span class="o">.</span><span class="n">show_proxy</span><span class="p">(</span><span class="n">ProxyMap</span><span class="o">.</span><span class="n">FILL</span><span class="p">)</span>
+<span class="n">viewer</span><span class="o">.</span><span class="n">run_phantom</span><span class="p">(</span><span class="s2">"sim"</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-first-simulation-step-by-step">A first simulation, step by step</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#grid-and-tissues">Grid and tissues</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#drawing-bundles">Drawing bundles</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#proxy-maps">Proxy maps</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#signal-breakdown">Signal breakdown</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#running-and-saving">Running and saving</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

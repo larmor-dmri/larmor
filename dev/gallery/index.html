@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="This gallery holds runnable Python examples. Each page shows an example’s code, what it prints and the images it makes. Each example is one script that runs on its own and is explained by its comments. The examples on synthetic data need nothing else." name="description" />
+<meta property="og:title" content="Gallery" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://larmor.org/gallery/" />
+<meta property="og:site_name" content="Larmor" />
+<meta property="og:description" content="This gallery holds runnable Python examples. Each page shows an example’s code, what it prints and the images it makes. Each example is one script that runs on its own and is explained by its comments. The examples on synthetic data need nothing else." />
+<meta property="og:image" content="https://larmor.org/_static/larmor-card.png" />
+<meta property="og:image:alt" content="Larmor: a Python library and viewer for diffusion MRI" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<title>Gallery - Larmor</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=c83e6b79" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/larmor.css?v=f0153430" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="../_static/documentation_options.js?v=b21b538c"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/sg-tags.js?v=d80f6fa4"></script>
+    <script defer="defer" src="../_static/larmor-carousel.js?v=7f65fbb2"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'gallery/index';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://larmor.org/versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://larmor.org/gallery/" />
+    <link rel="icon" href="../_static/larmor-symbol.svg"/>
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="Simulation" href="simulation/" />
+    <link rel="prev" title="Simulation" href="../simulation/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="2.0" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+<link rel="icon" type="image/png" sizes="32x32" href="../_static/favicon-32.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="../_static/apple-touch-icon.png" />
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search/"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/larmor-symbol.svg" class="logo__image only-light" alt=""/>
+    <img src="../_static/larmor-symbol.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">Larmor</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../install/">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quick-start/">
+    Quick start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../simulation/">
+    Simulation
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#" aria-current="page">
+    Gallery
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guides/">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../viewer/">
+    Viewer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../background/">
+    Background
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../reference/">
+    Reference
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../agents/">
+    Agents
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../about/">
+    About
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+      
+        <div class="navbar-item">
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../install/">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quick-start/">
+    Quick start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../simulation/">
+    Simulation
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#" aria-current="page">
+    Gallery
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guides/">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../viewer/">
+    Viewer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../background/">
+    Background
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../reference/">
+    Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../agents/">
+    Agents
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../about/">
+    About
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button type="button" id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="simulation/">Simulation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="simulation/pipeline_ground_truth/">Check a pipeline against the ground truth</a></li>
+<li class="toctree-l2"><a class="reference internal" href="simulation/signal_breakdown/">The signal of one voxel, step by step</a></li>
+<li class="toctree-l2"><a class="reference internal" href="simulation/simulate_crossing_bundles/">Simulating two crossing bundles</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="preprocessing/">Preprocessing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="preprocessing/dwi_denoise_mppca/">Denoising a DWI with MP-PCA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preprocessing/gibbs_ringing_removal/">Denoising, then removing Gibbs ringing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="models/">Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="models/dki_real_data/">Fitting DKI to a real brain</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models/dki_synthetic_kurtosis/">Fitting DKI to a synthetic signal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models/dti_ismrm/">DTI of a simulated brain</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models/dti_synthetic_tensor/">Fitting DTI to a synthetic tensor</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="sd/">Spherical deconvolution and peaks</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="sd/fod_fit_synthetic/">Fitting FODs to a synthetic signal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sd/fods_ismrm/">FODs, peaks and asymmetric FODs of a simulated brain</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sd/msmt_csd_cfin/">Multi-tissue FODs of a multi-shell brain scan</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sd/peaks_synthetic/">Finding the peaks of FODs</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="tractography/">Tractography</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="tractography/connectome_synthetic/">Structural connectomes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tractography/registration_atlas_region/">Bringing an atlas region into diffusion space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tractography/track_density_synthetic/">Track density images</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tractography/tracking_ismrm/">Whole-brain tractography of a simulated brain</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tractography/tracking_synthetic/">Tracking streamlines through crossing bundles</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tractography/tract_profiles/">Tract profiles: FA along a bundle</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tractography/tractogram_batch_writing/">Writing a tractogram batch by batch</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="files/">Files</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="files/file_io/">Reading and writing files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="files/mritoolkit_files/">Reading MRIToolkit results from MATLAB files</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="viewer/">Viewer</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="viewer/viewer_2d_views/">Moving around the 2D views</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viewer/viewer_3d_view/">The 3D view</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viewer/viewer_4d_volumes/">4D images in the viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viewer/viewer_dti/">DTI colours in the viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viewer/viewer_fod_glyphs/">FOD glyphs in the viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viewer/viewer_parcellation/">A parcellation in the viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viewer/viewer_peaks/">Peaks in the viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viewer/viewer_real_brain/">A brain in the viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viewer/viewer_screenshot_modes/">Separate views and rotation videos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viewer/viewer_sessions/">Saving and reopening a viewer session</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viewer/viewer_surfaces/">Surfaces in the viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viewer/viewer_tractograms/">Tractograms in the viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viewer/viewer_tubes/">Streamlines as tubes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viewer/viewer_volumes_and_overlays/">Volumes and overlays in the viewer</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Gallery</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="gallery">
+<h1>Gallery<a class="headerlink" href="#gallery" title="Link to this heading">#</a></h1>
+<p>This gallery holds runnable Python examples. Each page shows an example’s code,
+what it prints and the images it makes. Each example is one script that runs on
+its own and is explained by its comments. The examples on synthetic data need
+nothing else. The examples on a brain use the simulated data of the ISMRM 2015
+Tractography Challenge or a real multi-shell scan, which <code class="docutils literal notranslate"><span class="pre">larmor.data</span></code> downloads
+once (see <a class="reference internal" href="../example-data/"><span class="doc">Example data</span></a>).</p>
+<div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"></div><section id="simulation">
+<h2>Simulation<a class="headerlink" href="#simulation" title="Link to this heading">#</a></h2>
+<p>These examples simulate diffusion-weighted images of phantoms. A phantom places
+tissues and fibre bundles on a voxel grid. The simulation saves the ground truth
+beside the images, so that a processing pipeline can be checked against it.</p>
+<div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="This example simulates the crossing phantom that ships with Larmor, runs a short pipeline on the saved images, and measures the angle between each true fibre direction and the nearest fitted peak. The pipeline estimates a white matter response from the data, fits fibre orientation distributions (FODs) and finds their peaks. The example prints the error in the voxels with one bundle and in those where the two bundles cross, and draws it."><img alt="" src="../_images/sphx_glr_pipeline_ground_truth_thumb.webp" />
+<p><a class="reference internal" href="simulation/pipeline_ground_truth/"><span class="doc">Check a pipeline against the ground truth</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Check a pipeline against the ground truth</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example builds a white matter bundle that fills part of a voxel of grey matter, draws how that voxel&#x27;s signal at b = 3000 s/mm^2 is built from its factors, and then shows how a longer echo time changes it."><img alt="" src="../_images/sphx_glr_signal_breakdown_thumb.webp" />
+<p><a class="reference internal" href="simulation/signal_breakdown/"><span class="doc">The signal of one voxel, step by step</span></a></p>
+  <div class="sphx-glr-thumbnail-title">The signal of one voxel, step by step</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example builds two straight fibre bundles that cross at 90 degrees, simulates their diffusion-weighted images with noise, saves the result with save_simulation, and draws the b = 0 image, one diffusion-weighted image and the ground-truth fibre directions."><img alt="" src="../_images/sphx_glr_simulate_crossing_bundles_thumb.webp" />
+<p><a class="reference internal" href="simulation/simulate_crossing_bundles/"><span class="doc">Simulating two crossing bundles</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Simulating two crossing bundles</div>
+</div></div></section>
+<section id="preprocessing">
+<h2>Preprocessing<a class="headerlink" href="#preprocessing" title="Link to this heading">#</a></h2>
+<p>These examples denoise diffusion-weighted images and remove Gibbs ringing.</p>
+<div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="This example builds a noisy diffusion-weighted image (DWI) from known tensors, denoises it with MP-PCA (Marchenko-Pastur principal component analysis), and checks the estimated noise level and the error before and after denoising."><img alt="" src="../_images/sphx_glr_dwi_denoise_mppca_thumb.png" />
+<p><a class="reference internal" href="preprocessing/dwi_denoise_mppca/"><span class="doc">Denoising a DWI with MP-PCA</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Denoising a DWI with MP-PCA</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example builds a noisy diffusion image with Gibbs ringing, denoises it, removes the ringing, and measures how much noise and ringing each step leaves."><img alt="" src="../_images/sphx_glr_gibbs_ringing_removal_thumb.png" />
+<p><a class="reference internal" href="preprocessing/gibbs_ringing_removal/"><span class="doc">Denoising, then removing Gibbs ringing</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Denoising, then removing Gibbs ringing</div>
+</div></div></section>
+<section id="models">
+<h2>Models<a class="headerlink" href="#models" title="Link to this heading">#</a></h2>
+<p>These examples fit the diffusion tensor (DTI) and diffusion kurtosis (DKI) models
+and read the maps they give, such as fractional anisotropy and mean kurtosis.</p>
+<div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="This example fits diffusion kurtosis imaging (DKI) to a real multi-shell scan: the CFIN dataset of Hansen and Jespersen, one healthy volunteer scanned at 3 T with 33 directions at each of 15 b-values up to 3000 s/mm^2. larmor.data downloads it once (about 197 MB) into a cache folder and returns the paths of its files; later runs use the cached copy."><img alt="" src="../_images/sphx_glr_dki_real_data_thumb.png" />
+<p><a class="reference internal" href="models/dki_real_data/"><span class="doc">Fitting DKI to a real brain</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Fitting DKI to a real brain</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example builds a two-shell diffusion image whose signal comes from a known diffusivity and kurtosis, fits diffusion kurtosis imaging (DKI) with Larmor, and checks that the fitted mean diffusivity (MD) and mean kurtosis (MK) match them."><img alt="" src="../_images/sphx_glr_dki_synthetic_kurtosis_thumb.png" />
+<p><a class="reference internal" href="models/dki_synthetic_kurtosis/"><span class="doc">Fitting DKI to a synthetic signal</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Fitting DKI to a synthetic signal</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example fits the diffusion tensor (DTI) to the simulated brain of the ISMRM 2015 Tractography Challenge, prints the mean fractional anisotropy (FA) of its white matter, and shows the principal direction of the tensor as colours on an axial slice, brighter where the FA is high: red left to right, green front to back, blue up and down."><img alt="" src="../_images/sphx_glr_dti_ismrm_thumb.webp" />
+<p><a class="reference internal" href="models/dti_ismrm/"><span class="doc">DTI of a simulated brain</span></a></p>
+  <div class="sphx-glr-thumbnail-title">DTI of a simulated brain</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example builds a small diffusion image whose signal comes from a known tensor, fits diffusion tensor imaging (DTI) with Larmor, and checks that the fitted fractional anisotropy (FA) matches the FA of that tensor."><img alt="" src="../_images/sphx_glr_dti_synthetic_tensor_thumb.png" />
+<p><a class="reference internal" href="models/dti_synthetic_tensor/"><span class="doc">Fitting DTI to a synthetic tensor</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Fitting DTI to a synthetic tensor</div>
+</div></div></section>
+<section id="spherical-deconvolution-and-peaks">
+<h2>Spherical deconvolution and peaks<a class="headerlink" href="#spherical-deconvolution-and-peaks" title="Link to this heading">#</a></h2>
+<p>These examples estimate fibre orientation distributions (FODs) by spherical
+deconvolution and find their peaks, the main fibre directions in each voxel.</p>
+<div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="This example simulates the signal of three voxels, which hold one fibre, two fibres crossing at right angles and three crossing fibres, at one b-value with 64 directions. It fits their fibre orientation distributions (FODs) with a known response, prints how many fibres each FOD shows and how far its peaks lie from the true fibres, and draws the FODs as glyphs."><img alt="" src="../_images/sphx_glr_fod_fit_synthetic_thumb.webp" />
+<p><a class="reference internal" href="sd/fod_fit_synthetic/"><span class="doc">Fitting FODs to a synthetic signal</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Fitting FODs to a synthetic signal</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example estimates fibre orientation distributions (FODs) by spherical deconvolution in the simulated brain of the ISMRM 2015 Tractography Challenge, finds their peaks, and, as an ad hoc illustration, makes asymmetric FODs by averaging each voxel&#x27;s neighbours. It shows each over the T1-like image on a coronal slice, where the corpus callosum arches from left to right above the ventricles and the corticospinal tracts run up and down beside it."><img alt="" src="../_images/sphx_glr_fods_ismrm_thumb.webp" />
+<p><a class="reference internal" href="sd/fods_ismrm/"><span class="doc">FODs, peaks and asymmetric FODs of a simulated brain</span></a></p>
+  <div class="sphx-glr-thumbnail-title">FODs, peaks and asymmetric FODs of a simulated brain</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example fits multi-shell multi-tissue constrained spherical deconvolution (MSMT-CSD) to a multi-shell scan of a healthy volunteer. The responses of white matter, grey matter and CSF, the signal each pure tissue gives, are estimated from the data itself. Each voxel then gets a white matter fibre orientation distribution (FOD) and the fraction of each tissue. The example shows the FODs and the three tissue fractions on the same coronal slice."><img alt="" src="../_images/sphx_glr_msmt_csd_cfin_thumb.webp" />
+<p><a class="reference internal" href="sd/msmt_csd_cfin/"><span class="doc">Multi-tissue FODs of a multi-shell brain scan</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Multi-tissue FODs of a multi-shell brain scan</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example builds fibre orientation distributions (FODs) of two fibres crossing at 90, 60, 45 and 30 degrees, finds their peaks, prints the angle between the two largest in each voxel, and draws the peaks as lines, as lar peaks would write them to a file."><img alt="" src="../_images/sphx_glr_peaks_synthetic_thumb.webp" />
+<p><a class="reference internal" href="sd/peaks_synthetic/"><span class="doc">Finding the peaks of FODs</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Finding the peaks of FODs</div>
+</div></div></section>
+<section id="tractography">
+<h2>Tractography<a class="headerlink" href="#tractography" title="Link to this heading">#</a></h2>
+<p>These examples track streamlines, write tractograms, select bundles, and compute
+track density images, structural connectomes and tract profiles.</p>
+<div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="This example builds a parcellation of four regions and streamlines between them, assigns the streamlines&#x27; endpoints to regions, builds connectome matrices and saves one with the region names. lar connectome does the same from files."><img alt="" src="../_images/sphx_glr_connectome_synthetic_thumb.png" />
+<p><a class="reference internal" href="tractography/connectome_synthetic/"><span class="doc">Structural connectomes</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Structural connectomes</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example brings a region of a template atlas into the diffusion space of a subject with a registration as ANTs writes it, and selects the streamlines that pass through the region. Everything is synthetic, so the example needs no data files."><img alt="" src="../_images/sphx_glr_registration_atlas_region_thumb.png" />
+<p><a class="reference internal" href="tractography/registration_atlas_region/"><span class="doc">Bringing an atlas region into diffusion space</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Bringing an atlas region into diffusion space</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example builds a synthetic bundle, maps its track density on a 2 mm grid and on a 0.5 mm one, weights the streamlines, maps their endpoints, and shows the maps in the viewer. lar tract-density does the same from files."><img alt="" src="../_images/sphx_glr_track_density_synthetic_thumb.webp" />
+<p><a class="reference internal" href="tractography/track_density_synthetic/"><span class="doc">Track density images</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Track density images</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example tracks streamlines through the whole simulated brain of the ISMRM 2015 Tractography Challenge: it fits FODs, seeds every voxel of the white matter, follows the FODs with the deterministic algorithm, and shows the streamlines as lit tubes in the 3D view, then with three slices of the T1-like image."><img alt="" src="../_images/sphx_glr_tracking_ismrm_thumb.webp" />
+<p><a class="reference internal" href="tractography/tracking_ismrm/"><span class="doc">Whole-brain tractography of a simulated brain</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Whole-brain tractography of a simulated brain</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example builds an image of fibre orientation distributions (FODs) of two straight bundles that cross at right angles, seeds one point in each of their voxels, tracks streamlines from the seeds, prints how many streamlines it kept and how long they are, and draws them as tubes in 3D."><img alt="" src="../_images/sphx_glr_tracking_synthetic_thumb.webp" />
+<p><a class="reference internal" href="tractography/tracking_synthetic/"><span class="doc">Tracking streamlines through crossing bundles</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Tracking streamlines through crossing bundles</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example builds a synthetic bundle running from the brainstem up to the cortex through a fractional anisotropy (FA) map with a lesion halfway, computes its FA profile, prints it, plots it with matplotlib, and colours the bundle by the profile in the viewer."><img alt="" src="../_images/sphx_glr_tract_profiles_thumb.webp" />
+<p><a class="reference internal" href="tractography/tract_profiles/"><span class="doc">Tract profiles: FA along a bundle</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Tract profiles: FA along a bundle</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example writes a tractogram in three batches, reads it back, checks that the file is the same as writing all the streamlines at once, and shows the three batches in the viewer."><img alt="" src="../_images/sphx_glr_tractogram_batch_writing_thumb.webp" />
+<p><a class="reference internal" href="tractography/tractogram_batch_writing/"><span class="doc">Writing a tractogram batch by batch</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Writing a tractogram batch by batch</div>
+</div></div></section>
+<section id="files">
+<h2>Files<a class="headerlink" href="#files" title="Link to this heading">#</a></h2>
+<p>These examples read and write images, gradient tables and tractograms, and convert
+between file formats.</p>
+<div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="This example makes a small diffusion image, saves it with its gradients in several formats and reads it back, does the same with a tractogram, and converts one format to another."><img alt="" src="../_images/sphx_glr_file_io_thumb.png" />
+<p><a class="reference internal" href="files/file_io/"><span class="doc">Reading and writing files</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Reading and writing files</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example writes a small synthetic DTI fit in MRIToolkit&#x27;s layout with scipy, reads it back with Larmor, refits the tensor from the same data, and reads a tract."><img alt="" src="../_images/sphx_glr_mritoolkit_files_thumb.png" />
+<p><a class="reference internal" href="files/mritoolkit_files/"><span class="doc">Reading MRIToolkit results from MATLAB files</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Reading MRIToolkit results from MATLAB files</div>
+</div></div></section>
+<section id="viewer">
+<h2>Viewer<a class="headerlink" href="#viewer" title="Link to this heading">#</a></h2>
+<p>These examples drive BrainViewer, Larmor’s viewer, from Python. They draw off
+screen, with no window, and save screenshots of the views. They need the
+<code class="docutils literal notranslate"><span class="pre">[viewer]</span></code> extra and a GPU or a software renderer, but no display.</p>
+<div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="This example moves the crosshair of the viewer&#x27;s 2D views from Python and reads the value under it. It then steps a slice, zooms and pans a view, flips the display convention and hides the crosshair and the text, saving a screenshot after each step, and ends with one image of all four views."><img alt="" src="../_images/sphx_glr_viewer_2d_views_thumb.webp" />
+<p><a class="reference internal" href="viewer/viewer_2d_views/"><span class="doc">Moving around the 2D views</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Moving around the 2D views</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example builds a synthetic head with a mask of a ball inside it and saves three screenshots of the 3D view. The first is from the default position. The second has the volume rendering dimmed, so that the mask&#x27;s surface shows. The third is from the front without the volume rendering, so that only the slices and the surface are left."><img alt="" src="../_images/sphx_glr_viewer_3d_view_thumb.webp" />
+<p><a class="reference internal" href="viewer/viewer_3d_view/"><span class="doc">The 3D view</span></a></p>
+  <div class="sphx-glr-thumbnail-title">The 3D view</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example builds a small diffusion-weighted series of a synthetic head with a fibre bundle running left to right, and saves screenshots of two of its volumes: the first, which has no diffusion weighting, and the one whose gradient runs along the bundle, where the bundle&#x27;s signal drops. A colour bar shows the range of the colormap."><img alt="" src="../_images/sphx_glr_viewer_4d_volumes_thumb.webp" />
+<p><a class="reference internal" href="viewer/viewer_4d_volumes/"><span class="doc">4D images in the viewer</span></a></p>
+  <div class="sphx-glr-thumbnail-title">4D images in the viewer</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example builds a synthetic head with a field of directions and a fractional anisotropy (FA) map over it, and saves screenshots of the axial and coronal views in direction-encoded colours, first plain and then modulated by the FA."><img alt="" src="../_images/sphx_glr_viewer_dti_thumb.webp" />
+<p><a class="reference internal" href="viewer/viewer_dti/"><span class="doc">DTI colours in the viewer</span></a></p>
+  <div class="sphx-glr-thumbnail-title">DTI colours in the viewer</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example builds a small synthetic image of fibre orientation distributions (FODs) with three regions: fibres crossing at right angles, a single bundle, and an asymmetric FOD with a single lobe at the end of the bundle, around a rim of round, isotropic FODs. It saves screenshots of the axial view as the viewer starts and with the round FODs hidden, and of one asymmetric FOD drawn large."><img alt="" src="../_images/sphx_glr_viewer_fod_glyphs_thumb.webp" />
+<p><a class="reference internal" href="viewer/viewer_fod_glyphs/"><span class="doc">FOD glyphs in the viewer</span></a></p>
+  <div class="sphx-glr-thumbnail-title">FOD glyphs in the viewer</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example builds a synthetic head and a parcellation of it into eight regions. It saves screenshots of the regions with the built-in colours, then with a lookup table, and then of a few of them as surfaces in the 3D view."><img alt="" src="../_images/sphx_glr_viewer_parcellation_thumb.webp" />
+<p><a class="reference internal" href="viewer/viewer_parcellation/"><span class="doc">A parcellation in the viewer</span></a></p>
+  <div class="sphx-glr-thumbnail-title">A parcellation in the viewer</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example builds a synthetic head and an image of the peaks of fibre orientation distributions (FODs) over it. Most of the brain has one peak per voxel, and a band through the middle has two crossing peaks. The example saves screenshots of the axial view with the line lengths set by amplitude and with one length for all."><img alt="" src="../_images/sphx_glr_viewer_peaks_thumb.webp" />
+<p><a class="reference internal" href="viewer/viewer_peaks/"><span class="doc">Peaks in the viewer</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Peaks in the viewer</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example shows a brain in the viewer: the simulated brain of the ISMRM 2015 Tractography Challenge, with its T1-like image and diffusion-weighted images on a 2 mm grid. larmor.data downloads it once (about 41 MB) into a cache folder and returns the paths of its files; later runs use the cached copy. The example fits DTI to the diffusion images and shows the fractional anisotropy (FA) over the T1-like image, on an axial and a sagittal slice."><img alt="" src="../_images/sphx_glr_viewer_real_brain_thumb.webp" />
+<p><a class="reference internal" href="viewer/viewer_real_brain/"><span class="doc">A brain in the viewer</span></a></p>
+  <div class="sphx-glr-thumbnail-title">A brain in the viewer</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example builds a synthetic head with a ball inside it, saves the axial, coronal and sagittal views to three files, and records a short video of the 3D view turning, with a progress callback that reports when the last frame is drawn."><img alt="" src="../_images/sphx_glr_viewer_screenshot_modes_thumb.webp" />
+<p><a class="reference internal" href="viewer/viewer_screenshot_modes/"><span class="doc">Separate views and rotation videos</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Separate views and rotation videos</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example writes a synthetic head and a mask to a project folder, shows them in the viewer, saves a session there, moves the folder, opens the session in a new viewer and saves a screenshot of all views."><img alt="" src="../_images/sphx_glr_viewer_sessions_thumb.webp" />
+<p><a class="reference internal" href="viewer/viewer_sessions/"><span class="doc">Saving and reopening a viewer session</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Saving and reopening a viewer session</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example builds a synthetic head and a folded surface inside it, with a curvature-like value per vertex. It saves screenshots of the 3D view with the surface coloured by that value, and of the axial view with the surface&#x27;s cut line over the head."><img alt="" src="../_images/sphx_glr_viewer_surfaces_thumb.webp" />
+<p><a class="reference internal" href="viewer/viewer_surfaces/"><span class="doc">Surfaces in the viewer</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Surfaces in the viewer</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example builds a synthetic head and two bundles of streamlines, one running left to right and one running up and down. It saves screenshots of the axial and coronal views, which draw only the parts of the streamlines near the slice, and of the 3D view with a subset of the streamlines."><img alt="" src="../_images/sphx_glr_viewer_tractograms_thumb.webp" />
+<p><a class="reference internal" href="viewer/viewer_tractograms/"><span class="doc">Tractograms in the viewer</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Tractograms in the viewer</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example builds two crossing bundles of streamlines and saves the 3D view with the streamlines drawn as lines, as tubes coloured by direction, and as tubes in one colour."><img alt="" src="../_images/sphx_glr_viewer_tubes_thumb.webp" />
+<p><a class="reference internal" href="viewer/viewer_tubes/"><span class="doc">Streamlines as tubes</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Streamlines as tubes</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example builds a synthetic head and a map of a blob inside it, shows the map over the head with a threshold and a colour bar, and saves screenshots of the axial and coronal views. Screenshots are drawn off screen, with no window, so the same calls work in a script on a server with no display."><img alt="" src="../_images/sphx_glr_viewer_volumes_and_overlays_thumb.webp" />
+<p><a class="reference internal" href="viewer/viewer_volumes_and_overlays/"><span class="doc">Volumes and overlays in the viewer</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Volumes and overlays in the viewer</div>
+</div></div><div class="toctree-wrapper compound">
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#simulation">Simulation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preprocessing">Preprocessing</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#models">Models</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#spherical-deconvolution-and-peaks">Spherical deconvolution and peaks</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tractography">Tractography</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#files">Files</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#viewer">Viewer</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="Opening files in BrainViewer, Larmor's viewer, installing it on its own, starting it from the desktop, and its panels and views." name="description" />
+<meta property="og:title" content="Getting started" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://larmor.org/viewer/getting-started/" />
+<meta property="og:site_name" content="Larmor" />
+<meta property="og:description" content="Opening files in BrainViewer, Larmor's viewer, installing it on its own, starting it from the desktop, and its panels and views." />
+<meta property="og:image" content="https://larmor.org/_static/larmor-card.png" />
+<meta property="og:image:alt" content="Larmor: a Python library and viewer for diffusion MRI" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<title>Getting started - Larmor</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=c83e6b79" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/larmor.css?v=f0153430" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="../../_static/documentation_options.js?v=b21b538c"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+    <script defer="defer" src="../../_static/larmor-carousel.js?v=7f65fbb2"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'viewer/getting-started';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://larmor.org/versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://larmor.org/viewer/getting-started/" />
+    <link rel="icon" href="../../_static/larmor-symbol.svg"/>
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="The 2D views" href="../2d-views/" />
+    <link rel="prev" title="Viewer" href="../" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="2.0" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+<link rel="icon" type="image/png" sizes="32x32" href="../../_static/favicon-32.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="../../_static/apple-touch-icon.png" />
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search/"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/larmor-symbol.svg" class="logo__image only-light" alt=""/>
+    <img src="../../_static/larmor-symbol.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">Larmor</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../install/">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../quick-start/">
+    Quick start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../simulation/">
+    Simulation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../gallery/">
+    Gallery
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../guides/">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../">
+    Viewer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../background/">
+    Background
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../reference/">
+    Reference
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../agents/">
+    Agents
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../about/">
+    About
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+      
+        <div class="navbar-item">
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../install/">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../quick-start/">
+    Quick start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../simulation/">
+    Simulation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../gallery/">
+    Gallery
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../guides/">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../">
+    Viewer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../background/">
+    Background
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../reference/">
+    Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../agents/">
+    Agents
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../about/">
+    About
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button type="button" id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../2d-views/">The 2D views</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../volumes-and-overlays/">Volumes and overlays</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parcellations/">Parcellations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tractograms/">Tractograms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../3d-view/">The 3D view</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../fod-glyphs/">FOD glyphs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../peaks/">Peaks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../settings/">Settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../screenshots/">Screenshots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sessions/">Sessions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../surfaces/">Surfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../matlab-files/">MATLAB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phantoms/">Phantoms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../shortcuts/">Keyboard shortcuts</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../" class="nav-link">Viewer</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Getting started</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="getting-started">
+<h1>Getting started<a class="headerlink" href="#getting-started" title="Link to this heading">#</a></h1>
+<p>BrainViewer, Larmor’s viewer, shows brain images, tractograms, fibre orientation distributions (FODs), peaks and
+cortical surfaces in three 2D views and a 3D view. This guide shows how to open files, how to install the viewer on
+its own, and how its window is laid out.</p>
+<p><img alt="The viewer's window: Layers on the left, the four views in the middle, Options on the right" src="../../_images/window.png" /></p>
+<p>The pictures in these guides show the simulated brain of the ISMRM 2015 Tractography Challenge (Maier-Hein et
+al., Nature Communications 8 (2017) 1349; https://doi.org/10.5281/zenodo.572345, CC BY 4.0): its T1-like image,
+and the DTI maps, FODs, peaks and tractogram that Larmor made from its diffusion data. The data has no FreeSurfer
+surfaces or parcellation, so the tissue labels and surfaces shown were made from simple masks of the T1-like
+image.</p>
+<section id="opening-files">
+<h2>Opening files<a class="headerlink" href="#opening-files" title="Link to this heading">#</a></h2>
+<p>The viewer sorts what it shows into six categories: volumes, overlays, tractograms, FODs, peaks and surfaces.
+Each way of opening files decides which category they go into.</p>
+<ul class="simple">
+<li><p>From the command line, give each file after the option of its category:
+<code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">bv</span> <span class="pre">-v</span> <span class="pre">t1.nii.gz</span> <span class="pre">-o</span> <span class="pre">mask.nii.gz</span> <span class="pre">--tracts</span> <span class="pre">tracts.tck</span> <span class="pre">-f</span> <span class="pre">fod.mif</span> <span class="pre">-p</span> <span class="pre">peaks.nii.gz</span></code>. The options are <code class="docutils literal notranslate"><span class="pre">-v</span></code> for
+volumes, <code class="docutils literal notranslate"><span class="pre">-o</span></code> for overlays, <code class="docutils literal notranslate"><span class="pre">--tracts</span></code> for tractograms, <code class="docutils literal notranslate"><span class="pre">-f</span></code> for FODs, <code class="docutils literal notranslate"><span class="pre">-p</span></code> for peaks and <code class="docutils literal notranslate"><span class="pre">--surfaces</span></code> for
+surfaces, and you can repeat an option to open several files. Files given without an option, as in
+<code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">bv</span> <span class="pre">t1.nii.gz</span> <span class="pre">tracts.tck</span></code>, are sorted by their names: tractograms go to Tractograms, a session
+(<code class="docutils literal notranslate"><span class="pre">.lar.json</span></code>) is opened, other <code class="docutils literal notranslate"><span class="pre">.json</span></code> files (such as BIDS sidecars) are skipped, and everything else goes to
+Volumes.</p></li>
+<li><p>From the file manager, once the launcher is added (see below), open a file with BrainViewer or, on macOS, drop
+it on the viewer’s icon in the Dock.</p></li>
+<li><p>With <strong>File &gt; Open</strong> (Ctrl+O, Cmd+O on macOS), choose the files. The file type you pick at the bottom of the
+dialog sets their category.</p></li>
+<li><p>Drag files onto a category’s row in Layers, or onto one of its items. The rows that would take the files are
+highlighted while you drag, and files the category cannot read are refused.</p></li>
+<li><p>From Python, run <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">larmor.viewer</span> <span class="pre">import</span> <span class="pre">view</span></code>, then <code class="docutils literal notranslate"><span class="pre">view(volumes=&quot;t1.nii.gz&quot;,</span> <span class="pre">tracts=&quot;tracts.tck&quot;)</span></code>.</p></li>
+</ul>
+<p>Images are read from NIfTI (<code class="docutils literal notranslate"><span class="pre">.nii</span></code>, <code class="docutils literal notranslate"><span class="pre">.nii.gz</span></code>) and MRtrix (<code class="docutils literal notranslate"><span class="pre">.mif</span></code>, <code class="docutils literal notranslate"><span class="pre">.mif.gz</span></code>, <code class="docutils literal notranslate"><span class="pre">.mih</span></code>) files, and tractograms from
+<code class="docutils literal notranslate"><span class="pre">.tck</span></code>, <code class="docutils literal notranslate"><span class="pre">.trk</span></code>, <code class="docutils literal notranslate"><span class="pre">.vtk</span></code> and <code class="docutils literal notranslate"><span class="pre">.fib</span></code> files, gzipped or not. Files are read in the background, and the status bar
+shows the progress with a Cancel button. A tractogram with more streamlines than the read limit (1,000,000 by
+default, see <a class="reference internal" href="../settings/"><span class="std std-doc">Settings</span></a>) is reduced to a random subset of that size, and the same file always
+gives the same subset.</p>
+</section>
+<section id="installing-it-for-the-viewer-only">
+<h2>Installing it for the viewer only<a class="headerlink" href="#installing-it-for-the-viewer-only" title="Link to this heading">#</a></h2>
+<p>If you only want the viewer, install Larmor as a tool of its own with <a class="reference external" href="https://docs.astral.sh/uv/">uv</a>. uv also
+installs the Python version Larmor needs and puts the <code class="docutils literal notranslate"><span class="pre">lar</span></code> command on the PATH:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span><span class="s2">"larmor-dmri[viewer]"</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">pipx</span> <span class="pre">install</span> <span class="pre">&quot;larmor-dmri[viewer]&quot;</span></code> works too, as does <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">&quot;larmor-dmri[viewer]&quot;</span></code> in an environment
+of your own. Until Larmor is on PyPI, install it from a clone of its repository by running the command below in
+the clone. This compiles Larmor’s C++ module, so it needs a C++ compiler, which you get on macOS with
+<code class="docutils literal notranslate"><span class="pre">xcode-select</span> <span class="pre">--install</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span><span class="s2">".[viewer]"</span>
+</pre></div>
+</div>
+</section>
+<section id="starting-it-from-the-desktop">
+<h2>Starting it from the desktop<a class="headerlink" href="#starting-it-from-the-desktop" title="Link to this heading">#</a></h2>
+<p>The launcher lets you start the viewer from the desktop and open files with it from the file manager. Add it
+once, from a terminal:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>lar<span class="w"> </span>bv<span class="w"> </span>--install-launcher
+</pre></div>
+</div>
+<p>The launcher starts the Larmor install that ran this command, so run the command again after you move or
+reinstall Larmor. What it adds depends on the system.</p>
+<ul class="simple">
+<li><p>On macOS it adds <code class="docutils literal notranslate"><span class="pre">~/Applications/BrainViewer.app</span></code>, which shows in Launchpad and Spotlight. To keep it in the
+Dock, use <strong>Options &gt; Keep in Dock</strong>. Finder’s <strong>Open With</strong> offers it for <code class="docutils literal notranslate"><span class="pre">.nii</span></code>, <code class="docutils literal notranslate"><span class="pre">.nii.gz</span></code>, <code class="docutils literal notranslate"><span class="pre">.mif</span></code>, <code class="docutils literal notranslate"><span class="pre">.mih</span></code>,
+<code class="docutils literal notranslate"><span class="pre">.tck</span></code> and <code class="docutils literal notranslate"><span class="pre">.trk</span></code> files, and, because macOS matches only the last part of a file name, for every <code class="docutils literal notranslate"><span class="pre">.gz</span></code> file
+too.</p></li>
+<li><p>On Linux it adds a BrainViewer entry to the application menu
+(<code class="docutils literal notranslate"><span class="pre">~/.local/share/applications/larmor.brainviewer.desktop</span></code>), its icon, and the file types it opens, so that the
+file manager offers it for NIfTI, MRtrix, <code class="docutils literal notranslate"><span class="pre">.tck</span></code> and <code class="docutils literal notranslate"><span class="pre">.trk</span></code> files. You can pin it to the dock or taskbar from
+the menu.</p></li>
+<li><p>On Windows it adds a BrainViewer shortcut to the Start menu, which you can pin to Start or the taskbar from its
+right-click menu. Files dropped on the shortcut open in the viewer, but Explorer’s <strong>Open With</strong> does not list
+it.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">.vtk</span></code> and <code class="docutils literal notranslate"><span class="pre">.fib</span></code> tractograms are not registered with the file manager, because many programs use <code class="docutils literal notranslate"><span class="pre">.vtk</span></code>; open
+them from the command line or with File &gt; Open.</p>
+<p>The launcher never writes over a file it did not add. If another file is already in its place, such as a
+<code class="docutils literal notranslate"><span class="pre">BrainViewer.app</span></code> from another program, it stops and names that file, so you can move or remove it first.</p>
+<p><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">bv</span> <span class="pre">--uninstall-launcher</span></code> removes exactly what was added, lists each file it removes, and removes the folders
+it made once they are empty. To remove the viewer itself, remove the launcher first and then the tool:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>lar<span class="w"> </span>bv<span class="w"> </span>--uninstall-launcher
+uv<span class="w"> </span>tool<span class="w"> </span>uninstall<span class="w"> </span>larmor-dmri
+</pre></div>
+</div>
+<p>If you installed with pipx, use <code class="docutils literal notranslate"><span class="pre">pipx</span> <span class="pre">uninstall</span> <span class="pre">larmor-dmri</span></code> instead. Only the viewer’s settings are then left,
+in <code class="docutils literal notranslate"><span class="pre">~/Library/Application</span> <span class="pre">Support/larmor</span></code> (macOS), <code class="docutils literal notranslate"><span class="pre">~/.config/larmor</span></code> (Linux) or <code class="docutils literal notranslate"><span class="pre">%APPDATA%\larmor</span></code> (Windows).
+Delete that folder too to leave nothing behind.</p>
+</section>
+<section id="panels">
+<h2>Panels<a class="headerlink" href="#panels" title="Link to this heading">#</a></h2>
+<p>Panels are the parts of the window beside the views, such as Layers and Options. A stripe of icons on each edge
+of the window opens and closes them. The left stripe holds Layers (Ctrl+1), Labels (Ctrl+3), Screenshots
+(Ctrl+Shift+S) and Phantom (Ctrl+5). The right stripe holds Options (Ctrl+2), Inspect FOD (Ctrl+4), Signal
+breakdown (Ctrl+6), Settings (Ctrl+,) and Help (F1). On macOS, Cmd takes the place of Ctrl. Click an icon to open
+its panel and click it again to close it; the views take up the room the panels leave. <strong>Ctrl+0</strong> hides all the
+panels and brings them back. Hover over an icon to see its name and key; View &gt; Panels lists them too.</p>
+<p>The pin at the top of a panel makes it auto-hide: it then slides out over the views when you click its icon, and
+slides back when you click the views. Click the pin again to keep the panel beside the views. You can also drag a
+panel by its title to the other side of the window, or above or below another panel. The viewer remembers which
+panels are open, where they are and how large they are. View &gt; Panels &gt; Reset Layout puts every panel back where
+it was at first start. After an update that changes the panels, they start once in their first places.</p>
+</section>
+<section id="layers-and-options">
+<h2>Layers and Options<a class="headerlink" href="#layers-and-options" title="Link to this heading">#</a></h2>
+<p><strong>Layers</strong>, on the left, lists the loaded items (each file or object you opened) by category: Volumes,
+Overlays, Tractograms, FODs, Peaks and Surfaces. Each row has an eye, which shows or hides the item, and a cross,
+which removes it. A category’s eye and cross act on all its items.</p>
+<p><strong>Options</strong>, on the right, shows the options of what is selected in Layers. Select an item to change that item
+alone, or select a category to change all its items at once; where the items differ, a field shows “mixed”.
+Double-click an item or a category to bring up Options when it is closed or auto-hidden. A single click also
+opens Options, but only while no other panel is open on the right.</p>
+<p>The options come in sections, such as Display, Colour and 3D. Click a section’s title to fold it away; it then
+stays folded for that kind of item. Options marked (2D) or (3D), or in a 2D or 3D section, apply to those views
+only.</p>
+</section>
+<section id="the-four-views">
+<h2>The four views<a class="headerlink" href="#the-four-views" title="Link to this heading">#</a></h2>
+<p>The axial, coronal and sagittal views each show a slice through the crosshair, and the 3D view shows the whole
+scene in 3D. <a class="reference internal" href="../2d-views/"><span class="std std-doc">The 2D views</span></a> and <a class="reference internal" href="../3d-view/"><span class="std std-doc">The 3D view</span></a> explain how to use them, and Help &gt;
+Shortcuts lists every key and mouse control.</p>
+</section>
+<section id="agents">
+<h2>Agents<a class="headerlink" href="#agents" title="Link to this heading">#</a></h2>
+<p>An agent, such as Claude Code, can drive the viewer through the Model Context Protocol (MCP). The agent then
+loads files, changes options, moves the cursor and takes screenshots while you watch. <a class="reference internal" href="../../agents/connecting/"><span class="std std-doc">Driving the viewer from an
+agent</span></a> shows how to connect one.</p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#opening-files">Opening files</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installing-it-for-the-viewer-only">Installing it for the viewer only</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#starting-it-from-the-desktop">Starting it from the desktop</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#panels">Panels</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#layers-and-options">Layers and Options</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-four-views">The four views</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#agents">Agents</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

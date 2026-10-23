@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="Diffusion-weighted images in Larmor: brain masks, MP-PCA denoising, Gibbs ringing removal, and the DTI and DKI models." name="description" />
+<meta property="og:title" content="larmor.dwi" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://larmor.org/reference/api/dwi/" />
+<meta property="og:site_name" content="Larmor" />
+<meta property="og:description" content="Diffusion-weighted images in Larmor: brain masks, MP-PCA denoising, Gibbs ringing removal, and the DTI and DKI models." />
+<meta property="og:image" content="https://larmor.org/_static/larmor-card.png" />
+<meta property="og:image:alt" content="Larmor: a Python library and viewer for diffusion MRI" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<title>larmor.dwi - Larmor</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery.css?v=c83e6b79" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/larmor.css?v=f0153430" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="../../../_static/documentation_options.js?v=b21b538c"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../_static/sg-tags.js?v=d80f6fa4"></script>
+    <script defer="defer" src="../../../_static/larmor-carousel.js?v=7f65fbb2"></script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'reference/api/dwi';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://larmor.org/versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://larmor.org/reference/api/dwi/" />
+    <link rel="icon" href="../../../_static/larmor-symbol.svg"/>
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="larmor.sd" href="../sd/" />
+    <link rel="prev" title="larmor.io.formats" href="../io-formats/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="2.0" />
+  
+    
+    <script src="../../../_static/searchtools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script src="../../../searchindex.js"></script>
+  
+<link rel="icon" type="image/png" sizes="32x32" href="../../../_static/favicon-32.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="../../../_static/apple-touch-icon.png" />
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search/"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/larmor-symbol.svg" class="logo__image only-light" alt=""/>
+    <img src="../../../_static/larmor-symbol.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">Larmor</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../install/">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../quick-start/">
+    Quick start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../simulation/">
+    Simulation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../gallery/">
+    Gallery
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../guides/">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../viewer/">
+    Viewer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../background/">
+    Background
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../">
+    Reference
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../../agents/">
+    Agents
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../../about/">
+    About
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+      
+        <div class="navbar-item">
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../install/">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../quick-start/">
+    Quick start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../simulation/">
+    Simulation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../gallery/">
+    Gallery
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../guides/">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../viewer/">
+    Viewer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../background/">
+    Background
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../">
+    Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../agents/">
+    Agents
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../about/">
+    About
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button type="button" id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../cli/">Command line</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../">Python API</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../larmor/">larmor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../types/">larmor.types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../io/">larmor.io</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../io-formats/">larmor.io.formats</a></li>
+<li class="toctree-l2 current active"><a aria-current="page" class="current reference internal" href="#">larmor.dwi</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sd/">larmor.sd</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tractography/">larmor.tractography</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../registration/">larmor.registration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../simulation/">larmor.simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../plot/">larmor.plot</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../surfaces/">larmor.surfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../data/">larmor.data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../viewer/">larmor.viewer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../../file-formats/">File formats</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../" class="nav-link">Reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../" class="nav-link">Python API</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">larmor.dwi</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-larmor.dwi">
+<span id="larmor-dwi"></span><h1>larmor.dwi<a class="headerlink" href="#module-larmor.dwi" title="Link to this heading">#</a></h1>
+<p>Preparing diffusion-weighted images (DWIs) and fitting the DTI and DKI models.</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.dwi.DKIFit" title="larmor.dwi.DKIFit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DKIFit</span></code></a></p></td>
+<td><p>Result of a DKI fit, as maps on the image grid (zero outside the fitted mask).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.dwi.DKIModel" title="larmor.dwi.DKIModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DKIModel</span></code></a></p></td>
+<td><p>Diffusion kurtosis imaging (DKI) model, with a diffusion and a kurtosis tensor.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.dwi.DTIFit" title="larmor.dwi.DTIFit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DTIFit</span></code></a></p></td>
+<td><p>Result of a DTI fit, as maps on the image grid (zero outside the fitted mask).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.dwi.DTIModel" title="larmor.dwi.DTIModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DTIModel</span></code></a></p></td>
+<td><p>Diffusion tensor imaging (DTI) model, which fits a diffusion tensor per voxel.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.dwi.DenoisedDWI" title="larmor.dwi.DenoisedDWI"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DenoisedDWI</span></code></a></p></td>
+<td><p>Result of <a class="reference internal" href="#larmor.dwi.denoise_mppca" title="larmor.dwi.denoise_mppca"><code class="xref py py-obj docutils literal notranslate"><span class="pre">denoise_mppca</span></code></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.dwi.create_brain_mask" title="larmor.dwi.create_brain_mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_brain_mask</span></code></a></p></td>
+<td><p>Computes a brain mask from a b0 volume.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.dwi.denoise_mppca" title="larmor.dwi.denoise_mppca"><code class="xref py py-obj docutils literal notranslate"><span class="pre">denoise_mppca</span></code></a></p></td>
+<td><p>Denoises a diffusion-weighted volume by MP-PCA and estimates its noise level.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.dwi.estimate_s0" title="larmor.dwi.estimate_s0"><code class="xref py py-obj docutils literal notranslate"><span class="pre">estimate_s0</span></code></a></p></td>
+<td><p>Returns the signal without diffusion weighting, S0, of every voxel of a mask.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.dwi.mean_b0" title="larmor.dwi.mean_b0"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mean_b0</span></code></a></p></td>
+<td><p>Returns the mean of a DWI's b0 volumes.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.dwi.remove_gibbs_ringing" title="larmor.dwi.remove_gibbs_ringing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_gibbs_ringing</span></code></a></p></td>
+<td><p>Removes Gibbs ringing from a 3D or 4D volume, slice by slice.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.dwi.shell_mask" title="larmor.dwi.shell_mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">shell_mask</span></code></a></p></td>
+<td><p>Selects the volumes whose b-value is within <code class="xref py py-obj docutils literal notranslate"><span class="pre">tol</span></code> of <code class="xref py py-obj docutils literal notranslate"><span class="pre">shell</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="larmor.dwi.DKIFit">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.dwi.</span></span><span class="sig-name descname"><span class="pre">DKIFit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fa</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">md</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ad</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pe</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eigen_vals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">npd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mk</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ak</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rk</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ka</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.DKIFit" title="Link to this definition">#</a></dt>
+<dd><p>Result of a DKI fit, as maps on the image grid (zero outside the fitted mask).</p>
+<p>Each map has the spatial shape (X, Y, Z) of the DWI, with a last axis for dt,
+kt, pe and eigen_vals. Every map is float32, except npd. Diffusivities are in
+mm^2/s, the inverse of the units of the b-values; kurtosis values are
+dimensionless.</p>
+<p>The apparent kurtosis along a unit vector n is K(n) = MD^2 W(n) / D(n)^2, with
+D(n) = n^T D n and W(n) the quartic form of the kurtosis tensor.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DKIFit.dt">
+<span class="sig-name descname"><span class="pre">dt</span></span><a class="headerlink" href="#larmor.dwi.DKIFit.dt" title="Link to this definition">#</a></dt>
+<dd><p>The 6 unique elements of the diffusion tensor in the order xx, xy,
+xz, yy, yz, zz, stored in world coordinates (RAS+).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DKIFit.kt">
+<span class="sig-name descname"><span class="pre">kt</span></span><a class="headerlink" href="#larmor.dwi.DKIFit.kt" title="Link to this definition">#</a></dt>
+<dd><p>Kurtosis tensor W, containing its 15 unique elements in the order
+W1111, W2222, W3333, W1112, W1113, W2221, W2223, W3331, W3332, W1122,
+W1133, W2233, W1123, W2213, W3312.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DKIFit.s0">
+<span class="sig-name descname"><span class="pre">s0</span></span><a class="headerlink" href="#larmor.dwi.DKIFit.s0" title="Link to this definition">#</a></dt>
+<dd><p>Fitted signal at b = 0, in the units of the DWI.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DKIFit.fa">
+<span class="sig-name descname"><span class="pre">fa</span></span><a class="headerlink" href="#larmor.dwi.DKIFit.fa" title="Link to this definition">#</a></dt>
+<dd><p>Fractional anisotropy, clipped to [0, 1].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DKIFit.md">
+<span class="sig-name descname"><span class="pre">md</span></span><a class="headerlink" href="#larmor.dwi.DKIFit.md" title="Link to this definition">#</a></dt>
+<dd><p>Mean diffusivity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DKIFit.ad">
+<span class="sig-name descname"><span class="pre">ad</span></span><a class="headerlink" href="#larmor.dwi.DKIFit.ad" title="Link to this definition">#</a></dt>
+<dd><p>Axial diffusivity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DKIFit.rd">
+<span class="sig-name descname"><span class="pre">rd</span></span><a class="headerlink" href="#larmor.dwi.DKIFit.rd" title="Link to this definition">#</a></dt>
+<dd><p>Radial diffusivity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DKIFit.pe">
+<span class="sig-name descname"><span class="pre">pe</span></span><a class="headerlink" href="#larmor.dwi.DKIFit.pe" title="Link to this definition">#</a></dt>
+<dd><p>Principal eigenvector in world coordinates (RAS+); its sign is arbitrary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DKIFit.eigen_vals">
+<span class="sig-name descname"><span class="pre">eigen_vals</span></span><a class="headerlink" href="#larmor.dwi.DKIFit.eigen_vals" title="Link to this definition">#</a></dt>
+<dd><p>Eigenvalues l1 &gt;= l2 &gt;= l3, as fitted (they can be
+negative).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DKIFit.npd">
+<span class="sig-name descname"><span class="pre">npd</span></span><a class="headerlink" href="#larmor.dwi.DKIFit.npd" title="Link to this definition">#</a></dt>
+<dd><p>True in the fitted voxels whose diffusion tensor is not positive
+definite (l3 &lt;= 0), bool. The diffusion maps there are computed from
+the eigenvalues as fitted, and the kurtosis maps are 0.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DKIFit.mk">
+<span class="sig-name descname"><span class="pre">mk</span></span><a class="headerlink" href="#larmor.dwi.DKIFit.mk" title="Link to this definition">#</a></dt>
+<dd><p>Mean kurtosis, the mean of K(n) over the sphere.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DKIFit.ak">
+<span class="sig-name descname"><span class="pre">ak</span></span><a class="headerlink" href="#larmor.dwi.DKIFit.ak" title="Link to this definition">#</a></dt>
+<dd><p>Axial kurtosis, K(n) along the principal eigenvector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DKIFit.rk">
+<span class="sig-name descname"><span class="pre">rk</span></span><a class="headerlink" href="#larmor.dwi.DKIFit.rk" title="Link to this definition">#</a></dt>
+<dd><p>Radial kurtosis, the mean of K(n) over the directions perpendicular
+to the principal eigenvector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DKIFit.ka">
+<span class="sig-name descname"><span class="pre">ka</span></span><a class="headerlink" href="#larmor.dwi.DKIFit.ka" title="Link to this definition">#</a></dt>
+<dd><p>Kurtosis anisotropy, the standard deviation of K(n) over the sphere.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="larmor.dwi.DKIModel">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.dwi.</span></span><span class="sig-name descname"><span class="pre">DKIModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'wls'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constrained</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.DKIModel" title="Link to this definition">#</a></dt>
+<dd><p>Diffusion kurtosis imaging (DKI) model, with a diffusion and a kurtosis tensor.</p>
+<p>DKI extends the diffusion tensor with a kurtosis tensor W that describes how far
+the diffusion departs from a Gaussian. It needs at least two non-zero shells.
+<a class="reference internal" href="#larmor.dwi.DKIModel.fit" title="larmor.dwi.DKIModel.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a> returns a <a class="reference internal" href="#larmor.dwi.DKIFit" title="larmor.dwi.DKIFit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DKIFit</span></code></a> with the tensors and their maps (FA, MD, MK and
+others).</p>
+<p class="rubric">References</p>
+<p>Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K. Diffusional kurtosis
+imaging: the quantification of non-Gaussian water diffusion by means of
+magnetic resonance imaging. Magn Reson Med 53 (2005) 1432-1440.
+Veraart J, Sijbers J, Sunaert S, Leemans A, Jeurissen B. Weighted linear
+least squares estimation of diffusion MRI parameters: strengths,
+limitations, and pitfalls. NeuroImage 81 (2013) 335-346.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.dwi.DKIModel.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">volume</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gtab</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.DKIModel.fit" title="Link to this definition">#</a></dt>
+<dd><p>Fits the diffusion and kurtosis tensors in every voxel of the mask.</p>
+<p>Before the fit, the data are cleaned so that every log is defined. Each
+voxel’s S0 is estimated with <a class="reference internal" href="#larmor.dwi.estimate_s0" title="larmor.dwi.estimate_s0"><code class="xref py py-obj docutils literal notranslate"><span class="pre">larmor.dwi.estimate_s0</span></code></a>. Where that estimate
+differs from the mean of the voxel’s own b0s (because those b0s are
+implausible), it replaces the b0 measurements. Every diffusion-weighted
+measurement is then capped at S0. A voxel without a finite, positive S0 is
+not fitted and is 0 in every map, and a warning gives the number of such
+voxels. A measurement that is still not finite and positive is set to
+1e-3 S0. Without a b0 in the table nothing is replaced or capped, and such
+measurements are set to 1e-3 times the largest value of the data.</p>
+<p>The constrained fit (Tabesh et al., 2011) keeps the tensors physically
+plausible. It minimises the same (weighted) sum of squares subject to
+D(n) &gt;= 0, K(n) &gt;= 0 and K(n) &lt;= 3 / (b_max D(n)), where b_max is the
+largest b-value of the table, and all shells are fitted. The constraints
+are imposed along 256 directions n spread over the half sphere, not along
+the acquired gradient directions. A voxel whose unconstrained solution
+breaks a constraint is fitted again as a least-squares problem with linear
+inequality constraints (Lawson and Hanson, 1974); where that finds no
+solution or does not converge, the voxel keeps its unconstrained fit. For
+“wls”, the weights are those of the unconstrained weighted fit, with no
+further reweighting. The upper bound grows as D(n) goes to 0, so voxels
+with near-zero diffusivity (at the edge of the mask, for example) can give
+very large kurtosis values. Each voxel is fitted on its own, so the result
+does not depend on n_jobs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>volume</strong> (<a class="reference internal" href="../types/#larmor.types.Volume" title="larmor.types.volume.Volume"><em>Volume</em></a>) – Diffusion-weighted volume, shape (X, Y, Z, N).</p></li>
+<li><p><strong>gtab</strong> (<a class="reference internal" href="../types/#larmor.types.GradientTable" title="larmor.types.gradient_table.GradientTable"><em>GradientTable</em></a>) – Its gradient table, with at least two non-zero shells; the
+tensors come out in its frame, world coordinates.</p></li>
+<li><p><strong>mask</strong> (<a class="reference internal" href="../types/#larmor.types.Volume" title="larmor.types.volume.Volume"><em>Volume</em></a><em> | </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a><em> | </em><em>None</em>) – Voxels to fit (nonzero inside), on the volume’s grid. Defaults
+to None, which computes a brain mask from the mean b0 volume.</p></li>
+<li><p><strong>n_jobs</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Number of threads for the fit, at most the number of cores;
+-1 uses every core. Defaults to -1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>DKIFit</em> – The tensors and their maps, zero outside the mask.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the table or the mask does not match the volume, the
+    measurements cannot determine the tensors (fewer than two non-zero
+    shells, or too few directions), if the mask is computed and
+    there is no b0, or if n_jobs is 0 or below -1.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#larmor.dwi.DKIFit" title="larmor.dwi.dki.DKIFit"><em>DKIFit</em></a></p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<p>Tabesh A, Jensen JH, Ardekani BA, Helpern JA. Estimation of tensors
+and tensor-derived measures in diffusional kurtosis imaging. Magn
+Reson Med 65 (2011) 823-836.
+Lawson CL, Hanson RJ. Solving Least Squares Problems. Prentice-Hall,
+1974 (chapter 23).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="larmor.dwi.DTIFit">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.dwi.</span></span><span class="sig-name descname"><span class="pre">DTIFit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fa</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">md</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ad</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pe</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eigen_vals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">npd</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.DTIFit" title="Link to this definition">#</a></dt>
+<dd><p>Result of a DTI fit, as maps on the image grid (zero outside the fitted mask).</p>
+<p>Each map has the spatial shape (X, Y, Z) of the DWI, with a last axis for dt,
+pe and eigen_vals. Every map is float32, except npd. Diffusivities are in
+mm^2/s, the inverse of the units of the b-values.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DTIFit.dt">
+<span class="sig-name descname"><span class="pre">dt</span></span><a class="headerlink" href="#larmor.dwi.DTIFit.dt" title="Link to this definition">#</a></dt>
+<dd><p>The 6 unique elements of the diffusion tensor in the order xx, xy,
+xz, yy, yz, zz, stored in world coordinates (RAS+).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DTIFit.fa">
+<span class="sig-name descname"><span class="pre">fa</span></span><a class="headerlink" href="#larmor.dwi.DTIFit.fa" title="Link to this definition">#</a></dt>
+<dd><p>Fractional anisotropy, clipped to [0, 1].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DTIFit.md">
+<span class="sig-name descname"><span class="pre">md</span></span><a class="headerlink" href="#larmor.dwi.DTIFit.md" title="Link to this definition">#</a></dt>
+<dd><p>Mean diffusivity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DTIFit.ad">
+<span class="sig-name descname"><span class="pre">ad</span></span><a class="headerlink" href="#larmor.dwi.DTIFit.ad" title="Link to this definition">#</a></dt>
+<dd><p>Axial diffusivity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DTIFit.rd">
+<span class="sig-name descname"><span class="pre">rd</span></span><a class="headerlink" href="#larmor.dwi.DTIFit.rd" title="Link to this definition">#</a></dt>
+<dd><p>Radial diffusivity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DTIFit.pe">
+<span class="sig-name descname"><span class="pre">pe</span></span><a class="headerlink" href="#larmor.dwi.DTIFit.pe" title="Link to this definition">#</a></dt>
+<dd><p>Principal eigenvector in world coordinates (RAS+); its sign is arbitrary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DTIFit.eigen_vals">
+<span class="sig-name descname"><span class="pre">eigen_vals</span></span><a class="headerlink" href="#larmor.dwi.DTIFit.eigen_vals" title="Link to this definition">#</a></dt>
+<dd><p>Eigenvalues l1 &gt;= l2 &gt;= l3, as fitted (they can be
+negative).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DTIFit.npd">
+<span class="sig-name descname"><span class="pre">npd</span></span><a class="headerlink" href="#larmor.dwi.DTIFit.npd" title="Link to this definition">#</a></dt>
+<dd><p>True in the fitted voxels whose tensor is not positive definite
+(l3 &lt;= 0), bool. The scalar maps there are computed from the
+eigenvalues as fitted, so they describe a tensor that is not
+physical.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="larmor.dwi.DTIModel">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.dwi.</span></span><span class="sig-name descname"><span class="pre">DTIModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ols'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.DTIModel" title="Link to this definition">#</a></dt>
+<dd><p>Diffusion tensor imaging (DTI) model, which fits a diffusion tensor per voxel.</p>
+<p><a class="reference internal" href="#larmor.dwi.DTIModel.fit" title="larmor.dwi.DTIModel.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a> returns a <a class="reference internal" href="#larmor.dwi.DTIFit" title="larmor.dwi.DTIFit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DTIFit</span></code></a> with the tensor and its maps (FA, MD, AD, RD and the
+principal eigenvector).</p>
+<p class="rubric">References</p>
+<p>Basser PJ, Mattiello J, LeBihan D. Estimation of the effective
+self-diffusion tensor from the NMR spin echo. J Magn Reson B 103 (1994)
+247-254.
+Veraart J, Sijbers J, Sunaert S, Leemans A, Jeurissen B. Weighted linear
+least squares estimation of diffusion MRI parameters: strengths,
+limitations, and pitfalls. NeuroImage 81 (2013) 335-346.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.dwi.DTIModel.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">volume</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gtab</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.DTIModel.fit" title="Link to this definition">#</a></dt>
+<dd><p>Fits the tensor in every voxel of the mask.</p>
+<p>Signal values that are not positive or finite are replaced by 1e-3 S0
+before taking the log, with the voxel’s S0 from <a class="reference internal" href="#larmor.dwi.estimate_s0" title="larmor.dwi.estimate_s0"><code class="xref py py-obj docutils literal notranslate"><span class="pre">larmor.dwi.estimate_s0</span></code></a>;
+without a b0 in the table, or where that S0 is not positive, by 1e-3 times
+the largest value of the data. Each voxel is fitted on its own, so the
+result does not depend on n_jobs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>volume</strong> (<a class="reference internal" href="../types/#larmor.types.Volume" title="larmor.types.volume.Volume"><em>Volume</em></a>) – Diffusion-weighted volume, shape (X, Y, Z, N).</p></li>
+<li><p><strong>gtab</strong> (<a class="reference internal" href="../types/#larmor.types.GradientTable" title="larmor.types.gradient_table.GradientTable"><em>GradientTable</em></a>) – Its gradient table, with at least two distinct b-values (a b0 is
+not needed when a mask is given); the tensor comes out in its
+frame, world coordinates.</p></li>
+<li><p><strong>mask</strong> (<a class="reference internal" href="../types/#larmor.types.Volume" title="larmor.types.volume.Volume"><em>Volume</em></a><em> | </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a><em> | </em><em>None</em>) – Voxels to fit (nonzero inside), on the volume’s grid. Defaults
+to None, which computes a brain mask from the mean b0 volume.</p></li>
+<li><p><strong>n_jobs</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Number of threads for the fit, at most the number of cores;
+-1 uses every core. Defaults to -1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>DTIFit</em> – The tensor and its maps, zero outside the mask.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the table or the mask does not match the volume, the
+    measurements cannot determine the tensor and S0 (for example one
+    shell without b0, or fewer than six non-coplanar directions), if
+    the mask is computed and there is no b0, or if n_jobs is 0 or
+    below -1.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#larmor.dwi.DTIFit" title="larmor.dwi.dti.DTIFit"><em>DTIFit</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="larmor.dwi.DenoisedDWI">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.dwi.</span></span><span class="sig-name descname"><span class="pre">DenoisedDWI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">volume</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_signal</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.DenoisedDWI" title="Link to this definition">#</a></dt>
+<dd><p>Result of <a class="reference internal" href="#larmor.dwi.denoise_mppca" title="larmor.dwi.denoise_mppca"><code class="xref py py-obj docutils literal notranslate"><span class="pre">denoise_mppca</span></code></a>.</p>
+<p>Every map is on the input’s grid and zero outside the mask. The volume and
+noise are float32 and num_signal is int64; noise and num_signal have shape
+(X, Y, Z).</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DenoisedDWI.volume">
+<span class="sig-name descname"><span class="pre">volume</span></span><a class="headerlink" href="#larmor.dwi.DenoisedDWI.volume" title="Link to this definition">#</a></dt>
+<dd><p>The denoised volume.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="../types/#larmor.types.Volume" title="larmor.types.volume.Volume">larmor.types.volume.Volume</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DenoisedDWI.noise">
+<span class="sig-name descname"><span class="pre">noise</span></span><a class="headerlink" href="#larmor.dwi.DenoisedDWI.noise" title="Link to this definition">#</a></dt>
+<dd><p>The noise level sigma of each voxel, in the units of the signal.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.DenoisedDWI.num_signal">
+<span class="sig-name descname"><span class="pre">num_signal</span></span><a class="headerlink" href="#larmor.dwi.DenoisedDWI.num_signal" title="Link to this definition">#</a></dt>
+<dd><p>The number of signal components P kept in each voxel’s patch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.dwi.create_brain_mask">
+<span class="sig-prename descclassname"><span class="pre">larmor.dwi.</span></span><span class="sig-name descname"><span class="pre">create_brain_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_b0</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">morph</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.create_brain_mask" title="Link to this definition">#</a></dt>
+<dd><p>Computes a brain mask from a b0 volume.</p>
+<p>The volume is thresholded at an automatic level between background and
+foreground, multiplied by <code class="xref py py-obj docutils literal notranslate"><span class="pre">threshold</span></code>; the largest connected region is kept,
+and an erosion and a dilation with a roughly spherical element of <code class="xref py py-obj docutils literal notranslate"><span class="pre">morph</span></code>
+voxels remove thin structures outside the brain.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data_b0</strong> (<em>NDArray</em><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.floating" title="(in NumPy v2.5)"><em>floating</em></a><em>]</em>) – The b0 volume, shape (X, Y, Z).</p></li>
+<li><p><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Factor applied to the automatic intensity threshold; lower
+values give a larger mask. Defaults to 0.5.</p></li>
+<li><p><strong>morph</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Size in voxels of the structuring element used for erosion and
+dilation. Defaults to 7.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Boolean mask, shape (X, Y, Z).</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If no voxel is left after thresholding or after the
+    erosion, for example when the object is smaller than the
+    structuring element.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>NDArray</em>[<a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.bool" title="(in NumPy v2.5)"><em>bool</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.dwi.denoise_mppca">
+<span class="sig-prename descclassname"><span class="pre">larmor.dwi.</span></span><span class="sig-name descname"><span class="pre">denoise_mppca</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">volume</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.denoise_mppca" title="Link to this definition">#</a></dt>
+<dd><p>Denoises a diffusion-weighted volume by MP-PCA and estimates its noise level.</p>
+<p>MP-PCA (Marchenko-Pastur principal component analysis) uses the redundancy
+between the volumes of a DWI: in a small neighbourhood, the signal is described
+by a few principal components and the rest is noise.</p>
+<p>Every voxel is denoised in its own patch, centred on it. The result does
+not depend on the number of threads.</p>
+<p>The noise is assumed Gaussian, constant within a patch and uncorrelated, and
+the Rician bias of magnitude images is not corrected.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>volume</strong> (<a class="reference internal" href="../types/#larmor.types.Volume" title="larmor.types.volume.Volume"><em>Volume</em></a>) – The diffusion-weighted volume, (X, Y, Z, M), with all
+its volumes (b0s included), as acquired.</p></li>
+<li><p><strong>mask</strong> (<a class="reference internal" href="../types/#larmor.types.Volume" title="larmor.types.volume.Volume"><em>Volume</em></a><em> | </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a><em> | </em><em>None</em>) – Voxels to denoise (nonzero inside), on the volume’s grid. Patches
+still use the voxels outside it. Defaults to None, every voxel.</p></li>
+<li><p><strong>patch_size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.integer" title="(in NumPy v2.5)"><em>integer</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence" title="(in Python v3.15)"><em>Sequence</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.integer" title="(in NumPy v2.5)"><em>integer</em></a><em>] </em><em>| </em><em>None</em>) – The patch width in voxels, odd, the same along every axis or
+one per axis; along an axis shorter than that, the whole axis.
+Defaults to None, the smallest odd width w with w^3 &gt;= M (5 for up
+to 125 volumes, 7 for up to 343).</p></li>
+<li><p><strong>n_jobs</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Number of threads, at most the cores; -1 is all cores. Defaults
+to -1.</p></li>
+<li><p><strong>progress</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether to show a progress bar. Defaults to False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>DenoisedDWI</em> – The denoised volume, the noise map sigma and the number of
+signal components per voxel.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the volume is not 4D, the mask does not match its grid,
+    patch_size is not odd and positive, n_jobs is 0 or below -1, or the
+    data is complex.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If patch_size is not an integer or a sequence of integers.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#larmor.dwi.DenoisedDWI" title="larmor.dwi.denoise.DenoisedDWI"><em>DenoisedDWI</em></a></p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<p>Veraart J, Novikov DS, Christiaens D, Ades-aron B, Sijbers J, Fieremans E.
+Denoising of diffusion MRI using random matrix theory. NeuroImage 142
+(2016) 394-406.
+Tournier JD et al. MRtrix3: A fast, flexible and open software framework
+for medical image processing and visualisation. NeuroImage 202 (2019)
+116137.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.dwi.estimate_s0">
+<span class="sig-prename descclassname"><span class="pre">larmor.dwi.</span></span><span class="sig-name descname"><span class="pre">estimate_s0</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">volume</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gtab</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.estimate_s0" title="Link to this definition">#</a></dt>
+<dd><p>Returns the signal without diffusion weighting, S0, of every voxel of a mask.</p>
+<p>S0 is the mean of a voxel’s b0 measurements. Diffusion weighting can only lower
+the signal, so a voxel whose mean b0 is at or below the mean of its
+diffusion-weighted measurements has implausible b0s (dark, or 0, as at the edge
+of the brain). Such a voxel takes the mean S0 of the plausible mask voxels in
+its 3x3x3 neighbourhood, or in its 5x5x5 neighbourhood when there is none, and
+NaN when there is none there either.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>volume</strong> (<a class="reference internal" href="../types/#larmor.types.Volume" title="larmor.types.volume.Volume"><em>Volume</em></a>) – Diffusion-weighted volume, shape (X, Y, Z, N).</p></li>
+<li><p><strong>gtab</strong> (<a class="reference internal" href="../types/#larmor.types.GradientTable" title="larmor.types.gradient_table.GradientTable"><em>GradientTable</em></a>) – Its gradient table; its <code class="xref py py-obj docutils literal notranslate"><span class="pre">b0_mask</span></code> selects the b0s.</p></li>
+<li><p><strong>mask</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – Voxels to estimate S0 in, shape (X, Y, Z) bool.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>S0, shape (X, Y, Z), float64; the mean b0 outside the mask.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the table does not match the volume, or has no b0.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.dwi.mean_b0">
+<span class="sig-prename descclassname"><span class="pre">larmor.dwi.</span></span><span class="sig-name descname"><span class="pre">mean_b0</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">volume</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gtab</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.mean_b0" title="Link to this definition">#</a></dt>
+<dd><p>Returns the mean of a DWI’s b0 volumes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>volume</strong> (<a class="reference internal" href="../types/#larmor.types.Volume" title="larmor.types.volume.Volume"><em>Volume</em></a>) – Diffusion-weighted volume, shape (X, Y, Z, N).</p></li>
+<li><p><strong>gtab</strong> (<a class="reference internal" href="../types/#larmor.types.GradientTable" title="larmor.types.gradient_table.GradientTable"><em>GradientTable</em></a>) – Its gradient table; its <code class="xref py py-obj docutils literal notranslate"><span class="pre">b0_mask</span></code> selects the b0s.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The mean b0 volume, shape (X, Y, Z), float32.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the table does not match the volume, or has no b0.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.dwi.remove_gibbs_ringing">
+<span class="sig-prename descclassname"><span class="pre">larmor.dwi.</span></span><span class="sig-name descname"><span class="pre">remove_gibbs_ringing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">volume</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">slice_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_shifts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(1,</span> <span class="pre">3)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.remove_gibbs_ringing" title="Link to this definition">#</a></dt>
+<dd><p>Removes Gibbs ringing from a 3D or 4D volume, slice by slice.</p>
+<p>The local sub-voxel shift method (Kellner et al., 2016) re-interpolates each
+line of a slice at num_shifts sub-voxel shifts on each side of zero, and keeps
+for each voxel the shift with the least oscillation next to it. Lines wrap
+around at the edge of the slice. The method assumes full k-space sampling;
+along a partial Fourier direction some ringing may remain. Each slice is
+computed on its own, so the result does not depend on the number of threads.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>volume</strong> (<a class="reference internal" href="../types/#larmor.types.Volume" title="larmor.types.volume.Volume"><em>Volume</em></a>) – The image, (X, Y, Z) or (X, Y, Z, N); its slope and intercept
+are applied.</p></li>
+<li><p><strong>slice_axis</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – The voxel axis across the acquired slices (0, 1 or 2); the
+other two span each slice. Defaults to 2.</p></li>
+<li><p><strong>num_shifts</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Shifts tried on each side of zero. Defaults to 20.</p></li>
+<li><p><strong>window</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>]</em>) – The neighbours, from window[0] to window[1] + 1 voxels from the
+voxel, over which the oscillation is measured. Defaults to (1, 3).</p></li>
+<li><p><strong>n_jobs</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Number of threads, -1 for all cores. Defaults to -1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Volume</em> – The image without ringing, float32, on the same grid.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If slice_axis is not 0, 1 or 2, num_shifts is below 1, the
+    window is not 0 &lt;= first &lt;= last, n_jobs is 0 or below -1, or the
+    data is complex.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="../types/#larmor.types.Volume" title="larmor.types.volume.Volume"><em>Volume</em></a></p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<p>Kellner E, Dhital B, Kiselev VG, Reisert M. Gibbs-ringing artifact removal
+based on local subvoxel-shifts. Magn Reson Med 76 (2016) 1574-1581.
+Tournier JD et al. MRtrix3: A fast, flexible and open software framework for
+medical image processing and visualisation. NeuroImage 202 (2019) 116137.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.dwi.shell_mask">
+<span class="sig-prename descclassname"><span class="pre">larmor.dwi.</span></span><span class="sig-name descname"><span class="pre">shell_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bvals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shell</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.shell_mask" title="Link to this definition">#</a></dt>
+<dd><p>Selects the volumes whose b-value is within <code class="xref py py-obj docutils literal notranslate"><span class="pre">tol</span></code> of <code class="xref py py-obj docutils literal notranslate"><span class="pre">shell</span></code>.</p>
+<p>All b-values are in s/mm^2.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bvals</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – The b-values, shape (N,).</p></li>
+<li><p><strong>shell</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The b-value of the shell.</p></li>
+<li><p><strong>tol</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – How far a b-value may lie from <code class="xref py py-obj docutils literal notranslate"><span class="pre">shell</span></code> to belong to it. Defaults
+to 100.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A boolean array, shape (N,), True for the volumes of the shell.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DKIFit"><code class="docutils literal notranslate"><span class="pre">DKIFit</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DKIFit.dt"><code class="docutils literal notranslate"><span class="pre">DKIFit.dt</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DKIFit.kt"><code class="docutils literal notranslate"><span class="pre">DKIFit.kt</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DKIFit.s0"><code class="docutils literal notranslate"><span class="pre">DKIFit.s0</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DKIFit.fa"><code class="docutils literal notranslate"><span class="pre">DKIFit.fa</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DKIFit.md"><code class="docutils literal notranslate"><span class="pre">DKIFit.md</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DKIFit.ad"><code class="docutils literal notranslate"><span class="pre">DKIFit.ad</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DKIFit.rd"><code class="docutils literal notranslate"><span class="pre">DKIFit.rd</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DKIFit.pe"><code class="docutils literal notranslate"><span class="pre">DKIFit.pe</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DKIFit.eigen_vals"><code class="docutils literal notranslate"><span class="pre">DKIFit.eigen_vals</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DKIFit.npd"><code class="docutils literal notranslate"><span class="pre">DKIFit.npd</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DKIFit.mk"><code class="docutils literal notranslate"><span class="pre">DKIFit.mk</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DKIFit.ak"><code class="docutils literal notranslate"><span class="pre">DKIFit.ak</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DKIFit.rk"><code class="docutils literal notranslate"><span class="pre">DKIFit.rk</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DKIFit.ka"><code class="docutils literal notranslate"><span class="pre">DKIFit.ka</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DKIModel"><code class="docutils literal notranslate"><span class="pre">DKIModel</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DKIModel.fit"><code class="docutils literal notranslate"><span class="pre">DKIModel.fit()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DTIFit"><code class="docutils literal notranslate"><span class="pre">DTIFit</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DTIFit.dt"><code class="docutils literal notranslate"><span class="pre">DTIFit.dt</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DTIFit.fa"><code class="docutils literal notranslate"><span class="pre">DTIFit.fa</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DTIFit.md"><code class="docutils literal notranslate"><span class="pre">DTIFit.md</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DTIFit.ad"><code class="docutils literal notranslate"><span class="pre">DTIFit.ad</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DTIFit.rd"><code class="docutils literal notranslate"><span class="pre">DTIFit.rd</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DTIFit.pe"><code class="docutils literal notranslate"><span class="pre">DTIFit.pe</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DTIFit.eigen_vals"><code class="docutils literal notranslate"><span class="pre">DTIFit.eigen_vals</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DTIFit.npd"><code class="docutils literal notranslate"><span class="pre">DTIFit.npd</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DTIModel"><code class="docutils literal notranslate"><span class="pre">DTIModel</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DTIModel.fit"><code class="docutils literal notranslate"><span class="pre">DTIModel.fit()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DenoisedDWI"><code class="docutils literal notranslate"><span class="pre">DenoisedDWI</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DenoisedDWI.volume"><code class="docutils literal notranslate"><span class="pre">DenoisedDWI.volume</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DenoisedDWI.noise"><code class="docutils literal notranslate"><span class="pre">DenoisedDWI.noise</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DenoisedDWI.num_signal"><code class="docutils literal notranslate"><span class="pre">DenoisedDWI.num_signal</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.create_brain_mask"><code class="docutils literal notranslate"><span class="pre">create_brain_mask()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.denoise_mppca"><code class="docutils literal notranslate"><span class="pre">denoise_mppca()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.estimate_s0"><code class="docutils literal notranslate"><span class="pre">estimate_s0()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.mean_b0"><code class="docutils literal notranslate"><span class="pre">mean_b0()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.remove_gibbs_ringing"><code class="docutils literal notranslate"><span class="pre">remove_gibbs_ringing()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.shell_mask"><code class="docutils literal notranslate"><span class="pre">shell_mask()</span></code></a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="How to build a phantom of tissues and fibre bundles with Larmor, save it as a phantom file, simulate diffusion-weighted images from it with lar simulate, and read the ground truth it writes." name="description" />
+<meta property="og:title" content="Simulating phantoms" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://larmor.org/guides/simulation/" />
+<meta property="og:site_name" content="Larmor" />
+<meta property="og:description" content="How to build a phantom of tissues and fibre bundles with Larmor, save it as a phantom file, simulate diffusion-weighted images from it with lar simulate, and read the ground truth it writes." />
+<meta property="og:image" content="https://larmor.org/_static/larmor-card.png" />
+<meta property="og:image:alt" content="Larmor: a Python library and viewer for diffusion MRI" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<title>Simulating phantoms - Larmor</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=c83e6b79" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/larmor.css?v=f0153430" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="../../_static/documentation_options.js?v=b21b538c"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+    <script defer="defer" src="../../_static/larmor-carousel.js?v=7f65fbb2"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'guides/simulation';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://larmor.org/versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://larmor.org/guides/simulation/" />
+    <link rel="icon" href="../../_static/larmor-symbol.svg"/>
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Viewer" href="../../viewer/" />
+    <link rel="prev" title="Surfaces" href="../surfaces/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="2.0" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+<link rel="icon" type="image/png" sizes="32x32" href="../../_static/favicon-32.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="../../_static/apple-touch-icon.png" />
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search/"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/larmor-symbol.svg" class="logo__image only-light" alt=""/>
+    <img src="../../_static/larmor-symbol.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">Larmor</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../install/">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../quick-start/">
+    Quick start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../simulation/">
+    Simulation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../gallery/">
+    Gallery
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../viewer/">
+    Viewer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../background/">
+    Background
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../reference/">
+    Reference
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../agents/">
+    Agents
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../about/">
+    About
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+      
+        <div class="navbar-item">
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../install/">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../quick-start/">
+    Quick start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../simulation/">
+    Simulation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../gallery/">
+    Gallery
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../viewer/">
+    Viewer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../background/">
+    Background
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../reference/">
+    Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../agents/">
+    Agents
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../about/">
+    About
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button type="button" id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../what-larmor-does/">What Larmor does</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started/">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../example-data/">Example data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../loading-and-saving/">Loading and saving data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gradient-tables/">Gradient tables and shells</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dti/">DTI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dki/">DKI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../fods/">FODs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../peaks/">Peaks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tractography/">Tractography</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../isolating-a-bundle/">Isolating a bundle</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tract-profiles/">Tract profiles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../surfaces/">Surfaces</a></li>
+<li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">Simulating phantoms</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../" class="nav-link">User guide</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Simulating phantoms</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="simulating-phantoms">
+<h1>Simulating phantoms<a class="headerlink" href="#simulating-phantoms" title="Link to this heading">#</a></h1>
+<p>Simulated images with a known ground truth let you test a method against the answer it should give. Larmor
+simulates them from a phantom, an object to scan made of tissues that fibre bundles and tissue maps place on a voxel
+grid. Each tissue is a sum of compartments, such as a stick for the water inside axons or a ball for free water,
+each with its own diffusion model. <a class="reference internal" href="../../reference/api/simulation/#larmor.simulation.simulate" title="larmor.simulation.simulate"><code class="xref py py-func docutils literal notranslate"><span class="pre">simulate()</span></code></a> turns a phantom and a scan protocol into
+diffusion-weighted images, and keeps the ground truth: how much of each voxel each tissue and bundle fills, and
+where the fibres point. <a class="reference internal" href="../../background/simulation/"><span class="std std-doc">Simulating diffusion MRI</span></a> describes what is computed and what
+is not.</p>
+<p>For a first run with no code, see the <a class="reference internal" href="../../quick-start/"><span class="std std-doc">quick start</span></a>.</p>
+<section id="building-a-phantom">
+<h2>Building a phantom<a class="headerlink" href="#building-a-phantom" title="Link to this heading">#</a></h2>
+<p>The phantom below is one straight bundle on a grid of 24 x 24 x 24 voxels of 1 mm. The bundle’s
+<a class="reference internal" href="../../reference/api/simulation/#larmor.simulation.BundleGeometry" title="larmor.simulation.BundleGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">BundleGeometry</span></code></a> is a spline through control points in world coordinates (mm), with
+<code class="docutils literal notranslate"><span class="pre">num_streamlines</span></code> streamlines spread over a disc of the given <code class="docutils literal notranslate"><span class="pre">radius</span></code> around it, and its seed makes the
+streamlines the same on every run. A phantom has the tissues WM, GM and CSF by default, and a bundle is filled
+with WM unless you name another tissue.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">larmor.simulation</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Bundle</span><span class="p">,</span>
+    <span class="n">BundleGeometry</span><span class="p">,</span>
+    <span class="n">Phantom</span><span class="p">,</span>
+    <span class="n">Protocol</span><span class="p">,</span>
+    <span class="n">create_gradient_table</span><span class="p">,</span>
+    <span class="n">write_phantom</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">larmor.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Grid</span>
+
+<span class="n">grid</span> <span class="o">=</span> <span class="n">Grid</span><span class="p">((</span><span class="mi">24</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="mi">24</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>
+<span class="n">line</span> <span class="o">=</span> <span class="n">BundleGeometry</span><span class="p">(</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">3.0</span><span class="p">,</span> <span class="mf">12.0</span><span class="p">,</span> <span class="mf">12.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">21.0</span><span class="p">,</span> <span class="mf">12.0</span><span class="p">,</span> <span class="mf">12.0</span><span class="p">]]),</span>
+    <span class="n">num_streamlines</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+    <span class="n">radius</span><span class="o">=</span><span class="mf">2.5</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">phantom</span> <span class="o">=</span> <span class="n">Phantom</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">bundles</span><span class="o">=</span><span class="p">(</span><span class="n">Bundle</span><span class="p">(</span><span class="n">line</span><span class="p">),))</span>
+
+<span class="n">gradients</span> <span class="o">=</span> <span class="n">create_gradient_table</span><span class="p">([(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">32</span><span class="p">)],</span> <span class="n">num_b0</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">protocol</span> <span class="o">=</span> <span class="n">Protocol</span><span class="p">(</span><span class="n">gradients</span><span class="p">,</span> <span class="mf">15.0</span><span class="p">,</span> <span class="mf">30.0</span><span class="p">,</span> <span class="mf">80.0</span><span class="p">,</span> <span class="mf">3000.0</span><span class="p">)</span>
+<span class="n">write_phantom</span><span class="p">(</span><span class="n">phantom</span><span class="p">,</span> <span class="s2">"straight.phantom.json"</span><span class="p">,</span> <span class="n">protocol</span><span class="o">=</span><span class="n">protocol</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The protocol holds the gradient table and the timings, which here are the pulse duration delta (15 ms), the
+time between the pulses Delta (30 ms), the echo time (80 ms) and the repetition time (3000 ms).
+<code class="docutils literal notranslate"><span class="pre">create_gradient_table</span></code> spreads the directions of each shell evenly over the sphere, and a table read from bvals
+and bvecs files works as well (see <a class="reference internal" href="../gradient-tables/"><span class="std std-doc">Gradient tables</span></a>).</p>
+<p>A phantom has four parts.</p>
+<ul>
+<li><p><strong>Tissues.</strong> Each tissue has a name, by which bundles and maps refer to it. The following functions make the
+predefined tissues, and their arguments set the fractions, diffusivities and relaxation times.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../../reference/api/simulation/#larmor.simulation.standard_model_tissue" title="larmor.simulation.standard_model_tissue"><code class="xref py py-func docutils literal notranslate"><span class="pre">standard_model_tissue()</span></code></a> makes white matter as a stick and a zeppelin, with
+optional free water.</p></li>
+<li><p><a class="reference internal" href="../../reference/api/simulation/#larmor.simulation.noddi_tissue" title="larmor.simulation.noddi_tissue"><code class="xref py py-func docutils literal notranslate"><span class="pre">noddi_tissue()</span></code></a> makes white or grey matter in the NODDI model, with
+Watson-dispersed sticks, a zeppelin whose diffusivities follow the neurite density and dispersion, and free
+water.</p></li>
+<li><p><a class="reference internal" href="../../reference/api/simulation/#larmor.simulation.sandi_tissue" title="larmor.simulation.sandi_tissue"><code class="xref py py-func docutils literal notranslate"><span class="pre">sandi_tissue()</span></code></a> makes grey matter.</p></li>
+<li><p><a class="reference internal" href="../../reference/api/simulation/#larmor.simulation.csf_tissue" title="larmor.simulation.csf_tissue"><code class="xref py py-func docutils literal notranslate"><span class="pre">csf_tissue()</span></code></a> and <a class="reference internal" href="../../reference/api/simulation/#larmor.simulation.free_water_tissue" title="larmor.simulation.free_water_tissue"><code class="xref py py-func docutils literal notranslate"><span class="pre">free_water_tissue()</span></code></a> make free water,
+named CSF and FW.</p></li>
+</ul>
+<p>A tissue can also be built from <a class="reference internal" href="../../reference/api/simulation/#larmor.simulation.Compartment" title="larmor.simulation.Compartment"><code class="xref py py-class docutils literal notranslate"><span class="pre">Compartment</span></code></a> objects of any model, including the
+cylinder and the dot. The signal of the stick, the zeppelin, the Watson-dispersed sticks and the cylinder depends
+on a fibre direction, which only a bundle gives, so a tissue with one of these compartments can fill bundles
+only. Other tissues can also fill tissue maps and the background.</p>
+</li>
+<li><p><strong>Bundles.</strong> A bundle’s shape is a <a class="reference internal" href="../../reference/api/simulation/#larmor.simulation.BundleGeometry" title="larmor.simulation.BundleGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">BundleGeometry</span></code></a> or a tractogram of your own,
+such as one from <code class="docutils literal notranslate"><span class="pre">load_tractogram</span></code>. Each streamline stands for a piece of the bundle’s cross-section, so the
+fraction of a voxel that a bundle fills, its occupancy, follows the length of streamline in the voxel. Where
+bundles cross and their occupancies add up to more than the voxel, they are scaled down to fit.</p></li>
+<li><p><strong>Tissue maps.</strong> A <a class="reference internal" href="../../reference/api/simulation/#larmor.simulation.TissueMap" title="larmor.simulation.TissueMap"><code class="xref py py-class docutils literal notranslate"><span class="pre">TissueMap</span></code></a> is a volume of fractions in [0, 1] on the grid,
+such as a grey matter probability. The maps share what the bundles leave of each voxel.</p></li>
+<li><p><strong>Background.</strong> What is left after the bundles and maps goes to the tissue named by <code class="docutils literal notranslate"><span class="pre">background</span></code>, or gives no
+signal when there is none.</p></li>
+</ul>
+</section>
+<section id="the-phantom-file">
+<h2>The phantom file<a class="headerlink" href="#the-phantom-file" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">write_phantom</span></code> stores the grid, the tissues, the bundles (their geometry, or the path of their tractogram), the
+paths of the tissue maps and the protocol in one JSON file, <code class="docutils literal notranslate"><span class="pre">*.phantom.json</span></code>, which you can read and edit. A bundle
+geometry without a seed gets a random one, written to the file, so that the file always gives the same streamlines.
+<a class="reference internal" href="../../reference/api/simulation/#larmor.simulation.read_phantom" title="larmor.simulation.read_phantom"><code class="xref py py-func docutils literal notranslate"><span class="pre">read_phantom()</span></code></a> reads the file back.</p>
+</section>
+<section id="running-a-phantom-file">
+<h2>Running a phantom file<a class="headerlink" href="#running-a-phantom-file" title="Link to this heading">#</a></h2>
+<div class="sd-tab-set docutils">
+<input checked="checked" id="sd-tab-item-0" name="sd-tab-set-0" type="radio">
+<label class="sd-tab-label" data-sync-group="interface" data-sync-id="python" for="sd-tab-item-0">
+Python</label><div class="sd-tab-content docutils">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">larmor.simulation</span><span class="w"> </span><span class="kn">import</span> <span class="n">read_phantom</span><span class="p">,</span> <span class="n">save_simulation</span><span class="p">,</span> <span class="n">simulate</span>
+
+<span class="n">loaded</span> <span class="o">=</span> <span class="n">read_phantom</span><span class="p">(</span><span class="s2">"straight.phantom.json"</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">simulate</span><span class="p">(</span><span class="n">loaded</span><span class="o">.</span><span class="n">phantom</span><span class="p">,</span> <span class="n">loaded</span><span class="o">.</span><span class="n">protocol</span><span class="p">,</span> <span class="n">snr</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">files</span> <span class="o">=</span> <span class="n">save_simulation</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">"sim"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">files</span><span class="o">.</span><span class="n">dwi</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">result.echoes</span></code> holds one 4D volume per echo time, with Rician noise when <code class="docutils literal notranslate"><span class="pre">snr</span></code> is given, and <code class="docutils literal notranslate"><span class="pre">result.noise_free</span></code>
+holds the same without noise. <code class="docutils literal notranslate"><span class="pre">result.partition</span></code> is the ground truth. The noise level is the same in every voxel,
+with a standard deviation equal to the b = 0 signal of a voxel filled with the <code class="docutils literal notranslate"><span class="pre">noise_reference</span></code> tissue (“WM” by
+default), divided by the SNR. The same <code class="docutils literal notranslate"><span class="pre">seed</span></code> gives the same images on any number of threads (<code class="docutils literal notranslate"><span class="pre">n_jobs</span></code>).</p>
+</div>
+<input id="sd-tab-item-1" name="sd-tab-set-0" type="radio">
+<label class="sd-tab-label" data-sync-group="interface" data-sync-id="cli" for="sd-tab-item-1">
+Command line</label><div class="sd-tab-content docutils">
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>lar<span class="w"> </span>simulate<span class="w"> </span>straight.phantom.json<span class="w"> </span>sim<span class="w"> </span>--snr<span class="w"> </span><span class="m">30</span><span class="w"> </span>--seed<span class="w"> </span><span class="m">1</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">simulate</span> <span class="pre">PHANTOM</span> <span class="pre">OUTPUT</span></code> reads the phantom file and the protocol stored in it, simulates, and writes the
+output folder, which it creates if needed. In place of a file you can give the name of a phantom that ships with
+Larmor, such as <code class="docutils literal notranslate"><span class="pre">crossing</span></code>; see the <a class="reference internal" href="../../quick-start/"><span class="std std-doc">quick start</span></a>.</p>
+</div>
+</div>
+</section>
+<section id="the-output-folder">
+<h2>The output folder<a class="headerlink" href="#the-output-folder" title="Link to this heading">#</a></h2>
+<p>The folder is self-contained. It holds the images, the ground truth, and what is needed to simulate again.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>File</p></th>
+<th class="head"><p>Holds</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dwi.nii.gz</span></code>, <code class="docutils literal notranslate"><span class="pre">dwi.bval</span></code>, <code class="docutils literal notranslate"><span class="pre">dwi.bvec</span></code></p></td>
+<td><p>The images and their gradients, the b-vectors in the FSL frame. With several echo times there is one image per echo, <code class="docutils literal notranslate"><span class="pre">dwi_te60ms.nii.gz</span></code>, and the gradient files are shared</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dwi_noise_free.nii.gz</span></code></p></td>
+<td><p>The same without noise; only when there is noise</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tissue_fractions.nii.gz</span></code></p></td>
+<td><p>4D, the volume fraction of each voxel that each tissue fills, in the order of the tissues in <code class="docutils literal notranslate"><span class="pre">simulation.json</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">background_fraction.nii.gz</span></code></p></td>
+<td><p>The volume fraction no tissue fills</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">free_water_fraction.nii.gz</span></code></p></td>
+<td><p>The volume fraction of each voxel that free water fills, summed over the free-water compartments of all tissues, background included</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bundle_fractions.nii.gz</span></code></p></td>
+<td><p>4D, the volume fraction of each voxel that each bundle fills</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">compartment_fractions.nii.gz</span></code></p></td>
+<td><p>4D, the volume fraction of each voxel that each compartment fills: its tissue’s fraction times its share of the tissue, in the order listed under <code class="docutils literal notranslate"><span class="pre">compartments</span></code> in <code class="docutils literal notranslate"><span class="pre">simulation.json</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">signal_fractions.nii.gz</span></code></p></td>
+<td><p>4D, each compartment’s share of the voxel’s signal at b = 0, in the order of <code class="docutils literal notranslate"><span class="pre">compartment_fractions.nii.gz</span></code>. With several echo times there is one per echo, <code class="docutils literal notranslate"><span class="pre">signal_fractions_te60ms.nii.gz</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">free_water_signal_fraction.nii.gz</span></code></p></td>
+<td><p>The share of the voxel’s signal at b = 0 that comes from free water; one per echo time, as above</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">peaks.nii.gz</span></code></p></td>
+<td><p>The true fibre directions, in the layout <code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">peaks</span></code> writes (below)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mask_&lt;tissue&gt;.nii.gz</span></code></p></td>
+<td><p>One mask per tissue: the voxels the tissue fills by at least half, background included</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mask_bundles.nii.gz</span></code></p></td>
+<td><p>The voxels that the tissues of the bundles fill by at least half together, so that a crossing of bundles of different tissues is not left out</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bundle_&lt;n&gt;.tck</span></code></p></td>
+<td><p>The streamlines of each bundle</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tissue_map_&lt;tissue&gt;.nii.gz</span></code></p></td>
+<td><p>A copy of each tissue map of the phantom</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">phantom.json</span></code></p></td>
+<td><p>The phantom file, with the protocol; its bundles are the geometry with the seed that was used, or the <code class="docutils literal notranslate"><span class="pre">.tck</span></code> of the folder</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">simulation.json</span></code></p></td>
+<td><p>The protocol, SNR, noise level, seed, tissue order and the name of every file</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The free-water maps count only the free-water compartment, which the free-water, CSF and NODDI presets and the
+standard model’s optional free water use. A plain ball does not count as free water, whatever its diffusivity.</p>
+<p>Compare a fitted model with the signal-fraction maps, not with the volume fractions. The tissue, background,
+bundle, compartment and free-water maps are volume fractions, the share of the voxel’s volume that a tissue,
+bundle or compartment fills. A model fitted to the images, such as free-water imaging, NODDI or the standard model,
+recovers signal fractions instead, in which each compartment is weighted by its proton density and its relaxation.
+The signal fraction of compartment c is f_c w_c / (sum over the compartments of f w), where f_c is its volume
+fraction and w_c = PD (1 - exp(-TR / T1)) exp(-TE / T2) is its relaxation weight (with T2* for a gradient echo), so
+it changes with the echo time. With the default scan (TE 80 ms, TR 3000 ms), for example, the NODDI preset’s
+free-water volume fraction of 0.05 makes up about 0.11 of the b = 0 signal, since free water has a proton density
+of 1 and a long T2, while the neurites and the space around them have 0.7 and 69 ms. Use the maps of the echo time
+of the images that were fitted.</p>
+<p>The ground-truth peaks give the true fibre directions, to compare with the peaks of a fit, such as <code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">fod</span></code>
+followed by <code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">peaks</span></code>. They are built from the streamlines, not fitted to the images. In each voxel, the
+streamline directions are grouped, from the largest down, into peaks: each joins the first peak within 20 degrees
+of it, or else starts a new one. A peak’s direction is the weighted mean of its fibres, and its amplitude is the
+share of the voxel they fill. Peaks below a tenth of the voxel’s largest are dropped. <code class="docutils literal notranslate"><span class="pre">peaks.nii.gz</span></code> has 3 volumes
+per peak, largest peak first, which hold the x, y and z of the direction scaled by the amplitude, in world
+coordinates, and are NaN where a voxel has fewer peaks.</p>
+<p>Running <code class="docutils literal notranslate"><span class="pre">phantom.json</span></code> again with the same seed gives the same images. Without <code class="docutils literal notranslate"><span class="pre">--seed</span></code>, a seed is drawn and
+written to <code class="docutils literal notranslate"><span class="pre">simulation.json</span></code>; give it to <code class="docutils literal notranslate"><span class="pre">--seed</span></code> to repeat the run.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>lar<span class="w"> </span>simulate<span class="w"> </span>sim/phantom.json<span class="w"> </span>again<span class="w"> </span>--snr<span class="w"> </span><span class="m">30</span><span class="w"> </span>--seed<span class="w"> </span><span class="m">1</span>
+</pre></div>
+</div>
+</section>
+<section id="options-of-lar-simulate">
+<h2>Options of <code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">simulate</span></code><a class="headerlink" href="#options-of-lar-simulate" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--snr</span></code> adds noise, and <code class="docutils literal notranslate"><span class="pre">--noise-reference</span></code> names the tissue it refers to. Without <code class="docutils literal notranslate"><span class="pre">--snr</span></code> there is no noise.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--seed</span></code> fixes the noise, and the streamlines of bundles that have no seed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--shell</span> <span class="pre">B:N</span></code> replaces the gradients of the file with a shell of N directions at b = B s/mm^2. Repeat it for
+several shells, and add <code class="docutils literal notranslate"><span class="pre">--num-b0</span></code> to set the number of b = 0 volumes. <code class="docutils literal notranslate"><span class="pre">--bvals</span></code> and <code class="docutils literal notranslate"><span class="pre">--bvecs</span></code>, with
+<code class="docutils literal notranslate"><span class="pre">--bvec-frame</span></code>, read the gradients from files instead, and for these files the frame <code class="docutils literal notranslate"><span class="pre">fsl</span></code> refers to the axes of
+the phantom’s grid.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--nt</span></code> sets the number of threads.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--force</span></code> is needed to write into a folder that is not empty; without it, the command stops before simulating.
+With it, the files listed in the folder’s <code class="docutils literal notranslate"><span class="pre">simulation.json</span></code> are removed first, so that none is left over from the
+earlier run, while other files in the folder stay. <code class="docutils literal notranslate"><span class="pre">save_simulation</span></code> does the same, and refuses a non-empty
+folder without a <code class="docutils literal notranslate"><span class="pre">simulation.json</span></code> unless <code class="docutils literal notranslate"><span class="pre">force=True</span></code>.</p></li>
+</ul>
+<p>The timings of the protocol always come from the phantom file.</p>
+</section>
+<section id="the-signal-of-one-voxel">
+<h2>The signal of one voxel<a class="headerlink" href="#the-signal-of-one-voxel" title="Link to this heading">#</a></h2>
+<p>To see where the signal of a voxel comes from, <a class="reference internal" href="../../reference/api/simulation/#larmor.simulation.signal_breakdown" title="larmor.simulation.signal_breakdown"><code class="xref py py-func docutils literal notranslate"><span class="pre">signal_breakdown()</span></code></a> splits the
+noise-free signal of one voxel in one volume into the factors the simulation multiplies. These are each tissue’s
+share of the voxel, each compartment’s fraction and proton density, the T1 and T2 relaxation, and the diffusion
+attenuation. It needs the phantom’s voxel partition, which <a class="reference internal" href="../../reference/api/simulation/#larmor.simulation.partition_voxels" title="larmor.simulation.partition_voxels"><code class="xref py py-func docutils literal notranslate"><span class="pre">partition_voxels()</span></code></a> makes
+once for all voxels. <a class="reference internal" href="../../reference/api/plot/#larmor.plot.plot_signal_breakdown" title="larmor.plot.plot_signal_breakdown"><code class="xref py py-func docutils literal notranslate"><span class="pre">plot_signal_breakdown()</span></code></a> draws the result as three stacked bars.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">larmor.plot</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_signal_breakdown</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">larmor.simulation</span><span class="w"> </span><span class="kn">import</span> <span class="n">partition_voxels</span><span class="p">,</span> <span class="n">signal_breakdown</span>
+
+<span class="n">partition</span> <span class="o">=</span> <span class="n">partition_voxels</span><span class="p">(</span><span class="n">phantom</span><span class="p">)</span>
+<span class="n">breakdown</span> <span class="o">=</span> <span class="n">signal_breakdown</span><span class="p">(</span><span class="n">phantom</span><span class="p">,</span> <span class="n">protocol</span><span class="p">,</span> <span class="n">partition</span><span class="p">,</span> <span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">12</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">snr</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">breakdown</span><span class="o">.</span><span class="n">compartments</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">label</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">no_decay</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">after_decay</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">signal</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">plot_signal_breakdown</span><span class="p">(</span><span class="n">breakdown</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">"breakdown.png"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">breakdown.signal</span></code> is the voxel’s value in the noise-free image of a run. With <code class="docutils literal notranslate"><span class="pre">snr</span></code>, the breakdown also gives
+the noise floor and the mean of the noisy magnitude.</p>
+</section>
+<section id="viewing-the-result">
+<h2>Viewing the result<a class="headerlink" href="#viewing-the-result" title="Link to this heading">#</a></h2>
+<!-- not run: opens the viewer -->
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>lar<span class="w"> </span>bv<span class="w"> </span>--simulation<span class="w"> </span>sim
+</pre></div>
+</div>
+<p>The viewer opens the images, the tissue masks over them, the bundles’ streamlines and the true peaks. It also
+opens the phantom in its Phantom panel, where you can change the phantom and run it again, as described in
+<a class="reference internal" href="../../viewer/phantoms/"><span class="std std-doc">Phantoms</span></a>.</p>
+</section>
+<section id="see-also">
+<h2>See also<a class="headerlink" href="#see-also" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Gallery: <a class="reference internal" href="../../gallery/simulation/simulate_crossing_bundles/"><span class="std std-doc">Simulating two crossing bundles</span></a> and
+<a class="reference internal" href="../../gallery/simulation/signal_breakdown/"><span class="std std-doc">The signal of one voxel, step by step</span></a>.</p></li>
+<li><p>Background: <a class="reference internal" href="../../background/simulation/"><span class="std std-doc">Simulating diffusion MRI</span></a>.</p></li>
+<li><p>API: <a class="reference internal" href="../../reference/api/simulation/"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">larmor.simulation</span></code></span></a>.</p></li>
+<li><p>Command: <a class="reference internal" href="../../cli/#lar-simulate"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">simulate</span></code></span></a>.</p></li>
+</ul>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>The simulation builds on SymDWI, a simulator by Larmor’s author, relicensed under the LGPL-3.0-only. The papers
+of the models are listed in <a class="reference internal" href="../../about/citing/#simulation"><span class="std std-ref">Citing</span></a>.</p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#building-a-phantom">Building a phantom</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-phantom-file">The phantom file</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#running-a-phantom-file">Running a phantom file</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-output-folder">The output folder</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#options-of-lar-simulate">Options of <code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">simulate</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-signal-of-one-voxel">The signal of one voxel</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#viewing-the-result">Viewing the result</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#see-also">See also</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#references">References</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
