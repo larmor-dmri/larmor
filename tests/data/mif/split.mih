@@ -1,0 +1,11 @@
+mrtrix image
+dim: 3,2,4,5
+vox: 3,2,2.5,1
+layout: -1,+0,-2,+3
+datatype: Int16LE
+transform: 0.955336489416748, -0.295520209177477, -0, 4.76798106349951
+transform: 0.295520205720156, 0.955336488347274, -0, -22.0231212343209
+transform: -0, 0, 1, -2.5
+command_history: mrconvert -quiet -force source.nii split.mih  (version=3.0.8)
+mrtrix_version: 3.0.8
+file: split.dat

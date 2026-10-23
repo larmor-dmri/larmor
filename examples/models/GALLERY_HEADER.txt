@@ -1,0 +1,5 @@
+Models
+------
+
+These examples fit the diffusion tensor (DTI) and diffusion kurtosis (DKI) models
+and read the maps they give, such as fractional anisotropy and mean kurtosis.

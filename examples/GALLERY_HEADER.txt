@@ -1,0 +1,9 @@
+Gallery
+=======
+
+This gallery holds runnable Python examples. Each page shows an example's code,
+what it prints and the images it makes. Each example is one script that runs on
+its own and is explained by its comments. The examples on synthetic data need
+nothing else. The examples on a brain use the simulated data of the ISMRM 2015
+Tractography Challenge or a real multi-shell scan, which ``larmor.data`` downloads
+once (see :doc:`/example-data`).

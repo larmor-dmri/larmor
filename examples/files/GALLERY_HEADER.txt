@@ -1,0 +1,5 @@
+Files
+-----
+
+These examples read and write images, gradient tables and tractograms, and convert
+between file formats.

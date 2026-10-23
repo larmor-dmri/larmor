@@ -1,0 +1,67 @@
+Larmor
+Copyright (C) 2026 Antonio Di Meglio
+
+Larmor is free software: you can redistribute it and/or modify it under the terms of
+the GNU Lesser General Public License, version 3 only, as published by the Free
+Software Foundation (COPYING.LESSER), which supplements the GNU General Public License,
+version 3 (COPYING).
+
+Larmor is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE. See the GNU Lesser General Public License for more details.
+
+
+Code derived from other software
+--------------------------------
+
+Parts of Larmor are reimplementations, in Python and C++, of methods in MRIToolkit,
+Copyright (c) 2019 Alberto De Luca, distributed under the GNU Lesser General Public
+License, version 3 (https://github.com/delucaal/MRIToolkit). They were rewritten and
+modified for Larmor:
+
+- larmor.sd: the GRL and mFOD fits (the multi-tissue loop, the fraction fits, the
+  dRL, L2NNLS and LASSO solvers as used there), the response function kernels, and
+  the white matter response estimate (estimate_wm_rf), following MRTTrack.
+- cpp/src/sd: the C++ versions of the same fits and solvers.
+
+The NODDI response (larmor.sd.rf.NoddiRF) follows the formulas of the NODDI toolbox
+(SynthMeasWatsonSHStickTortIsoV_B0, G. Zhang et al.).
+
+The methods and their papers are cited in the docstrings and on the website.
+
+
+Libraries compiled into the extension module
+--------------------------------------------
+
+The compiled module (larmor._core) includes the following libraries, unmodified.
+
+Eigen (https://eigen.tuxfamily.org), version 5.0.1, is distributed under the Mozilla
+Public License, version 2.0 (https://www.mozilla.org/MPL/2.0/). Its source code is
+available from https://gitlab.com/libeigen/eigen/-/archive/5.0.1/eigen-5.0.1.tar.gz.
+
+nanobind (https://github.com/wjakob/nanobind), Copyright (c) 2022 Wenzel Jakob, and
+pocketfft (https://github.com/mreineck/pocketfft), Copyright (C) 2010-2018
+Max-Planck-Society, are distributed under the BSD 3-clause licence; for each of them:
+
+  Redistribution and use in source and binary forms, with or without modification,
+  are permitted provided that the following conditions are met:
+
+  * Redistributions of source code must retain the above copyright notice, this
+    list of conditions and the following disclaimer.
+  * Redistributions in binary form must reproduce the above copyright notice, this
+    list of conditions and the following disclaimer in the documentation and/or
+    other materials provided with the distribution.
+  * Neither the name of the copyright holder nor the names of its contributors may
+    be used to endorse or promote products derived from this software without
+    specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+  ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+  ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.

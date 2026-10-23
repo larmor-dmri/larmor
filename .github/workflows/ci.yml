@@ -1,0 +1,218 @@
+# Runs the project's checks on every pull request and on every push to main, unless the change only touches
+# Markdown files. The same commands can be run locally; see docs/contributing.md, step 6.
+name: CI
+
+# The paths are read in order and a later pattern overrides an earlier one: every file counts, then Markdown files
+# are taken out, then the Markdown of the website in docs/ is put back, because a test builds the website from it
+# and another compares docs/cli.md with the CLI; the pages the website leaves out (exclude_patterns in
+# docs/conf.py) are taken out again. CI runs when any changed file is still in the list.
+on:
+  pull_request:
+    paths:
+      - "**"
+      - "!**/*.md"
+      - "docs/**/*.md"
+      - "!docs/README.md"
+      - "!docs/contributing.md"
+      - "!docs/releasing.md"
+      - "!docs/style.md"
+  push:
+    branches: [main]
+    paths:
+      - "**"
+      - "!**/*.md"
+      - "docs/**/*.md"
+      - "!docs/README.md"
+      - "!docs/contributing.md"
+      - "!docs/releasing.md"
+      - "!docs/style.md"
+  workflow_dispatch: # allows a manual run from the Actions tab, whatever changed
+
+permissions:
+  contents: read
+
+# A new push to a pull request cancels the run still going for the previous push.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Formatting, linting and type checking do not depend on the operating system, so they
+  # run once, on Linux (macOS and Windows minutes cost more on GitHub's plans). They need
+  # the tools but not the compiled module, which builds on macOS only for now: mypy reads
+  # its types from _core.pyi, and import-linter reads the package from src/.
+  checks:
+    name: ruff, mypy and import-linter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.2.0  # setup-uv publishes exact versions only
+        with:
+          python-version: "3.14"
+          enable-cache: true
+      # The development tools without Larmor itself; --no-sync keeps uv run from installing it.
+      - name: Install the development tools
+        run: uv sync --locked --no-install-project
+      # Each check runs even if an earlier one failed, so a pull request shows every
+      # problem at once.
+      - name: ruff format
+        if: success() || failure()
+        run: uv run --no-sync ruff format --check .
+      - name: ruff check
+        if: success() || failure()
+        run: uv run --no-sync ruff check --output-format github .
+      - name: mypy
+        if: success() || failure()
+        run: uv run --no-sync mypy
+      - name: import-linter
+        if: success() || failure()
+        env:
+          PYTHONPATH: src
+        run: uv run --no-sync lint-imports
+
+  # The C++ backend's own checks on each operating system: a build in which every compiler warning
+  # is an error, and its unit tests; on Linux also the format and lint checks, which do not depend
+  # on the platform. The tools come from the uv environment. macOS links Accelerate for Eigen's
+  # matrix products; Linux (GCC) and Windows (MSVC) use Eigen's own. sccache keeps the compiled
+  # objects between runs, and link-time optimisation is off: these builds run once.
+  cpp:
+    name: C++ build and ctest (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: Linux, os: ubuntu-latest, lint: true }
+          - { name: macOS, os: macos-latest, lint: false }
+          - { name: Windows, os: windows-latest, lint: false }
+    defaults:
+      run:
+        shell: bash
+        working-directory: cpp
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+    steps:
+      # Checked out as committed: Windows would otherwise turn line endings into CRLF.
+      - name: Keep line endings as committed
+        if: runner.os == 'Windows'
+        working-directory: .
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.2.0  # setup-uv publishes exact versions only
+        with:
+          python-version: "3.14"
+          enable-cache: true
+      - uses: mozilla-actions/sccache-action@v0.0.11
+      # Ninja needs the environment of the Visual Studio command prompt to find MSVC.
+      - uses: ilammy/msvc-dev-cmd@v1.13.0
+        if: runner.os == 'Windows'
+      - name: Use MSVC
+        if: runner.os == 'Windows'
+        working-directory: .
+        run: echo "CXX=cl" >> "$GITHUB_ENV"
+      # The development tools only: the dev preset builds the module itself, and --no-sync keeps
+      # uv run from installing Larmor.
+      - name: Install the development tools
+        run: uv sync --locked --no-install-project
+      - name: Configure
+        run: >-
+          uv run --no-sync cmake --preset dev -DLARMOR_WARNINGS_AS_ERRORS=ON -DLARMOR_LTO=OFF
+          -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+      - name: Build
+        run: uv run --no-sync cmake --build --preset dev
+      - name: ctest
+        run: uv run --no-sync ctest --preset dev
+      # Each check runs even if an earlier one failed, so a pull request shows every problem at once.
+      - name: clang-format
+        if: matrix.lint && (success() || failure())
+        run: find src tests -name '*.cpp' -o -name '*.hpp' | xargs uv run --no-sync clang-format --dry-run --Werror
+      # clang-tidy reads the compile commands of the build above, so it sees the same flags.
+      - name: clang-tidy
+        if: matrix.lint && (success() || failure())
+        run: uv run --no-sync run-clang-tidy.py -p build/dev -quiet 'cpp/(src|tests)/'
+
+  # The unit tests again, built by AppleClang with AddressSanitizer and UndefinedBehaviorSanitizer:
+  # an out-of-bounds read, a use after free, an overflow or a float converted to an integer it does
+  # not fit in stops the run.
+  cpp-sanitizers:
+    name: C++ tests under ASan and UBSan
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: cpp
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.2.0  # setup-uv publishes exact versions only
+        with:
+          python-version: "3.14"
+          enable-cache: true
+      # The development tools only: the unit tests need neither the module nor Larmor installed,
+      # and --no-sync keeps uv run from installing them.
+      - name: Install the development tools
+        run: uv sync --locked --no-install-project
+      - name: Configure
+        run: uv run --no-sync cmake --preset sanitize
+      - name: Build
+        run: uv run --no-sync cmake --build --preset sanitize
+      - name: ctest
+        run: uv run --no-sync ctest --preset sanitize
+
+  # The whole test suite on macOS; on Linux and Windows, which have no GPU, all of it but the tests
+  # that build the viewer's Qt widgets (marked qt_widgets, see tests/conftest.py) and the gallery
+  # examples on a brain: with a software renderer each window takes seconds. Windows, the slowest
+  # runner, also leaves out tests/test_docs.py, which builds the website and runs the gallery and
+  # the task pages: none of it depends on the platform. The viewer's other
+  # tests draw there with Mesa's software Vulkan driver (lavapipe) on Linux and the software
+  # adapter of DirectX 12 (WARP) on Windows; Qt runs with its offscreen platform. A test that runs
+  # longer than two minutes fails, naming itself.
+  tests:
+    name: tests (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: Linux, os: ubuntu-latest, select: "not qt_widgets", ignore: "" }
+          - { name: macOS, os: macos-latest, select: "", ignore: "" }
+          - { name: Windows, os: windows-latest, select: "not qt_widgets", ignore: "--ignore=tests/test_docs.py" }
+    defaults:
+      run:
+        shell: bash
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      # Read by CMake when the project is installed: compile through sccache, with Ninja, without
+      # link-time optimisation.
+      CMAKE_CXX_COMPILER_LAUNCHER: sccache
+      CMAKE_GENERATOR: Ninja
+      CMAKE_ARGS: -DLARMOR_LTO=OFF -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+    steps:
+      # Checked out as committed: Windows would otherwise turn line endings into CRLF.
+      - name: Keep line endings as committed
+        if: runner.os == 'Windows'
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.2.0  # setup-uv publishes exact versions only
+        with:
+          python-version: "3.14"
+          enable-cache: true
+      - uses: mozilla-actions/sccache-action@v0.0.11
+      # Ninja needs the environment of the Visual Studio command prompt to find MSVC.
+      - uses: ilammy/msvc-dev-cmd@v1.13.0
+        if: runner.os == 'Windows'
+      - name: Use MSVC
+        if: runner.os == 'Windows'
+        run: echo "CXX=cl" >> "$GITHUB_ENV"
+      # The libraries Qt's offscreen platform loads, and the software Vulkan driver.
+      - name: Install Qt's libraries and lavapipe
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            mesa-vulkan-drivers libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
+      # Installing the project builds the C++ module (scikit-build-core, CMake).
+      - name: Install the project and its development tools
+        run: uv sync --locked
+      - name: pytest
+        run: uv run pytest -n auto -rfE --timeout 120 -m "${{ matrix.select }}" ${{ matrix.ignore }}

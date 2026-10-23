@@ -1,0 +1,10 @@
+{#- Page titles read "Page - Larmor"; the landing page sets its whole title in conf.py. -#}
+{%- extends "!layout.html" %}
+{%- block htmltitle %}
+<title>{{ title|striptags|e }}{% if pagename != root_doc %} - {{ docstitle|e }}{% endif %}</title>
+{%- endblock %}
+{%- block extrahead %}
+{{ super() }}
+<link rel="icon" type="image/png" sizes="32x32" href="{{ pathto('_static/favicon-32.png', 1) }}" />
+<link rel="apple-touch-icon" sizes="180x180" href="{{ pathto('_static/apple-touch-icon.png', 1) }}" />
+{%- endblock %}

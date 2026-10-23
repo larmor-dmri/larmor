@@ -1,0 +1,153 @@
+# Builds the documentation website. A pull request only builds it, so a broken build fails the check; a push to
+# main publishes it as the "dev" version and a version tag (v*) publishes it as the stable version, both to the
+# gh-pages branch, which GitHub Pages serves at https://larmor.org. See docs/releasing.md, section Website.
+name: Docs
+
+on:
+  pull_request:
+    paths:
+      - "docs/**"
+      - "examples/**"
+      - "src/**"
+      - ".github/workflows/docs.yml"
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch: # builds the site, without publishing it
+
+permissions:
+  contents: read
+
+# Publishes queue one after the other and are never cancelled half way; a new push to a pull request cancels the
+# build still going for the previous push.
+concurrency:
+  group: docs-${{ github.event_name == 'pull_request' && github.ref || 'publish' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CMAKE_GENERATOR: Ninja
+      CMAKE_ARGS: -DLARMOR_LTO=OFF
+      # The name the version switcher marks as the current one: the version on a tag, dev otherwise.
+      LARMOR_DOCS_VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'dev' }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.2.0  # setup-uv publishes exact versions only
+        with:
+          python-version: "3.14"
+          enable-cache: true
+      # The libraries Qt's offscreen platform loads, and the software Vulkan driver.
+      - name: Install Qt's libraries and lavapipe
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            mesa-vulkan-drivers libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
+      # Installing the project builds the C++ module (scikit-build-core, CMake).
+      - name: Install the project and the documentation tools
+        run: uv sync --locked
+      # The example datasets the gallery downloads, kept between runs; the key, and so
+      # a new download, changes only when the table of files and checksums does.
+      - name: Restore the example datasets
+        uses: actions/cache@v6.1.0
+        with:
+          path: ${{ runner.temp }}/larmor-data
+          key: larmor-data-${{ hashFiles('src/larmor/data/files.py') }}
+      - name: Use the example datasets
+        run: echo "LARMOR_DATA_DIR=${{ runner.temp }}/larmor-data" >> "$GITHUB_ENV"
+      # The gallery runs its examples; -W makes any warning an error.
+      - name: Build the website
+        run: uv run sphinx-build -b dirhtml -W docs "${{ runner.temp }}/site"
+        env:
+          QT_QPA_PLATFORM: offscreen
+      - uses: actions/upload-artifact@v7.0.2
+        if: github.event_name != 'pull_request'
+        with:
+          name: site
+          path: ${{ runner.temp }}/site
+          if-no-files-found: error
+
+  publish:
+    name: publish
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      IS_TAG: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    steps:
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: site
+          path: site
+      # The site root has the CNAME file that keeps the custom domain, .nojekyll so that GitHub Pages serves
+      # folders starting with an underscore (_static), and versions.json for the version switcher: the
+      # published list with dev always there and the stable version replaced when a tag is published. Before the
+      # first tag the root also gets an index.html that redirects to /dev/; the stable site replaces it.
+      - name: Write the files of the site root
+        run: |
+          mkdir root
+          echo larmor.org > root/CNAME
+          touch root/.nojekyll
+          curl -fsS "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/gh-pages/versions.json" -o old.json || echo '[]' > old.json
+          python3 - <<'PY'
+          import json, os
+
+          old = json.load(open("old.json"))
+          versions = [{"name": "dev", "version": "dev", "url": "https://larmor.org/dev/"}]
+          if os.environ["IS_TAG"] == "true":
+              number = os.environ["GITHUB_REF_NAME"].removeprefix("v")
+              versions.append(
+                  {
+                      "name": f"{number} (stable)",
+                      "version": number,
+                      "url": "https://larmor.org/",
+                      "preferred": True,
+                  }
+              )
+          else:
+              stable = [entry for entry in old if entry.get("preferred")]
+              versions += stable
+              # Until the first release there is no stable site: the root sends visitors to dev.
+              if not stable:
+                  open("root/index.html", "w").write(
+                      "<!doctype html>\n"
+                      '<html lang="en">\n<head>\n<meta charset="utf-8">\n'
+                      "<title>Larmor</title>\n"
+                      '<link rel="canonical" href="https://larmor.org/dev/">\n'
+                      '<meta http-equiv="refresh" content="0; url=/dev/">\n'
+                      "</head>\n<body>\n"
+                      '<p><a href="/dev/">Larmor documentation</a></p>\n'
+                      "</body>\n</html>\n"
+                  )
+          json.dump(versions, open("root/versions.json", "w"), indent=2)
+          PY
+          cat root/versions.json
+      - name: Publish the dev version
+        if: env.IS_TAG != 'true'
+        uses: peaceiris/actions-gh-pages@v4.1.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: site
+          destination_dir: dev
+          keep_files: true
+      # The stable version is the site root; dev/ stays because the files already there are kept.
+      - name: Publish the stable version
+        if: env.IS_TAG == 'true'
+        uses: peaceiris/actions-gh-pages@v4.1.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: site
+          keep_files: true
+      - name: Publish the site root files
+        uses: peaceiris/actions-gh-pages@v4.1.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: root
+          keep_files: true
+          enable_jekyll: false

@@ -1,0 +1,17 @@
+# Layout of the C++ sources: LLVM's style with 4-space indents and 100 columns.
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 100
+AccessModifierOffset: -4
+PointerAlignment: Left
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortLambdasOnASingleLine: All
+IncludeBlocks: Regroup
+# Standard headers, then third-party headers, then Larmor's own.
+IncludeCategories:
+  - Regex: '^<[a-z_]+>$'
+    Priority: 1
+  - Regex: '^<'
+    Priority: 2
+  - Regex: '^"'
+    Priority: 3

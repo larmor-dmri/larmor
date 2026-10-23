@@ -1,0 +1,7 @@
+# Shells: 0,600,1000,1400,2000
+# command_history: /usr/local/mrtrix3/bin/amp2response dwi.mif voxels_csf.mif safe_vecs.mif response_csf.txt -shells '0,600,1000,1400,2000' -isotropic  (version=3.0.8)
+1180.95179560859
+54.3326363866093
+34.2655565307433
+31.2945054983642
+29.9149879876116

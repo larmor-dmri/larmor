@@ -1,0 +1,6 @@
+Simulation
+----------
+
+These examples simulate diffusion-weighted images of phantoms. A phantom places
+tissues and fibre bundles on a voxel grid. The simulation saves the ground truth
+beside the images, so that a processing pipeline can be checked against it.

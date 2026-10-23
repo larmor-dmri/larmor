@@ -1,0 +1,5 @@
+Tractography
+------------
+
+These examples track streamlines, write tractograms, select bundles, and compute
+track density images, structural connectomes and tract profiles.

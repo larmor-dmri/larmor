@@ -1,0 +1,165 @@
+{
+  "mrtrix_version": "tckgen 3.0.8",
+  "runs": [
+    {
+      "rng_seed": 1,
+      "calibration_directions": 7,
+      "calibration_ratio": 1.21581316,
+      "mean_samples_per_step": 8.326556205749512,
+      "steps_per_truncation": null,
+      "max_truncation": null,
+      "termination_percent": {
+        "Calibrator sub-threshold": 0.0,
+        "Exited image": 0.0,
+        "Diffusion model sub-threshold": 54.7,
+        "Excessive curvature": 0.0,
+        "Max length exceeded": 0.0,
+        "Exited mask": 45.3
+      }
+    },
+    {
+      "rng_seed": 2,
+      "calibration_directions": 7,
+      "calibration_ratio": 1.21581316,
+      "mean_samples_per_step": 8.294001579284668,
+      "steps_per_truncation": 45162.99861460527,
+      "max_truncation": 1.0123850107192993,
+      "termination_percent": {
+        "Calibrator sub-threshold": 0.0,
+        "Exited image": 0.0,
+        "Diffusion model sub-threshold": 50.4,
+        "Excessive curvature": 0.0,
+        "Max length exceeded": 0.0,
+        "Exited mask": 49.6
+      }
+    },
+    {
+      "rng_seed": 3,
+      "calibration_directions": 7,
+      "calibration_ratio": 1.21581316,
+      "mean_samples_per_step": 8.38792896270752,
+      "steps_per_truncation": null,
+      "max_truncation": null,
+      "termination_percent": {
+        "Calibrator sub-threshold": 0.0,
+        "Exited image": 0.0,
+        "Diffusion model sub-threshold": 52.1,
+        "Excessive curvature": 0.0,
+        "Max length exceeded": 0.0,
+        "Exited mask": 47.9
+      }
+    },
+    {
+      "rng_seed": 4,
+      "calibration_directions": 7,
+      "calibration_ratio": 1.21581316,
+      "mean_samples_per_step": 8.357430458068848,
+      "steps_per_truncation": 15064.000400715984,
+      "max_truncation": 1.012532114982605,
+      "termination_percent": {
+        "Calibrator sub-threshold": 0.0,
+        "Exited image": 0.0,
+        "Diffusion model sub-threshold": 54.7,
+        "Excessive curvature": 0.0,
+        "Max length exceeded": 0.0,
+        "Exited mask": 45.3
+      }
+    },
+    {
+      "rng_seed": 5,
+      "calibration_directions": 7,
+      "calibration_ratio": 1.21581316,
+      "mean_samples_per_step": 8.393126487731934,
+      "steps_per_truncation": null,
+      "max_truncation": null,
+      "termination_percent": {
+        "Calibrator sub-threshold": 0.0,
+        "Exited image": 0.0,
+        "Diffusion model sub-threshold": 55.1,
+        "Excessive curvature": 0.0,
+        "Max length exceeded": 0.0,
+        "Exited mask": 44.9
+      }
+    },
+    {
+      "rng_seed": 6,
+      "calibration_directions": 7,
+      "calibration_ratio": 1.21581316,
+      "mean_samples_per_step": 8.323444366455078,
+      "steps_per_truncation": null,
+      "max_truncation": null,
+      "termination_percent": {
+        "Calibrator sub-threshold": 0.0,
+        "Exited image": 0.0,
+        "Diffusion model sub-threshold": 55.9,
+        "Excessive curvature": 0.0,
+        "Max length exceeded": 0.0,
+        "Exited mask": 44.1
+      }
+    },
+    {
+      "rng_seed": 7,
+      "calibration_directions": 7,
+      "calibration_ratio": 1.21581316,
+      "mean_samples_per_step": 8.392410278320312,
+      "steps_per_truncation": 15010.666508811735,
+      "max_truncation": 1.052204966545105,
+      "termination_percent": {
+        "Calibrator sub-threshold": 0.0,
+        "Exited image": 0.0,
+        "Diffusion model sub-threshold": 54.1,
+        "Excessive curvature": 0.0,
+        "Max length exceeded": 0.0,
+        "Exited mask": 45.9
+      }
+    },
+    {
+      "rng_seed": 8,
+      "calibration_directions": 7,
+      "calibration_ratio": 1.21581316,
+      "mean_samples_per_step": 8.3015718460083,
+      "steps_per_truncation": 22071.0000559648,
+      "max_truncation": 1.0195634365081787,
+      "termination_percent": {
+        "Calibrator sub-threshold": 0.0,
+        "Exited image": 0.0,
+        "Diffusion model sub-threshold": 53.7,
+        "Excessive curvature": 0.0,
+        "Max length exceeded": 0.0,
+        "Exited mask": 46.3
+      }
+    },
+    {
+      "rng_seed": 9,
+      "calibration_directions": 7,
+      "calibration_ratio": 1.21581316,
+      "mean_samples_per_step": 8.340712547302246,
+      "steps_per_truncation": 45352.00030424085,
+      "max_truncation": 1.0148050785064697,
+      "termination_percent": {
+        "Calibrator sub-threshold": 0.0,
+        "Exited image": 0.0,
+        "Diffusion model sub-threshold": 54.1,
+        "Excessive curvature": 0.0,
+        "Max length exceeded": 0.0,
+        "Exited mask": 45.9
+      }
+    },
+    {
+      "rng_seed": 10,
+      "calibration_directions": 7,
+      "calibration_ratio": 1.21581316,
+      "mean_samples_per_step": 8.349405288696289,
+      "steps_per_truncation": 15050.333529056323,
+      "max_truncation": 1.0294911861419678,
+      "termination_percent": {
+        "Calibrator sub-threshold": 0.0,
+        "Exited image": 0.0,
+        "Diffusion model sub-threshold": 53.3,
+        "Excessive curvature": 0.0,
+        "Max length exceeded": 0.0,
+        "Exited mask": 46.7
+      }
+    }
+  ]
+}

@@ -1,0 +1,372 @@
+[build-system]
+requires = ["scikit-build-core>=1.1", "nanobind>=3.1"]
+build-backend = "scikit_build_core.build"
+
+[tool.scikit-build]
+# CMake builds the C++ module in cpp/ as the private module larmor._core and installs it into
+# the Python package from src/. Only the module target is built: no unit tests in the wheel.
+cmake.source-dir = "cpp"
+cmake.define = { LARMOR_MODULE_NAME = "_core", LARMOR_BUILD_TESTS = "OFF" }
+build.targets = ["_core"]
+wheel.packages = ["src/larmor"]
+wheel.py-api = "cp314" # the stable ABI from the oldest Python Larmor supports
+# A build folder kept between builds, so that after an edit only the changed files compile.
+build-dir = "cpp/build/{wheel_tag}"
+# Eigen and pocketfft, put into cpp/third_party by `cmake -P cpp/cmake/vendor.cmake` (not
+# committed), go into the source distribution, so that building from it needs no network.
+sdist.include = ["cpp/third_party/"]
+
+[tool.cibuildwheel]
+# One stable-ABI wheel per platform (wheel.py-api above), on manylinux for Linux; musllinux is left out.
+build = "cp314-*"
+skip = "*-musllinux_*"
+archs = ["auto64"] # the 64-bit architecture of the runner only
+# Each wheel is installed in a fresh environment and tested there, against the installed package:
+# the tests of the numerical code and of the readers and writers. The viewer, the command line and
+# the website are left to CI, which runs the whole suite from source on each operating system.
+test-requires = ["pytest", "pytest-xdist", "nibabel"]
+test-command = "pytest -p no:cacheprovider {project}/tests/test_core.py {project}/tests/dwi {project}/tests/sd {project}/tests/tractography {project}/tests/registration {project}/tests/io {project}/tests/types {project}/tests/surfaces {project}/tests/simulation"
+
+[tool.cibuildwheel.macos.environment]
+# The oldest macOS the wheel runs on; without it the wheel is tagged with the build machine's.
+# The C++ library has std::to_chars for floating-point numbers from 13.3, and a wheel's tag
+# names only the major version from macOS 11 on, so 14.0.
+MACOSX_DEPLOYMENT_TARGET = "14.0"
+
+[tool.uv]
+# The package builds in the uv environment, with its scikit-build-core, nanobind, CMake and Ninja,
+# instead of a new isolated one each time: the paths in the build folder stay the same, so a
+# rebuild compiles only the changed files.
+no-build-isolation-package = ["larmor-dmri"]
+# The build group holds those build tools, so every sync installs them, --no-dev included;
+# `uv pip install -e .` does not, so it needs them in the same command: --group build.
+# The docs group holds the tools that build the documentation website.
+default-groups = ["dev", "build", "docs"]
+# uv rebuilds the package, and so the C++ module, when one of these files changes.
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "cpp/CMakeLists.txt" },
+    { file = "cpp/CMakePresets.json" },
+    { file = "cpp/cmake/*.cmake" },
+    { file = "cpp/src/**/CMakeLists.txt" },
+    { file = "cpp/src/**/*.cpp" },
+    { file = "cpp/src/**/*.hpp" },
+]
+
+[project]
+name = "larmor-dmri"
+version = "2.0.0"
+authors = [{ name = "Antonio Di Meglio" }]
+maintainers = [{ name = "Antonio Di Meglio", email = "contact@larmor.org" }]
+description = "A Python library and viewer for diffusion MRI"
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.14"
+dependencies = [
+    "numpy",
+    "scipy",
+    "typer",
+    "scikit-image",
+    "tqdm",
+    "h5py",
+    "matplotlib",
+]
+keywords = [
+    "diffusion-mri",
+    "dmri",
+    "tractography",
+    "spherical-deconvolution",
+    "fod",
+    "dti",
+    "dki",
+    "denoising",
+    "connectome",
+    "neuroimaging",
+    "brain",
+    "mri",
+    "viewer",
+    "mcp",
+]
+
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: C++",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Typing :: Typed",
+]
+
+
+license = "LGPL-3.0-only"
+license-files = ["COPYING", "COPYING.LESSER", "NOTICE"]
+
+[project.urls]
+Homepage = "https://larmor.org"
+Documentation = "https://larmor.org"
+Source = "https://github.com/larmor-dmri/larmor"
+Issues = "https://github.com/larmor-dmri/larmor/issues"
+Changelog = "https://github.com/larmor-dmri/larmor/releases"
+
+[project.scripts]
+lar = "larmor.main:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "nibabel",
+    "ruff",
+    "mypy",
+    "pre-commit",
+    "scipy-stubs>=1.18.1.1",
+    "types-tqdm>=4.70.0.20260906",
+    "larmor-dmri[viewer]", # the viewer's tests need its optional dependencies
+    "pytest-qt",
+    "pytest-xdist>=3.8.0",
+    "pytest-timeout>=2.4.0", # CI stops a test that hangs
+    "import-linter>=2.15",
+    # The C++ backend's linters, as pip packages; its build tools are in the build group.
+    "clang-format==22.1.8", # the same LLVM release for both, so their versions move together
+    "clang-tidy==22.1.8",
+]
+
+# What builds the package in the uv environment (the build-system requirements, with CMake and
+# Ninja); the dev preset in cpp/ uses them too.
+build = [
+    "scikit-build-core>=1.1.1",
+    "nanobind>=3.1.0",
+    "cmake>=4.4.4",
+    "ninja>=1.13.2",
+]
+docs = [
+    "matplotlib==3.11.2",
+    "myst-parser>=5.1.0",
+    "pydata-sphinx-theme>=0.23.0",
+    "sphinx>=9.1.0",
+    "sphinx-copybutton>=0.5.2",
+    "sphinx-design>=0.7.0",
+    "sphinx-gallery==0.22.1",
+    "sphinx-sitemap>=2.9.0",
+    "sphinxext-opengraph>=0.13.0",
+]
+
+[project.optional-dependencies]
+viewer = [
+    "mcp>=2.3,<3",
+    "pillow>=12.0,<13",  # rotation videos stream frames through its writers
+    "pygfx>=0.17.0,<0.18",  # transparent screenshots replace its output pass
+    "pyside6>=6.11.2",
+    "pyside6-qtads>=5.1,<6",  # pins the exact PySide6 version it is built for
+    "rendercanvas>=2.7,<3",  # half resolution uses its canvas size internals
+    "wgpu>=0.32",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Test folders mirror the packages and have no __init__.py (tests/io would shadow
+# the standard io module); importlib mode lets files in different folders share a name.
+# -n auto: one worker per CPU core; -n 0 runs the tests in one process. loadgroup
+# keeps the tests marked with one xdist_group on one worker.
+addopts = ["--import-mode=importlib", "-n", "auto", "--dist", "loadgroup"]
+markers = [
+    "qt_widgets: builds the viewer's Qt widgets (tests/conftest.py lists the files)",
+]
+
+[tool.ruff]
+line-length = 88
+extend-exclude = [
+    "*.md",                     # code examples in the docs are written by hand, not formatted
+    "src/larmor/_core.pyi", # generated by nanobind's stubgen
+]
+
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "W",   # pycodestyle: PEP 8 layout
+    "F",   # pyflakes: unused imports and names, undefined names
+    "N",   # pep8-naming: PEP 8 names
+    "D",   # pydocstyle: docstrings (Google convention, below)
+    "I",   # isort: sorted imports
+    "TID", # tidy imports: absolute imports only (below)
+    "T20", # no print in the library: only the command line writes to the terminal
+    "ANN", # type annotations everywhere
+    "B",   # bugbear: common bugs
+    "UP",  # pyupgrade: modern syntax for the target Python version
+    "DOC201", # pydoclint: a function that returns documents Returns
+    "DOC402", # pydoclint: a generator that yields documents Yields
+    "DOC501", # pydoclint: a function that raises documents Raises
+    "C901",   # mccabe: functions not too complex (limit below)
+    "PLR0915", # pylint: functions not too long (limit below)
+]
+preview = true
+explicit-preview-rules = true # only the rules named above, no other preview rule
+ignore = [
+    "N806", # variables may follow the formula's capitals (V, R, Y), see docs/style.md
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.pydoclint]
+ignore-one-line-docstrings = true # internal helpers have a one-line docstring and need no sections
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pylint]
+max-statements = 40
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+# The viewer's layers: only the Qt and render layers draw or
+# open windows, so the model and the library never load Qt or pygfx.
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"PySide6".msg = "Qt belongs in larmor/viewer/qt/."
+"pygfx".msg = "pygfx belongs in larmor/viewer/render/."
+"rendercanvas".msg = "rendercanvas belongs in larmor/viewer/qt/ and render/."
+"wgpu".msg = "wgpu belongs in larmor/viewer/render/."
+"PySide6QtAds".msg = "Qt belongs in larmor/viewer/qt/."
+
+
+[tool.ruff.lint.per-file-ignores]
+"src/larmor/cli/**" = ["T20"] # only the command line may print
+"tests/**" = ["D", "DOC", "C901", "PLR0915"] # tests need no docstrings and may be long
+"examples/**" = ["D", "DOC", "T20"]        # examples print results; their docstring is a sphinx-gallery title
+"src/larmor/viewer/qt/**" = ["TID251"]     # the Qt layer
+"src/larmor/viewer/render/**" = ["TID251"] # the render layer
+"src/larmor/viewer/app.py" = ["TID251"]    # starts the QApplication
+"tests/viewer/**" = ["TID251"]                   # the viewer's tests
+
+
+[tool.mypy]
+python_version = "3.14"
+files = ["src", "tests", "examples", "docs/carousel_simulation.py", "docs/update_carousel.py"]
+exclude = ["^tests/data/"]                                                   # scripts that made test data, with tools Larmor does not depend on
+strict = true                                                                # annotations everywhere, no implicit Any, flags unused ignores
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool", "possibly-undefined"]
+untyped_calls_exclude = ["nibabel", "skimage", "pygfx", "rendercanvas", "PySide6QtAds", "h5py"]  # untyped libraries; nibabel is a test oracle only
+
+
+[[tool.mypy.overrides]]
+module = ["pygfx", "pygfx.*", "rendercanvas", "rendercanvas.*", "wgpu", "wgpu.*", "PySide6QtAds", "h5py"]
+ignore_missing_imports = true # these libraries ship no type information
+
+[tool.importlinter]
+root_package = "larmor"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Library layers"
+type = "layers"
+containers = ["larmor"]
+layers = ["main", "cli", "viewer", "plot", "simulation", "tractography", "sd", "dwi | data | registration", "io | surfaces", "types", "_log | _threads"]
+# `from larmor import _core` reads as an import of the package: the compiled module is invisible here.
+ignore_imports = [
+    "larmor.dwi.fitting -> larmor",
+    "larmor.dwi.denoise -> larmor",
+    "larmor.dwi.gibbs -> larmor",
+    "larmor.simulation.instant -> larmor",
+]
+
+[[tool.importlinter.contracts]]
+name = "The simulation never imports the viewer or Qt"
+type = "forbidden"
+source_modules = ["larmor.simulation"]
+forbidden_modules = ["larmor.viewer", "PySide6", "pygfx", "wgpu"]
+
+[[tool.importlinter.contracts]]
+name = "Only the viewer's model imports the simulation"
+type = "forbidden"
+source_modules = [
+    "larmor.viewer.qt",
+    "larmor.viewer.render",
+    "larmor.viewer.app",
+    "larmor.viewer.jobs",
+    "larmor.viewer.loading",
+    "larmor.viewer.phantom_jobs",
+    "larmor.viewer.mcp_server",
+]
+forbidden_modules = ["larmor.simulation"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Only the plots and the viewer's Qt layer import matplotlib"
+type = "forbidden"
+source_modules = [
+    "larmor.main",
+    "larmor.cli",
+    "larmor.simulation",
+    "larmor.tractography",
+    "larmor.sd",
+    "larmor.dwi",
+    "larmor.data",
+    "larmor.registration",
+    "larmor.io",
+    "larmor.surfaces",
+    "larmor.types",
+    "larmor._log",
+    "larmor._threads",
+    "larmor.viewer.model",
+    "larmor.viewer.render",
+    "larmor.viewer.app",
+    "larmor.viewer.jobs",
+    "larmor.viewer.launcher",
+    "larmor.viewer.loading",
+    "larmor.viewer.macos",
+    "larmor.viewer.mcp_server",
+    "larmor.viewer.phantom_jobs",
+    "larmor.viewer.system",
+]
+forbidden_modules = ["matplotlib"]
+# Only direct imports: the command line opens the viewer, whose window draws plots.
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Inside io: loading by path above the formats, the byte layer at the bottom"
+type = "layers"
+containers = ["larmor.io"]
+layers = ["dwi", "bvals_bvecs", "load_save", "mritoolkit", "formats", "reader | writer"]
+
+[[tool.importlinter.contracts]]
+name = "Streamline tools need only numpy, the types and the compiled core"
+type = "forbidden"
+source_modules = [
+    "larmor.tractography.density",
+    "larmor.tractography.editing",
+    "larmor.tractography.regions",
+    "larmor.tractography.resampling",
+    "larmor.tractography.profiles",
+    "larmor.tractography.sampling",
+]
+# `from larmor import _core` reads as an import of the package: the compiled module is invisible here.
+ignore_imports = [
+    "larmor.tractography.density -> larmor",
+    "larmor.tractography.resampling -> larmor",
+]
+forbidden_modules = [
+    "larmor.tractography.tracker",
+    "larmor.tractography.seed",
+    "larmor.io",
+    "larmor.sd",
+    "larmor.dwi",
+    "scipy",
+]
+
+[[tool.importlinter.contracts]]
+name = "Reading files needs no heavy or GUI libraries"
+type = "forbidden"
+source_modules = ["larmor.types", "larmor.io", "larmor.surfaces"]
+forbidden_modules = ["scipy", "h5py", "skimage", "PySide6", "pygfx", "wgpu"]
+# MATLAB files are read with scipy.io (versions 4 to 7) and h5py (7.3), each imported
+# only when such a file is opened.
+ignore_imports = [
+    "larmor.io.formats.matlab -> scipy",
+    "larmor.io.formats.matlab -> h5py",
+]

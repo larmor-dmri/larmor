@@ -1,0 +1,131 @@
+# Larmor
+
+> Larmor is a Python library and viewer (BrainViewer) for diffusion MRI: simulation, denoising, DTI, DKI, spherical deconvolution, tractography and connectomes.
+
+Larmor simulates and processes diffusion MRI from Python and from its command line, `lar`: it simulates diffusion-weighted images of phantoms with their ground truth, denoises diffusion images and removes Gibbs ringing, fits DTI and DKI, estimates fibre orientation distributions by spherical deconvolution, finds their peaks, tracks streamlines, edits tractograms and makes track density images and structural connectomes. It reads and writes NIfTI, MRtrix, TCK, TRK, VTK, FreeSurfer and GIfTI files. Its viewer, BrainViewer, shows volumes, tractograms, FODs, peaks and surfaces in 2D and 3D, and can be driven by an agent through the Model Context Protocol (MCP). It is installed from PyPI as larmor-dmri.
+
+## Start
+
+- [Install](https://larmor.org/install/): installing Larmor with pip or uv, the viewer on its own, from source, remote use over SSH, and GPU troubleshooting; not released yet, so from source for now
+- [Getting started](https://larmor.org/getting-started/): a first run of the command line, of Python and of the viewer, and driving the viewer from an agent
+- [Quick start](https://larmor.org/quick-start/): install Larmor, simulate a bundled phantom of two crossing bundles with one command, and open it in the viewer
+- [Simulation](https://larmor.org/simulation/): what simulation in Larmor is for, and the three ways in: `lar simulate`, the Python API and the phantom editor in the viewer
+- [What Larmor does](https://larmor.org/guides/what-larmor-does/): the methods, the files it reads and writes, and the command for each
+
+## User guide
+
+- [User guide](https://larmor.org/guides/): the task pages
+- [Loading and saving data](https://larmor.org/guides/loading-and-saving/): images, diffusion images with their gradients, and tractograms
+- [Gradient tables and shells](https://larmor.org/guides/gradient-tables/): bvals and bvecs, MRtrix gradient files, the FSL and world frames, and shells
+- [DTI](https://larmor.org/guides/dti/): fitting the diffusion tensor, and the FA, MD, AD, RD and direction maps
+- [DKI](https://larmor.org/guides/dki/): fitting diffusion kurtosis, constrained and weighted, and the MK, AK, RK and KA maps
+- [FODs](https://larmor.org/guides/fods/): response functions, the GRL, mFOD, CSD and MSMT-CSD methods and their solvers, and SH bases
+- [Peaks](https://larmor.org/guides/peaks/): the peaks of FODs, and the peaks image
+- [Tractography](https://larmor.org/guides/tractography/): deterministic and probabilistic tracking, seeding, stopping and output formats
+- [Surfaces](https://larmor.org/guides/surfaces/): FreeSurfer and GIfTI surfaces, their values, and registrations
+- [Isolating a bundle](https://larmor.org/guides/isolating-a-bundle/): selecting streamlines with include and exclude regions
+- [Tract profiles](https://larmor.org/guides/tract-profiles/): maps such as FA sampled along a bundle
+- [Simulating phantoms](https://larmor.org/guides/simulation/): building a phantom of tissues and bundles, the phantom file, `lar simulate` and the folder it writes
+- [Example data](https://larmor.org/example-data/): public datasets for trying Larmor, with their licences
+
+## Gallery
+
+- [Gallery](https://larmor.org/gallery/): runnable Python examples, each with its code, output and images
+- [Simulation](https://larmor.org/gallery/simulation/): simulating diffusion-weighted images of phantoms with their ground truth
+  - [Check a pipeline against the ground truth](https://larmor.org/gallery/simulation/pipeline_ground_truth/)
+  - [The signal of one voxel, step by step](https://larmor.org/gallery/simulation/signal_breakdown/)
+  - [Simulating two crossing bundles](https://larmor.org/gallery/simulation/simulate_crossing_bundles/)
+- [Preprocessing](https://larmor.org/gallery/preprocessing/): denoising diffusion-weighted images and removing Gibbs ringing
+  - [Denoising a DWI with MP-PCA](https://larmor.org/gallery/preprocessing/dwi_denoise_mppca/)
+  - [Denoising, then removing Gibbs ringing](https://larmor.org/gallery/preprocessing/gibbs_ringing_removal/)
+- [Models](https://larmor.org/gallery/models/): fitting the diffusion tensor (DTI) and diffusion kurtosis (DKI) models, and reading the maps they give
+  - [Fitting DKI to a real brain](https://larmor.org/gallery/models/dki_real_data/)
+  - [Fitting DKI to a synthetic signal](https://larmor.org/gallery/models/dki_synthetic_kurtosis/)
+  - [DTI of a simulated brain](https://larmor.org/gallery/models/dti_ismrm/)
+  - [Fitting DTI to a synthetic tensor](https://larmor.org/gallery/models/dti_synthetic_tensor/)
+- [Spherical deconvolution and peaks](https://larmor.org/gallery/sd/): estimating fibre orientation distributions (FODs) by spherical deconvolution, and finding their peaks
+  - [Fitting FODs to a synthetic signal](https://larmor.org/gallery/sd/fod_fit_synthetic/)
+  - [FODs, peaks and asymmetric FODs of a simulated brain](https://larmor.org/gallery/sd/fods_ismrm/)
+  - [Finding the peaks of FODs](https://larmor.org/gallery/sd/peaks_synthetic/)
+- [Tractography](https://larmor.org/gallery/tractography/): tracking streamlines, writing tractograms, selecting bundles, track density images, structural connectomes and tract profiles
+  - [Structural connectomes](https://larmor.org/gallery/tractography/connectome_synthetic/)
+  - [Bringing an atlas region into diffusion space](https://larmor.org/gallery/tractography/registration_atlas_region/)
+  - [Track density images](https://larmor.org/gallery/tractography/track_density_synthetic/)
+  - [Whole-brain tractography of a simulated brain](https://larmor.org/gallery/tractography/tracking_ismrm/)
+  - [Tracking streamlines through crossing bundles](https://larmor.org/gallery/tractography/tracking_synthetic/)
+  - [Tract profiles: FA along a bundle](https://larmor.org/gallery/tractography/tract_profiles/)
+  - [Writing a tractogram batch by batch](https://larmor.org/gallery/tractography/tractogram_batch_writing/)
+- [Files](https://larmor.org/gallery/files/): reading and writing images, gradient tables and tractograms, and converting between file formats
+  - [Reading and writing files](https://larmor.org/gallery/files/file_io/)
+  - [Reading MRIToolkit results from MATLAB files](https://larmor.org/gallery/files/mritoolkit_files/)
+- [Viewer](https://larmor.org/gallery/viewer/): driving BrainViewer from Python, off screen, and saving screenshots of its views
+  - [Moving around the 2D views](https://larmor.org/gallery/viewer/viewer_2d_views/)
+  - [The 3D view](https://larmor.org/gallery/viewer/viewer_3d_view/)
+  - [4D images in the viewer](https://larmor.org/gallery/viewer/viewer_4d_volumes/)
+  - [DTI colours in the viewer](https://larmor.org/gallery/viewer/viewer_dti/)
+  - [FOD glyphs in the viewer](https://larmor.org/gallery/viewer/viewer_fod_glyphs/)
+  - [A parcellation in the viewer](https://larmor.org/gallery/viewer/viewer_parcellation/)
+  - [Peaks in the viewer](https://larmor.org/gallery/viewer/viewer_peaks/)
+  - [A brain in the viewer](https://larmor.org/gallery/viewer/viewer_real_brain/)
+  - [Separate views and rotation videos](https://larmor.org/gallery/viewer/viewer_screenshot_modes/)
+  - [Saving and reopening a viewer session](https://larmor.org/gallery/viewer/viewer_sessions/)
+  - [Surfaces in the viewer](https://larmor.org/gallery/viewer/viewer_surfaces/)
+  - [Tractograms in the viewer](https://larmor.org/gallery/viewer/viewer_tractograms/)
+  - [Streamlines as tubes](https://larmor.org/gallery/viewer/viewer_tubes/)
+  - [Volumes and overlays in the viewer](https://larmor.org/gallery/viewer/viewer_volumes_and_overlays/)
+
+## Viewer
+
+- [Viewer](https://larmor.org/viewer/): BrainViewer's guides, one per feature, as its Help panel shows them
+  - [Getting started](https://larmor.org/viewer/getting-started/): opening files, installing the viewer on its own, the panels and views
+  - [The 2D views](https://larmor.org/viewer/2d-views/): moving around, the crosshair and the readout, RAS and LAS
+  - [Volumes and overlays](https://larmor.org/viewer/volumes-and-overlays/): colormaps, thresholds, 4D images and DTI colour maps
+  - [Parcellations](https://larmor.org/viewer/parcellations/): regions in their own colours, lookup tables and labels in 3D
+  - [Tractograms](https://larmor.org/viewer/tractograms/): colouring by value, filtering by regions, and tubes
+  - [The 3D view](https://larmor.org/viewer/3d-view/): what it shows, and the camera
+  - [FOD glyphs](https://larmor.org/viewer/fod-glyphs/): symmetric and asymmetric FODs
+  - [Peaks](https://larmor.org/viewer/peaks/): an FOD's peaks as lines
+  - [Settings](https://larmor.org/viewer/settings/): the viewer's preferences
+  - [Screenshots](https://larmor.org/viewer/screenshots/): images, separate views and rotation videos
+  - [Sessions](https://larmor.org/viewer/sessions/): saving what the viewer shows, to open it again later
+  - [Surfaces](https://larmor.org/viewer/surfaces/): cortical surfaces in 3D and in the 2D views
+  - [MATLAB files](https://larmor.org/viewer/matlab-files/): opening MRIToolkit and ExploreDTI results
+  - [Phantoms](https://larmor.org/viewer/phantoms/): the phantom editor and its guided layout, the signal breakdown of a voxel, and running a simulation
+  - [Keyboard shortcuts](https://larmor.org/viewer/shortcuts/): every key and mouse control
+
+## Agents
+
+- [Agents](https://larmor.org/agents/): driving the viewer from an agent through MCP
+  - [Connecting an agent](https://larmor.org/agents/connecting/): the server, its URL and token, and adding it to Claude Code or another client
+  - [Tools](https://larmor.org/agents/tools/): every tool the viewer offers, with its arguments and description
+  - [Security](https://larmor.org/agents/security/): the local address, the token, and what a connected agent can do
+
+## Background
+
+- [Simulating diffusion MRI](https://larmor.org/background/simulation/): the compartment models, tissues and partial volume, relaxation, noise, and what the instant engine does not model
+- [Conventions](https://larmor.org/background/conventions/): voxel and world coordinates, NIfTI and MIF affines, gradient table frames and units, shells, SH bases and coefficient order, tractogram files and point order, array axes and units, and the viewer's display
+
+## Reference
+
+- [Command-line reference](https://larmor.org/cli/): every `lar` command and option
+- [Python API](https://larmor.org/reference/api/): the public names of each package, from their docstrings
+  - [larmor](https://larmor.org/reference/api/larmor/)
+  - [larmor.types](https://larmor.org/reference/api/types/)
+  - [larmor.io](https://larmor.org/reference/api/io/)
+  - [larmor.io.formats](https://larmor.org/reference/api/io-formats/)
+  - [larmor.dwi](https://larmor.org/reference/api/dwi/)
+  - [larmor.sd](https://larmor.org/reference/api/sd/)
+  - [larmor.tractography](https://larmor.org/reference/api/tractography/)
+  - [larmor.registration](https://larmor.org/reference/api/registration/)
+  - [larmor.surfaces](https://larmor.org/reference/api/surfaces/)
+  - [larmor.data](https://larmor.org/reference/api/data/)
+  - [larmor.viewer](https://larmor.org/reference/api/viewer/)
+- [File formats](https://larmor.org/reference/file-formats/): the formats Larmor reads and writes, with the functions for each
+
+## About
+
+- [About](https://larmor.org/about/): the licence and the data credits
+- [Citing](https://larmor.org/about/citing/): how to cite Larmor, and the papers behind each method
+- [Changelog](https://larmor.org/about/changelog/): what changed in each version
+- [Roadmap](https://larmor.org/about/roadmap/): what comes next
+- [Contributing](https://larmor.org/about/contributing/): reporting problems and proposing changes

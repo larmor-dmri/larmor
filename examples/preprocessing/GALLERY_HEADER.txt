@@ -1,0 +1,4 @@
+Preprocessing
+-------------
+
+These examples denoise diffusion-weighted images and remove Gibbs ringing.

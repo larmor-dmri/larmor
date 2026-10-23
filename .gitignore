@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env
+build/
+dist/
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.import_linter_cache/
+.coverage
+htmlcov/
+
+# The C++ build folder
+cpp/build/
+
+# The documentation website and the gallery it generates
+docs/_build/
+docs/gallery/
+docs/gen_modules/
+docs/sg_execution_times.rst
+examples/**/*.png
+examples/**/*.webp
+
+# Imaging data and tractograms: only the small files in tests/data are committed
+*.nii
+*.nii.gz
+*.mif
+*.mif.gz
+*.mih
+*.tck
+*.trk
+*.trk.gz
+*.tsf
+*.vtk
+*.vtp
+*.gii
+*.mgh
+*.mgz
+*.dcm
+!tests/data/**
+
+# MATLAB
+*.asv
+
+# Profiles
+*.prof
+*.lprof
+
+# Editors and operating systems
+.idea/
+.vscode/
+.claude/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# The compiled C++ module, built in place
+*.so
+*.pyd
+
+# Eigen and pocketfft for the source distribution (cpp/cmake/vendor.cmake)
+cpp/third_party/

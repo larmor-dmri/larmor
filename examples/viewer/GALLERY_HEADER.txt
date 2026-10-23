@@ -1,0 +1,6 @@
+Viewer
+------
+
+These examples drive BrainViewer, Larmor's viewer, from Python. They draw off
+screen, with no window, and save screenshots of the views. They need the
+``[viewer]`` extra and a GPU or a software renderer, but no display.

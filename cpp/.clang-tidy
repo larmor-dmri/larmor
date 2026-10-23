@@ -1,0 +1,54 @@
+# Static checks of the C++ sources, run with the compile database of a build:
+#   uv run run-clang-tidy.py -p build/dev -quiet 'cpp/(src|tests)/'
+#
+# Disabled checks, each for a reason:
+#   modernize-use-trailing-return-type    auto f() -> T everywhere reads worse than T f().
+#   readability-magic-numbers             numerical code is full of literal constants (0.5, 1e-12,
+#                                         3 components) that a name would not make clearer.
+#   bugprone-easily-swappable-parameters  numerical functions take several arrays or sizes of one
+#                                         type by nature (n_items, block_size).
+#   readability-math-missing-parentheses  x * x + y * y is the plain way to write a formula, and
+#                                         the formulas in the papers have no such parentheses.
+Checks: >
+  -*,
+  bugprone-*,
+  performance-*,
+  modernize-*,
+  readability-*,
+  -modernize-use-trailing-return-type,
+  -readability-magic-numbers,
+  -bugprone-easily-swappable-parameters,
+  -readability-math-missing-parentheses
+WarningsAsErrors: '*'
+# Only Larmor's own headers are checked, not Eigen's, nanobind's or doctest's.
+HeaderFilterRegex: '.*/cpp/src/.*'
+CheckOptions:
+  # doctest's CHECK macros expand to branches; only the code written out counts.
+  - { key: readability-function-cognitive-complexity.IgnoreMacros, value: true }
+  # Types are CamelCase; functions, variables, parameters and members lower_case; constexpr
+  # constants UPPER_CASE; namespaces lower_case.
+  - { key: readability-identifier-naming.NamespaceCase, value: lower_case }
+  - { key: readability-identifier-naming.ClassCase, value: CamelCase }
+  - { key: readability-identifier-naming.StructCase, value: CamelCase }
+  - { key: readability-identifier-naming.EnumCase, value: CamelCase }
+  - { key: readability-identifier-naming.EnumConstantCase, value: CamelCase }
+  - { key: readability-identifier-naming.TypeAliasCase, value: CamelCase }
+  - { key: readability-identifier-naming.TypedefCase, value: CamelCase }
+  - { key: readability-identifier-naming.TemplateParameterCase, value: CamelCase }
+  - { key: readability-identifier-naming.ValueTemplateParameterCase, value: lower_case }
+  - { key: readability-identifier-naming.FunctionCase, value: lower_case }
+  - { key: readability-identifier-naming.MethodCase, value: lower_case }
+  - { key: readability-identifier-naming.VariableCase, value: lower_case }
+  - { key: readability-identifier-naming.ParameterCase, value: lower_case }
+  - { key: readability-identifier-naming.MemberCase, value: lower_case }
+  - { key: readability-identifier-naming.ConstexprVariableCase, value: UPPER_CASE }
+  # At least 2 characters for variables, parameters and loop counters; only the coordinates
+  # x, y and z may be one letter.
+  - { key: readability-identifier-length.MinimumVariableNameLength, value: 2 }
+  - { key: readability-identifier-length.MinimumParameterNameLength, value: 2 }
+  - { key: readability-identifier-length.MinimumLoopCounterNameLength, value: 2 }
+  - { key: readability-identifier-length.MinimumExceptionNameLength, value: 2 }
+  - { key: readability-identifier-length.IgnoredVariableNames, value: '^[xyz]$' }
+  - { key: readability-identifier-length.IgnoredParameterNames, value: '^[xyz]$' }
+  - { key: readability-identifier-length.IgnoredLoopCounterNames, value: '^[xyz]$' }
+  - { key: readability-identifier-length.IgnoredExceptionVariableNames, value: '^$' }

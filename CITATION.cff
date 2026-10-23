@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: >-
+  If you use Larmor, please cite it as below, and also cite the papers of the
+  methods you used (https://larmor.org/about/citing/).
+type: software
+title: "Larmor: a Python library and viewer for diffusion MRI"
+abstract: >-
+  Larmor is a Python library and command line for diffusion MRI, with a viewer,
+  BrainViewer: denoising and Gibbs-ringing removal, DTI and DKI, spherical
+  deconvolution, peaks, tractography, tract profiles, track density images and
+  structural connectomes.
+authors:
+  - given-names: Antonio
+    family-names: Di Meglio
+license: LGPL-3.0-only
+version: 2.0.0
+date-released: "2026-10-20"
+url: "https://larmor.org"
+repository-code: "https://github.com/larmor-dmri/larmor"
+contact:
+  - name: Larmor
+    email: contact@larmor.org
+keywords:
+  - diffusion MRI
+  - tractography
+  - spherical deconvolution
+  - DTI
+  - DKI
+  - neuroimaging

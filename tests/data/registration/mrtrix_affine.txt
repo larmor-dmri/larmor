@@ -1,0 +1,5 @@
+# command_history: transformconvert -quiet -force ants_affine.txt itk_import mrtrix_affine.txt  (version=3.0.8)
+1.02 0.1 0.05 -4.15
+-0.08 0.97 -0.12 2.89
+-0.06 0.1 1.05 0.649999999999999
+0 0 0 1

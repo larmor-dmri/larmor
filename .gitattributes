@@ -1,0 +1,17 @@
+# Text files are stored with LF and checked out with LF on every platform.
+* text=auto eol=lf
+
+# Binary data and images are never converted.
+*.nii binary
+*.nii.gz binary
+*.mif binary
+*.mif.gz binary
+*.mat binary
+*.npz binary
+*.npy binary
+*.tck binary
+*.trk binary
+*.tsf binary
+*.png binary
+*.webp binary
+*.gii binary

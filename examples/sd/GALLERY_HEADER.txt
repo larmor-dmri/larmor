@@ -1,0 +1,5 @@
+Spherical deconvolution and peaks
+---------------------------------
+
+These examples estimate fibre orientation distributions (FODs) by spherical
+deconvolution and find their peaks, the main fibre directions in each voxel.
