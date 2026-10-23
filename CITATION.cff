@@ -13,8 +13,9 @@ authors:
   - given-names: Antonio
     family-names: Di Meglio
 license: LGPL-3.0-only
+doi: 10.5281/zenodo.23604584
 version: 2.0.0
-date-released: "2026-10-20"
+date-released: "2026-10-23"
 url: "https://larmor.org"
 repository-code: "https://github.com/larmor-dmri/larmor"
 contact:

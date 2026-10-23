@@ -10,6 +10,7 @@ A Python library and viewer for diffusion MRI.
 [![License: LGPL-3.0-only](https://img.shields.io/badge/license-LGPL--3.0--only-blue)](COPYING.LESSER)
 [![Python 3.14+](https://img.shields.io/badge/python-3.14%2B-blue)](pyproject.toml)
 [![Platforms](https://img.shields.io/badge/platforms-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)](docs/install.md)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23604584.svg)](https://doi.org/10.5281/zenodo.23604584)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 <p align="center">
