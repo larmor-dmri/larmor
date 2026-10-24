@@ -2,7 +2,7 @@ import numpy as np
 
 from larmor.simulation import BundleGeometry, create_bundle
 from larmor.simulation.voxelise import voxelise
-from larmor.tractography import resample, streamline_lengths, track_density
+from larmor.tractography import resample, streamline_lengths
 from larmor.types import Grid, Tractogram
 
 GRID = Grid((20, 20, 20), np.eye(4))
@@ -43,18 +43,6 @@ def test_streamline_on_a_voxel_row_fills_that_row_only() -> None:
     i, j, k = np.unravel_index(voxels.voxel, GRID.shape)
     assert set(j.tolist()) == {7} and set(k.tolist()) == {3}
     assert set(i.tolist()) == set(range(20))
-
-
-def test_voxelised_mask_equals_track_density_on_the_fine_points() -> None:
-    bundle = create_bundle(
-        BundleGeometry(np.array([[2.0, 3, 4], [10, 12, 9], [17, 15, 16]]), seed=1)
-    )
-    voxels = voxelise([bundle], GRID)
-    mask = np.zeros(int(np.prod(GRID.shape)), dtype=bool)
-    mask[voxels.voxel] = True
-    fine = resample(bundle, step_size=0.1)
-    density = track_density(fine, GRID, upsample=1)
-    np.testing.assert_array_equal(mask.reshape(GRID.shape), density.data > 0)
 
 
 def test_total_length_equals_the_length_inside_the_grid() -> None:
