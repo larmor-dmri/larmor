@@ -11,21 +11,21 @@ from larmor.simulation.bundles import centreline_spline
 from larmor.tractography import resample, streamline_lengths
 from larmor.types import Grid, Tractogram
 
-# Spacing of the resampled streamline points, as a fraction of the smallest voxel size.
-STEP_PER_VOXEL = 0.1
+# Streamlines are resampled into pieces of this factor * min(voxel_size)
+RESAMPLING_FACTOR = 0.1
 
 # The directions that the tangents are sorted by: 300 directions spread evenly over
 # the sphere, none opposite another, about 8.6 degrees from their neighbours.
 BIN_DIRECTIONS = DIRS_300 / np.linalg.norm(DIRS_300, axis=1, keepdims=True)
 NUM_BINS = len(BIN_DIRECTIONS)
 
-# Resampled points handled at a time, about. Each batch of streamlines is reduced to
+# Resampled points handled at a time. Each batch of streamlines is reduced to
 # its fibres before the next is read, which bounds the memory however large the
 # bundles are.
 POINTS_PER_BATCH = 1_000_000
 
-# Tangents compared with the bin directions at a time.
-TANGENTS_PER_BLOCK = 16384
+# Directions compared with the bin directions at a time.
+DIRS_PER_BLOCK = 16384
 
 
 @dataclass(frozen=True, eq=False)
@@ -80,12 +80,10 @@ def voxelise(
 ) -> Voxelisation:
     """Maps the streamlines of each bundle onto the voxels of a grid.
 
-    Each streamline is resampled every tenth of the smallest voxel size, and
-    each point carries half the length of its two segments and the tangent
-    there. A point goes to its nearest voxel; points outside the grid are
-    dropped. In each voxel, a bundle's tangents are sorted by the nearest of
-    300 directions, and the tangents with the same nearest direction give one
-    fibre.
+    Each streamline is resampled to have no two points at a distance greater
+    than 0.1 * min(voxel_size). Each streamline segment is then mapped onto
+    a voxel in the grid, and its direction binned in a histogram of 300
+    directions.
 
     Args:
         tractograms: One tractogram per bundle, in world coordinates (mm).
@@ -96,7 +94,7 @@ def voxelise(
     Returns:
         The length and direction per voxel, bundle and direction bin.
     """
-    step = STEP_PER_VOXEL * float(np.linalg.norm(grid.affine[:3, :3], axis=0).min())
+    step = RESAMPLING_FACTOR * float(np.linalg.norm(grid.affine[:3, :3], axis=0).min())
     num_bundles = len(tractograms)
     batches = [
         _fibre_sums(
@@ -173,62 +171,60 @@ def _fibre_sums(
     # Cut the streamlines into short pieces, each with a length and a tangent.
     fine = resample(tractogram, step_size=step, n_jobs=n_jobs)
     points = fine.points.astype(np.float64)
-    length, tangent = _lengths_and_tangents(points, fine.offsets)
+    offsets = fine.offsets
 
-    # Put each piece in its nearest voxel, and drop those outside the grid.
-    ijk, inside = _nearest_voxels(points, grid)
-    keep = inside & (length > 0)
-    voxel = np.ravel_multi_index(ijk[keep].T, grid.shape)
-    length = length[keep]
+    # which points belong to the same streamline
+    real = np.ones(len(points) - 1, dtype=bool)
+    real[offsets[1:-1] - 1] = False
+    start, end = points[:-1][real], points[1:][real]
 
-    # Give each tangent the nearest bin direction, and label each piece with its
-    # voxel, bundle and bin.
-    aligned, direction_bin = _bin_directions(tangent[keep])
-    key = _group_key(voxel, bundle, direction_bin, num_bundles)
+    length = np.linalg.norm((end - start), axis=1)
+    keep = length > 0
+    start, end, length = start[keep], end[keep], length[keep]
+    dirs = (end - start) / length[:, None]
+    dirs, bins = _bin_directions(dirs)
 
-    # Add up the pieces with the same voxel, bundle and bin: each group is one
-    # fibre.
+    aff = np.linalg.inv(grid.affine)
+    midpoints = (end + start) / 2
+    ijk = midpoints @ aff[:3, :3].T + aff[:3, 3]
+
+    voxel: np.ndarray = np.floor(ijk + 0.5).astype(np.int64)
+    inside = np.all((voxel >= 0) & (voxel < np.array(grid.shape)), axis=1)
+    voxel, length, dirs, bins = (
+        voxel[inside],
+        length[inside],
+        dirs[inside],
+        bins[inside],
+    )
+
+    idx = np.ravel_multi_index(voxel.T, grid.shape)
+
+    key = _group_key(idx, bundle, bins, num_bundles)
     keys, group = np.unique(key, return_inverse=True)
-    weighted = aligned * length[:, None]
     return _FibreSums(
-        keys,
-        _sum_by_group(group, length),
-        _sum_by_group(group, weighted),
+        keys, _sum_by_group(group, length), _sum_by_group(group, dirs * length[:, None])
     )
 
 
-def _nearest_voxels(points: np.ndarray, grid: Grid) -> tuple[np.ndarray, np.ndarray]:
-    """Returns the voxel nearest each point, and whether it is inside the grid.
-
-    Returns:
-        The (P, 3) int64 voxel indices and a (P,) bool mask of the points inside.
-    """
-    world_to_voxel = np.linalg.inv(grid.affine)
-    # Rounding to the nearest integer picks the voxel whose centre is closest.
-    ijk = np.floor(points @ world_to_voxel[:3, :3].T + world_to_voxel[:3, 3] + 0.5)
-    inside = np.all((ijk >= 0) & (ijk < np.array(grid.shape)), axis=1)
-    return ijk.astype(np.int64), inside
-
-
-def _bin_directions(tangent: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Returns each tangent's nearest bin direction, and the tangent flipped to it.
+def _bin_directions(dirs: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Returns each direction's nearest bin direction, and the direction flipped to it.
 
     A direction and its opposite are the same fibre direction, so the nearest
-    bin direction is the one with the largest absolute cosine, and a tangent
+    bin direction is the one with the largest absolute cosine, and a direction
     with a negative cosine is flipped to point the same way.
 
     Returns:
-        The flipped (P, 3) tangents and the (P,) int64 bin of each.
+        The flipped (P, 3) direction and the (P,) int64 bin of each.
     """
-    nearest = np.empty(len(tangent), dtype=np.int64)
-    sign = np.empty(len(tangent))
-    for start in range(0, len(tangent), TANGENTS_PER_BLOCK):
-        block = slice(start, start + TANGENTS_PER_BLOCK)
-        cosine = tangent[block] @ BIN_DIRECTIONS.T
+    nearest = np.empty(len(dirs), dtype=np.int64)
+    sign = np.empty(len(dirs))
+    for start in range(0, len(dirs), DIRS_PER_BLOCK):
+        block = slice(start, start + DIRS_PER_BLOCK)
+        cosine = dirs[block] @ BIN_DIRECTIONS.T
         best = np.argmax(np.abs(cosine), axis=1)
         nearest[block] = best
         sign[block] = np.where(cosine[np.arange(len(best)), best] < 0, -1.0, 1.0)
-    return tangent * sign[:, None], nearest
+    return dirs * sign[:, None], nearest
 
 
 def _group_key(
@@ -262,32 +258,6 @@ def _empty_voxelisation(grid: Grid, num_bundles: int) -> Voxelisation:
     """Returns a voxelisation with no fibres."""
     empty = np.empty(0, dtype=np.int64)
     return Voxelisation(grid, num_bundles, empty, empty, np.empty((0, 3)), np.empty(0))
-
-
-def _lengths_and_tangents(
-    points: np.ndarray, offsets: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
-    """Returns each point's share of its streamline's length, and its unit tangent.
-
-    The tangent at a point runs along p_{i+1} - p_{i-1}, one-sided at the ends.
-    """
-    num = len(points)
-    segment = np.diff(points, axis=0)
-    # The segments between the last point of a streamline and the first of the
-    # next are not part of any streamline.
-    joins = offsets[1:-1] - 1
-    real = np.ones(len(segment), dtype=bool)
-    real[joins[(joins >= 0) & (joins < len(segment))]] = False
-    segment[~real] = 0.0
-    seg_length = np.linalg.norm(segment, axis=1)
-    weight = np.zeros(num)
-    weight[:-1] += seg_length / 2
-    weight[1:] += seg_length / 2
-    tangent = np.zeros((num, 3))
-    tangent[:-1] += segment
-    tangent[1:] += segment
-    norms = np.linalg.norm(tangent, axis=1, keepdims=True)
-    return weight, tangent / np.where(norms > 0, norms, 1.0)
 
 
 # Number of sample points along each axis of a voxel near a tube.
