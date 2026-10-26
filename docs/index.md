@@ -13,7 +13,7 @@ A Python library and viewer for simulating and processing diffusion MRI
 
 <!-- One slide per line: file in _static/carousel/ | alt text | caption. -->
 ```{carousel}
-tubes.webp | Whole-brain streamlines drawn as lit tubes in 3D, seen from the front, coloured by direction | Whole-brain tractography drawn as tubes, coloured by direction.
+tubes.webp | Long streamlines of the whole brain drawn as lit tubes in 3D, seen from the side, coloured by direction | Whole-brain tractography drawn as tubes, coloured by direction.
 simulated-fods.webp | FOD glyphs fitted on a simulated phantom of two bundles crossing at right angles: red lobes along the horizontal bundle, green along the vertical one, and both in the crossing | FODs fitted on a simulated crossing of two bundles.
 phantom-editor.webp | The guided phantom editor on its Tissue step: the five steps listed on the left with check marks, and the compartments of a white matter tissue on the right | The phantom editor, which guides a first simulation step by step.
 signal-breakdown.webp | The viewer with two simulated bundles crossing in the axial view and the Signal breakdown panel beside it: stacked bars of the signal of the crossing voxel with no decay, after the T1 and T2 decay and after the diffusion weighting | The signal of one simulated voxel, split into its factors.
