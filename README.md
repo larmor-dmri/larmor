@@ -14,7 +14,7 @@ A Python library and viewer for diffusion MRI.
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 <p align="center">
-  <img src="src/larmor/viewer/resources/guides/images/window.png" alt="BrainViewer showing axial, coronal and sagittal slices of a T1-like image with an FA overlay, and a 3D view of whole-brain streamlines" width="800">
+  <img src="docs/_static/carousel/tubes.webp" alt="Long streamlines of the whole brain drawn by BrainViewer as lit tubes in 3D, seen from the side, coloured by direction" width="800">
 </p>
 
 Data: ISMRM 2015 Tractography Challenge (Maier-Hein et al., Nat Commun 8 (2017) 1349), CC BY 4.0.
