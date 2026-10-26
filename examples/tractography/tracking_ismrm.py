@@ -66,21 +66,29 @@ print(f"{run.num_streamlines} streamlines from {run.num_seeds} seeds")
 # Tubes in 3D
 # -----------
 # Streamlines are drawn as lit tubes, coloured by direction, here seen from the
-# front and a little from the side. The screenshots hide the text, so they show
-# only the data.
+# side. Only those of 70 mm or more are drawn, which leaves the long bundles, each
+# with 80 points to follow its curves; ambient occlusion darkens the tubes deep in
+# the bundles. The screenshots hide the text, so they show only the data.
 
 viewer = Viewer()
 t1 = viewer.load(files["t1"], Category.VOLUMES)
-tracts = viewer.add(run.tractogram, Category.TRACTOGRAMS, name="whole brain")
+whole = run.tractogram[select_length(run.tractogram, min_length=70.0)]
+tracts = viewer.add(whole, Category.TRACTOGRAMS, name="70 mm or more")
 viewer.set(t1.id, OptionName.SLICES_3D, False)
 viewer.set(t1.id, OptionName.OPACITY_3D, 0.0)
 viewer.set(tracts.id, OptionName.STYLE, TractStyle.TUBES)
-viewer.set(tracts.id, OptionName.SUBSET, 30.0)
-viewer.set_camera(ViewKind.THREE_D, CameraPreset.CORONAL)
-viewer.rotate_camera(30.0, 15.0)
+viewer.set(tracts.id, OptionName.SUBSET, 60.0)
+viewer.set(tracts.id, OptionName.POINTS, 80)
+viewer.set(tracts.id, OptionName.TUBE_RADIUS, 0.3)
+viewer.set(tracts.id, OptionName.AMBIENT_OCCLUSION, True)
+viewer.set_camera(ViewKind.THREE_D, CameraPreset.SAGITTAL)
 viewer.zoom(ViewKind.THREE_D, 1.4)
 viewer.screenshot(
-    ViewKind.THREE_D, "tracking_ismrm_tubes.png", size=(900, 600), overlay=False
+    ViewKind.THREE_D,
+    "tracking_ismrm_tubes.png",
+    size=(900, 600),
+    scale=2.0,
+    overlay=False,
 )
 
 # %%
