@@ -70,18 +70,20 @@ the viewer?". The agent calls the `scene` tool and lists the items and the state
 Each tool is one of the viewer's actions, the same ones the window and the Python Viewer class use. They fall
 into these groups:
 
-- **Items**: `load`, `load_matlab`, `remove`, `save_item`, `save_session`, `load_session`.
+- **Items**: `load`, `load_matlab`, `remove`, `rename`, `save_item`, `save_session`, `load_session`.
 - **Options**: `set`, `set_default`, `labels`, `item_choices`, `data_choices`.
 - **Tractogram regions**: `add_mask`, `add_sphere`, `clear_regions`, `kept_streamlines`.
 - **Views**: `select`, `move_cursor`, `step_slice`, `select_view`, `step_volume`, `zoom`, `pan`,
   `reset_camera`, `rotate_camera`, `set_camera`, `set_convention`, `view_centre`, `readout`,
-  `toggle_maximised`, `toggle_overlay`, `toggle_crosshair`, `set_tool`.
+  `toggle_maximised`, `toggle_overlay`, `toggle_crosshair`, `set_tool`, `set_workspace`, `set_layout`.
 - **Phantoms**: `new_phantom`, `close_phantom`, `set_phantom_grid`, `set_tissue`, `set_compartments`,
   `remove_tissue`, `set_tissue_map`, `set_background_tissue`, `set_scan`, `start_bundle`, `add_bundle_point`,
   `remove_bundle_point`, `set_bundle_points`, `finish_bundle`, `cancel_bundle`, `edit_bundle`, `use_as_bundle`,
   `set_bundle`, `show_proxy`, `show_grid_box`, `check_phantom`, `set_run_folder`, `save_phantom`, `load_phantom`,
   `run_phantom`, `open_simulation`.
-- **Images**: `screenshot`, `screenshot_views`, `record_rotation`. The agent sees the images it takes.
+- **Images**: `export`, `export_views`, `export_rotation`, which draw with an export preset such as "Website",
+  and `screenshot`, `screenshot_views`, `record_rotation`, which take the size and switches themselves. The agent
+  sees the images it takes.
 - **Scene**: `scene` lists the items, with the ids the other tools name them by, and the state of the views.
 
 Paths are on the viewer's computer, not the agent's, so the agent loads files and writes screenshots there. When

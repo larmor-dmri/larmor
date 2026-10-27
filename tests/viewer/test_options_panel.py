@@ -2209,12 +2209,19 @@ def test_a_folded_group_hides_only_its_fields_and_stays_folded_in_its_category(
     panel._headers[G.COLOUR].click()
 
     def colour_folded() -> bool:
-        hidden = [panel._fields[n].isHidden() for n in panel._members[G.COLOUR]]
+        # Fields whose options do not apply now, such as a tractogram's
+        # colormap while it is coloured by direction, stay hidden either way.
+        hidden = [
+            panel._fields[n].isHidden()
+            for n in panel._members[G.COLOUR]
+            if panel._applies(n)
+        ]
         others = [
             panel._fields[n].isHidden()
             for g, names in panel._members.items()
             if g != G.COLOUR
             for n in names
+            if panel._applies(n)
         ]
         assert not any(others)
         assert all(hidden) or not any(hidden)
@@ -2343,3 +2350,32 @@ def test_the_help_icon_widens_a_form_but_not_its_minimum(qtbot: QtBot) -> None:
     plain, helped = form(""), form("Values below it are hidden.")
     assert helped.minimumSizeHint().width() == plain.minimumSizeHint().width()
     assert helped.sizeHint().width() > plain.sizeHint().width()
+
+
+def _shown_fields(panel: OptionsPanel) -> set[OptionName]:
+    return {n for n, f in panel._fields.items() if not f.isHidden()}
+
+
+def test_a_tractogram_shows_the_colour_fields_of_its_colouring(
+    viewer: Viewer, panel: OptionsPanel
+) -> None:
+    item = viewer.add(_tractogram(), Category.TRACTOGRAMS)
+    viewer.select(item.id)
+    by_value = {OptionName.COLORMAP, OptionName.MINIMUM, OptionName.MAXIMUM}
+    assert not (by_value | {OptionName.COLOUR}) & _shown_fields(panel)
+    viewer.set(item.id, OptionName.COLOURING, Colouring.SINGLE)
+    assert OptionName.COLOUR in _shown_fields(panel)
+    assert not by_value & _shown_fields(panel)
+    viewer.set(item.id, OptionName.COLOURING, Colouring.VALUES)
+    assert by_value <= _shown_fields(panel)
+    assert OptionName.COLOUR not in _shown_fields(panel)
+
+
+@pytest.mark.parametrize("category", [Category.FODS, Category.PEAKS])
+def test_glyphs_have_no_3d_opacity_as_the_3d_view_does_not_draw_them(
+    category: Category, viewer: Viewer, panel: OptionsPanel
+) -> None:
+    data = _fod() if category == Category.FODS else _peaks()
+    viewer.select(viewer.add(data, category).id)
+    assert OptionName.OPACITY_2D in _shown_fields(panel)
+    assert OptionName.OPACITY_3D not in _shown_fields(panel)

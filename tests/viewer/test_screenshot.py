@@ -500,3 +500,28 @@ def test_the_axial_view_draws_a_surface_cut_in_its_colour(
     assert red_pixels() > 20
     viewer.set(item.id, OptionName.CUT_LINES, False)
     assert red_pixels() == 0
+
+
+def test_export_draws_with_a_presets_size_and_leaves_the_scene_as_it_was(
+    viewer: Viewer, tmp_path: Path
+) -> None:
+    item = viewer.scene.items[0]
+    before = (viewer.scene.view, item.options)
+    path = viewer.export("Website", tmp_path / "w.png", ViewKind.AXIAL)
+    with Image.open(path) as image:
+        assert image.size == (1800, 1200)
+        assert image.mode == "RGB"
+    assert (viewer.scene.view, viewer.scene.item(item.id).options) == before
+
+
+def test_export_views_and_rotation_take_a_preset_by_name(
+    viewer: Viewer, tmp_path: Path
+) -> None:
+    paths = viewer.export_views("Screen", tmp_path / "v.png")
+    assert [p.name for p in paths] == ["v_axial.png", "v_coronal.png", "v_sagittal.png"]
+    video = viewer.export_rotation(
+        "Screen", tmp_path / "r.gif", speed=90.0, duration=0.2, fps=10
+    )
+    assert video == tmp_path / "r.gif"
+    with pytest.raises(ValueError, match="no export preset"):
+        viewer.export("Poster", tmp_path / "p.png")

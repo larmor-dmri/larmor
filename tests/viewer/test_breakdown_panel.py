@@ -12,8 +12,8 @@ from pytestqt.qtbot import QtBot
 from larmor.plot import plot_signal_breakdown
 from larmor.viewer import ScanField, Viewer, ViewKind
 from larmor.viewer.model.breakdown import voxel_at
-from larmor.viewer.model.settings import PhantomLayout, SettingName
 from larmor.viewer.model.shortcuts import Command
+from larmor.viewer.model.view_state import Workspace
 from larmor.viewer.qt.breakdown_panel import BreakdownPanel
 from larmor.viewer.qt.docks import Panel
 from larmor.viewer.qt.main_window import MainWindow
@@ -220,17 +220,13 @@ def test_toggling_the_panel_again_and_again_ends_in_a_sane_state(
     assert len(viewer.scene._subscribers) == subscribers
 
 
-def test_the_panel_docks_and_follows_the_pointer_beside_the_guided_editor(
-    window: MainWindow, qtbot: QtBot
+def test_the_panel_closes_in_the_view_workspace_and_comes_back_in_simulate(
+    window: MainWindow,
 ) -> None:
-    window.settings.set(SettingName.PHANTOM_LAYOUT, PhantomLayout.GUIDED)
-    window.show_phantom()
     window.show_breakdown()
-    dock = window.docks.docks[Panel.SIGNAL_BREAKDOWN]
-    assert not dock.isInFloatingContainer()
-    canvas, middle = hover(qtbot, window)
-    assert window.viewer.breakdown is not None
-    QTest.mouseClick(
-        canvas, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, middle
-    )
-    assert window.viewer.breakdown.pinned
+    assert window.viewer.scene.view.workspace == Workspace.SIMULATE
+    window.viewer.set_workspace(Workspace.VIEW)
+    assert not window.docks.is_open(Panel.SIGNAL_BREAKDOWN)
+    assert window.viewer.breakdown is None
+    window.viewer.set_workspace(Workspace.SIMULATE)
+    assert window.docks.is_open(Panel.SIGNAL_BREAKDOWN)

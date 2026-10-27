@@ -10,9 +10,8 @@ from PySide6.QtWidgets import QCheckBox, QFormLayout, QLabel
 from pytestqt.qtbot import QtBot
 
 from larmor.viewer import TissuePreset, Viewer, ViewKind
-from larmor.viewer.model.settings import PhantomLayout, SettingName
 from larmor.viewer.model.shortcuts import Command
-from larmor.viewer.qt.docks import Panel
+from larmor.viewer.model.view_state import Workspace
 from larmor.viewer.qt.field import FieldLabel
 from larmor.viewer.qt.main_window import MainWindow
 from larmor.viewer.qt.phantom_panel import ChoiceBox, PhantomPanel
@@ -117,14 +116,77 @@ def test_an_empty_phantom_shows_how_to_start(qtbot: QtBot) -> None:
     assert not panel.start_hint.isVisibleTo(panel)
 
 
-def test_the_editor_opens_as_a_window_of_its_own(window: MainWindow) -> None:
+def test_all_settings_shows_every_field_in_a_window_of_its_own(
+    window: MainWindow,
+) -> None:
     window.new_phantom()
-    dock = window.docks.docks[Panel.PHANTOM]
-    assert dock.isInFloatingContainer()
-    panel = window.show_phantom()
+    panel = window.show_all_settings()
     assert panel.window() is not window
-    window.settings.set(SettingName.PHANTOM_LAYOUT, PhantomLayout.ALL)
-    assert panel._column_count > 1  # wide enough for sections side by side
+    assert all(section.isVisible() for section in panel.sections.values())
+    for section in panel.sections.values():
+        assert section.more_button.isHidden()
+        assert section.more.isVisible() == (section.more_form.rowCount() > 0)
+    assert window.show_all_settings() is panel
+
+
+def _guided(qtbot: QtBot, viewer: Viewer) -> PhantomPanel:
+    panel = PhantomPanel(viewer, guided=True)
+    qtbot.addWidget(panel)
+    panel.show_sections(("Scan",))
+    panel.show()
+    return panel
+
+
+def test_a_guided_panel_folds_the_rest_of_a_section_under_more(qtbot: QtBot) -> None:
+    viewer = Viewer()
+    viewer.new_phantom()
+    panel = _guided(qtbot, viewer)
+    scan = panel.sections["Scan"]
+    assert panel.shells.isVisible() and panel.te.isVisible()
+    assert not panel.sequence.isVisible()
+    assert not scan.header.isVisible() and not panel.file_row.isVisible()
+    scan.more_button.click()
+    assert panel.sequence.isVisible()
+    assert not panel.sections["Grid"].isVisible()
+
+
+def test_the_card_of_a_bundle_being_drawn_counts_its_points(qtbot: QtBot) -> None:
+    viewer = Viewer()
+    viewer.new_phantom()
+    panel = PhantomPanel(viewer)
+    qtbot.addWidget(panel)
+    assert not panel.draw_card.isVisibleTo(panel)
+    panel.draw_button.click()
+    assert panel.draw_card.isVisibleTo(panel)
+    for point in [(-10.0, 0.0, 0.0), (10.0, 0.0, 0.0)]:
+        viewer.add_bundle_point(point)
+    assert panel.placed.text() == "2 points placed"
+    panel.finish_button.click()
+    state = viewer.phantom
+    assert state is not None and len(state.bundles) == 1
+    assert not panel.draw_card.isVisibleTo(panel)
+
+
+def test_run_waits_for_a_phantom_that_can_run_and_cancel_for_a_run(
+    qtbot: QtBot,
+) -> None:
+    viewer = Viewer()
+    viewer.new_phantom()
+    panel = PhantomPanel(viewer)
+    qtbot.addWidget(panel)
+    assert not panel.run_button.isEnabled()
+    assert "bundle" in panel.run_button.toolTip()
+    viewer.start_bundle()
+    for point in [(-10.0, 0.0, 0.0), (10.0, 0.0, 0.0)]:
+        viewer.add_bundle_point(point)
+    viewer.finish_bundle()
+    assert panel.run_button.isEnabled()
+    assert not panel.stop_button.isVisibleTo(panel)
+    panel.set_running(True)
+    assert not panel.run_button.isEnabled()
+    assert panel.stop_button.isVisibleTo(panel)
+    panel.set_running(False)
+    assert panel.run_button.isEnabled()
 
 
 def test_a_click_outside_the_grid_is_refused_in_the_status_bar(
@@ -189,4 +251,4 @@ def test_the_window_opens_a_phantom_file_in_the_background(
     qtbot.waitUntil(lambda: window.viewer.phantom is not None, timeout=10_000)
     state = window.viewer.phantom
     assert state is not None and len(state.bundles) == 1
-    assert window.docks.is_open(Panel.PHANTOM)
+    assert window.viewer.scene.view.workspace == Workspace.SIMULATE

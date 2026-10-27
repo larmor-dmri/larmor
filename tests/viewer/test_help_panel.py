@@ -9,8 +9,12 @@ from PySide6.QtWidgets import QMenu
 from pytestqt.qtbot import QtBot
 
 from larmor.viewer.qt import help_panel
-from larmor.viewer.qt.docks import Panel
-from larmor.viewer.qt.help_panel import MAX_IMAGE_WIDTH, HelpPanel, guides
+from larmor.viewer.qt.help_panel import (
+    MAX_IMAGE_WIDTH,
+    HelpPanel,
+    HelpWindow,
+    guides,
+)
 from larmor.viewer.qt.main_window import MainWindow
 
 SHIPPED = Path(str(help_panel.GUIDES))
@@ -188,19 +192,17 @@ def test_a_wide_image_is_shrunk_to_the_maximum_width(
     assert loaded.width() / loaded.devicePixelRatio() == pytest.approx(MAX_IMAGE_WIDTH)
 
 
-def test_the_help_action_toggles_one_help_panel(qtbot: QtBot) -> None:
+def test_the_help_action_opens_one_help_window(qtbot: QtBot) -> None:
     main = MainWindow()
     qtbot.addWidget(main)
     main.show()
     qtbot.waitExposed(main)
     help_menu = next(a.menu() for a in main.menuBar().actions() if a.text() == "&Help")
     assert isinstance(help_menu, QMenu)
-    action = next(a for a in help_menu.actions() if a.text() == "Help")
+    action = next(a for a in help_menu.actions() if a.text() == "&Help")
     action.trigger()
-    first = main.docks.widget(Panel.HELP)
-    assert main.docks.is_open(Panel.HELP) and first.isVisible()
+    [window] = main.findChildren(HelpWindow)
+    assert window.isVisible() and window.isWindow()
+    window.close()
     action.trigger()
-    assert not main.docks.is_open(Panel.HELP)
-    action.trigger()
-    assert main.docks.is_open(Panel.HELP)
-    assert main.findChildren(HelpPanel) == [first]
+    assert main.findChildren(HelpWindow) == [window] and window.isVisible()

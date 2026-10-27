@@ -28,10 +28,16 @@ from larmor.viewer.model.settings import (
     setting_fields,
 )
 from larmor.viewer.qt import settings_panel
-from larmor.viewer.qt.docks import Panel
 from larmor.viewer.qt.field import ChoiceField, ColourField, SliderField
 from larmor.viewer.qt.main_window import MainWindow
-from larmor.viewer.qt.settings_panel import McpSection, McpSwitch, SettingsPanel
+from larmor.viewer.qt.settings_panel import (
+    SCENE_SETTINGS,
+    SHEET_SETTINGS,
+    McpSection,
+    McpSwitch,
+    SettingsPanel,
+    SettingsSheet,
+)
 from larmor.viewer.render import gpu
 from larmor.viewer.render.tractogram_adapter import (
     SLAB_BUDGET,
@@ -276,7 +282,7 @@ def test_a_tractogram_default_leaves_the_open_tractograms_as_they_are(
     assert getattr(window.viewer.scene.item(item.id).options, option) == before
 
 
-def test_ctrl_comma_opens_the_settings_panel_on_the_window_settings(
+def test_ctrl_comma_and_the_gear_open_one_settings_sheet_on_the_window_settings(
     qtbot: QtBot,
 ) -> None:
     window = MainWindow()
@@ -287,10 +293,24 @@ def test_ctrl_comma_opens_the_settings_panel_on_the_window_settings(
     # waitActive can return before the first window of a run is active.
     qtbot.waitUntil(lambda: QApplication.activeWindow() is window)
     QTest.keyClick(window, Qt.Key.Key_Comma, Qt.KeyboardModifier.ControlModifier)
-    dialog = window.docks.widget(Panel.SETTINGS)
-    assert isinstance(dialog, SettingsPanel)
-    assert dialog.isVisible()
-    assert dialog.settings is window.settings
+    [sheet] = window.findChildren(SettingsSheet)
+    assert sheet.isVisible() and sheet.isWindow()
+    assert sheet.panel.settings is window.settings
+    sheet.close()
+    window.header.settings_button.click()
+    assert window.findChildren(SettingsSheet) == [sheet] and sheet.isVisible()
+
+
+def test_the_sheet_and_the_scene_tab_share_the_settings_between_them(
+    qtbot: QtBot,
+) -> None:
+    window = MainWindow()
+    qtbot.addWidget(window)
+    sheet = window.show_settings()
+    # The GPU shows on a computer with two of them, as in these tests.
+    assert set(sheet.panel._fields) == set(SHEET_SETTINGS)
+    assert set(window.inspector.scene_tab.settings_form._fields) == SCENE_SETTINGS
+    assert not SCENE_SETTINGS & set(sheet.panel._fields)
 
 
 # The Settings panel
@@ -367,13 +387,13 @@ def test_a_bad_value_shows_an_error_under_its_field(path: Path, qtbot: QtBot) ->
     settings = Settings(path=path)
     dialog = SettingsPanel(settings)
     qtbot.addWidget(dialog)
-    field = _field(dialog, SettingName.SCREENSHOT_SCALE)
+    field = _field(dialog, SettingName.POINTS_PER_STREAMLINE)
     assert isinstance(field, SliderField)
-    field.text.setText("9")
+    field.text.setText("900")
     field.text.editingFinished.emit()
     error = _error(dialog, field)
     assert error.isVisibleTo(dialog)
-    assert "between 1 and 4" in error.text()
+    assert "between 2 and 200" in error.text()
     assert settings.values == AppSettings()
     assert not path.exists()
 
@@ -442,7 +462,7 @@ def test_a_running_server_moves_to_a_free_port_and_stays_if_the_new_one_is_taken
     window.mcp.token_file = tmp_path / "token"
     window.start_mcp()
     try:
-        section = window.show_settings().mcp
+        section = window.show_settings().panel.mcp
         assert section is not None
         free = free_port()
         settings.set(SettingName.MCP_PORT, free)
