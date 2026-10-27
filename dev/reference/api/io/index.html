@@ -1597,7 +1597,7 @@ coordinates).</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="larmor.io.read_mritoolkit_tracts">
-<span class="sig-prename descclassname"><span class="pre">larmor.io.</span></span><span class="sig-name descname"><span class="pre">read_mritoolkit_tracts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">variable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Tracts'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.read_mritoolkit_tracts" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">larmor.io.</span></span><span class="sig-name descname"><span class="pre">read_mritoolkit_tracts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">variable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Tracts'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.io.read_mritoolkit_tracts" title="Link to this definition">#</a></dt>
 <dd><p>Reads MRIToolkit’s tractography (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Tracts</span></code> and its per-point values).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1609,6 +1609,8 @@ stores no grid of its own.</p></li>
 <li><p><strong>variable</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – The cell of (N, 3) point arrays, in mm along the axes of
 MRIToolkit’s layout, as <code class="xref py py-obj docutils literal notranslate"><span class="pre">Tracts</span></code> holds them. The per-point values are
 read only with <code class="xref py py-obj docutils literal notranslate"><span class="pre">Tracts</span></code>. Defaults to “Tracts”.</p></li>
+<li><p><strong>values</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether to read the per-point values and the lengths, which take
+most of the time with many streamlines. Defaults to True.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
