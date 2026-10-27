@@ -86,7 +86,7 @@ Larmor simulates and processes diffusion MRI from Python and from its command li
   - [FOD glyphs](https://larmor.org/viewer/fod-glyphs/): symmetric and asymmetric FODs
   - [Peaks](https://larmor.org/viewer/peaks/): an FOD's peaks as lines
   - [Settings](https://larmor.org/viewer/settings/): the viewer's preferences
-  - [Screenshots](https://larmor.org/viewer/screenshots/): images, separate views and rotation videos
+  - [Exporting images and videos](https://larmor.org/viewer/screenshots/): presets, images, separate views and rotation videos
   - [Sessions](https://larmor.org/viewer/sessions/): saving what the viewer shows, to open it again later
   - [Surfaces](https://larmor.org/viewer/surfaces/): cortical surfaces in 3D and in the 2D views
   - [MATLAB files](https://larmor.org/viewer/matlab-files/): opening MRIToolkit and ExploreDTI results

@@ -28,7 +28,7 @@ SHIPPED_TITLES = [
     "FOD glyphs",
     "Peaks",
     "Settings",
-    "Screenshots",
+    "Exporting images and videos",
     "Sessions",
     "Driving the viewer from an agent",
     "Surfaces",

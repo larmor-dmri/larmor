@@ -337,7 +337,7 @@ SHORTCUTS: dict[Command, Shortcut] = {
         Shortcut(
             Command.WORKSPACE_SIMULATE,
             ("Ctrl+2",),
-            "Show the Simulate workspace: the phantom editor's steps",
+            "Show the Simulate workspace: the steps of a phantom",
             VIEW_KINDS,
             _workspace(Workspace.SIMULATE),
         ),

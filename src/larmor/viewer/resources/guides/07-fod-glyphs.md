@@ -33,11 +33,11 @@ by the number of coefficients, and refuses a file with neither number.
 
 ## One FOD, large
 
-To look at one voxel's FOD closely, select the FOD in Layers and press **Inspect FOD** in its options; **F**,
-Ctrl+4 and the Inspect FOD icon on the right do the same. The Inspect FOD panel shows the FOD at the crosshair as
-one large, smooth glyph, with the R/L, A/P and S/I axes, and follows the crosshair as you click around. Drag to
-turn it, use the wheel to zoom, and press **Reset view** to start again.
+To look at one voxel's FOD closely, select the FOD in the scene tree and press **Show at the cursor** in its
+options, or open the inspector's Cursor tab. The tab shows the FOD at the crosshair as one large, smooth glyph,
+with the R/L, A/P and S/I axes, and follows the crosshair as you click around. Drag to turn it, use the wheel to
+zoom, and press **Reset view** to start again.
 
-The panel uses the FOD's basis and colouring, but not the threshold, the minimum anisotropy or the scale, so it
-always shows the whole FOD. Outside the FOD's grid it says that there is no FOD there. The panel follows the FOD
-selected in Layers, and keeps showing it while another kind of item is selected.
+The glyph uses the FOD's basis and colouring, but not the threshold, the minimum anisotropy or the scale, so it
+always shows the whole FOD. Outside the FOD's grid it says that there is no FOD there. The tab follows the FOD
+selected in the scene tree, and keeps showing it while another kind of item is selected.

@@ -3,56 +3,51 @@
 A phantom is a made-up subject with a known structure, from which Larmor computes the diffusion images that a
 scanner would record. Because you know what is in every voxel, a phantom lets you test a method against the truth.
 
-The Phantom panel edits a phantom for Larmor's simulation module. Open it with the spline icon on the left or
-**Ctrl+5**. A phantom consists of a voxel grid, tissues, fibre bundles (loaded from files or drawn in the 2D
-views), tissue maps and a scanning protocol. The panel opens as a window of its own, which you can move and
-resize, or dock beside the views like any other panel. When you run the phantom, the viewer simulates the
-diffusion images and opens the results as ordinary items. The File menu has the same commands: New Phantom, Open
-Phantom..., Save Phantom..., Run Phantom and Open Simulation....
+The Simulate workspace edits a phantom for Larmor's simulation module. Choose **Simulate** in the switch at the
+left of the header, or press **Ctrl+2**. A phantom consists of a voxel grid, tissues, fibre bundles (loaded from files
+or drawn in the 2D views), tissue maps and a scanning protocol. When you run the phantom, the viewer simulates the
+diffusion images and opens the results as ordinary items, which the View workspace shows in the scene tree.
 
 ## A first simulation, step by step
 
-The editor has two layouts, chosen with the switch at its top right. **Guided**, the default, takes you through a
-first simulation one step at a time, and **All settings** shows every section of the editor at once. View >
-Guided phantom editor and the Settings panel change the layout too, and the editor remembers your choice.
-
-![The guided phantom editor while a bundle is drawn](images/phantom-guided.png)
-
-In Guided, a list on the left names the five steps of a simulation: Grid, Bundle, Tissue, Scan and Run. A blue
-check mark next to a step shows that it is done, and a short line under it says where it stands, such as the size
-of the grid, the number of points of the bundle being drawn, or the b-value and the number of directions of the
+The panel on the left of the workspace lists the five steps of a simulation: Grid, Bundle, Tissue, Scan and Run. A
+blue check mark next to a step shows that it is done, and a short line under it says where it stands, such as the
+size of the grid, the number of points of the bundle being drawn, or the b-value and the number of directions of the
 scan. The default grid, tissues and scan already work, so those three steps are ticked from the start, and a new
-phantom needs only a bundle before it can run.
+phantom needs only a bundle before it can run. Above the steps, **New** starts a phantom, **Open** reads a phantom
+file or a simulation folder, and **Save** writes the phantom to a file.
 
-The page on the right shows the step you are on: a heading, a few sentences on what the step does and whether its
-defaults are fine, and the sections of the editor that belong to it. **Next** and **Back** move between the
-steps, and clicking a step in the list opens it. You can go to any step at any time and in any order.
+![The Simulate workspace while a bundle is drawn](images/phantom-guided.png)
+
+The panel on the right shows the page of the step you are on: a heading, a few sentences on what the step does, and
+the fields that matter for it. The rest of the step's fields are under a **More** fold at the end of the page, which
+says what it holds. **Next** and **Back** move between the steps, and clicking a step in the list opens it. You can
+go to any step at any time and in any order.
 
 A first simulation follows the steps in their order.
 
 1. Click **New** to start a phantom. It opens on the Grid step, and the grid works as it is, so click **Next**.
-2. On the Bundle step, click **Draw (N)**, place three or four points in a 2D view and press **Enter** to finish
-   the bundle. The new bundle is filled with the WM tissue, a standard model of white matter. To fill it with
-   another tissue, choose one in the bundle's row of the bundles table.
+2. On the Bundle step, choose **Draw bundle** in the toolbar or press **N**, place three or four points in a 2D view
+   and press **Enter** to finish the bundle. The new bundle is filled with the WM tissue, a standard model of white
+   matter. To fill it with another tissue, choose one in the bundle's row of the bundles table.
 3. The Tissue step edits the tissues themselves. You can keep them as they are.
 4. On the Scan step, the default scan is a single-shell acquisition at b = 1000 s/mm^2 with 32 directions and no
-   noise, which you can also keep. **Add shell** adds a shell to the table, and the fields around the table set
-   the timings, the sequence and the noise.
+   noise, which you can also keep. **Add shell** adds a shell to the table, and More holds the sequence, the timings
+   and the gradient files.
 5. On the Run step, **Run** starts the simulation. If no output folder is set, it first asks for a folder to save
    the results in. The results open as items when the run ends.
 
-Under "Optional, any time", the list also links to the tissue maps and the proxy maps, which a first simulation
-does not need. In All settings, the five steps form a row above the sections, each with its check mark, and
-clicking a step scrolls to its section. Both layouts show the same fields, so a change made in one shows in the
-other.
+Under "Optional, any time", the list also links to the Signal breakdown of a voxel (see below), to the tissue maps
+and the background, which a first simulation does not need, and to **All settings**. All settings opens a window
+that shows every section and field of the editor at once, including the proxy maps and the phantom's Close button.
+The pages and the window show the same phantom, so a change made in one shows in the other.
 
 ## Grid and tissues
 
-The Grid section sets the voxel grid of the phantom. Type the size of a box in millimetres and a voxel size, then
+The Grid step sets the voxel grid of the phantom. Type the size of a box in millimetres and a voxel size, then
 click **Use this box**, or take the grid of an image you have loaded. A new phantom starts on the grid of the main
 volume when there is one. The grid's box is outlined in every view while you draw; at other times, **Show the grid
-box** in the Grid section, or View > Phantom grid box, shows or hides the outline, and a session remembers your
-choice.
+box** under the Grid step's More shows or hides the outline, and a session remembers your choice.
 
 The phantom starts with three tissues: white matter (WM), grey matter (GM) and cerebrospinal fluid (CSF). Each
 tissue is either a preset whose parameters you can change, or a list of compartments that you build yourself. A
@@ -80,11 +75,12 @@ bundle gives them, while the dot, the ball, free water, the sphere and the powde
 
 ## Drawing bundles
 
-To draw a bundle, click **Draw (N)** or press **N**. Each click in a 2D view then adds a control point at that
-place in the view's slice and moves the crosshair there, so the other views follow it. A click outside the grid
-box adds no point, and the status bar says why. Scrolling still changes the slice, and Ctrl+drag still pans. The
-bundle is drawn again from its points as you add them. The keys below work only while you draw, so at other times
-they keep their usual meaning in Layers and in dialogs.
+To draw a bundle, choose **Draw bundle** in the toolbar, click **Draw (N)** on the Bundle step, or press **N**. Each
+click in a 2D view then adds a control point at that place in the view's slice and moves the crosshair there, so the
+other views follow it. A click outside the grid box adds no point, and the status bar says why. Scrolling still
+changes the slice, and Ctrl+drag still pans. The bundle is drawn again from its points as you add them. The keys
+below work only while you draw, so at other times they keep their usual meaning in the scene tree and in dialogs.
+While you draw, a card on the Bundle step counts the points placed and has **Finish** and **Cancel**.
 
 | Key | What it does while drawing |
 |---|---|
@@ -93,25 +89,26 @@ they keep their usual meaning in Layers and in dialogs.
 | **Backspace** | Removes the last point |
 | **Escape** | Stops drawing; a new bundle is dropped and an edited one is kept as it was |
 
-A finished bundle is an ordinary tractogram in Layers, so all the tractogram options apply to it. Its row in the
-bundles table chooses the tissue that fills it. When you select a bundle, the editor shows its shape (the number
-of streamlines, the radius, the fanning, the dispersion and the seed) so that you can change it, and **Edit**
-brings its points back into draw mode. The bundle keeps its place in Layers and its options while you edit it.
-You can also make a loaded tractogram a bundle of the phantom with **Use a tractogram...**.
+A finished bundle is an ordinary tractogram in the scene tree, so all the tractogram options apply to it. Its row in
+the bundles table chooses the tissue that fills it. When you select a bundle, the editor shows its shape (the number
+of streamlines, the radius, the fanning, the dispersion and the seed) so that you can change it, and **Edit** brings
+its points back into draw mode. The bundle keeps its place in the scene tree and its options while you edit it. You
+can also make a loaded tractogram a bundle of the phantom with **Use a tractogram...**.
 
 ## Proxy maps
 
-A full simulation takes a while, so the Proxy maps section can show three overlays that follow every edit
-without a run. The bundle fill map shows how much of each voxel the bundles fill; its first volume is all
-bundles together, followed by one volume per bundle. The tissue partition shows the share of each tissue in each
-voxel, with the background last. The expected b0 map shows the signal that a run without noise would give at
+A full simulation takes a while, so the Proxy maps section of the All settings window can show three overlays that
+follow every edit without a run. The bundle fill map shows how much of each voxel the bundles fill; its first volume
+is all bundles together, followed by one volume per bundle. The tissue partition shows the share of each tissue in
+each voxel, with the background last. The expected b0 map shows the signal that a run without noise would give at
 b = 0, which lets you check the effect of a tissue's T2 or proton density before you run.
 
 ## Signal breakdown
 
-The Signal breakdown panel shows how the signal of one voxel comes about. Open it with the chart icon on the
-right or **Ctrl+6**. It splits the signal into the factors that the simulation multiplies together and draws
-them as three stacked bars, with the total of each bar above it.
+The Signal breakdown panel shows how the signal of one voxel comes about. Open it with **Signal breakdown of a
+voxel** under the steps or with **Ctrl+6**; it opens below the views, and it closes while the View workspace shows.
+It splits the signal into the factors that the simulation multiplies together and draws them as three stacked bars,
+with the total of each bar above it.
 
 - The first bar, labelled No decay, is the water in the voxel before any decay: each tissue's share of the voxel
   times the fraction and proton density of each of its compartments.
@@ -148,16 +145,17 @@ models. From Python, `larmor.simulation.signal_breakdown` computes the breakdown
 
 ## Running and saving
 
-The Scan section sets the sequence, the echo and repetition times, the gradient timing, the shells (or a pair of
-bvals and bvecs files) and the noise. **Run** (**Ctrl+R**) checks the phantom and asks for an output folder if
-none is set, and asks before it replaces the outputs of an earlier run. The simulation then runs in the
-background, with its progress and a Cancel button in the status bar. A cancelled run opens nothing.
+The Scan step sets the sequence, the echo and repetition times, the gradient timing, the shells (or a pair of bvals
+and bvecs files) and the noise. **Run** (**Ctrl+R**), on the Run step or in the header, is greyed out until the
+phantom can run, with the first problem as its tooltip. It asks for an output folder if none is set, and asks before
+it replaces the outputs of an earlier run. The simulation then runs in the background, with its progress and a
+Cancel button in the status bar and on the Run step. A cancelled run opens nothing.
 
 The output folder has the same contents as the one that `lar simulate` writes. When the run ends, the diffusion
 images open as the main volume, the tissue masks as overlays and the true fibre directions as peaks. The bundles
 then refer to the streamline files in the folder, so a session saved afterwards keeps everything.
 
-**Save...** writes the phantom to a phantom file, and **Open...** reads it back. From the command line,
+**Save** above the steps writes the phantom to a phantom file, and **Open** reads it back. From the command line,
 `lar bv --phantom scene.phantom.json` opens a phantom file, and `lar bv --simulation folder` opens a simulation
 folder with its phantom in the editor. A saved session also keeps the phantom, and opening the session restores
 the editor. A bundle that you are still drawing is not saved with the session, so finish it first.

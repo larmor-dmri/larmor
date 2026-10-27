@@ -23,14 +23,15 @@ instead, and a warning is written to the log.
 ## Labels in 3D
 
 In the 3D view, the labels you choose are drawn as surfaces in their colours. To choose them, press **Choose
-labels** in the overlay's options. The Labels panel then opens on the left and lists the labels in the image
-with their numbers, names and colours; tick the ones to show. To find labels, type a number or part of a name in
+labels** in the overlay's options. The inspector's Cursor tab then lists the labels in the image with their
+numbers, names and colours; tick the ones to show. To find labels, type a number or part of a name in
 the search field, then use **All** or **None** to tick or untick every label it finds.
 
 No labels are shown at first, so a parcellation takes no time to draw in 3D until you choose some. Each label's
 surface is computed in the background the first time it is shown.
 
-The Labels panel (Ctrl+3) shows the overlay selected in Layers, and keeps showing it while another kind of item is
-selected. When it is closed or auto-hidden, it keeps its search and scroll position. In the overlay's options,
+The list shows the overlay selected in the scene tree while it is shown as labels, and keeps showing it while
+another kind of item is selected. It keeps its search and scroll position while you look at another tab. In the
+overlay's options,
 **Surface** (under 3D) turns all the label surfaces off and on again, and **Opacity (3D)** makes them see-through.
 Neither affects the slices.
