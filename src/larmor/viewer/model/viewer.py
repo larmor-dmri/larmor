@@ -2964,6 +2964,12 @@ class Viewer:
     ) -> tuple[Path, ...]:
         """Draws the three 2D views off screen as a preset says, each into a file.
 
+        Args:
+            preset: The preset.
+            path: The name the files are made from, as in `screenshot_views`.
+            size: Each view's size in logical pixels when the preset has none;
+                `DEFAULT_SIZE` if None.
+
         Returns:
             The paths written: axial, coronal, sagittal.
 
@@ -2991,6 +2997,16 @@ class Viewer:
         on_progress: Progress | None = None,
     ) -> Path | None:
         """Records the 3D view turning, off screen, as a preset says.
+
+        Args:
+            preset: The preset.
+            path: The file to write, .webp or .gif.
+            size: The 3D view's size in logical pixels when the preset has none;
+                `DEFAULT_SIZE` if None.
+            speed: Degrees the scene turns per second.
+            duration: Seconds of video.
+            fps: Frames per second.
+            on_progress: Called after each frame, as in `record_rotation`.
 
         Returns:
             The path written, or None if on_progress cancelled the video.

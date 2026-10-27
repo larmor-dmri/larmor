@@ -5,8 +5,8 @@ import pytest
 from pytestqt.qtbot import QtBot
 
 from larmor.types import Volume
-from larmor.viewer import Category, Convention, OptionName, Viewer
-from larmor.viewer.model.camera import PRESETS, CameraPreset
+from larmor.viewer import CameraPreset, Category, Convention, OptionName, Viewer
+from larmor.viewer.model.camera import PRESETS
 from larmor.viewer.model.settings import SettingName, Settings
 from larmor.viewer.model.view_state import Layout
 from larmor.viewer.qt.inspector import Inspector, InspectorTab, layer_readout

@@ -16,6 +16,14 @@ from larmor.viewer.qt.export_sheet import ExportSheet, PresetDialog
 from larmor.viewer.qt.main_window import MainWindow
 
 
+@pytest.fixture(autouse=True)
+def _own_presets(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # The presets edited here go to a folder of this test's own.
+    from larmor.viewer.model import settings
+
+    monkeypatch.setattr(settings, "settings_path", lambda: tmp_path / "viewer.toml")
+
+
 @pytest.fixture
 def window(qtbot: QtBot) -> MainWindow:
     viewer = Viewer()
