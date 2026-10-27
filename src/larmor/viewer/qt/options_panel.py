@@ -125,7 +125,7 @@ class OptionsPanel(QScrollArea):
         self._apply_rules()
 
     def _build(self) -> None:
-        """Builds the page of the item or category selected in Layers."""
+        """Builds the page of the item or category selected in the scene tree."""
         form = QWidget()
         form.setObjectName("optionsForm")
         layout = form_layout(form)
@@ -138,7 +138,7 @@ class OptionsPanel(QScrollArea):
         self._extra = None
         target = self.viewer.scene.view.selected
         if target is None:
-            layout.addRow(QLabel("Select an item or a category in Layers."))
+            layout.addRow(QLabel("Select an item or a category in the scene tree."))
         else:
             self._build_page(layout, form, target)
 

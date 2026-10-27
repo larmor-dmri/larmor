@@ -73,7 +73,7 @@ class SettingName(StrEnum):
 
 @dataclass(frozen=True)
 class AppSettings:
-    """The preferences of the whole viewer, as the Settings panel shows them."""
+    """The preferences of the whole viewer, as the Settings sheet shows them."""
 
     theme: Theme = option(
         Theme.SYSTEM,

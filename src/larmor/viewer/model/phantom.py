@@ -80,7 +80,7 @@ class EchoKind(StrEnum):
 
 
 class ProxyMap(StrEnum):
-    """A map of the phantom the Phantom panel shows without a simulation.
+    """A map of the phantom the editor shows without a simulation.
 
     It is an overlay that follows every edit of the phantom.
     """

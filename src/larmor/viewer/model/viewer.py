@@ -2074,8 +2074,8 @@ class Viewer:
     def set_default(self, category: Category, name: OptionName, value: object) -> None:
         """Sets the value an option starts with on the items added to a category.
 
-        Items already in the scene keep their value. The Settings panel uses it
-        for the default interpolation of new images.
+        Items already in the scene keep their value. The window uses it for the
+        settings of new images and tractograms.
 
         Args:
             category: The category whose new items start with the value.
@@ -2212,9 +2212,9 @@ class Viewer:
 
     @agent_action
     def select(self, target: ItemId | Category | None) -> None:
-        """Selects an item or a category, as a click in Layers does.
+        """Selects an item or a category, as a click in the scene tree does.
 
-        The selection is what the Options panel shows, and the image the left
+        The selection is what the inspector's Item tab shows, and the image the left
         and right arrows step through.
 
         Args:

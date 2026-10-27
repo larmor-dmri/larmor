@@ -1195,7 +1195,7 @@ def _session_name(path: str | Path) -> str:
 
 
 def _category_of(viewer: Viewer, target: ItemId | Category | None) -> Category:
-    """Returns the category a Layers selection stands for; Volumes if none."""
+    """Returns the category the scene tree's selection stands for; Volumes if none."""
     if target is None:
         return Category.VOLUMES
     if isinstance(target, Category):

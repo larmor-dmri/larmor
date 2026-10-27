@@ -43,7 +43,7 @@ COLORMAPS: tuple[Colormap, ...] = tuple(Colormap)
 
 
 class OptionGroup(StrEnum):
-    """The sections of the Options panel, in the order they are shown."""
+    """The sections of the inspector's Item tab, in the order they are shown."""
 
     DISPLAY = "Display"
     GLYPHS = "Glyphs"
@@ -137,7 +137,7 @@ class OptionInfo:
     panel: bool = True  # False for one edited in its own window, not the panel
     item_ref: bool = False  # another item's id, or None for no item
     data_key: bool = False  # the name of some of the item's data, or None
-    group: OptionGroup | None = None  # its Options panel section; None for settings
+    group: OptionGroup | None = None  # its section of the Item tab; None for settings
     help: str = ""  # one sentence explaining it, shown as a tooltip; "" for none
     # Shown in the panel only while this holds of the item's options; None for always.
     shown_when: Callable[[Any], bool] | None = None
@@ -523,7 +523,7 @@ class OverlayOptions(VolumeOptions):
         "format); empty for built-in colours.",
         enabled_when=_without_dti,
     )  # "" for the built-in colours
-    # The labels drawn as surfaces in the 3D view, chosen in the Labels panel; none
+    # The labels drawn as surfaces in the 3D view, chosen in the Cursor tab; none
     # at first, as an aparc+aseg's hundred surfaces take a while to compute.
     surface_labels: tuple[int, ...] = option(
         (),
@@ -565,7 +565,7 @@ class RegionRole(StrEnum):
     WITHIN = "within"  # streamlines stay inside it
 
 
-# The defaults new tractograms start with; the Settings panel changes them.
+# The defaults new tractograms start with; the Settings sheet changes them.
 POINTS_PER_STREAMLINE: Final = 20
 SLAB_THICKNESS: Final = 5.0  # mm, centred on the slice
 
