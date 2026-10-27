@@ -10,6 +10,7 @@ from larmor.io import (
     read_mritoolkit_fit,
     read_mritoolkit_frame,
     read_mritoolkit_map,
+    read_mritoolkit_tracts,
     read_mritoolkit_volume,
 )
 from larmor.sd.sh import build_basis_matrix
@@ -20,6 +21,7 @@ from larmor.viewer.model.matlab_import import (
     MatlabPart,
     PartKind,
     find_reference,
+    read_part,
     suggest_preset,
 )
 from larmor.viewer.model.surface import SurfaceData
@@ -193,7 +195,17 @@ def test_values_per_point_colour_a_loaded_tractogram() -> None:
     values = viewer._tsf_point_values(tracts.id)
     assert isinstance(tracts.data, Tractogram)
     assert values is not None
-    np.testing.assert_allclose(values, tracts.data.point_data["MD"])
+    stored = read_mritoolkit_tracts(DATA / "tracts.mat", FIT).point_data["MD"]
+    np.testing.assert_allclose(values, stored)
+
+
+def test_the_tractography_preset_reads_the_points_only() -> None:
+    # The per-point values of a large tractography take far longer to read than
+    # the points, and the viewer never shows them.
+    part = MatlabPart(PartKind.TRACTS, "Tracts", 0, FIT)
+    tracts = read_part(DATA / "tracts.mat", part, None, None)
+    assert isinstance(tracts, Tractogram)
+    assert tracts.point_data == {} and tracts.streamline_data == {}
 
 
 def test_values_per_point_may_be_rows_and_a_missing_one_adds_nothing(

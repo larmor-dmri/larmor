@@ -440,7 +440,11 @@ def _fod_structs(f: MatlabFile) -> list[str]:
 
 
 def read_mritoolkit_tracts(
-    source: MatlabSource, reference: Reference, *, variable: str = "Tracts"
+    source: MatlabSource,
+    reference: Reference,
+    *,
+    variable: str = "Tracts",
+    values: bool = True,
 ) -> Tractogram:
     """Reads MRIToolkit's tractography (`Tracts` and its per-point values).
 
@@ -452,6 +456,8 @@ def read_mritoolkit_tracts(
         variable: The cell of (N, 3) point arrays, in mm along the axes of
             MRIToolkit's layout, as `Tracts` holds them. The per-point values are
             read only with `Tracts`. Defaults to "Tracts".
+        values: Whether to read the per-point values and the lengths, which take
+            most of the time with many streamlines. Defaults to True.
 
     Returns:
         The streamlines in world coordinates, with the reference grid. Each
@@ -498,9 +504,10 @@ def read_mritoolkit_tracts(
     )
     world = ijk @ grid.affine[:3, :3].T + grid.affine[:3, 3]
 
-    point_data = _tract_point_data(f, counts) if variable == "Tracts" else {}
+    with_values = values and variable == "Tracts"
+    point_data = _tract_point_data(f, counts) if with_values else {}
     streamline_data: dict[str, np.ndarray] = {}
-    if "TractL" in f and variable == "Tracts":
+    if "TractL" in f and with_values:
         lengths = np.array([np.ravel(v)[0] for v in _cell_of_arrays(f, "TractL")])
         if len(lengths) == len(counts):
             streamline_data["L"] = lengths
