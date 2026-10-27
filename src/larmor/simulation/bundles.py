@@ -1,11 +1,11 @@
 """Synthetic fibre bundles, drawn as streamlines around a smooth centreline."""
 
 import math
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 
 import numpy as np
-from scipy.interpolate import BSpline, make_interp_spline
+from scipy.interpolate import PchipInterpolator
 
 from larmor.types import Tractogram
 
@@ -15,12 +15,12 @@ class BundleGeometry:
     """The shape of a synthetic bundle.
 
     A geometry describes a bundle by a few control points along its centreline,
-    a radius, and how much the bundle fans out at its ends. Each streamline is a
-    spline through the control points, shifted across the centreline by an
-    offset drawn uniformly in a disc of `radius`. The offset is scaled by
+    a radius, and how much the bundle fans out at its ends. Each streamline
+    follows the centreline (see `centreline_spline`) at a fixed offset across
+    it, drawn uniformly in a disc of `radius`. The offset is scaled by
     1 + fan_start (1 - u)^p + fan_end u^p, where u in [0, 1] is the position
-    along the centreline and p is fan_sharpness. A random wander of standard
-    deviation `dispersion` is added at the inner control points.
+    along the centreline and p is fan_sharpness. A smooth random wander of
+    standard deviation `dispersion`, zero at both ends, is added along the way.
 
     Args:
         control_points: (K, 3) points the centreline passes through, K >= 2, in
@@ -105,25 +105,106 @@ class BundleGeometry:
         return cls(**values)  # type: ignore[arg-type]
 
 
-def centreline_spline(control_points: np.ndarray) -> tuple[BSpline, np.ndarray]:
-    """Returns the centreline of a bundle, the spline through its control points.
+# Samples per centreline segment in the table that maps arc length to the curve.
+_SAMPLES_PER_SEGMENT = 64
 
-    The spline is cubic, or of lower degree for fewer than four points, and
-    parameterised by chord length scaled to [0, 1].
+
+@dataclass(frozen=True, eq=False)
+class Centreline:
+    """A bundle's centreline as a curve of u in [0, 1] that follows its arc length.
+
+    Calling it with an array of u returns the (N, 3) points there.
+    """
+
+    coefficients: np.ndarray  # (K - 1, 4, 3) cubic coefficients per segment
+    u_table: np.ndarray  # u of the arc length table's samples
+    g_table: np.ndarray  # segment number plus position in it, of the same samples
+    length: float  # the curve's length, mm
+
+    def __call__(self, u: np.ndarray) -> np.ndarray:
+        """Returns the points at u, (N, 3)."""
+        return self._evaluate(u, derivative=False)
+
+    def derivative(self) -> Callable[[np.ndarray], np.ndarray]:
+        """Returns the function that gives the curve's derivative with respect to u.
+
+        The derivative has the curve's length as its norm, since u follows the
+        arc length.
+        """
+
+        def derivative(u: np.ndarray) -> np.ndarray:
+            velocity = self._evaluate(u, derivative=True)
+            speed = np.linalg.norm(velocity, axis=-1, keepdims=True)
+            result: np.ndarray = velocity / np.maximum(speed, 1e-300) * self.length
+            return result
+
+        return derivative
+
+    def _evaluate(self, u: np.ndarray, *, derivative: bool) -> np.ndarray:
+        """Returns the points, or their derivatives within a segment, at u."""
+        g = np.interp(np.asarray(u, dtype=np.float64), self.u_table, self.g_table)
+        segment = np.clip(np.floor(g).astype(np.int64), 0, len(self.coefficients) - 1)
+        s = (g - segment)[..., None]
+        c = self.coefficients[segment]  # (..., 4, 3)
+        result: np.ndarray
+        if derivative:
+            result = c[..., 1, :] + s * (2 * c[..., 2, :] + 3 * s * c[..., 3, :])
+        else:
+            result = c[..., 0, :] + s * (
+                c[..., 1, :] + s * (c[..., 2, :] + s * c[..., 3, :])
+            )
+        return result
+
+
+def centreline_spline(control_points: np.ndarray) -> tuple[Centreline, np.ndarray]:
+    """Returns the centreline of a bundle, the curve through its control points.
+
+    The curve is a centripetal Catmull-Rom spline, which passes through every
+    control point without loops or cusps between them; mirrored points past the
+    ends set its direction there, so two control points give a straight segment.
 
     Args:
-        control_points: The control points, (K, 3), in world mm, K >= 2.
+        control_points: The control points, (K, 3), in world mm, K >= 2, with no
+            two consecutive points equal.
 
     Returns:
-        The spline of u in [0, 1], and (K,) the u of each control point.
+        The curve, and (K,) the u of each control point.
+
+    References:
+        Yuksel, C., Schaefer, S. and Keyser, J. Parameterization and
+        applications of Catmull-Rom curves. Computer-Aided Design 43(7),
+        747-755 (2011). doi:10.1016/j.cad.2010.08.008
     """
     control = np.asarray(control_points, dtype=np.float64)
-    chord = np.concatenate(
-        [[0.0], np.cumsum(np.linalg.norm(np.diff(control, axis=0), axis=1))]
+    ends = np.vstack(
+        [2 * control[0] - control[1], control, 2 * control[-1] - control[-2]]
     )
-    u_control = chord / chord[-1]
-    degree = min(3, len(control) - 1)
-    return make_interp_spline(u_control, control, k=degree), u_control
+    p0, p1, p2, p3 = ends[:-3], ends[1:-2], ends[2:-1], ends[3:]
+
+    # Knot intervals: the square root of the distance between points (alpha = 0.5).
+    def interval(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+        result: np.ndarray = np.sqrt(np.linalg.norm(b - a, axis=1))[:, None]
+        return result
+
+    d01, d12, d23 = interval(p0, p1), interval(p1, p2), interval(p2, p3)
+    # The tangents at both ends of each segment, scaled to a segment of length one.
+    m1 = ((p1 - p0) / d01 - (p2 - p0) / (d01 + d12) + (p2 - p1) / d12) * d12
+    m2 = ((p2 - p1) / d12 - (p3 - p1) / (d12 + d23) + (p3 - p2) / d23) * d12
+    coefficients = np.stack(
+        [p1, m1, -3 * p1 + 3 * p2 - 2 * m1 - m2, 2 * p1 - 2 * p2 + m1 + m2], axis=1
+    )
+
+    count = len(coefficients)
+    s = np.linspace(0.0, 1.0, _SAMPLES_PER_SEGMENT + 1)[:-1]
+    g_table = np.append((np.arange(count)[:, None] + s).ravel(), float(count))
+    curve = Centreline(coefficients, np.linspace(0.0, 1.0, len(g_table)), g_table, 1.0)
+    samples = curve._evaluate(curve.u_table, derivative=False)
+    arc = np.concatenate(
+        [[0.0], np.cumsum(np.linalg.norm(np.diff(samples, axis=0), axis=1))]
+    )
+    u_table = arc / arc[-1]
+    curve = Centreline(coefficients, u_table, g_table, float(arc[-1]))
+    return curve, u_table[::_SAMPLES_PER_SEGMENT].copy()
 
 
 def create_bundle(geometry: BundleGeometry, *, index: int = 0) -> Tractogram:
@@ -139,34 +220,27 @@ def create_bundle(geometry: BundleGeometry, *, index: int = 0) -> Tractogram:
         world coordinates (mm).
     """
     rng = np.random.default_rng(geometry.seed)
-    control = geometry.control_points
-    count = len(control)
-    centreline, u_control = centreline_spline(control)
-    degree = min(3, count - 1)
-    tangents = centreline.derivative()(u_control)
+    centreline, u_control = centreline_spline(geometry.control_points)
+    u = np.linspace(0.0, 1.0, geometry.num_points)
+    centre = centreline(u)
+    tangents = centreline.derivative()(u)
     tangents /= np.linalg.norm(tangents, axis=1, keepdims=True)
     normals, binormals = _transported_frames(tangents)
 
     p = geometry.fan_sharpness
-    fan = (
-        1 + geometry.fan_start * (1 - u_control) ** p + geometry.fan_end * u_control**p
-    )
+    fan = 1 + geometry.fan_start * (1 - u) ** p + geometry.fan_end * u**p
     num = geometry.num_streamlines
     radius = geometry.radius * np.sqrt(rng.random(num))
     angle = 2 * np.pi * rng.random(num)
-    across = (radius * np.cos(angle))[:, None, None] * normals[None] + (
-        radius * np.sin(angle)
-    )[:, None, None] * binormals[None]
-    offsets = fan[None, :, None] * across
+    # Each streamline's place in the disc, (S, N, 2) in the frames' coordinates.
+    across = np.stack([radius * np.cos(angle), radius * np.sin(angle)], axis=1)
+    disc = fan[None, :, None] * across[:, None, :]
     if geometry.dispersion > 0:
-        wander = geometry.dispersion * rng.standard_normal((num, count, 2))
-        wander[:, [0, -1]] = 0.0
-        offsets += wander[..., :1] * normals[None] + wander[..., 1:] * binormals[None]
-
-    shifted = control[None] + offsets  # (S, K, 3)
-    spline = make_interp_spline(u_control, np.moveaxis(shifted, 1, 0), k=degree)
-    u = np.linspace(0.0, 1.0, geometry.num_points)
-    points = np.moveaxis(spline(u), 0, 1).reshape(-1, 3)  # (S * num_points, 3)
+        wander = geometry.dispersion * rng.standard_normal((len(u_control), num, 2))
+        wander[[0, -1]] = 0.0
+        disc += np.moveaxis(PchipInterpolator(u_control, wander, axis=0)(u), 0, 1)
+    offsets = disc[..., :1] * normals[None] + disc[..., 1:] * binormals[None]
+    points = (centre[None] + offsets).reshape(-1, 3)  # (S * num_points, 3)
     offsets_index = np.arange(num + 1, dtype=np.int64) * geometry.num_points
     return Tractogram(
         points,
@@ -181,8 +255,11 @@ def _transported_frames(tangents: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     Each normal is the previous one carried along by parallel transport, so the
     frame does not spin around the centreline.
 
+    Args:
+        tangents: The (N, 3) unit tangents, in order along the curve.
+
     Returns:
-        The (K, 3) unit normals and binormals.
+        The (N, 3) unit normals and binormals.
     """
     first = tangents[0]
     helper = np.array([1.0, 0, 0]) if abs(first[0]) < 0.9 else np.array([0, 1.0, 0])
