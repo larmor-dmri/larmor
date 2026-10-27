@@ -384,6 +384,8 @@ def save_figure(
         view = parent.views[detail.view]
         view.set_camera(camera=Camera2D())
         parent.scene_renderer.detail_boxes.show(False)
+        # A figure shows the view without the crosshair.
+        parent.scene_renderer.annotations.crosshairs[detail.view].visible = False
         parent.flush()
         whole = parent.render(detail.view, overlay=False)
         grid = viewer._reference_grid()
