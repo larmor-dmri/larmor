@@ -16,6 +16,7 @@ from larmor.viewer.model.shortcuts import (
     SHORTCUTS,
     ZOOM_STEP,
     Command,
+    views_text,
 )
 from larmor.viewer.qt.field import ChoiceField, SliderField
 from larmor.viewer.qt.main_window import MainWindow
@@ -456,8 +457,7 @@ def test_the_shortcuts_list_has_a_row_per_mouse_control(qtbot: QtBot) -> None:
         gesture = control.gesture
         if sys.platform == "darwin":
             gesture = gesture.replace("Ctrl", "Cmd")
-        where = "3D" if control.views == (ViewKind.THREE_D,) else "2D views"
-        assert row == [gesture, control.description, where]
+        assert row == [gesture, control.description, views_text(control.views)]
 
 
 def test_help_shortcuts_opens_the_list(
