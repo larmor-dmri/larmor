@@ -63,7 +63,7 @@ class _StraightAlphaPass(OutputPass):  # type: ignore[misc]
     wgsl = _SSAA.replace(_PREMULTIPLIED, _STRAIGHT)
 
 
-def _straight_alpha(renderer: gfx.WgpuRenderer) -> None:
+def straight_alpha(renderer: gfx.WgpuRenderer) -> None:
     """Makes a renderer write straight colour and alpha, if pygfx's pass allows."""
     if _PREMULTIPLIED not in _SSAA:
         LarmorLogger.warning(
@@ -96,6 +96,31 @@ class _Canvas(RenderCanvas):  # type: ignore[misc]
         super().request_draw(draw_function)
         if self._changed is not None:
             self._changed()
+
+
+def image_canvas(size: tuple[int, int], scale: float) -> RenderCanvas:
+    """Returns a canvas that draws one picture into memory, its work done at once.
+
+    Args:
+        size: The width and height in logical pixels.
+        scale: Pixels per logical pixel.
+
+    Raises:
+        ValueError: If size or scale is not positive, or the picture is larger
+            than the GPU draws.
+    """
+    width, height = _check_size(size, scale)
+    return _Canvas(size=(width, height), pixel_ratio=float(scale))
+
+
+def draw_view(view: ViewRenderer, transparent: bool) -> np.ndarray:
+    """Returns one view's picture as RGBA, its background transparent if asked."""
+    view.background.visible = not transparent
+    try:
+        image = np.asarray(view.canvas.draw()).copy()
+    finally:
+        view.background.visible = True
+    return image
 
 
 class OffscreenRenderer:
@@ -148,7 +173,7 @@ class OffscreenRenderer:
             for kind in VIEW_KINDS
         }
         for view in self.views.values():
-            _straight_alpha(view.renderer)
+            straight_alpha(view.renderer)
         self.scene_renderer = SceneRenderer(viewer, self.views)
 
     def resize(self, size: tuple[int, int], scale: float | None = None) -> None:

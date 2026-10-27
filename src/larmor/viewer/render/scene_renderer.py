@@ -22,6 +22,7 @@ from larmor.viewer.render.fod_adapter import FodAdapter
 from larmor.viewer.render.navigation import Navigation
 from larmor.viewer.render.peaks_adapter import PeaksAdapter
 from larmor.viewer.render.phantom_guides import PhantomGuides
+from larmor.viewer.render.regions_guides import DetailBoxes, RegionGuides
 from larmor.viewer.render.surface_adapter import SurfaceAdapter
 from larmor.viewer.render.tractogram_adapter import (
     SLAB_BUDGET,
@@ -67,6 +68,8 @@ class SceneRenderer:
         self.annotations = Annotations(viewer, views)
         self.view_labels = ViewLabels(viewer, views)
         self.phantom_guides = PhantomGuides(viewer, views)
+        self.region_guides = RegionGuides(viewer, views)
+        self.detail_boxes = DetailBoxes(viewer, views)
         for view in views.values():
             view.show_overlay(viewer.scene.view.overlay_visible)
         self._unsubscribe = viewer.scene.subscribe(self._on_event)
@@ -132,6 +135,8 @@ class SceneRenderer:
         self.annotations.on_event(event)
         self.view_labels.on_event(event)
         self.phantom_guides.on_event(event)
+        self.region_guides.on_event(event)
+        self.detail_boxes.on_event(event)
         if (
             isinstance(event, ViewStateChanged)
             and event.name == ViewField.OVERLAY_VISIBLE
@@ -197,3 +202,5 @@ class SceneRenderer:
         self.annotations.close()
         self.view_labels.close()
         self.phantom_guides.close()
+        self.region_guides.close()
+        self.detail_boxes.close()

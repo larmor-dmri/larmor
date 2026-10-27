@@ -64,6 +64,8 @@ if importlib.util.find_spec("pygfx") is None:
         "viewer/test_screenshot.py",
         "viewer/test_worker.py",
         "viewer/test_view_labels.py",
+        "viewer/test_render_regions.py",
+        "viewer/test_detail_renderer.py",
     ]
 if importlib.util.find_spec("mcp") is None:
     collect_ignore += ["viewer/test_mcp_server.py"]
