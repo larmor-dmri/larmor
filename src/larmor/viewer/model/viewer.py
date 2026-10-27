@@ -1303,7 +1303,7 @@ class Viewer:
     def add_bundle_stroke(self, points: list[tuple[float, float, float]]) -> int:
         """Adds the control points of a stroke, as a freehand drag draws one.
 
-        The stroke becomes the fewest points evenly spaced along it, at most 12
+        The stroke becomes the fewest points evenly spaced along it, at most 24
         and always its first and last, whose centreline stays within about one
         voxel of the views' grid of the stroke; those inside the phantom's grid
         box are added at the end of the bundle being drawn.

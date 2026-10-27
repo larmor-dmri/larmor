@@ -6,7 +6,11 @@ from scipy.spatial import cKDTree
 
 from larmor.simulation.bundles import centreline_spline
 from larmor.viewer import Tool, Viewer
-from larmor.viewer.model.phantom_editor import simplify_stroke
+from larmor.viewer.model.phantom_editor import (
+    BUNDLE_POINTS_DRAWN,
+    STROKE_POINTS,
+    simplify_stroke,
+)
 from larmor.viewer.model.shortcuts import Command, run
 from larmor.viewer.model.view_state import ViewState
 
@@ -25,7 +29,7 @@ def test_an_arc_gives_evenly_spaced_points_whose_centreline_follows_it() -> None
     x = 30.0 * np.linspace(0.0, 1.0, 300) ** 2
     stroke = [(float(a), a * a / 20.0, 0.0) for a in x]
     kept = np.array(simplify_stroke(stroke, 0.5))
-    assert 2 < len(kept) <= 12
+    assert 2 < len(kept) <= STROKE_POINTS
     fine = np.linspace(0.0, 30.0, 100001)
     arc = np.concatenate(
         [[0.0], np.cumsum(np.hypot(np.diff(fine), np.diff(fine**2 / 20.0)))]
@@ -38,11 +42,19 @@ def test_an_arc_gives_evenly_spaced_points_whose_centreline_follows_it() -> None
     assert nearest.query(curve)[0].max() <= 0.5
 
 
-def test_a_long_curve_gives_at_most_twelve_points_with_both_ends() -> None:
+def test_a_long_curve_gives_at_most_the_cap_of_points_with_both_ends() -> None:
     circle = [(20 * math.cos(t), 20 * math.sin(t), 0.0) for t in np.linspace(0, 6, 400)]
     kept = simplify_stroke(circle, 0.01)
-    assert 2 < len(kept) <= 12
+    assert 2 < len(kept) <= STROKE_POINTS
     assert kept[0] == circle[0] and kept[-1] == circle[-1]
+
+
+def test_a_drawn_bundle_is_shown_with_smooth_bends() -> None:
+    viewer = Viewer()
+    viewer.start_bundle()
+    viewer.add_bundle_stroke([(-20.0, 0.0, 0.0), (0.0, 15.0, 0.0), (20.0, 0.0, 0.0)])
+    item = viewer.finish_bundle()
+    assert item.options.points == BUNDLE_POINTS_DRAWN  # type: ignore[attr-defined]
 
 
 def test_a_stroke_that_never_moves_gives_one_point() -> None:

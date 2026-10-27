@@ -74,7 +74,9 @@ type ShownBundles = list[tuple[BundleSettings, Tractogram, Path | None]]
 type ShownMaps = list[tuple[str, Volume, Path | None]]
 
 # The most control points one freehand stroke gives.
-STROKE_POINTS = 12
+STROKE_POINTS = 24
+# The points per streamline a newly drawn bundle is shown with.
+BUNDLE_POINTS_DRAWN = 100
 # The colormap each proxy map starts with.
 PROXY_COLORMAPS = {
     ProxyMap.FILL: Colormap.HOT,
@@ -585,6 +587,8 @@ class PhantomEditor:
         name = f"Bundle {len(state.bundles) + 1}"
         item = self.viewer.add(streamlines, Category.TRACTOGRAMS, name=name)
         self.viewer.set(item.id, OptionName.COLOURING, Colouring.PER_TRACTOGRAM)
+        # Enough points per drawn streamline that a bend looks smooth in 2D.
+        self.viewer.set(item.id, OptionName.POINTS, BUNDLE_POINTS_DRAWN)
         state = self.require()
         assert state.draft is not None
         self._set(
