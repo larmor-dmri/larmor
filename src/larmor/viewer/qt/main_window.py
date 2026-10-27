@@ -116,6 +116,55 @@ class RunJobBar(JobBar):
         self.running.emit(status is not None)
 
 
+class Workspaces(QObject):
+    """Shows the panels of the workspace the view state names either side of the views.
+
+    The Signal breakdown belongs to Simulate: it closes in View and opens again
+    in Simulate if it was open.
+    """
+
+    def __init__(
+        self,
+        viewer: Viewer,
+        docks: Docks,
+        view: tuple[QWidget, QWidget],
+        simulate: tuple[QWidget, QWidget],
+        parent: QObject,
+    ) -> None:
+        """Holds each workspace's left and right panels, and shows the current ones."""
+        super().__init__(parent)
+        self.viewer = viewer
+        self.docks = docks
+        self.panels = {Workspace.VIEW: view, Workspace.SIMULATE: simulate}
+        self.breakdown_was_open = False  # in Simulate, when View was last shown
+        unsubscribe = viewer.scene.subscribe(self._on_event)
+        self.destroyed.connect(lambda *_: unsubscribe())
+        self.show()
+
+    def _on_event(self, event: Event) -> None:
+        """Shows the workspace's panels when the workspace changes."""
+        if isinstance(event, ViewStateChanged) and event.name == ViewField.WORKSPACE:
+            self.show()
+
+    def show(self) -> None:
+        """Shows the current workspace's panels and dock titles."""
+        workspace = self.viewer.scene.view.workspace
+        left, right = self.panels[workspace]
+        for widget in (left, right):
+            stack = widget.parentWidget()
+            assert isinstance(stack, QStackedWidget)
+            stack.setCurrentWidget(widget)
+        titles = SIDE_TITLES[workspace]
+        self.docks.set_title(Panel.LEFT, titles[0])
+        self.docks.set_title(Panel.RIGHT, titles[1])
+        if workspace == Workspace.SIMULATE:
+            if self.breakdown_was_open:
+                self.docks.open(Panel.SIGNAL_BREAKDOWN)
+        else:
+            self.breakdown_was_open = self.docks.is_open(Panel.SIGNAL_BREAKDOWN)
+            self.docks.close(Panel.SIGNAL_BREAKDOWN)
+
+
 class MainWindow(QMainWindow):
     """The viewer's window."""
 
@@ -154,21 +203,24 @@ class MainWindow(QMainWindow):
             self,
             self.views,
             {Panel.LEFT: self.left, Panel.RIGHT: self.right},
-            partial(_breakdown_panel, self.viewer, self),
+            partial(_breakdown_panel, self.viewer),
         )
         self._build_menus()
         self._connect()
         self._sheets: dict[str, QWidget] = {}  # the sheets and windows opened once
-        self._breakdown_was_open = False  # in Simulate, when View was shown
         self.layout_path = (
             self.settings.path.parent / LAYOUT_FILE
             if self.settings.path is not None
             else None
         )
         self._layout_restored = False  # restored when the window first shows
-        unsubscribe = self.viewer.scene.subscribe(self._on_event)
-        self.destroyed.connect(lambda *_: unsubscribe())
-        self._show_workspace()
+        self.workspaces = Workspaces(
+            self.viewer,
+            self.docks,
+            (self.scene_panel, self.inspector),
+            (self.steps_panel, self.step_page),
+            self,
+        )
 
     def _create_panels(self) -> None:
         """Creates the panels of both workspaces, stacked on each side of the views."""
@@ -408,6 +460,7 @@ class MainWindow(QMainWindow):
 
     def _build_view_menu(self, view: QMenu) -> None:
         """Fills the View menu; its ticks are read from the view state when it opens."""
+        viewer = self.viewer  # not `self` in the lambdas, as for the renderer
         overlay = self.shortcuts[Command.INFORMATION_OVERLAY]
         overlay.setText("&Information overlay")
         overlay.setCheckable(True)
@@ -425,7 +478,7 @@ class MainWindow(QMainWindow):
         for layout, name in LAYOUT_NAMES.items():
             action = layouts.addAction(name)
             action.setCheckable(True)
-            action.triggered.connect(lambda _, lay=layout: self.viewer.set_layout(lay))
+            action.triggered.connect(lambda _, lay=layout, v=viewer: v.set_layout(lay))
             group.addAction(action)
             self.layout_actions[layout] = action
         camera = view.addMenu("3D &camera")
@@ -490,30 +543,6 @@ class MainWindow(QMainWindow):
     def set_workspace(self, workspace: Workspace) -> None:
         """Shows a workspace, as its switch in the header does."""
         self.viewer.set_workspace(workspace)
-
-    def _on_event(self, event: Event) -> None:
-        """Shows the workspace's panels when the workspace changes."""
-        if isinstance(event, ViewStateChanged) and event.name == ViewField.WORKSPACE:
-            self._show_workspace()
-
-    def _show_workspace(self) -> None:
-        """Shows the panels of the workspace either side of the views.
-
-        The Signal breakdown belongs to Simulate: it closes in View and opens
-        again in Simulate if it was open.
-        """
-        workspace = self.viewer.scene.view.workspace
-        simulate = workspace == Workspace.SIMULATE
-        self.left.setCurrentWidget(self.steps_panel if simulate else self.scene_panel)
-        self.right.setCurrentWidget(self.step_page if simulate else self.inspector)
-        left, right = SIDE_TITLES[workspace]
-        self.docks.set_title(Panel.LEFT, left)
-        self.docks.set_title(Panel.RIGHT, right)
-        if simulate and self._breakdown_was_open:
-            self.docks.open(Panel.SIGNAL_BREAKDOWN)
-        elif not simulate:
-            self._breakdown_was_open = self.docks.is_open(Panel.SIGNAL_BREAKDOWN)
-            self.docks.close(Panel.SIGNAL_BREAKDOWN)
 
     # Sheets and windows
 
@@ -812,6 +841,7 @@ class MainWindow(QMainWindow):
         self.docks.open(Panel.SIGNAL_BREAKDOWN)
         panel = self.docks.breakdown()
         assert isinstance(panel, BreakdownPanel)
+        self.docks.set_title(Panel.SIGNAL_BREAKDOWN, title(self.viewer.breakdown))
         return panel
 
     def toggle_breakdown(self) -> None:
@@ -971,7 +1001,7 @@ class MainWindow(QMainWindow):
             )
             if not restored:
                 self.docks.set_side_widths(*SIDE_WIDTHS)
-            self._show_workspace()
+            self.workspaces.show()
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
         """Saves the panels' layout, stops the MCP server and the item panels."""
@@ -1148,16 +1178,11 @@ def _labels_button(viewer: Viewer, item_id: ItemId, parent: QWidget) -> QWidget:
     return button
 
 
-def _breakdown_panel(viewer: Viewer, window: QObject) -> BreakdownPanel:
-    """Creates the Signal breakdown panel, whose dock's title names the voxel shown."""
+def _breakdown_panel(viewer: Viewer) -> BreakdownPanel:
+    """Creates the Signal breakdown panel, made when its dock first opens."""
     from larmor.viewer.qt.breakdown_panel import BreakdownPanel
 
-    assert isinstance(window, MainWindow)
-    docks = window.docks
-    panel = BreakdownPanel(viewer)
-    panel.title_changed.connect(partial(docks.set_title, Panel.SIGNAL_BREAKDOWN))
-    docks.set_title(Panel.SIGNAL_BREAKDOWN, title(viewer.breakdown))
-    return panel
+    return BreakdownPanel(viewer)
 
 
 def _session_name(path: str | Path) -> str:

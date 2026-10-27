@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from enum import StrEnum
+from functools import partial
 from pathlib import Path
 from typing import Any, TypeIs, override
 
@@ -136,6 +137,11 @@ class Docks(QObject):
             dock.setWidget(
                 self._breakdown, QtAds.CDockWidget.eInsertMode.ForceNoScrollArea
             )
+            # A panel that names what it shows, as the Signal breakdown names
+            # its voxel, titles its dock.
+            titled = getattr(self._breakdown, "title_changed", None)
+            if titled is not None:
+                titled.connect(partial(self.set_title, Panel.SIGNAL_BREAKDOWN))
         return self._breakdown
 
     def _breakdown_toggled(self, shown: bool) -> None:
