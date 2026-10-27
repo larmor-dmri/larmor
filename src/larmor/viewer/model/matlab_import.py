@@ -512,9 +512,12 @@ def read_part(
     elif part.kind in (PartKind.FOD, PartKind.FRACTIONS, PartKind.RSS):
         data = _fod_part(path, part, Path(reference))
     elif part.kind in (PartKind.TRACTS, PartKind.STREAMLINES):
-        data = _subset(
-            read_mritoolkit_tracts(path, reference, variable=part.variable), limit
+        # The viewer shows the points only, and the per-point values of a large
+        # tractography take many times longer to read than the points.
+        tracts = read_mritoolkit_tracts(
+            path, reference, variable=part.variable, values=False
         )
+        data = _subset(tracts, limit)
     else:
         data = _surface(read_matlab(path), part.variable)
     if progress is not None:
