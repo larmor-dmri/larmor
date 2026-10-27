@@ -22,6 +22,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+import numpy as np
 from PIL import Image
 
 ROOT = Path(__file__).parent.parent
@@ -47,6 +48,11 @@ SLIDES = {
     "viewer_real_sagittal.png": "t1-fa.webp",
     "tracking_ismrm_slices.png": "slices-3d.webp",
 }
+# Screenshots drawn larger than a slide, with dark space around the brain: each is
+# cropped to the brain, with a margin, at the slide's shape, then scaled down to it.
+FRAMED = {"tracking_ismrm_tubes.png"}
+MARGIN = 0.05  # of the brain's width and height, on each side
+DARK = 12  # the brightest a pixel of the background may be, of 255
 SIMULATION_SLIDES = {
     "simulation_editor.png": "phantom-editor.webp",
     "simulation_breakdown.png": "signal-breakdown.webp",
@@ -75,18 +81,42 @@ def main() -> None:
             subprocess.run([sys.executable, str(script)], cwd=folder, check=True)
         for shot, slide in slides.items():
             with Image.open(Path(folder) / shot) as image:
-                slide_image = image.convert("RGB")
-                # The Website export preset draws twice the slide's size.
-                width, height = image.size
-                if width * SIZE[1] != height * SIZE[0]:
-                    sys.exit(f"{shot} is {image.size}, not the shape of {SIZE}")
-                if image.size != SIZE:
-                    slide_image = slide_image.resize(SIZE, Image.Resampling.LANCZOS)
-                slide_image.save(CAROUSEL / slide, quality=QUALITY, method=6)
+                rgb = image.convert("RGB")
+                if shot in FRAMED:
+                    rgb = frame(rgb)
+                elif rgb.size != SIZE:
+                    # The Website export preset draws twice the slide's size.
+                    width, height = rgb.size
+                    if width * SIZE[1] != height * SIZE[0]:
+                        sys.exit(f"{shot} is {rgb.size}, not the shape of {SIZE}")
+                    rgb = rgb.resize(SIZE, Image.Resampling.LANCZOS)
+                rgb.save(CAROUSEL / slide, quality=QUALITY, method=6)
         for shot, name in SIMULATION_PAGE.items():
             # Lossless, so the text of the panels stays sharp.
             with Image.open(Path(folder) / shot) as image:
                 image.convert("RGB").save(PAGE_IMAGES / name, lossless=True, method=6)
+
+
+def frame(image: Image.Image) -> Image.Image:
+    """Crops a screenshot to what is drawn on its dark background, at a slide's size.
+
+    Args:
+        image: The screenshot, larger than a slide.
+
+    Returns:
+        The slide: the drawing with a margin, widened or heightened to the slide's
+        shape, scaled to its size.
+    """
+    rows, columns = np.nonzero(np.asarray(image).max(axis=2) > DARK)
+    left, right = columns.min(), columns.max()
+    top, bottom = rows.min(), rows.max()
+    width = (right - left) * (1 + 2 * MARGIN)
+    height = (bottom - top) * (1 + 2 * MARGIN)
+    aspect = SIZE[0] / SIZE[1]
+    width, height = max(width, height * aspect), max(height, width / aspect)
+    x, y = (left + right) / 2, (top + bottom) / 2
+    box = (x - width / 2, y - height / 2, x + width / 2, y + height / 2)
+    return image.crop(box).resize(SIZE, Image.Resampling.LANCZOS)
 
 
 if __name__ == "__main__":

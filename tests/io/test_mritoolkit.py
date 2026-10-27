@@ -149,6 +149,16 @@ def test_a_tract_length_list_that_does_not_fit_is_left_out(
     assert "TractL has 1 entries for 2 streamlines" in caplog.text
 
 
+def test_tracts_can_be_read_without_their_values() -> None:
+    tracts = read_mritoolkit_tracts(
+        DATA / "tracts.mat", DATA / "dti_fit.mat", values=False
+    )
+    with_values = read_mritoolkit_tracts(DATA / "tracts.mat", DATA / "dti_fit.mat")
+    assert tracts.point_data == {} and tracts.streamline_data == {}
+    assert with_values.point_data and with_values.streamline_data
+    np.testing.assert_array_equal(tracts.points, with_values.points)
+
+
 def test_every_reference_kind_gives_the_same_points() -> None:
     by_fit = read_mritoolkit_tracts(DATA / "tracts.mat", DATA / "dti_fit.mat")
     for reference in (DWI, load_grid(DWI)):
