@@ -41,3 +41,25 @@ turn it, use the wheel to zoom, and press **Reset view** to start again.
 The panel uses the FOD's basis and colouring, but not the threshold, the minimum anisotropy or the scale, so it
 always shows the whole FOD. Outside the FOD's grid it says that there is no FOD there. The panel follows the FOD
 selected in Layers, and keeps showing it while another kind of item is selected.
+
+## Looking closely
+
+A detail window shows a rectangle of a 2D view on its own, large enough to see each voxel's glyph clearly. Choose
+the Zoom box tool (**Z**) and drag a rectangle in a 2D view, or right-click and choose **Zoom box from here** for
+a 12 x 12 voxel box around the point. The rectangle snaps to the voxels of the main volume and opens in a floating
+window, whose title names the FOD, the view, the slice and the size, such as "Detail - wmfod.mif - coronal y 60 -
+12 x 12 voxels". Several detail windows can be open at once. Each one's rectangle stays outlined in its view, and
+dragging the outline's edge moves the detail.
+
+The detail draws the slices without smoothing, so each voxel shows as a square, and builds the FOD glyphs for the
+rectangle alone, at a sphere detail of its own (12 at first, set with **Glyph detail** in its toolbar). Its
+glyphs keep the FOD's basis, colouring, scale, scaling, threshold and minimum anisotropy, unlike the Inspect FOD
+panel. **Voxel grid** draws the voxels' edges and **Scale bar** draws a bar of a round length in mm. While
+**Linked** is on, the detail follows the crosshair's slice; when you turn it off, the detail keeps the slice it
+shows.
+
+**Save N x...** writes the detail's picture at 1 to 8 times the window's size, as a PNG or TIFF image. **Figure
+with inset...** writes a figure for a paper: the whole view with the rectangle outlined, and the detail beside it,
+with two lines joining the rectangle to the detail, on a white or a black background. From Python,
+`viewer.open_detail(ViewKind.CORONAL, (i, j, 12, 12))` opens a detail of the 12 x 12 voxels from (i, j) in the
+view's plane, and `viewer.save_detail` and `viewer.save_detail_figure` write the picture and the figure.

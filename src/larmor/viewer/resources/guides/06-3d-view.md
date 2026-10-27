@@ -36,3 +36,12 @@ meshes (see [Surfaces](13-surfaces.md)). FOD glyphs and peaks are drawn in the 2
 | Double click, the corner button, or 3 | Fills the window with the 3D view, and back |
 
 The same positions are in View > 3D camera. The camera always looks at the centre of the images.
+
+## Clicking in the 3D view
+
+A drag turns the scene whatever the pointer tool, but a click without moving acts with the tool (see
+[The 2D views](02-2d-views.md)). With the Sphere or Box tool, a click places the region on the nearest thing
+drawn under the pointer: a streamline, one of the slices or a surface. The region gets the radius or size of the
+last one, and when nothing is under the pointer the status bar says so and no region is placed. With the Cursor
+tool, a click on a region selects it, and the wheel over the selected region makes it larger or smaller instead of
+zooming. A right click offers to add a region at the point under the pointer.
