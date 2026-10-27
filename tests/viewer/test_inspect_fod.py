@@ -1,3 +1,5 @@
+"""The FOD glyph at the crosshair, in the inspector's Cursor tab."""
+
 from collections.abc import Callable
 
 import numpy as np
@@ -7,12 +9,9 @@ from pytestqt.qtbot import QtBot
 
 from larmor.types import Volume
 from larmor.viewer import Category, Colouring, Item, ItemId, OptionName
-from larmor.viewer.model.shortcuts import Command
-from larmor.viewer.qt.docks import Panel
-from larmor.viewer.qt.fod_inspector_panel import (
-    FodInspectorPanel,
-    FodInspectorView,
-)
+from larmor.viewer.qt.docks import ItemPanel
+from larmor.viewer.qt.fod_inspector_panel import FodInspectorView
+from larmor.viewer.qt.inspector import InspectorTab
 from larmor.viewer.qt.main_window import MainWindow
 from larmor.viewer.render import fod_inspector
 from larmor.viewer.render.glyphs import Glyphs, voxel_glyph
@@ -36,7 +35,9 @@ def _fod(window: MainWindow, name: str = "F") -> Item:
 def _buttons(window: MainWindow) -> list[QPushButton]:
     form = window.options.widget()
     assert form is not None
-    return [b for b in form.findChildren(QPushButton) if b.text() == "Inspect FOD"]
+    return [
+        b for b in form.findChildren(QPushButton) if b.text() == "Show at the cursor"
+    ]
 
 
 @pytest.mark.parametrize("selected", ["fod", "fods", "volume"])
@@ -56,10 +57,16 @@ def test_the_inspect_button_is_shown_for_a_selected_fod_only(
     assert len(_buttons(window)) == (selected == "fod")
 
 
-def _panel(window: MainWindow) -> FodInspectorPanel:
-    panel = window.docks.widget(Panel.INSPECT_FOD)
-    assert isinstance(panel, FodInspectorPanel)
-    return panel
+def _panel(window: MainWindow) -> ItemPanel:
+    return window.inspector.cursor_tab.fod
+
+
+def _hide(window: MainWindow) -> None:
+    window.inspector.show_tab(InspectorTab.ITEM)
+
+
+def _show(window: MainWindow) -> None:
+    window.inspector.show_tab(InspectorTab.CURSOR)
 
 
 def _shown(window: MainWindow) -> FodInspectorView:
@@ -68,29 +75,14 @@ def _shown(window: MainWindow) -> FodInspectorView:
     return content
 
 
-def test_the_button_opens_the_panel_on_its_fod(window: MainWindow) -> None:
+def test_the_button_shows_the_cursor_tab_on_its_fod(window: MainWindow) -> None:
     _fod(window, "A")
     second = _fod(window, "B")
     window.viewer.select(second.id)
     [button] = _buttons(window)
     button.click()
-    assert window.docks.is_open(Panel.INSPECT_FOD)
+    assert window.inspector.currentWidget() is window.inspector.cursor_tab
     assert _shown(window).item_id == second.id
-    button.click()
-    assert window.docks.is_open(Panel.INSPECT_FOD)
-    assert window.findChildren(FodInspectorPanel) == [_panel(window)]
-
-
-@pytest.mark.parametrize("select_second", [False, True])
-def test_the_action_shows_the_selected_fod_or_the_first(
-    select_second: bool, window: MainWindow
-) -> None:
-    first, second = _fod(window, "A"), _fod(window, "B")
-    if select_second:
-        window.viewer.select(second.id)
-    window.shortcuts[Command.INSPECT_FOD].trigger()
-    assert window.docks.is_open(Panel.INSPECT_FOD)
-    assert _panel(window).item_id == (second.id if select_second else first.id)
 
 
 def test_the_panel_follows_the_selected_fod_and_keeps_it_for_other_items(
@@ -108,13 +100,12 @@ def test_the_panel_follows_the_selected_fod_and_keeps_it_for_other_items(
     assert _shown(window).item_id == second.id
 
 
-def test_without_fods_the_panel_shows_a_hint(window: MainWindow) -> None:
+def test_the_glyph_shows_only_while_there_is_an_fod(window: MainWindow) -> None:
     panel = window.inspect_fod()
-    assert panel.item_id is None and panel.content is None
-    assert not panel.hint.isHidden()
+    assert panel.item_id is None and panel.isHidden()
     fod = _fod(window)
     assert _shown(window).item_id == fod.id
-    assert panel.hint.isHidden()
+    assert not panel.isHidden()
 
 
 def test_removing_the_fod_shown_moves_to_another_and_stops_the_old_one(
@@ -165,10 +156,10 @@ def test_a_hidden_panel_makes_the_glyph_once_when_shown_at_the_new_cursor(
     shown = _shown(window)
     assert made == [(0, 0, 0)]
     made.clear()
-    window.docks.docks[Panel.INSPECT_FOD].toggleView(False)
+    _hide(window)
     window.viewer.move_cursor((1.0, 1.0, 1.0))
     assert made == []
-    window.docks.open(Panel.INSPECT_FOD)
+    _show(window)
     assert _shown(window) is shown
     assert made == [(1, 1, 1)]
     assert shown.inspector.voxel == (1, 1, 1)
@@ -180,8 +171,8 @@ def test_a_hidden_panel_applies_a_colouring_change_once_shown(
     fod = _fod(window)
     window.inspect_fod(fod.id)
     material = _shown(window).inspector.mesh.material
-    window.docks.docks[Panel.INSPECT_FOD].toggleView(False)
+    _hide(window)
     window.viewer.set(fod.id, OptionName.COLOURING, Colouring.SINGLE)
     assert material.color_mode == "vertex"
-    window.docks.open(Panel.INSPECT_FOD)
+    _show(window)
     assert material.color_mode == "uniform"

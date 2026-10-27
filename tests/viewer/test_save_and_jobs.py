@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QFileDialog
 from pytestqt.qtbot import QtBot
 
@@ -46,12 +47,17 @@ def test_file_save_as_saves_the_selected_item(
     assert item.source == tmp_path / "bundle.tck"
 
 
-def test_layers_save_as_saves_that_item(
+def _action(window: MainWindow, item_id: int, text: str) -> QAction:
+    menu = window.scene_tree.context_menu(item_id)
+    return next(a for a in menu.actions() if a.text() == text)
+
+
+def test_the_scene_trees_save_as_saves_that_item(
     window: MainWindow, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     item = window.viewer.add(_tractogram(), Category.TRACTOGRAMS)
     _answer(monkeypatch, tmp_path / "bundle.trk")
-    [save] = window.layers.context_menu(item.id).actions()
+    save = _action(window, item.id, "Save As...")
     save.trigger()
     assert item.source == tmp_path / "bundle.trk"
 
@@ -62,7 +68,7 @@ def test_save_as_is_off_for_a_surface(window: MainWindow) -> None:
     window.viewer.select(item.id)
     window._show_file_menu()
     assert not window.save_item_action.isEnabled()
-    [save] = window.layers.context_menu(item.id).actions()
+    save = _action(window, item.id, "Save As...")
     assert not save.isEnabled()
 
 

@@ -10,12 +10,19 @@ from pytestqt.qtbot import QtBot
 from larmor.types import Volume
 from larmor.viewer import Category, ItemId, OptionName, Viewer
 from larmor.viewer.model.options import OverlayOptions
-from larmor.viewer.qt.labels_panel import (
-    LABEL,
-    LabelsButton,
-    LabelsList,
-    LabelsPanel,
-)
+from larmor.viewer.qt.docks import ItemPanel
+from larmor.viewer.qt.labels_panel import LABEL, LabelsButton, LabelsList
+
+
+# The labels as the inspector's Cursor tab lists them: the selected overlay's.
+def _labels_panel(viewer: Viewer) -> ItemPanel:
+    return ItemPanel(
+        viewer,
+        Category.OVERLAYS,
+        lambda item_id, panel: LabelsList(viewer, item_id, panel),
+        "No overlay.",
+    )
+
 
 LUT = "2 Left-Thalamus 1 2 3 0\n5 Right-Thalamus 4 5 6 0\n7 Brain-Stem 7 8 9 0\n"
 
@@ -141,7 +148,7 @@ def test_removing_the_item_closes_its_list(qtbot: QtBot, viewer: Viewer) -> None
     qtbot.waitUntil(lambda: not shiboken6.isValid(window))
 
 
-def _listed(panel: LabelsPanel) -> ItemId:
+def _listed(panel: ItemPanel) -> ItemId:
     assert isinstance(panel.content, LabelsList)
     return panel.content.item_id
 
@@ -154,7 +161,7 @@ def test_the_panel_follows_the_selected_overlay_and_keeps_it_for_other_items(
         Volume(np.ones((3, 3, 3), np.int16), np.eye(4)), Category.OVERLAYS, name="b"
     ).id
     volume = viewer.add(Volume(np.zeros((3, 3, 3)), np.eye(4)), Category.VOLUMES).id
-    panel = LabelsPanel(viewer)
+    panel = _labels_panel(viewer)
     qtbot.addWidget(panel)
     panel.show()
     assert _listed(panel) == first
@@ -170,20 +177,20 @@ def test_the_panel_follows_the_selected_overlay_and_keeps_it_for_other_items(
 
 
 @pytest.fixture
-def panel(qtbot: QtBot, viewer: Viewer) -> LabelsPanel:
-    panel = LabelsPanel(viewer)
+def panel(qtbot: QtBot, viewer: Viewer) -> ItemPanel:
+    panel = _labels_panel(viewer)
     qtbot.addWidget(panel)
     panel.show()
     return panel
 
 
-def _list(panel: LabelsPanel) -> LabelsList:
+def _list(panel: ItemPanel) -> LabelsList:
     assert isinstance(panel.content, LabelsList)
     return panel.content
 
 
 def test_hiding_and_showing_the_panel_keeps_its_list_and_search(
-    panel: LabelsPanel,
+    panel: ItemPanel,
 ) -> None:
     shown = _list(panel)
     shown.search.setText("Stem")
@@ -200,7 +207,7 @@ def _texts(window: LabelsList) -> list[str]:
 
 @pytest.mark.parametrize("name", [OptionName.SURFACE_LABELS, OptionName.LOOKUP_TABLE])
 def test_a_hidden_panel_catches_up_with_its_overlay_only_when_shown(
-    name: OptionName, tmp_path: Path, viewer: Viewer, panel: LabelsPanel
+    name: OptionName, tmp_path: Path, viewer: Viewer, panel: ItemPanel
 ) -> None:
     shown = _list(panel)
     before = (_texts(shown), _checked(shown))
@@ -219,7 +226,7 @@ def test_a_hidden_panel_catches_up_with_its_overlay_only_when_shown(
 
 
 def test_an_overlay_selected_while_minimised_is_listed_only_when_shown(
-    qtbot: QtBot, viewer: Viewer, panel: LabelsPanel
+    qtbot: QtBot, viewer: Viewer, panel: ItemPanel
 ) -> None:
     # Minimising hides the panel but leaves it visible to Qt.
     second = viewer.add(

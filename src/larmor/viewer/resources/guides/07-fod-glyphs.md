@@ -33,14 +33,14 @@ by the number of coefficients, and refuses a file with neither number.
 
 ## One FOD, large
 
-To look at one voxel's FOD closely, select the FOD in Layers and press **Inspect FOD** in its options; **F**,
-Ctrl+4 and the Inspect FOD icon on the right do the same. The Inspect FOD panel shows the FOD at the crosshair as
-one large, smooth glyph, with the R/L, A/P and S/I axes, and follows the crosshair as you click around. Drag to
-turn it, use the wheel to zoom, and press **Reset view** to start again.
+To look at one voxel's FOD closely, select the FOD in the scene tree and press **Show at the cursor** in its
+options, or open the inspector's Cursor tab. The tab shows the FOD at the crosshair as one large, smooth glyph,
+with the R/L, A/P and S/I axes, and follows the crosshair as you click around. Drag to turn it, use the wheel to
+zoom, and press **Reset view** to start again.
 
-The panel uses the FOD's basis and colouring, but not the threshold, the minimum anisotropy or the scale, so it
-always shows the whole FOD. Outside the FOD's grid it says that there is no FOD there. The panel follows the FOD
-selected in Layers, and keeps showing it while another kind of item is selected.
+The glyph uses the FOD's basis and colouring, but not the threshold, the minimum anisotropy or the scale, so it
+always shows the whole FOD. Outside the FOD's grid it says that there is no FOD there. The tab follows the FOD
+selected in the scene tree, and keeps showing it while another kind of item is selected.
 
 ## Looking closely
 
@@ -53,8 +53,8 @@ dragging the outline's edge moves the detail.
 
 The detail draws the slices without smoothing, so each voxel shows as a square, and builds the FOD glyphs for the
 rectangle alone, at a sphere detail of its own (12 at first, set with **Glyph detail** in its toolbar). Its
-glyphs keep the FOD's basis, colouring, scale, scaling, threshold and minimum anisotropy, unlike the Inspect FOD
-panel. **Voxel grid** draws the voxels' edges and **Scale bar** draws a bar of a round length in mm. While
+glyphs keep the FOD's basis, colouring, scale, scaling, threshold and minimum anisotropy, unlike the glyph in
+the Cursor tab. **Voxel grid** draws the voxels' edges and **Scale bar** draws a bar of a round length in mm. While
 **Linked** is on, the detail follows the crosshair's slice; when you turn it off, the detail keeps the slice it
 shows.
 

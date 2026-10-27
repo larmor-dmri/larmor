@@ -10,8 +10,8 @@ From the command line, run `lar bv --mcp`. The server listens on port 8765 unles
 Settings. `lar bv --mcp-port 9000` uses another port (from 1024 to 65535) and starts the server even without
 `--mcp`.
 
-From the window, open [Settings](09-settings.md) and turn on **Serve agents** under **Agents (MCP)**. The **Port**
-field above it sets the port.
+From the window, open the [Settings](09-settings.md) sheet and turn on **Serve agents** under **Agents (MCP)**. The
+**Port** field above it sets the port.
 
 The server is off when the viewer starts, unless `--mcp` or `--mcp-port` is given.
 
@@ -24,7 +24,7 @@ Serving agents (MCP) at http://127.0.0.1:8765/mcp
 Token: ...
 ```
 
-The Settings panel shows them too, under **Agents (MCP)**, each with a **Copy** button. The token stays the same
+The Settings sheet shows them too, under **Agents (MCP)**, each with a **Copy** button. The token stays the same
 from one start to the next, and is kept in the file `mcp-token`, which only you can read:
 
 - macOS: `cat ~/Library/Application\ Support/larmor/mcp-token`
@@ -70,13 +70,13 @@ the viewer?". The agent calls the `scene` tool and lists the items and the state
 Each tool is one of the viewer's actions, the same ones the window and the Python Viewer class use. They fall
 into these groups:
 
-- **Items**: `load`, `load_matlab`, `remove`, `save_item`, `save_session`, `load_session`.
+- **Items**: `load`, `load_matlab`, `remove`, `rename`, `save_item`, `save_session`, `load_session`.
 - **Options**: `set`, `set_default`, `labels`, `item_choices`, `data_choices`.
 - **Regions**: `add_sphere`, `add_box`, `add_mask`, `apply_region`, `clear_regions`,
   `kept_streamlines`, `save_kept`.
 - **Views**: `select`, `move_cursor`, `step_slice`, `select_view`, `step_volume`, `zoom`, `pan`,
   `reset_camera`, `rotate_camera`, `set_camera`, `set_convention`, `view_centre`, `readout`,
-  `toggle_maximised`, `toggle_overlay`, `toggle_crosshair`, `set_tool`.
+  `toggle_maximised`, `toggle_overlay`, `toggle_crosshair`, `set_tool`, `set_workspace`, `set_layout`.
 - **Detail windows**: `open_detail`, `move_detail`, `close_detail`, `set_detail`, `save_detail`,
   `save_detail_figure`.
 - **Phantoms**: `new_phantom`, `close_phantom`, `set_phantom_grid`, `set_tissue`, `set_compartments`,
@@ -84,12 +84,14 @@ into these groups:
   `add_bundle_stroke`, `remove_bundle_point`, `set_bundle_points`, `finish_bundle`, `cancel_bundle`,
   `edit_bundle`, `use_as_bundle`, `set_bundle`, `show_proxy`, `show_grid_box`, `check_phantom`, `set_run_folder`, `save_phantom`, `load_phantom`,
   `run_phantom`, `open_simulation`.
-- **Images**: `screenshot`, `screenshot_views`, `record_rotation`. The agent sees the images it takes.
+- **Images**: `export`, `export_views`, `export_rotation`, which draw with an export preset such as "Website",
+  and `screenshot`, `screenshot_views`, `record_rotation`, which take the size and switches themselves. The agent
+  sees the images it takes.
 - **Scene**: `scene` lists the items, with the ids the other tools name them by, and the state of the views.
 
 Paths are on the viewer's computer, not the agent's, so the agent loads files and writes screenshots there. When
-a large file is read, the agent waits for it for up to five minutes. An agent cannot change the settings of the
-Settings panel, open other windows, or reach files the viewer cannot read.
+a large file is read, the agent waits for it for up to five minutes. An agent cannot change the application's
+settings, open other windows, or reach files the viewer cannot read.
 
 ## Requests to try
 

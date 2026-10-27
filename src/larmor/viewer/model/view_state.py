@@ -17,6 +17,21 @@ class Tool(StrEnum):
     DRAW_BUNDLE = "draw_bundle"  # adds the points of a phantom bundle
 
 
+class Workspace(StrEnum):
+    """The window's workspaces, each with its own panels and tools."""
+
+    VIEW = "view"  # the scene tree and the inspector
+    SIMULATE = "simulate"  # the phantom editor's steps
+
+
+class Layout(StrEnum):
+    """How the window lays out the four views."""
+
+    GRID = "grid"  # two by two
+    ONE_PLUS_THREE = "one_plus_three"  # the selected view large, the others beside it
+    ONE = "one"  # the selected view alone
+
+
 class ViewField(StrEnum):
     """The fields of the view state, as ViewStateChanged names them."""
 
@@ -31,6 +46,8 @@ class ViewField(StrEnum):
     CAMERAS = "cameras"
     FIELD_OF_VIEW = "field_of_view"
     TOOL = "tool"
+    WORKSPACE = "workspace"
+    LAYOUT = "layout"
 
 
 @dataclass(frozen=True)
@@ -49,3 +66,5 @@ class ViewState:
     # The world box (lowest and highest corner, mm) the 2D views show at zoom 1.
     field_of_view: tuple[Vec3, Vec3] = EMPTY_FIELD
     tool: Tool = Tool.CURSOR
+    workspace: Workspace = Workspace.VIEW
+    layout: Layout = Layout.GRID

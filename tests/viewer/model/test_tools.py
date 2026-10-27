@@ -60,6 +60,26 @@ def test_a_stroke_outside_the_grid_is_refused() -> None:
     assert viewer.add_bundle_stroke([(0.0, 0.0, 0.0), (10.0, 0.0, 0.0)]) == 2
 
 
+def test_backspace_takes_back_a_whole_stroke_and_a_click_alone() -> None:
+    viewer = Viewer()
+    viewer.start_bundle()
+    viewer.add_bundle_point((-20.0, 0.0, 0.0))
+    added = viewer.add_bundle_stroke(
+        [(0.0, 0.0, 0.0), (10.0, 10.0, 0.0), (20.0, 0.0, 0.0)]
+    )
+    assert added == 3
+    viewer.remove_bundle_point()
+    assert _draft_points(viewer) == ((-20.0, 0.0, 0.0),)
+    viewer.remove_bundle_point()
+    assert _draft_points(viewer) == ()
+
+
+def _draft_points(viewer: Viewer) -> tuple[tuple[float, float, float], ...]:
+    state = viewer.scene.phantom
+    assert state is not None and state.draft is not None
+    return state.draft.points
+
+
 def test_a_view_state_keeps_its_tool_but_not_a_bundle_tool_without_drawing() -> None:
     viewer = Viewer()
     viewer.set_view_state(ViewState(tool=Tool.BOX))

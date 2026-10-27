@@ -1,8 +1,8 @@
-"""The Phantom panel, which edits the phantom's grid, tissues, bundles and scan."""
+"""The phantom editor's panel, which edits the grid, tissues, bundles and scan."""
 
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, override
+from typing import Any, cast, override
 
 from PySide6.QtCore import QEvent, QObject, QRectF, QSignalBlocker, Qt, Signal
 from PySide6.QtGui import QColor, QIcon, QPainter, QPaintEvent, QResizeEvent, QShowEvent
@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QDoubleSpinBox,
     QFileDialog,
     QFormLayout,
+    QFrame,
     QHBoxLayout,
     QHeaderView,
     QInputDialog,
@@ -52,8 +53,10 @@ from larmor.viewer.model.phantom import (
     TissueSettings,
     build_tissue,
     preset_defaults,
+    run_problems,
 )
-from larmor.viewer.model.view_state import ViewField
+from larmor.viewer.model.phantom_editor import item_sources
+from larmor.viewer.model.view_state import Tool, ViewField
 from larmor.viewer.model.viewer import Viewer
 from larmor.viewer.qt.field import FieldLabel, ItemField, add_field_row
 from larmor.viewer.qt.style import icon_path
@@ -85,6 +88,13 @@ SECTION_HELP = {
     "follow every edit.",
     "Run": "Simulates the phantom and writes the images and the ground truth into a "
     "folder, then opens them.",
+}
+# What each section's More fold holds, as its button names it.
+MORE = {
+    "Grid": "More: grid box, background, tissue maps",
+    "Tissues": "More: custom compartments",
+    "Bundles": "More: shape, seed, editing, a loaded tractogram",
+    "Scan": "More: sequence, timings, seeds, gradient files",
 }
 # The help of each field, shown by the info icon after its label.
 HELP = {
@@ -301,7 +311,11 @@ class ChoiceBox(QComboBox):
 
 
 class Section(QWidget):
-    """A titled part of the panel that folds away."""
+    """A titled part of the panel that folds away, with a More fold at its end.
+
+    The fields that matter go in `form`, the rest in `more_form`, which a
+    button below the fields unfolds.
+    """
 
     def __init__(
         self, title: str, help: str = "", parent: QWidget | None = None
@@ -335,8 +349,25 @@ class Section(QWidget):
         else:
             layout.addWidget(self.header)
         layout.addWidget(self.body)
+        self._build_more(layout, title)
         self.header.toggled.connect(self._fold)
+        self.more_button.toggled.connect(self._fold_more)
         self._fold(True)
+        self._fold_more(False)
+
+    def _build_more(self, layout: QVBoxLayout, title: str) -> None:
+        """Adds the More button and the form of the fields it unfolds."""
+        self.more_button = QToolButton(self)
+        self.more_button.setObjectName("moreFold")
+        self.more_button.setText(MORE.get(title, "More"))
+        self.more_button.setCheckable(True)
+        self.more_button.setAutoRaise(True)
+        self.more_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.more = QWidget(self)
+        self.more_form = QFormLayout(self.more)
+        self.more_form.setContentsMargins(14, 0, 8, 8)
+        layout.addWidget(self.more_button)
+        layout.addWidget(self.more)
 
     def _fold(self, shown: bool) -> None:
         """Shows or folds away the section's body."""
@@ -344,6 +375,44 @@ class Section(QWidget):
         self.header.setIcon(
             QIcon(icon_path("chevron-down" if shown else "chevron-right"))
         )
+        self._show_more()
+
+    def _fold_more(self, shown: bool) -> None:
+        """Shows or folds away the fields under More."""
+        self.more_button.setIcon(
+            QIcon(icon_path("chevron-down" if shown else "chevron-right"))
+        )
+        self._show_more()
+
+    def _show_more(self) -> None:
+        """Shows the More button if it has fields, and them if it is unfolded."""
+        body = self.header.isChecked()
+        has_more = self.more_form.rowCount() > 0
+        self.more_button.setVisible(body and has_more and self._more_button)
+        self.more.setVisible(
+            body
+            and has_more
+            and (self.more_button.isChecked() or not self._more_button)
+        )
+
+    _more_button = True  # False shows the fields under More without the button
+
+    def set_more_button(self, shown: bool) -> None:
+        """Shows the More button, or the fields under it without a button."""
+        self._more_button = shown
+        self._show_more()
+
+    def set_more_shown(self, shown: bool) -> None:
+        """Unfolds or folds the fields under More."""
+        self.more_button.setChecked(shown)
+        self._show_more()
+
+    def set_header_visible(self, shown: bool) -> None:
+        """Shows or hides the section's title, as a page that names it does."""
+        self.header.setVisible(shown)
+        for child in self.findChildren(FieldLabel):
+            if child.parent() is self:
+                child.setVisible(shown)
 
 
 class FractionBar(QWidget):
@@ -399,16 +468,30 @@ class PhantomPanel(QWidget):
     cancel_requested = Signal()
     save_bundle_requested = Signal(int)
 
-    def __init__(self, viewer: Viewer, parent: QWidget | None = None) -> None:
-        """Builds the sections and shows the phantom, if one is open."""
+    def __init__(
+        self, viewer: Viewer, parent: QWidget | None = None, *, guided: bool = False
+    ) -> None:
+        """Builds the sections and shows the phantom, if one is open.
+
+        A guided panel shows one section at a time, without its title and the
+        file buttons, and with the fields under More folded; the others show
+        every field.
+        """
         super().__init__(parent)
         self.viewer = viewer
+        self.guided = guided
+        self.running = False  # a simulation runs
         self.setObjectName("phantomPanel")
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         self._build_file_row(layout)
         self._build_hints(layout)
         self._build_sections(layout)
+        for section in self.sections.values():
+            section.set_more_button(guided)
+            section.set_header_visible(not guided)
+            section._show_more()
+        self.file_row.setVisible(not guided)
 
         # The viewer can outlive the panel: stop listening when it goes.
         unsubscribe = viewer.scene.subscribe(self._on_event)
@@ -473,10 +556,12 @@ class PhantomPanel(QWidget):
         layout.addStretch(1)
         self._column_count = 0
         self._only: tuple[str, ...] | None = None  # the sections shown, or all
-        self._build_grid(self.sections["Grid"].form)
-        self._build_tissues(self.sections["Tissues"].form)
-        self._build_bundles(self.sections["Bundles"].form)
-        self._build_scan(self.sections["Scan"].form)
+        self._build_grid(self.sections["Grid"].form, self.sections["Grid"].more_form)
+        tissues = self.sections["Tissues"]
+        self._build_tissues(tissues.form, tissues.more_form)
+        bundles = self.sections["Bundles"]
+        self._build_bundles(bundles.form, bundles.more_form)
+        self._build_scan(self.sections["Scan"].form, self.sections["Scan"].more_form)
         self._build_proxies(self.sections["Proxy maps"].form)
         self._build_run(self.sections["Run"].form)
 
@@ -561,8 +646,8 @@ class PhantomPanel(QWidget):
 
     # Building
 
-    def _build_grid(self, form: QFormLayout) -> None:
-        """Builds the Grid section."""
+    def _build_grid(self, form: QFormLayout, more: QFormLayout) -> None:
+        """Builds the Grid section; the box switch, maps and background go in More."""
         box = QHBoxLayout()
         self.size_boxes = [_spin(1, 2000, 1) for _ in range(3)]
         for spin in self.size_boxes:
@@ -582,7 +667,7 @@ class PhantomPanel(QWidget):
         self.show_box.clicked.connect(
             lambda shown: self._act(self.viewer.show_grid_box, shown)
         )
-        form.addRow(self.show_box)
+        more.addRow(self.show_box)
         self.grid_of = ItemField(self)
         self.grid_of.edited.connect(self._apply_grid_of)
         add_field_row(
@@ -591,15 +676,15 @@ class PhantomPanel(QWidget):
         self.grid_label = QLabel(self)
         form.addRow(self.grid_label)
         self.map_form = QFormLayout()
-        form.addRow(self.map_form)
+        more.addRow(self.map_form)
         self.background = ChoiceBox(self)
         self.background.chosen.connect(
             lambda tissue: self._act(self.viewer.set_background_tissue, tissue)
         )
-        add_field_row(form, "Background", HELP["Background"], self.background, self)
+        add_field_row(more, "Background", HELP["Background"], self.background, self)
 
-    def _build_tissues(self, form: QFormLayout) -> None:
-        """Builds the Tissues section."""
+    def _build_tissues(self, form: QFormLayout, more: QFormLayout) -> None:
+        """Builds the Tissues section; the custom compartments go in More."""
         self.tissue_list = QListWidget(self)
         self.tissue_list.setMinimumHeight(110)
         self.tissue_list.currentRowChanged.connect(lambda _: self._show_tissue())
@@ -622,7 +707,7 @@ class PhantomPanel(QWidget):
         form.addRow(self.parameters)
         self.parameter_boxes: dict[str, QDoubleSpinBox] = {}
         self._build_compartments()
-        form.addRow(self.custom)
+        more.addRow(self.custom)
 
     def _build_compartments(self) -> None:
         """Builds the custom compartments' table, fraction bar and buttons."""
@@ -648,8 +733,8 @@ class PhantomPanel(QWidget):
         rows.addWidget(self.remove_compartment)
         custom.addLayout(rows)
 
-    def _build_bundles(self, form: QFormLayout) -> None:
-        """Builds the Bundles section."""
+    def _build_bundles(self, form: QFormLayout, more: QFormLayout) -> None:
+        """Builds the Bundles section; the shape's finer fields go in More."""
         self.bundle_table = QTableWidget(0, 3, self)
         self.bundle_table.setHorizontalHeaderLabels(["Bundle", "Tissue", "Points"])
         self.bundle_table.verticalHeader().setVisible(False)
@@ -665,48 +750,54 @@ class PhantomPanel(QWidget):
         )
         self.bundle_table.setMinimumHeight(90)
         self.bundle_table.itemSelectionChanged.connect(self._select_bundle)
+        self._build_bundle_buttons(form, more)
         form.addRow(self.bundle_table)
-        self._build_bundle_buttons(form)
         self.draft_tissue = ChoiceBox(self)
         self.draft_tissue.chosen.connect(
             lambda tissue: self._edit_bundle_value(BundleField.TISSUE, tissue)
         )
         add_field_row(form, "Tissue", HELP["Tissue"], self.draft_tissue, self)
-        self._bundle_form = form  # its rows show for the bundle drawn or selected
-        self._build_bundle_settings(form)
-        self._build_points(form)
+        # Their rows show for the bundle drawn or selected.
+        self._bundle_forms = (form, more)
+        self._build_bundle_settings(form, more)
+        self._build_points(more)
 
-    def _build_bundle_buttons(self, form: QFormLayout) -> None:
-        """Adds the buttons that draw, edit, save and adopt bundles."""
-        buttons = QHBoxLayout()
+    def _build_bundle_buttons(self, form: QFormLayout, more: QFormLayout) -> None:
+        """Adds Draw, the card of the bundle being drawn, and Edit, Save and Use."""
         self.draw_button = QPushButton("Draw (N)", self)
-        self.draw_button.clicked.connect(lambda: self._act(self.viewer.start_bundle))
+        self.draw_button.clicked.connect(self._draw)
+        form.addRow(self.draw_button)
+        self.draw_card = QFrame(self)
+        self.draw_card.setObjectName("drawCard")
+        card = QHBoxLayout(self.draw_card)
+        card.setContentsMargins(10, 6, 6, 6)
+        self.placed = QLabel(self.draw_card)
+        self.finish_button = QPushButton("Finish (Enter)", self.draw_card)
+        self.finish_button.clicked.connect(lambda: self._act(self.viewer.finish_bundle))
+        self.cancel_button = QPushButton("Cancel", self.draw_card)
+        self.cancel_button.clicked.connect(lambda: self._act(self.viewer.cancel_bundle))
+        card.addWidget(self.placed, 1)
+        card.addWidget(self.finish_button)
+        card.addWidget(self.cancel_button)
+        form.addRow(self.draw_card)
+        row = QHBoxLayout()
         self.edit_button = QPushButton("Edit", self)
         self.edit_button.clicked.connect(self._edit_bundle)
-        self.finish_button = QPushButton("Finish", self)
-        self.finish_button.clicked.connect(lambda: self._act(self.viewer.finish_bundle))
-        self.cancel_button = QPushButton("Cancel", self)
-        self.cancel_button.clicked.connect(lambda: self._act(self.viewer.cancel_bundle))
-        for button in (
-            self.draw_button,
-            self.edit_button,
-            self.finish_button,
-            self.cancel_button,
-        ):
-            buttons.addWidget(button)
-        form.addRow(buttons)
-        more = QHBoxLayout()
         self.save_bundle = QPushButton("Save as...", self)
         self.save_bundle.clicked.connect(self._save_bundle)
-        more.addWidget(self.save_bundle)
+        row.addWidget(self.edit_button)
+        row.addWidget(self.save_bundle)
+        more.addRow(row)
         self.adopt = ItemField(self)
         self.adopt.setToolTip(ADOPT_HELP)
         self.adopt.edited.connect(self._adopt)
-        more.addWidget(self.adopt, 1)
-        form.addRow(more)
+        more.addRow(self.adopt)
 
-    def _build_bundle_settings(self, form: QFormLayout) -> None:
-        """Adds the fields of a bundle's geometry, streamline area and fill."""
+    def _build_bundle_settings(self, form: QFormLayout, more: QFormLayout) -> None:
+        """Adds the fields of a bundle's geometry, streamline area and fill.
+
+        The tissue, streamlines and radius go in form, the rest in more.
+        """
         self.geometry_boxes: dict[BundleField, QDoubleSpinBox | QSpinBox] = {}
         for name, label, low, high, decimals in GEOMETRY_FORM:
             box: QDoubleSpinBox | QSpinBox = (
@@ -718,7 +809,8 @@ class PhantomPanel(QWidget):
                 lambda value, n=name: self._edit_bundle_value(n, value)
             )
             self.geometry_boxes[name] = box
-            add_field_row(form, label, HELP[label], box, self)
+            main = name in (BundleField.NUM_STREAMLINES, BundleField.RADIUS)
+            add_field_row(form if main else more, label, HELP[label], box, self)
         self.area_box = _spin(0, 1000, 4)
         self.area_box.setSpecialValueText("default")
         self.area_box.setToolTip(
@@ -731,14 +823,14 @@ class PhantomPanel(QWidget):
             )
         )
         add_field_row(
-            form, "Streamline area", HELP["Streamline area"], self.area_box, self
+            more, "Streamline area", HELP["Streamline area"], self.area_box, self
         )
         self.fill_box = _spin(0.01, 1, 2)
         self.fill_box.setToolTip("The fill of a loaded tractogram's dense voxels")
         self.fill_box.valueChanged.connect(
             lambda value: self._edit_bundle_value(BundleField.DENSEST_FILL, value)
         )
-        add_field_row(form, "Densest fill", HELP["Densest fill"], self.fill_box, self)
+        add_field_row(more, "Densest fill", HELP["Densest fill"], self.fill_box, self)
 
     def _build_points(self, form: QFormLayout) -> None:
         """Adds the table of the drawn bundle's points and its buttons."""
@@ -763,8 +855,8 @@ class PhantomPanel(QWidget):
         form.addRow(rows)
         self._point_buttons = rows
 
-    def _build_scan(self, form: QFormLayout) -> None:
-        """Builds the Scan section."""
+    def _build_scan(self, form: QFormLayout, more: QFormLayout) -> None:
+        """Builds the Scan section; the sequence, timings and seeds go in More."""
         self.sequence = ChoiceBox(self)
         self.sequence.set_choices(
             [
@@ -775,7 +867,7 @@ class PhantomPanel(QWidget):
         self.sequence.chosen.connect(
             lambda sequence: self._scan(ScanField.SEQUENCE, sequence)
         )
-        add_field_row(form, "Sequence", HELP["Sequence"], self.sequence, self)
+        add_field_row(more, "Sequence", HELP["Sequence"], self.sequence, self)
         self.te = QLineEdit(self)
         self.te.setToolTip("One echo time, or several separated by commas")
         self.te.editingFinished.connect(self._edit_te)
@@ -798,12 +890,12 @@ class PhantomPanel(QWidget):
         }
         for name, box in self.scan_boxes.items():
             box.valueChanged.connect(lambda value, n=name: self._scan(n, value))
-            add_field_row(form, labels[name], HELP[labels[name]], box, self)
-        self._build_gradients(form)
+            add_field_row(more, labels[name], HELP[labels[name]], box, self)
+        self._build_gradients(form, more)
         self._build_noise(form)
 
-    def _build_gradients(self, form: QFormLayout) -> None:
-        """Adds the shells' table and the choice of bvals and bvecs files."""
+    def _build_gradients(self, form: QFormLayout, more: QFormLayout) -> None:
+        """Adds the shells' table, and the choice of bvals and bvecs files to more."""
         self.shells = QTableWidget(0, 2, self)
         self.shells.setHorizontalHeaderLabels(["b (s/mm^2)", "Directions"])
         self.shells.verticalHeader().setVisible(False)
@@ -829,8 +921,8 @@ class PhantomPanel(QWidget):
         )
         files.addWidget(self.gradient_files)
         files.addWidget(self.clear_gradients)
-        form.addRow(files)
-        form.addRow(self.gradient_label)
+        more.addRow(files)
+        more.addRow(self.gradient_label)
 
     def _build_noise(self, form: QFormLayout) -> None:
         """Adds the noise switch and its SNR."""
@@ -873,6 +965,7 @@ class PhantomPanel(QWidget):
         self.run_button.clicked.connect(self.run_requested)
         self.stop_button = QPushButton("Cancel", self)
         self.stop_button.clicked.connect(self.cancel_requested)
+        self.stop_button.hide()
         buttons.addWidget(self.run_button)
         buttons.addWidget(self.stop_button)
         form.addRow(buttons)
@@ -916,6 +1009,30 @@ class PhantomPanel(QWidget):
         for kind, box in self.proxy_boxes.items():
             box.setChecked(state.proxy(kind) is not None)
         self.output.setText(str(state.output) if state.output else "No folder yet")
+        self._show_run(state)
+
+    def set_running(self, running: bool) -> None:
+        """Shows Cancel and greys out Run while a simulation runs."""
+        self.running = running
+        self._show_run(self.viewer.phantom)
+
+    def _show_run(self, state: PhantomState | None) -> None:
+        """Enables Run once the phantom can run, with the first problem as its tip."""
+        self.stop_button.setVisible(self.running)
+        problems = (
+            run_problems(state, item_sources(state, self.viewer.scene))
+            if state is not None
+            else []
+        )
+        self.run_button.setEnabled(
+            state is not None and not problems and not self.running
+        )
+        if self.running:
+            self.run_button.setToolTip("A simulation is running")
+        elif problems:
+            self.run_button.setToolTip(problems[0].text)
+        else:
+            self.run_button.setToolTip("Simulate and open the outputs (Ctrl+R)")
 
     def _refresh_grid(self, state: PhantomState) -> None:
         """Shows the grid, the tissue maps and the background."""
@@ -987,6 +1104,8 @@ class PhantomPanel(QWidget):
         custom = tissue.preset == TissuePreset.CUSTOM
         self.parameters.setVisible(not custom)
         self.custom.setVisible(custom)
+        if custom:
+            self.sections["Tissues"].set_more_shown(True)  # the table is under More
         if not custom:
             keys = list(preset_defaults(tissue.preset))
             if list(self.parameter_boxes) != keys:
@@ -1067,6 +1186,10 @@ class PhantomPanel(QWidget):
                 self.bundle_table.setCellWidget(row, 1, combo)
                 self.bundle_table.setItem(row, 2, QTableWidgetItem(points))
         drawing = draft is not None
+        self.draw_card.setVisible(drawing)
+        if draft is not None:
+            count = len(draft.points)
+            self.placed.setText(f"{count} point{'' if count == 1 else 's'} placed")
         self.finish_button.setEnabled(drawing)
         self.cancel_button.setEnabled(drawing)
         self.add_point.setEnabled(drawing)
@@ -1110,31 +1233,48 @@ class PhantomPanel(QWidget):
         )
         # Only the settings of a bundle drawn or selected show, so no field shows
         # a value that belongs to nothing.
-        form = self._bundle_form
         for name, box in self.geometry_boxes.items():
-            form.setRowVisible(box, geometry is not None)
+            self._set_row_visible(box, geometry is not None)
             if geometry is not None:
                 _show(box, float(getattr(geometry, name.value)))
         settings = bundle if bundle is not None else (draft.editing if draft else None)
-        form.setRowVisible(self.area_box, settings is not None)
-        form.setRowVisible(
+        self._set_row_visible(self.area_box, settings is not None)
+        self._set_row_visible(
             self.fill_box, settings is not None and settings.geometry is None
         )
-        form.setRowVisible(self.points, draft is not None)
-        form.setRowVisible(self._point_buttons, draft is not None)
+        self._set_row_visible(self.points, draft is not None)
+        self._set_row_visible(self._point_buttons, draft is not None)
         if settings is not None:
             _show(self.area_box, settings.streamline_area or 0.0)
             _show(self.fill_box, settings.densest_fill)
         tissue = (
             draft.tissue if draft is not None else (bundle.tissue if bundle else None)
         )
-        form.setRowVisible(self.draft_tissue, tissue is not None)
+        self._set_row_visible(self.draft_tissue, tissue is not None)
         if tissue is not None:
             self.draft_tissue.show_value(tissue)
         self.edit_button.setEnabled(
             draft is None and bundle is not None and bundle.geometry is not None
         )
         self.save_bundle.setEnabled(draft is None and bundle is not None)
+
+    def _set_row_visible(self, row: QWidget | QHBoxLayout, shown: bool) -> None:
+        """Shows or hides a row of the Bundles section, in its form or under More."""
+        for form in self._bundle_forms:
+            found = cast(
+                tuple[int, object],
+                form.getWidgetPosition(row)
+                if isinstance(row, QWidget)
+                else form.getLayoutPosition(row),
+            )
+            if found[0] >= 0:
+                form.setRowVisible(row, shown)
+                return
+
+    def _draw(self) -> None:
+        """Starts drawing a bundle with the Draw bundle tool."""
+        if self._act(self.viewer.start_bundle):
+            self.viewer.set_tool(Tool.DRAW_BUNDLE)
 
     def _refresh_scan(self, state: PhantomState) -> None:
         """Shows the scan."""

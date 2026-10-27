@@ -56,9 +56,9 @@ from larmor.viewer.model.registry import (
 )
 from larmor.viewer.model.settings import AppSettings, SettingName, Settings
 from larmor.viewer.model.surface import SurfaceData
-from larmor.viewer.qt.layers import LayersPanel
 from larmor.viewer.qt.loading import ErrorBox
 from larmor.viewer.qt.main_window import MainWindow
+from larmor.viewer.qt.scene_tree import SceneTree
 
 WAIT = 10.0  # seconds; generous, a tiny file reads in milliseconds
 WAIT_MS = int(WAIT * 1000)
@@ -558,7 +558,7 @@ def test_files_opened_from_the_window_use_the_default_limit_not_views(
     else:
         window.resize(1200, 800)
         qtbot.waitExposed(window)
-        panel = window.layers
+        panel = window.scene_tree
         at = _row_point(panel, Category.TRACTOGRAMS)
         try:
             assert _enter(panel, _files(later), at)
@@ -733,7 +733,7 @@ def test_file_open_offers_one_filter_per_category_with_its_extensions(
         ("overlay item", Category.OVERLAYS),
     ],
 )
-def test_file_open_preselects_the_category_selected_in_layers(
+def test_file_open_preselects_the_category_selected_in_the_scene_tree(
     selection: Category | str | None,
     expected: Category,
     window: MainWindow,
@@ -762,7 +762,7 @@ def test_cancelling_file_open_loads_nothing(
     assert window.viewer.scene.items == []
 
 
-# Dropping files onto Layers
+# Dropping files onto the scene tree
 
 
 @pytest.fixture
@@ -773,7 +773,7 @@ def shown(window: MainWindow, qtbot: QtBot) -> Iterator[MainWindow]:
     yield window
     # Qt remembers the widget that accepted a drag until it ends; a later test's
     # drag would reach the deleted panel.
-    _leave(window.layers)
+    _leave(window.scene_tree)
 
 
 def _mime(*urls: QUrl) -> QMimeData:
@@ -786,11 +786,13 @@ def _files(*paths: Path) -> QMimeData:
     return _mime(*(QUrl.fromLocalFile(str(p)) for p in paths))
 
 
-def _row_point(panel: LayersPanel, target: ItemId | Category) -> QPoint:
-    return panel.visualItemRect(panel._rows[target]).center()
+def _row_point(panel: SceneTree, target: ItemId | Category) -> QPoint:
+    # Empty categories show only while files are dragged over the tree.
+    panel._set_dragging(True)
+    return panel.visualItemRect(panel.row(target)).center()
 
 
-def _empty_point(panel: LayersPanel) -> QPoint:
+def _empty_point(panel: SceneTree) -> QPoint:
     viewport = panel.viewport()
     point = QPoint(10, viewport.height() - 5)
     assert panel.itemAt(point) is None
@@ -802,30 +804,30 @@ _BUTTONS = Qt.MouseButton.LeftButton
 _MODS = Qt.KeyboardModifier.NoModifier
 
 
-def _enter(panel: LayersPanel, mime: QMimeData, at: QPoint) -> bool:
+def _enter(panel: SceneTree, mime: QMimeData, at: QPoint) -> bool:
     event = QDragEnterEvent(at, _ACTION, mime, _BUTTONS, _MODS)
     QApplication.sendEvent(panel.viewport(), event)
     return event.isAccepted()
 
 
-def _move(panel: LayersPanel, mime: QMimeData, at: QPoint) -> bool:
+def _move(panel: SceneTree, mime: QMimeData, at: QPoint) -> bool:
     # Qt delivers moves and drops only to a widget that accepted the drag's enter.
     event = QDragMoveEvent(at, _ACTION, mime, _BUTTONS, _MODS)
     QApplication.sendEvent(panel.viewport(), event)
     return event.isAccepted()
 
 
-def _drop(panel: LayersPanel, mime: QMimeData, at: QPoint) -> bool:
+def _drop(panel: SceneTree, mime: QMimeData, at: QPoint) -> bool:
     event = QDropEvent(QPointF(at), _ACTION, mime, _BUTTONS, _MODS)
     QApplication.sendEvent(panel.viewport(), event)
     return event.isAccepted()
 
 
-def _leave(panel: LayersPanel) -> None:
+def _leave(panel: SceneTree) -> None:
     QApplication.sendEvent(panel.viewport(), QDragLeaveEvent())
 
 
-def _highlighted(panel: LayersPanel) -> set[ItemId | Category]:
+def _highlighted(panel: SceneTree) -> set[ItemId | Category]:
     return {
         key
         for key, row in panel._rows.items()
@@ -837,7 +839,7 @@ def _highlighted(panel: LayersPanel) -> set[ItemId | Category]:
 def test_files_dropped_on_a_category_row_load_into_it(
     category: Category, shown: MainWindow, qtbot: QtBot, tmp_path: Path
 ) -> None:
-    panel = shown.layers
+    panel = shown.scene_tree
     # Real drags reach the panel only if its viewport takes drops.
     assert panel.viewport().acceptDrops()
     at = _row_point(panel, category)
@@ -855,7 +857,7 @@ def test_files_dropped_on_an_item_row_load_into_its_category(
 ) -> None:
     obj = _tractogram() if category == Category.TRACTOGRAMS else zeros_volume()
     item = shown.viewer.add(obj, category)
-    panel = shown.layers
+    panel = shown.scene_tree
     at = _row_point(panel, item.id)
     mime = _files(_file_for(category, tmp_path))
     assert _enter(panel, mime, at)
@@ -869,7 +871,7 @@ def test_files_dropped_on_an_item_row_load_into_its_category(
 def test_several_files_dropped_at_once_all_load(
     shown: MainWindow, qtbot: QtBot, tmp_path: Path
 ) -> None:
-    panel = shown.layers
+    panel = shown.scene_tree
     paths = [_volume_file(tmp_path / n) for n in ("a.nii", "b.nii.gz")]
     assert _enter(panel, _files(*paths), _row_point(panel, Category.VOLUMES))
     assert _drop(panel, _files(*paths), _row_point(panel, Category.VOLUMES))
@@ -883,7 +885,7 @@ def test_several_files_dropped_at_once_all_load(
 def test_the_category_under_the_pointer_is_highlighted_while_dragging(
     shown: MainWindow, qtbot: QtBot, tmp_path: Path
 ) -> None:
-    panel = shown.layers
+    panel = shown.scene_tree
     viewer = shown.viewer
     overlay = viewer.add(zeros_volume(), Category.OVERLAYS).id
     volume = viewer.add(zeros_volume(), Category.VOLUMES).id
@@ -908,7 +910,7 @@ def test_the_category_under_the_pointer_is_highlighted_while_dragging(
 def test_rows_added_while_dragging_are_highlighted_too(
     shown: MainWindow, tmp_path: Path
 ) -> None:
-    panel = shown.layers
+    panel = shown.scene_tree
     mime = _files(_volume_file(tmp_path / "a.nii"))
     at = _row_point(panel, Category.VOLUMES)
     _enter(panel, mime, at)
@@ -921,7 +923,7 @@ def test_rows_added_while_dragging_are_highlighted_too(
 def test_a_drop_target_refuses_files_its_category_cannot_read(
     shown: MainWindow, tmp_path: Path
 ) -> None:
-    panel = shown.layers
+    panel = shown.scene_tree
     mime = _files(_tractogram_file(tmp_path / "t.tck"))
     at = _row_point(panel, Category.VOLUMES)
     assert _enter(panel, mime, at)
@@ -968,7 +970,7 @@ REFUSED = [
 def test_a_drag_without_readable_local_files_is_refused(
     case: str, shown: MainWindow, qtbot: QtBot, tmp_path: Path
 ) -> None:
-    panel = shown.layers
+    panel = shown.scene_tree
     sent: list[object] = []
     panel.files_dropped.connect(lambda paths, category: sent.append(paths))
     mime = _refused_drag(case, tmp_path)
@@ -983,7 +985,7 @@ def test_a_drag_without_readable_local_files_is_refused(
 
 
 def test_a_drop_on_empty_space_is_refused(shown: MainWindow, tmp_path: Path) -> None:
-    panel = shown.layers
+    panel = shown.scene_tree
     sent: list[object] = []
     panel.files_dropped.connect(lambda paths, category: sent.append(paths))
     mime = _files(_volume_file(tmp_path / "a.nii.gz"))
@@ -998,7 +1000,7 @@ def test_a_drop_on_empty_space_is_refused(shown: MainWindow, tmp_path: Path) -> 
 def test_the_dropped_signal_carries_paths_and_a_category(
     shown: MainWindow, tmp_path: Path
 ) -> None:
-    panel = shown.layers
+    panel = shown.scene_tree
     sent: list[tuple[object, object]] = []
     panel.files_dropped.connect(lambda paths, category: sent.append((paths, category)))
     path = _volume_file(tmp_path / "a.nii.gz")
@@ -1136,3 +1138,15 @@ def test_application_without_streams_gives_writable_ones(
         assert stream is not None
         stream.write("text")
         stream.close()
+
+
+def test_empty_categories_show_only_while_files_are_dragged_over_the_tree(
+    shown: MainWindow, tmp_path: Path
+) -> None:
+    panel = shown.scene_tree
+    shown.viewer.add(zeros_volume(), Category.VOLUMES)
+    assert {c for c in Category if not panel.row(c).isHidden()} == {Category.VOLUMES}
+    _enter(panel, _files(_volume_file(tmp_path / "a.nii")), QPoint(10, 10))
+    assert all(not panel.row(c).isHidden() for c in Category)
+    _leave(panel)
+    assert {c for c in Category if not panel.row(c).isHidden()} == {Category.VOLUMES}

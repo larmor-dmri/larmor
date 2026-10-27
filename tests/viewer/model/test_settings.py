@@ -35,7 +35,7 @@ def test_changed_settings_are_read_back_from_their_file(path: Path) -> None:
         (SettingName.INTERPOLATE, False),
         (SettingName.READ_LIMIT, 0),
         (SettingName.SLAB_THICKNESS, 7.5),
-        (SettingName.SCREENSHOT_TRANSPARENT, True),
+        (SettingName.SLAB_MEMORY, 4.5),
         (SettingName.LOWER_RESOLUTION, True),
         # Quotes and a backslash must survive TOML's string escapes.
         (SettingName.GPU, 'GPU "A" \\ (Vulkan)'),
@@ -57,7 +57,7 @@ def test_changed_settings_are_read_back_from_their_file(path: Path) -> None:
         (SettingName.READ_LIMIT, True),
         (SettingName.READ_LIMIT, 1.5),
         (SettingName.READ_LIMIT, -1),
-        (SettingName.SCREENSHOT_SCALE, 5),
+        (SettingName.MCP_PORT, 80),
         (SettingName.SLAB_THICKNESS, math.inf),
         (SettingName.SLAB_THICKNESS, 0.1),
         (SettingName.THEME, "blue"),
@@ -192,3 +192,14 @@ def test_the_settings_folder_is_where_each_system_keeps_them(
 
 def test_every_setting_has_help() -> None:
     assert all(info.help for _, info in setting_fields().values())
+
+
+def test_settings_this_version_no_longer_has_are_read_without_a_warning(
+    path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    path.parent.mkdir(parents=True)
+    path.write_text('phantom_layout = "all"\nscreenshot_scale = 3\ntheme = "dark"\n')
+    with caplog.at_level(logging.WARNING):
+        values = Settings.load(path).values
+    assert values.theme == Theme.DARK
+    assert caplog.records == []

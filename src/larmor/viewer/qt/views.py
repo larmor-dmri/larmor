@@ -5,9 +5,9 @@ from collections.abc import Callable, Sequence
 from enum import Enum, auto
 
 import numpy as np
-from PySide6.QtCore import QEvent, QObject, QPoint, QPointF, Qt, QTimer, Signal
+from PySide6.QtCore import QEvent, QObject, QPoint, QPointF, Qt, Signal
 from PySide6.QtGui import QMouseEvent, QNativeGestureEvent, QWheelEvent
-from PySide6.QtWidgets import QFrame, QGridLayout, QToolTip, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QFrame, QToolTip, QVBoxLayout, QWidget
 from rendercanvas.qt import QRenderWidget
 
 from larmor.viewer.model.camera import Vec3, screen_axes
@@ -18,7 +18,6 @@ from larmor.viewer.model.detail import (
     size_text,
     voxel_box,
 )
-from larmor.viewer.model.events import Event, ViewStateChanged
 from larmor.viewer.model.item import VIEW_GRID, Category, Item, ViewKind
 from larmor.viewer.model.options import (
     SLAB_THICKNESS,
@@ -35,7 +34,7 @@ from larmor.viewer.model.regions import (
     ray_hit,
     sphere_radius_at,
 )
-from larmor.viewer.model.view_state import Tool, ViewField
+from larmor.viewer.model.view_state import Tool
 from larmor.viewer.model.viewer import Viewer
 from larmor.viewer.render.phantom_guides import POINT_COLOUR
 from larmor.viewer.render.regions_guides import DETAIL_COLOUR, Sketch
@@ -735,74 +734,3 @@ def _at_least(size: Sequence[float], low: float) -> Vec3:
     """Returns three lengths, none below low."""
     a, b, c = (max(float(s), low) for s in size)
     return (a, b, c)
-
-
-class ViewGrid(QWidget):
-    """Lays the four views out in a 2 x 2 grid; one of them can fill the grid."""
-
-    def __init__(self, viewer: Viewer, parent: QWidget | None = None) -> None:
-        """Creates the four views and their mouse input."""
-        super().__init__(parent)
-        self.viewer = viewer
-        grid = QGridLayout(self)
-        grid.setContentsMargins(0, 0, 0, 0)
-        # Each panel's frame is half the gap between two views.
-        grid.setSpacing(0)
-
-        # While the user drags or scrolls, the views draw with less detail (and at
-        # reduced resolution if the setting asks); this timer ends that once the
-        # input stops.
-        self.interaction_timer = QTimer(self)
-        self.interaction_timer.setSingleShot(True)
-        self.interaction_timer.setInterval(FULL_RESOLUTION_DELAY)
-        self.interaction_timer.timeout.connect(self._end_interaction)
-
-        self.panels: dict[ViewKind, ViewPanel] = {}
-        self.inputs: dict[ViewKind, ViewInput] = {}
-        for kind, (row, col) in POSITIONS.items():
-            panel = ViewPanel(kind, self)
-            grid.addWidget(panel, row, col)
-            self.panels[kind] = panel
-            self.inputs[kind] = ViewInput(viewer, panel)
-            self.inputs[kind].interacted.connect(self._start_interaction)
-
-        # The viewer can outlive the window: stop listening when the widget goes.
-        unsubscribe = self.viewer.scene.subscribe(self._on_event)
-        self.destroyed.connect(lambda *_: unsubscribe())
-        self._show_maximised()
-        self._show_selected()
-
-    def _on_event(self, event: Event) -> None:
-        """Shows the view maximised or selected after a view state change."""
-        if isinstance(event, ViewStateChanged) and event.name == ViewField.MAXIMISED:
-            self._show_maximised()
-        elif (
-            isinstance(event, ViewStateChanged)
-            and event.name == ViewField.SELECTED_VIEW
-        ):
-            self._show_selected()
-
-    def _start_interaction(self) -> None:
-        """Draws every view with less detail until the input stops."""
-        # Every view: dragging in one moves the slices and crosshairs of the others.
-        for panel in self.panels.values():
-            panel.view.start_interaction()
-        self.interaction_timer.start()
-
-    def _end_interaction(self) -> None:
-        """Draws every view in full detail again."""
-        for panel in self.panels.values():
-            panel.view.end_interaction()
-
-    def _show_maximised(self) -> None:
-        """Shows only the maximised view, or all of them."""
-        maximised = self.viewer.scene.view.maximised
-        for kind, panel in self.panels.items():
-            panel.setVisible(maximised in (None, kind))
-            panel.set_maximised(kind == maximised)
-
-    def _show_selected(self) -> None:
-        """Frames the selected view in the accent."""
-        selected = self.viewer.scene.view.selected_view
-        for kind, panel in self.panels.items():
-            panel.set_selected(kind == selected)

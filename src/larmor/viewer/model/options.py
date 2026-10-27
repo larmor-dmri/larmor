@@ -43,7 +43,7 @@ COLORMAPS: tuple[Colormap, ...] = tuple(Colormap)
 
 
 class OptionGroup(StrEnum):
-    """The sections of the Options panel, in the order they are shown."""
+    """The sections of the inspector's Item tab, in the order they are shown."""
 
     DISPLAY = "Display"
     REGION = "Region"
@@ -139,8 +139,12 @@ class OptionInfo:
     panel: bool = True  # False for one edited in its own window, not the panel
     item_ref: bool = False  # another item's id, or None for no item
     data_key: bool = False  # the name of some of the item's data, or None
-    group: OptionGroup | None = None  # its Options panel section; None for settings
+    group: OptionGroup | None = None  # its section of the Item tab; None for settings
     help: str = ""  # one sentence explaining it, shown as a tooltip; "" for none
+    # Shown in the panel only while this holds of the item's options; None for always.
+    shown_when: Callable[[Any], bool] | None = None
+    # Editable only while this holds of the item's options; None for always.
+    enabled_when: Callable[[Any], bool] | None = None
 
 
 class OptionError(ValueError):
@@ -182,6 +186,8 @@ def option[T](
     data_key: bool = False,
     group: OptionGroup | None = None,
     help: str = "",
+    shown_when: Callable[[Any], bool] | None = None,
+    enabled_when: Callable[[Any], bool] | None = None,
 ) -> T:
     """Returns a dataclass field with its OptionInfo in its metadata (key "option")."""
     info = OptionInfo(
@@ -199,6 +205,8 @@ def option[T](
         data_key,
         group,
         help,
+        shown_when,
+        enabled_when,
     )
     return field(default=default, metadata={"option": info})
 
@@ -341,6 +349,36 @@ def range_text(info: OptionInfo) -> str:
     return f"at most {info.maximum:g}"
 
 
+def _drawn_in_3d(options: object) -> bool:
+    """Tells whether the 3D view draws items with these options; it skips glyphs."""
+    return not isinstance(options, (FodOptions, PeaksOptions))
+
+
+def _without_dti(options: object) -> bool:
+    """Tells whether an image is shown without DTI colours."""
+    return not getattr(options, "dti", False)
+
+
+def _with_dti(options: object) -> bool:
+    """Tells whether an image is shown with DTI colours."""
+    return bool(getattr(options, "dti", False))
+
+
+def _single_colour(options: object) -> bool:
+    """Tells whether the item is drawn in its one colour."""
+    return getattr(options, "colouring", None) == Colouring.SINGLE
+
+
+def _by_value(options: object) -> bool:
+    """Tells whether a tractogram is coloured by a value per point."""
+    return getattr(options, "colouring", None) == Colouring.VALUES
+
+
+def _normals_single(options: object) -> bool:
+    """Tells whether a surface's normals are drawn in one colour."""
+    return getattr(options, "normals_colouring", None) == Colouring.SINGLE
+
+
 @dataclass(frozen=True)
 class ItemOptions:
     """The options every item has."""
@@ -363,6 +401,7 @@ class ItemOptions:
         step=0.01,
         scope=Scope.THREE_D,
         group=OptionGroup.DISPLAY,
+        shown_when=_drawn_in_3d,
     )
 
 
@@ -380,7 +419,11 @@ class VolumeOptions(ItemOptions):
         help="Which volume of a 4D image is shown.",
     )
     colormap: Colormap = option(
-        Colormap.GRAY, "Colormap", choices=COLORMAPS, group=OptionGroup.COLOUR
+        Colormap.GRAY,
+        "Colormap",
+        choices=COLORMAPS,
+        group=OptionGroup.COLOUR,
+        enabled_when=_without_dti,
     )
     interpolate: bool = option(
         True,
@@ -389,10 +432,24 @@ class VolumeOptions(ItemOptions):
         help="Smooth (trilinear) or blocky (nearest voxel) slices.",
     )
     # No fixed bounds: the slider spans the data's range, and a volume starts at it.
-    minimum: float = option(0.0, "Minimum", group=OptionGroup.COLOUR)
-    maximum: float = option(1.0, "Maximum", group=OptionGroup.COLOUR)
+    minimum: float = option(
+        0.0,
+        "Minimum",
+        group=OptionGroup.COLOUR,
+        enabled_when=_without_dti,
+    )
+    maximum: float = option(
+        1.0,
+        "Maximum",
+        group=OptionGroup.COLOUR,
+        enabled_when=_without_dti,
+    )
     colour_bar: bool = option(
-        False, "Colour bar", scope=Scope.TWO_D, group=OptionGroup.TWO_D
+        False,
+        "Colour bar",
+        scope=Scope.TWO_D,
+        group=OptionGroup.TWO_D,
+        enabled_when=_without_dti,
     )
     slices_3d: bool = option(
         True,
@@ -416,6 +473,7 @@ class VolumeOptions(ItemOptions):
         group=OptionGroup.COLOUR,
         help="An image on the same grid whose values, clipped to 0 to 1, scale the "
         "colours (such as FA).",
+        enabled_when=_with_dti,
     )
 
 
@@ -443,6 +501,7 @@ class OverlayOptions(VolumeOptions):
         group=OptionGroup.COLOUR,
         help="Values at or below it are transparent, so only the part of the map "
         "above it shows.",
+        enabled_when=_without_dti,
     )
     # The mesh where the image crosses the threshold, drawn in the 3D view; for an
     # overlay shown as labels, a mesh per label of surface_labels instead.
@@ -460,6 +519,7 @@ class OverlayOptions(VolumeOptions):
         "Labels",
         group=OptionGroup.LABELS,
         help="Shows the image as a parcellation: one colour per label.",
+        enabled_when=_without_dti,
     )
     lookup_table: str = option(
         "",
@@ -469,8 +529,9 @@ class OverlayOptions(VolumeOptions):
         group=OptionGroup.LABELS,
         help="The file naming and colouring the labels (FreeSurfer or MRtrix "
         "format); empty for built-in colours.",
+        enabled_when=_without_dti,
     )  # "" for the built-in colours
-    # The labels drawn as surfaces in the 3D view, chosen in the Labels panel; none
+    # The labels drawn as surfaces in the 3D view, chosen in the Cursor tab; none
     # at first, as an aparc+aseg's hundred surfaces take a while to compute.
     surface_labels: tuple[int, ...] = option(
         (),
@@ -515,7 +576,7 @@ class RegionRole(StrEnum):
 REGION_ROLES: tuple[RegionRole, ...] = tuple(RegionRole)
 
 
-# The defaults new tractograms start with; the Settings panel changes them.
+# The defaults new tractograms start with; the Settings sheet changes them.
 POINTS_PER_STREAMLINE: Final = 20
 SLAB_THICKNESS: Final = 5.0  # mm, centred on the slice
 
@@ -534,7 +595,11 @@ class TractogramOptions(ItemOptions):
         "volume sampled along the streamlines, through the colormap.",
     )
     colour: Colour = option(
-        Colour("#ffffff"), "Colour", check=check_colour, group=OptionGroup.COLOUR
+        Colour("#ffffff"),
+        "Colour",
+        check=check_colour,
+        group=OptionGroup.COLOUR,
+        shown_when=_single_colour,
     )
     # The values to colour by: a TSF file, or a volume sampled at the drawn points.
     # Setting one clears the other and resets the colormap's range, so both come
@@ -558,16 +623,31 @@ class TractogramOptions(ItemOptions):
         "for colouring by value; 0 outside the image.",
     )
     colormap: Colormap = option(
-        Colormap.VIRIDIS, "Colormap", choices=COLORMAPS, group=OptionGroup.COLOUR
+        Colormap.VIRIDIS,
+        "Colormap",
+        choices=COLORMAPS,
+        group=OptionGroup.COLOUR,
+        shown_when=_by_value,
     )
-    minimum: float = option(0.0, "Minimum", group=OptionGroup.COLOUR)
-    maximum: float = option(1.0, "Maximum", group=OptionGroup.COLOUR)
+    minimum: float = option(
+        0.0,
+        "Minimum",
+        group=OptionGroup.COLOUR,
+        shown_when=_by_value,
+    )
+    maximum: float = option(
+        1.0,
+        "Maximum",
+        group=OptionGroup.COLOUR,
+        shown_when=_by_value,
+    )
     colour_bar: bool = option(
         False,
         "Colour bar",
         scope=Scope.TWO_D,
         group=OptionGroup.TWO_D,
         help="Shows the colormap's range in the 2D views when colouring by value.",
+        shown_when=_by_value,
     )
     # A percentage of the streamlines, drawn up to the drawing cap (a setting).
     subset: float = option(
@@ -867,6 +947,7 @@ class FodOptions(ItemOptions):
         check=check_colour,
         scope=Scope.TWO_D,
         group=OptionGroup.COLOUR,
+        shown_when=_single_colour,
     )
 
 
@@ -979,6 +1060,7 @@ class SurfaceOptions(ItemOptions):
         check=check_colour,
         group=OptionGroup.NORMALS,
         help="The normals' colour when they are drawn in one colour.",
+        shown_when=_normals_single,
     )
 
 
@@ -1045,4 +1127,5 @@ class PeaksOptions(ItemOptions):
         check=check_colour,
         scope=Scope.TWO_D,
         group=OptionGroup.COLOUR,
+        shown_when=_single_colour,
     )

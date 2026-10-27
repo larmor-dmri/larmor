@@ -28,7 +28,7 @@ Help > Help or F1.
 - [FOD glyphs](fod-glyphs.md): symmetric and asymmetric FODs, and one FOD shown large
 - [Peaks](peaks.md): an FOD's peaks as lines
 - [Settings](settings.md): the viewer's preferences
-- [Screenshots](screenshots.md): images, separate views and rotation videos
+- [Exporting images and videos](screenshots.md): presets, images, separate views and rotation videos
 - [Sessions](sessions.md): saving what the viewer shows, to open it again later
 - [Surfaces](surfaces.md): cortical surfaces in 3D and in the 2D views
 - [MATLAB files](matlab-files.md): opening MRIToolkit and ExploreDTI results

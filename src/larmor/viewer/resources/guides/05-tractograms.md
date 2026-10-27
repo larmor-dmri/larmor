@@ -32,7 +32,7 @@ While you turn or zoom the 3D view, it draws only part of the streamlines, and a
 
 Each point of a streamline can be coloured by a value, such as the FA where it passes, through a colormap. The
 values come from one of two places, which you choose under Colour in the options of a single tractogram (the
-tractogram selected alone in Layers, not its category).
+tractogram selected alone in the scene tree, not its category).
 
 - A **TSF file** is a track scalar file in the MRtrix TSF format, with one value per point of a tractogram. It
   must match the tractogram's file streamline by streamline, or it is refused with a message. A tractogram read
