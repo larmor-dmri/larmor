@@ -75,7 +75,9 @@ def test_a_box_region_keeps_what_the_library_box_keeps() -> None:
     tracts = viewer.load(TRACKS, Category.TRACTOGRAMS)
     size = (20.0, 10.0, 15.0)
     viewer.add_box(BIG, size, apply=True)
-    expected = passes_through(load_tractogram(TRACKS), Box(np.array(BIG), size))
+    expected = passes_through(
+        load_tractogram(TRACKS), Box(np.array(BIG), np.array(size))
+    )
     assert 0 < expected.sum() < len(expected)
     np.testing.assert_array_equal(viewer.region_selection(tracts.id), expected)
 

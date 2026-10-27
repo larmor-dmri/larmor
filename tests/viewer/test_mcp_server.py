@@ -39,7 +39,12 @@ from larmor.viewer import (
 from larmor.viewer.loading import Loader
 from larmor.viewer.mcp_server import McpServer, actions, new_token, to_json
 from larmor.viewer.model import registry
-from larmor.viewer.model.options import SurfaceOptions, TractogramOptions, VolumeOptions
+from larmor.viewer.model.options import (
+    RegionOptions,
+    SurfaceOptions,
+    TractogramOptions,
+    VolumeOptions,
+)
 from larmor.viewer.model.viewer import AGENT_ACTION
 from larmor.viewer.qt.help_panel import GUIDES
 
@@ -450,6 +455,7 @@ def test_an_agent_adds_a_region_by_its_role(
     assert isinstance(options, TractogramOptions)
     (region,) = viewer.scene.in_category(Category.REGIONS)
     assert options.regions == (region.id,)
+    assert isinstance(region.options, RegionOptions)
     assert region.options.role == "exclude"
 
 

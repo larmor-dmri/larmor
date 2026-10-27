@@ -86,8 +86,8 @@ def test_saving_draws_the_picture_at_a_multiple_of_its_size(
     detail_id = viewer.open_detail(ViewKind.AXIAL, (2, 3, 4, 2))
     viewer.resize_detail(detail_id, (80, 40))
     path = viewer.save_detail(detail_id, tmp_path / "detail.png", 2, transparent=True)
-    with Image.open(path) as image:
-        assert image.size == (160, 80) and image.mode == "RGBA"
+    with Image.open(path) as saved:
+        assert saved.size == (160, 80) and saved.mode == "RGBA"
     fod = viewer.scene.in_category(Category.FODS)[0]
     viewer.set(fod.id, OptionName.VISIBLE, False)
     image = render_detail(viewer, viewer.scene.detail(detail_id), (80, 40), 1)
