@@ -761,6 +761,18 @@ class RegionShape(StrEnum):
 
 
 REGION_SHAPES: tuple[RegionShape, ...] = tuple(RegionShape)
+
+
+def _sphere(options: object) -> bool:
+    """Tells whether the region is a sphere."""
+    return getattr(options, "shape", None) == RegionShape.SPHERE
+
+
+def _box(options: object) -> bool:
+    """Tells whether the region is a box."""
+    return getattr(options, "shape", None) == RegionShape.BOX
+
+
 # The colour a region of each role starts with; they differ in lightness as well
 # as in hue, so they stay apart in grey.
 ROLE_COLOURS: Final = {
@@ -829,13 +841,15 @@ class RegionOptions(ItemOptions):
         per_item=True,
         group=OptionGroup.REGION,
         help="The radius of a sphere region.",
+        shown_when=_sphere,
     )
     size: Lengths = option(
         BOX_SIZE,
         "Size (mm)",
         per_item=True,
-        panel=False,
         group=OptionGroup.REGION,
+        help="The lengths of a box region along x, y and z.",
+        shown_when=_box,
     )
     mask: int | None = option(
         None,

@@ -275,7 +275,7 @@ class ViewInput(QObject):
 
     def _press_detail(self, point: QPointF, tool: Tool) -> bool:
         """Starts moving a detail whose box's edge is pressed, or inside it with Z."""
-        grid = self.viewer._reference_grid()
+        grid = self.viewer._detail_grid()
         if grid is None:
             return False
         for detail in self.viewer.scene.details.values():
@@ -424,7 +424,7 @@ class ViewInput(QObject):
 
     def _zoom_box(self, world: Vec3, modifiers: Qt.KeyboardModifier) -> None:
         """Draws the rectangle a zoom box covers, snapped to the voxels."""
-        grid = self.viewer._reference_grid()
+        grid = self.viewer._detail_grid()
         if grid is None or self.sketch is None:
             return
         self._box = voxel_box(
@@ -441,7 +441,7 @@ class ViewInput(QObject):
 
     def _move_detail(self, world: Vec3) -> None:
         """Moves the dragged detail's box by whole voxels with the pointer."""
-        grid = self.viewer._reference_grid()
+        grid = self.viewer._detail_grid()
         if grid is None or self._target is None or self._box is None:
             return
         _, first, second = plane_axes(grid, self.kind)

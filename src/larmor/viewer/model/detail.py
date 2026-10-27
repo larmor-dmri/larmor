@@ -51,7 +51,8 @@ class Detail:
     Attributes:
         id: The detail's id in its viewer.
         view: The 2D view it is a rectangle of.
-        box: The rectangle, in the main volume's voxels (see `VoxelBox`).
+        box: The rectangle, in the voxels of the main volume or, with none, of
+            the first visible FOD (see `VoxelBox`).
         position: The world point (mm) whose slice it shows while not linked.
         linked: Whether it follows the crosshair's slice instead.
         voxel_grid: Whether the voxels' edges are drawn.

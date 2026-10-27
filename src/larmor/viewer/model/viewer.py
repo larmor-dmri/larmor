@@ -2986,7 +2986,8 @@ class Viewer:
 
         Args:
             view: `ViewKind.AXIAL`, `CORONAL` or `SAGITTAL`.
-            box: The rectangle in the main volume's voxels: the lowest index and
+            box: The rectangle in the voxels of the main volume, or of the first
+                visible FOD when there is none: the lowest index and
                 the size along each of the two voxel axes in the view's plane,
                 the lower axis first, (i, j, size i, size j). The part inside the
                 grid is kept.
@@ -3137,7 +3138,7 @@ class Viewer:
             named = self.scene.item(self.scene.view.main_volume)
         axis = VIEW_AXIS[detail.view]
         slice_text = "xyz"[axis]
-        grid = self._reference_grid()
+        grid = self._detail_grid()
         if grid is not None:
             index, _ = volume_slice(grid, self.detail_position(detail_id), axis)
             slice_text += f" {index}"
@@ -3224,7 +3225,7 @@ class Viewer:
     def _detail_box(
         self, view: ViewKind, box: object
     ) -> tuple[Grid, tuple[int, int, int, int]]:
-        """Returns the views' grid and a detail's rectangle, checked and clipped.
+        """Returns the details' grid and a detail's rectangle, checked and clipped.
 
         Raises:
             TypeError: If view is not a ViewKind.
@@ -3233,7 +3234,7 @@ class Viewer:
         _require(view, ViewKind)
         if view not in VIEW_AXIS:
             raise ValueError(f"The {view} view has no slices to show in detail.")
-        grid = self._reference_grid()
+        grid = self._detail_grid()
         if grid is None:
             raise ValueError("Open an image first: a detail is a rectangle of voxels.")
         values = tuple(box) if isinstance(box, Iterable) else ()
@@ -3715,6 +3716,22 @@ class Viewer:
                     self.set(item_id, name, old)
             if preset.camera is not None:
                 self._set_camera(ViewKind.THREE_D, camera)
+
+    def _detail_grid(self) -> Grid | None:
+        """Returns the grid whose voxels the detail windows' rectangles count.
+
+        Returns:
+            The main volume's grid; else the first visible FOD's, else the first
+            FOD's, so that a rectangle over the glyphs fits their voxels; else
+            the views' grid (see `_reference_grid`).
+        """
+        if self.scene.view.main_volume is None:
+            fods = self.scene.in_category(Category.FODS)
+            shown = [i for i in fods if i.options.visible] or fods
+            if shown:
+                assert isinstance(shown[0].data, Volume)
+                return shown[0].data.grid
+        return self._reference_grid()
 
     def _reference_grid(self) -> Grid | None:
         """Returns the grid the 2D views slice along, whose voxel is a slice step.

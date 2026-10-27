@@ -81,7 +81,7 @@ class RegionGuides:
         self.groups.clear()
 
     def _regions(self) -> list[Item]:
-        """Returns the visible regions with a shape, in Layers order."""
+        """Returns the visible regions with a shape, in scene tree order."""
         return [
             r
             for r in self.viewer.scene.in_category(Category.REGIONS)
@@ -249,7 +249,7 @@ class DetailBoxes:
 
     def _draw(self) -> None:
         """Outlines every detail's rectangle in its view."""
-        grid = self.viewer._reference_grid()
+        grid = self.viewer._detail_grid()
         cursor = self.viewer.scene.view.cursor
         for kind, group in self.groups.items():
             group.clear()

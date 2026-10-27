@@ -103,3 +103,15 @@ def test_the_title_names_the_fod_the_view_the_slice_and_the_size() -> None:
     assert viewer.detail_title(detail_id) == (
         "Detail - wmfod.mif - coronal y 30 - 12 x 12 voxels"
     )
+
+
+def test_without_a_volume_a_detail_counts_the_voxels_of_the_fod() -> None:
+    viewer = Viewer()
+    # A small overlay far from the FOD, whose grid the views would slice along.
+    shifted = GRID.affine.copy()
+    shifted[:3, 3] = 500.0
+    viewer.add(Volume(np.zeros((4, 4, 4)), shifted), Category.OVERLAYS)
+    fod = Volume(np.zeros((*GRID.shape, 6), np.float32), GRID.affine)
+    viewer.add(fod, Category.FODS)
+    detail_id = viewer.open_detail(ViewKind.AXIAL, (5, 5, 12, 12))
+    assert viewer.scene.detail(detail_id).box == (5, 5, 12, 12)

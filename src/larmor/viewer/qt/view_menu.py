@@ -52,7 +52,7 @@ def build_view_menu(
     )
     box = menu.addAction("Add box region here")
     box.triggered.connect(lambda: viewer.select(viewer.add_box(position, apply=True)))
-    grid = viewer._reference_grid()
+    grid = viewer._detail_grid()
     if kind in VIEW_AXIS and grid is not None:
         zoom = menu.addAction("Zoom box from here")
         square = centred_box(grid, kind, position, MENU_BOX)

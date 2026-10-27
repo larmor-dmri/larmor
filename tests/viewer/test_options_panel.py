@@ -61,6 +61,7 @@ from larmor.viewer.qt.field import (
     ChoiceField,
     ColourField,
     ItemField,
+    LengthsField,
     OptionField,
     PathField,
     SliderField,
@@ -962,6 +963,8 @@ def _shown(panel: OptionsPanel) -> dict[OptionName, object]:
             # An item by its name, as the drop-down shows it.
             chosen = None if field.currentText() == "None" else field.currentText()
             shown[name] = MIXED if field.currentIndex() == -1 else chosen
+        elif isinstance(field, LengthsField):
+            shown[name] = tuple(box.value() for box in field.boxes)
         else:
             text = field.text.text()
             shown[name] = MIXED if text == "" else float(text)
@@ -2380,3 +2383,20 @@ def test_glyphs_have_no_3d_opacity_as_the_3d_view_does_not_draw_them(
     viewer.select(viewer.add(data, category).id)
     assert OptionName.OPACITY_2D in _shown_fields(panel)
     assert OptionName.OPACITY_3D not in _shown_fields(panel)
+
+
+def test_a_region_shows_the_radius_of_a_sphere_and_the_size_of_a_box(
+    viewer: Viewer, panel: OptionsPanel
+) -> None:
+    viewer.select(viewer.add_sphere((0.0, 0.0, 0.0), 4.0))
+    assert OptionName.RADIUS in _shown_fields(panel)
+    assert OptionName.SIZE not in _shown_fields(panel)
+    box = viewer.add_box((0.0, 0.0, 0.0), (6.0, 8.0, 10.0))
+    viewer.select(box)
+    assert OptionName.RADIUS not in _shown_fields(panel)
+    assert OptionName.SIZE in _shown_fields(panel)
+    field = panel._fields[OptionName.SIZE]
+    assert isinstance(field, LengthsField)
+    assert [b.value() for b in field.boxes] == [6.0, 8.0, 10.0]
+    field.boxes[2].setValue(12.0)
+    assert getattr(viewer.scene.item(box).options, OptionName.SIZE) == (6.0, 8.0, 12.0)

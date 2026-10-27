@@ -195,7 +195,7 @@ class DetailWindow(QWidget):
         self.glyph_detail.blockSignals(True)
         self.glyph_detail.setValue(detail.glyph_detail)
         self.glyph_detail.blockSignals(False)
-        grid = self.viewer._reference_grid()
+        grid = self.viewer._detail_grid()
         if grid is not None:
             width, height = screen_millimetres(grid, detail.view, detail.box)
             self.box.set_aspect(width / height)

@@ -45,11 +45,11 @@ selected in the scene tree, and keeps showing it while another kind of item is s
 ## Looking closely
 
 A detail window shows a rectangle of a 2D view on its own, large enough to see each voxel's glyph clearly. Choose
-the Zoom box tool (**Z**) and drag a rectangle in a 2D view, or right-click and choose **Zoom box from here** for
-a 12 x 12 voxel box around the point. The rectangle snaps to the voxels of the main volume and opens in a floating
-window, whose title names the FOD, the view, the slice and the size, such as "Detail - wmfod.mif - coronal y 60 -
-12 x 12 voxels". Several detail windows can be open at once. Each one's rectangle stays outlined in its view, and
-dragging the outline's edge moves the detail.
+the Zoom box tool (**Z**) and drag a rectangle in a 2D view, or right-click and choose **Zoom box from here** for a
+12 x 12 voxel box around the point. The rectangle snaps to the voxels of the main volume, or of the FOD when no
+volume is loaded, and opens in a floating window, whose title names the FOD, the view, the slice and the size, such
+as "Detail - wmfod.mif - coronal y 60 - 12 x 12 voxels". Several detail windows can be open at once. Each one's
+rectangle stays outlined in its view, and dragging the outline's edge moves the detail.
 
 The detail draws the slices without smoothing, so each voxel shows as a square, and builds the FOD glyphs for the
 rectangle alone, at a sphere detail of its own (12 at first, set with **Glyph detail** in its toolbar). Its

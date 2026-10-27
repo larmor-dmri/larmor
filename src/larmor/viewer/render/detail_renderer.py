@@ -226,8 +226,8 @@ class DetailRenderer:
         self._place()
 
     def _grid(self) -> Grid | None:
-        """Returns the views' grid, whose voxels the rectangle counts."""
-        return self.viewer._reference_grid()
+        """Returns the grid whose voxels the rectangle counts."""
+        return self.viewer._detail_grid()
 
     def _field(self) -> tuple[Vec3, Vec3] | None:
         """Returns the world box the detail shows; None without a grid."""
@@ -388,7 +388,7 @@ def save_figure(
         parent.scene_renderer.annotations.crosshairs[detail.view].visible = False
         parent.flush()
         whole = parent.render(detail.view, overlay=False)
-        grid = viewer._reference_grid()
+        grid = viewer._detail_grid()
         assert grid is not None
         low, high = detail_field(
             grid, detail.view, detail.box, viewer.detail_position(detail.id)
