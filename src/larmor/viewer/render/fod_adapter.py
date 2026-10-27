@@ -96,7 +96,7 @@ class FodAdapter(Adapter):
             if kind not in views:
                 continue
             material = glyph_material()
-            material.render_queue = QUEUE_2D  # the slices' queue, for Layers order
+            material.render_queue = QUEUE_2D  # the slices' queue, for scene tree order
             mesh = gfx.Mesh(empty_geometry(), material)
             mesh.render_order = order
             mesh.visible = False

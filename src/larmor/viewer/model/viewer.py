@@ -510,7 +510,7 @@ class Viewer:
                 peaks), in world coordinates, and for surfaces a `Surface`.
             category: Where the item goes: `Category.VOLUMES`, `OVERLAYS`,
                 `TRACTOGRAMS`, `FODS`, `PEAKS` or `SURFACES`.
-            name: The name shown in Layers; "Volume 2" and so on if None.
+            name: The name shown in the scene tree; "Volume 2" and so on if None.
             source: The file the object came from, if any.
             part: What it was read from inside a MATLAB file `source`, if so; a
                 session reopens it from there.
@@ -589,7 +589,7 @@ class Viewer:
     def remove(self, target: ItemId | Category) -> None:
         """Removes an item, or every item of a category.
 
-        When the main volume is removed, the next volume in Layers order becomes
+        When the main volume is removed, the next volume in scene tree order becomes
         the main volume, and is shown if the removed one was. The views keep
         their field of view.
 
@@ -752,7 +752,7 @@ class Viewer:
         self.scene.set_option(item.id, OptionName.VALUES_FILE, str(tsf))
 
     def replace_data(self, item_id: ItemId, data: object) -> None:
-        """Gives an item new data, keeping its id, options and place in Layers.
+        """Gives an item new data, keeping its id, options and place in the scene tree.
 
         The data is checked as `add` checks it, and is not copied. The item then
         refers to no file: a session leaves it out until it is saved with
@@ -828,7 +828,7 @@ class Viewer:
             path: The session file to write; an existing file is replaced.
 
         Returns:
-            The names of the items left out, in Layers order.
+            The names of the items left out, in scene tree order.
 
         Raises:
             OSError: If the file cannot be written.
@@ -2022,7 +2022,7 @@ class Viewer:
                 (5 mm at first) if None.
             role: `RegionRole.INCLUDE` keeps the streamlines that pass through
                 it, `EXCLUDE` drops them, `WITHIN` keeps those that stay inside.
-            name: Its name in Layers; "Sphere 1" and so on if None.
+            name: Its name in the scene tree; "Sphere 1" and so on if None.
             apply: Apply it to every tractogram in the scene.
 
         Returns:
@@ -2068,7 +2068,7 @@ class Viewer:
             size: Its edges' lengths along x, y and z, mm, each positive; the
                 last box's size (10 mm a side at first) if None.
             role: `RegionRole.INCLUDE`, `EXCLUDE` or `WITHIN`, as for a sphere.
-            name: Its name in Layers; "Box 1" and so on if None.
+            name: Its name in the scene tree; "Box 1" and so on if None.
             apply: Apply it to every tractogram in the scene.
 
         Returns:
@@ -2112,7 +2112,7 @@ class Viewer:
         Args:
             mask_id: The image: a volume or an overlay of one volume, on any grid.
             role: `RegionRole.INCLUDE`, `EXCLUDE` or `WITHIN`, as for a sphere.
-            name: Its name in Layers; the image's name and "(mask)" if None.
+            name: Its name in the scene tree; the image's name and "(mask)" if None.
             apply: Apply it to every tractogram in the scene.
 
         Returns:
@@ -2466,7 +2466,7 @@ class Viewer:
             name: An option that names an item, such as `OptionName.MODULATE`.
 
         Returns:
-            The items, in Layers order.
+            The items, in scene tree order.
 
         Raises:
             TypeError: If item_id or name is of the wrong type.
@@ -2496,7 +2496,7 @@ class Viewer:
         ]
 
     def _images_of_one_volume(self) -> list[Item]:
-        """Returns the volumes and overlays with one volume, in Layers order."""
+        """Returns the volumes and overlays with one volume, in scene tree order."""
         return [
             other
             for other in self.scene.items

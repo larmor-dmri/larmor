@@ -20,7 +20,7 @@ class Category(StrEnum):
     """A kind of item the viewer shows, such as volumes or tractograms.
 
     The category of an item decides how its file is read and how it is drawn,
-    and each category has its own group in the Layers panel.
+    and each category has its own group in the scene tree.
     """
 
     VOLUMES = "volumes"

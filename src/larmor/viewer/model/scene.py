@@ -32,11 +32,11 @@ from larmor.viewer.model.view_state import ViewField, ViewState
 
 
 class Scene:
-    """The loaded items in Layers order and the view state, with an event per change."""
+    """The loaded items in scene tree order and the view state, with change events."""
 
     def __init__(self) -> None:
         """Creates an empty scene."""
-        self._items: dict[ItemId, Item] = {}  # insertion order is Layers order
+        self._items: dict[ItemId, Item] = {}  # insertion order is scene tree order
         self._next_id: ItemId = 1
         self.view = ViewState()
         # The phantom editor's state; None while no phantom is open.
@@ -61,7 +61,7 @@ class Scene:
 
     @property
     def items(self) -> list[Item]:
-        """The items, in Layers order."""
+        """The items, in scene tree order."""
         return list(self._items.values())
 
     def item(self, item_id: ItemId) -> Item:
@@ -71,7 +71,7 @@ class Scene:
         return self._items[item_id]
 
     def in_category(self, category: Category) -> list[Item]:
-        """Returns the items of a category, in Layers order."""
+        """Returns the items of a category, in scene tree order."""
         return [item for item in self._items.values() if item.category == category]
 
     def add(
@@ -85,7 +85,7 @@ class Scene:
         part: MatlabPart | None = None,
         registration: Registration | None = None,
     ) -> Item:
-        """Adds an item at the end of Layers and returns it."""
+        """Adds an item at the end of the scene tree and returns it."""
         item = Item(
             self._next_id,
             category,

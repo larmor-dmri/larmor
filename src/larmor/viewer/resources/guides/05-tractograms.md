@@ -55,13 +55,13 @@ colormap and the range.
 
 ## Filtering by regions
 
-You can draw only the streamlines that pass through, avoid or stay within chosen regions. A region is an item of
-its own, listed under **Regions** in Layers, so one region can filter several tractograms and you can select it,
+You can draw only the streamlines that pass through, avoid or stay within chosen regions. A region is an item of its
+own, listed under **Regions** in the scene tree, so one region can filter several tractograms and you can select it,
 hide it, rename it or remove it like any other item. There are three kinds of region. A sphere has a centre and a
-radius, a box has a centre and a size along x, y and z (its edges run along the world axes), and a mask is an
-image of a single volume, already loaded as a volume or an overlay on any grid. A point is in a mask when the
-voxel nearest to it holds a value that rounds to a whole number other than 0, so a binary mask, or a probability
-map above one half, works as it is.
+radius, a box has a centre and a size along x, y and z (its edges run along the world axes), and a mask is an image
+of a single volume, already loaded as a volume or an overlay on any grid. A point is in a mask when the voxel
+nearest to it holds a value that rounds to a whole number other than 0, so a binary mask, or a probability map above
+one half, works as it is.
 
 Each region has a role. **Include** keeps only the streamlines that pass through the region, **Exclude** drops
 them, and **Within** keeps only the streamlines whose points all lie inside it. A region starts in its role's
@@ -93,9 +93,9 @@ tests as `passes_through` and `stays_within` in `larmor.tractography`. Turning *
 every streamline again but keeps the regions ticked, so turning it back on filters again. **Save kept...** writes
 the streamlines that the ticked regions keep, out of all those loaded, to a tractogram file.
 
-The filter runs over all the loaded streamlines, in the background, each time a region changes, and Layers then
-shows how many of them pass beside the tractogram. The subset and the points per streamline apply afterwards, to
-the streamlines kept, so a subset of 50% draws half of those. A session saves the regions (a sphere or box by its
+The filter runs over all the loaded streamlines, in the background, each time a region changes, and the scene tree
+then shows how many of them pass beside the tractogram. The subset and the points per streamline apply afterwards,
+to the streamlines kept, so a subset of 50% draws half of those. A session saves the regions (a sphere or box by its
 centre and size, a mask by its image) and the regions each tractogram applies.
 
 From Python, `viewer.add_sphere((x, y, z), 5.0, apply=True)` adds a sphere and applies it to every tractogram,

@@ -87,7 +87,7 @@ PhantomOpt = Annotated[
     Path | None,
     typer.Option(
         "--phantom",
-        help="Phantom file (.phantom.json) to open in the Phantom panel, to edit "
+        help="Phantom file (.phantom.json) to open in the Simulate workspace, to edit "
         "and simulate.",
     ),
 ]
@@ -97,7 +97,7 @@ SimulationOpt = Annotated[
         "--simulation",
         help="Simulation folder written by lar simulate. The viewer opens its "
         "DWI, tissue masks, ground-truth peaks and bundles, and shows its phantom in "
-        "the Phantom panel.",
+        "the Simulate workspace.",
     ),
 ]
 

@@ -65,7 +65,7 @@ class SessionRegion:
 
 @dataclass(frozen=True)
 class Session:
-    """A session file as read, with its items in Layers order and its view state."""
+    """A session file as read, with its items in scene tree order and its view state."""
 
     items: tuple[SessionItem, ...]
     view: Mapping[str, object]  # view-state field to value, as JSON holds them
@@ -80,7 +80,7 @@ class SessionReport:
     """What opening a session did.
 
     Attributes:
-        items: The items opened, in Layers order.
+        items: The items opened, in scene tree order.
         problems: The files that could not be opened and the options or view-state
             fields that were refused, one sentence each.
     """

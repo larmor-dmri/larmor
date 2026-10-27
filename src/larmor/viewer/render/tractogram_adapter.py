@@ -63,7 +63,7 @@ SLAB_AXIS: dict[ViewKind, int] = {
     ViewKind.AXIAL: 2,
 }
 # Render queue of every item in the 2D views, pygfx's queue for the volumes'
-# slices, so they draw in Layers order whatever their opacity.
+# slices, so they draw in scene tree order whatever their opacity.
 QUEUE_2D = 2600
 # Render queue of translucent lines in the 3D view, before the transparent volume
 # rendering and mask surfaces (pygfx's queue 3000), so those draw over them.

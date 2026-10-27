@@ -44,7 +44,7 @@ class ItemType:
     """How one category of item is loaded, and which options it has."""
 
     category: Category
-    label: str  # the name in the Layers tree, such as "Volumes"
+    label: str  # the name in the scene tree, such as "Volumes"
     load: Loader
     data_type: type  # the type `load` returns and objects from Python must have
     options: type[ItemOptions]
@@ -207,7 +207,7 @@ REGISTRY: dict[Category, ItemType] = {
 }
 
 
-# The categories whose items are read from files, in Layers order.
+# The categories whose items are read from files, in scene tree order.
 FILE_CATEGORIES: tuple[Category, ...] = tuple(
     c for c, kind in REGISTRY.items() if kind.from_files
 )

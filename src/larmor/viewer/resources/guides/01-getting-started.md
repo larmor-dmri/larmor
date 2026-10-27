@@ -14,8 +14,9 @@ image.
 
 ## Opening files
 
-The viewer sorts what it shows into six categories: volumes, overlays, tractograms, FODs, peaks and surfaces.
-Each way of opening files decides which category they go into.
+The viewer sorts what it shows into seven categories: volumes, overlays, tractograms, FODs, peaks, surfaces and
+regions. Files open into the first six, and each way of opening them decides which category they go into; regions
+are drawn in the views instead (see [Tractograms](05-tractograms.md)).
 
 - From the command line, give each file after the option of its category:
   `lar bv -v t1.nii.gz -o mask.nii.gz --tracts tracts.tck -f fod.mif -p peaks.nii.gz`. The options are `-v` for

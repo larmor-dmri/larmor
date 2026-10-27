@@ -150,11 +150,11 @@ def view(
             `Viewer.save_session`). Its files are read in the background, then
             its options and views are restored. Missing files are reported in a
             message box, and the rest still opens.
-        phantom: A phantom file to open in the Phantom panel, its bundles drawn
+        phantom: A phantom file to open in the Simulate workspace, its bundles drawn
             in the background.
-        simulation: A simulation folder (from `lar simulate` or the Phantom
-            panel's Run), whose phantom opens in the Phantom panel and whose DWI,
-            tissue masks and ground-truth peaks open as items.
+        simulation: A simulation folder (from `lar simulate` or Run in the
+            Simulate workspace), whose phantom opens in the Simulate workspace
+            and whose DWI, tissue masks and ground-truth peaks open as items.
         block: Wait until the window is closed. With False, return at once: in
             IPython or Jupyter, run `%gui qt` first so the window stays live; in
             a script, call `wait` to let the files load.

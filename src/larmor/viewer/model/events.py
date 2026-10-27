@@ -11,7 +11,7 @@ from larmor.viewer.model.view_state import ViewField
 
 @dataclass(frozen=True)
 class ItemAdded:
-    """An item was added to the scene (at the end of Layers)."""
+    """An item was added to the scene (at the end of the scene tree)."""
 
     item: Item
 
@@ -25,7 +25,7 @@ class ItemRemoved:
 
 @dataclass(frozen=True)
 class DataChanged:
-    """An item's data was replaced; its id, options and place in Layers stay."""
+    """An item's data was replaced; its id, options and place in the scene tree stay."""
 
     item: Item
 
