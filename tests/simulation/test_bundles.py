@@ -60,7 +60,8 @@ def _distance_to_polygon(points: np.ndarray, polygon: np.ndarray) -> np.ndarray:
     along = np.einsum("nsk,sk->ns", points[:, None] - starts, line)
     t = np.clip(along / np.einsum("sk,sk->s", line, line), 0, 1)
     nearest = starts + t[..., None] * line
-    return np.linalg.norm(points[:, None] - nearest, axis=2).min(axis=1)
+    distance: np.ndarray = np.linalg.norm(points[:, None] - nearest, axis=2)
+    return distance.min(axis=1)
 
 
 def test_the_centreline_passes_through_every_control_point() -> None:

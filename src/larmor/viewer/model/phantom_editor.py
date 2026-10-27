@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 from larmor._log import LarmorLogger
-from larmor.simulation.bundles import centreline_spline
 from larmor.types import Grid, Tractogram, Volume
 from larmor.viewer.model.breakdown import BreakdownTool
 from larmor.viewer.model.item import Category, Item, ItemId
@@ -897,6 +896,9 @@ def _follows(control: np.ndarray, dense: np.ndarray, tolerance: float) -> bool:
     the centreline.
     """
     from scipy.spatial import cKDTree
+
+    # Imported here, so that opening the viewer does not load the simulation.
+    from larmor.simulation.bundles import centreline_spline
 
     if np.any(np.linalg.norm(np.diff(control, axis=0), axis=1) == 0):
         return False
