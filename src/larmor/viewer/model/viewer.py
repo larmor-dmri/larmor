@@ -617,6 +617,22 @@ class Viewer:
             self.remove(category)
 
     @agent_action
+    def rename(self, item_id: ItemId, name: str) -> None:
+        """Gives an item a new name, as the scene tree and sessions show it.
+
+        Args:
+            item_id: The item.
+            name: The new name; spaces at its ends are dropped.
+
+        Raises:
+            ValueError: If there is no item with that id, or the name is empty.
+        """
+        text = str(name).strip()
+        if not text:
+            raise ValueError("A name needs at least one character.")
+        self.scene.rename(item_id, text)
+
+    @agent_action
     def save_item(self, item_id: ItemId, path: str | Path) -> Item:
         """Writes an item's data to a file, which the item then refers to.
 

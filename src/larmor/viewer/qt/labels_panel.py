@@ -1,4 +1,4 @@
-"""The Labels panel, which chooses the labels of a parcellation the 3D view draws."""
+"""The labels list, which chooses the labels of a parcellation the 3D view draws."""
 
 from typing import override
 
@@ -16,11 +16,11 @@ from PySide6.QtWidgets import (
 )
 
 from larmor.viewer.model.events import DataChanged, Event, ItemRemoved, OptionChanged
-from larmor.viewer.model.item import Category, ItemId
+from larmor.viewer.model.item import ItemId
 from larmor.viewer.model.labels import label_name, label_rgb, lookup_table
 from larmor.viewer.model.options import OptionName, OverlayOptions
 from larmor.viewer.model.viewer import Viewer
-from larmor.viewer.qt.docks import ItemPanel, PanelContent
+from larmor.viewer.qt.docks import PanelContent
 
 SWATCH = 12  # px, the side of a label's colour square
 LABEL = Qt.ItemDataRole.UserRole  # where a row keeps its label's number
@@ -190,22 +190,8 @@ class LabelsList(PanelContent):
         )
 
 
-class LabelsPanel(ItemPanel):
-    """Lists the labels of the selected overlay, or of the last one selected."""
-
-    def __init__(self, viewer: Viewer, parent: QWidget | None = None) -> None:
-        """Starts on the selected overlay, else the first."""
-        super().__init__(
-            viewer,
-            Category.OVERLAYS,
-            lambda item_id, panel: LabelsList(viewer, item_id, panel),
-            "Open a parcellation as an overlay to choose the labels drawn in 3D.",
-            parent,
-        )
-
-
 class LabelsButton(QPushButton):
-    """Opens an overlay in the Labels panel; enabled while it is shown as labels."""
+    """Lists an overlay's labels in the inspector; enabled while it shows labels."""
 
     def __init__(self, viewer: Viewer, item_id: ItemId, parent: QWidget) -> None:
         """Creates the button, which follows the overlay's Labels option."""

@@ -150,8 +150,7 @@ def find_preset(name: str, folder: Path | None = None) -> ExportPreset:
     presets = load_presets(folder)
     if name not in presets:
         raise ValueError(
-            f"There is no export preset {name!r}; the presets are "
-            f"{', '.join(presets)}."
+            f"There is no export preset {name!r}; the presets are {', '.join(presets)}."
         )
     return presets[name]
 

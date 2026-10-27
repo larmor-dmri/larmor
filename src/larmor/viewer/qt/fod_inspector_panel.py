@@ -1,4 +1,4 @@
-"""The Inspect FOD panel, which shows one FOD's glyph at the crosshair, large."""
+"""The FOD glyph at the crosshair, large, as the inspector's Cursor tab shows it."""
 
 import math
 from typing import override
@@ -8,9 +8,9 @@ from PySide6.QtGui import QCloseEvent, QMouseEvent, QNativeGestureEvent, QWheelE
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 from rendercanvas.qt import QRenderWidget
 
-from larmor.viewer.model.item import Category, ItemId
+from larmor.viewer.model.item import ItemId
 from larmor.viewer.model.viewer import Viewer
-from larmor.viewer.qt.docks import ItemPanel, PanelContent
+from larmor.viewer.qt.docks import PanelContent
 from larmor.viewer.qt.views import DRAG_DEGREES, MAX_FPS, WHEEL_STEP, WHEEL_ZOOM
 from larmor.viewer.render.fod_inspector import FodInspector
 
@@ -71,20 +71,6 @@ class FodInspectorView(PanelContent):
         self.canvas.close()
         self.closed.emit(self.item_id)
         super().closeEvent(event)
-
-
-class FodInspectorPanel(ItemPanel):
-    """Shows the selected FOD, or the last one selected, at the crosshair."""
-
-    def __init__(self, viewer: Viewer, parent: QWidget | None = None) -> None:
-        """Starts on the selected FOD, else the first."""
-        super().__init__(
-            viewer,
-            Category.FODS,
-            lambda item_id, panel: FodInspectorView(viewer, item_id, panel),
-            "Open an FOD image to inspect its glyph at the crosshair here.",
-            parent,
-        )
 
 
 class _InspectorInput(QObject):

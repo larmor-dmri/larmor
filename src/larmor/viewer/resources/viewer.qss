@@ -101,42 +101,80 @@ QFrame#viewPanel[selected="true"] {
   border: 1px solid ${accent};
 }
 
-/* ---- Stripes and docked panels ---- */
+/* ---- Header, toolbar and docked panels ---- */
 
-QToolBar#stripe {
+QToolBar#headerBar,
+QToolBar#toolsBar {
   background-color: ${bar};
   border: none;
-  padding: 4px 3px;
-  spacing: 4px;
+  border-bottom: 1px solid ${border};
+  padding: 0px;
+  spacing: 0px;
 }
 
-QToolBar#stripe[side="left"] {
-  border-right: 1px solid ${border};
+QWidget#header,
+QWidget#viewToolbar {
+  background-color: ${bar};
 }
 
-QToolBar#stripe[side="right"] {
-  border-left: 1px solid ${border};
+QLabel#datasetName {
+  color: ${text};
+  font-weight: bold;
 }
 
-QToolBar#stripe QToolButton {
+QToolButton#workspaceSwitch {
+  color: ${muted};
+  background-color: ${field};
+  border: 1px solid ${border};
+  padding: 4px 14px;
+}
+
+QToolButton#workspaceSwitch:checked {
+  color: ${text};
+  background-color: ${accent_soft};
+  font-weight: bold;
+}
+
+QToolButton#toolButton,
+QToolButton#headerIcon {
+  color: ${text};
   background-color: transparent;
-  border: none;
-  border-radius: 6px;
-  padding: 5px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  padding: 3px 8px;
 }
 
-QToolBar#stripe QToolButton:hover {
+QToolButton#toolButton:hover,
+QToolButton#headerIcon:hover {
   background-color: ${hover};
 }
 
-QToolBar#stripe QToolButton:checked {
-  background-color: ${accent_faint};
+QToolButton#toolButton:checked {
+  background-color: ${accent_soft};
+  border: 1px solid ${accent};
+}
+
+QTabWidget#inspector::pane {
+  border: none;
+  border-top: 1px solid ${border};
+}
+
+QTabWidget#inspector QTabBar::tab {
+  color: ${muted};
+  background-color: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 6px 12px;
+}
+
+QTabWidget#inspector QTabBar::tab:selected {
+  color: ${text};
+  border-bottom: 2px solid ${accent};
 }
 
 ads--CDockContainerWidget,
 ads--CDockAreaWidget,
-ads--CDockWidget,
-ads--CAutoHideDockContainer {
+ads--CDockWidget {
   background-color: ${window};
   border: none;
 }
@@ -202,45 +240,8 @@ ads--CTitleBarButton:pressed {
   qproperty-icon: url("${icons}/close.svg");
 }
 
-#dockAreaAutoHideButton {
-  qproperty-icon: url("${icons}/pin.svg");
-}
-
-ads--CAutoHideDockContainer #dockAreaAutoHideButton {
-  qproperty-icon: url("${icons}/unpin.svg");
-}
-
-#autoHideTitleLabel {
-  color: ${text};
-  font-weight: bold;
-  padding-left: 6px;
-}
-
-ads--CAutoHideDockContainer[sideBarLocation="1"] {
-  border-right: 1px solid ${border};
-}
-
-ads--CAutoHideDockContainer[sideBarLocation="2"] {
-  border-left: 1px solid ${border};
-}
-
 ads--CResizeHandle {
   background-color: ${border};
-}
-
-/* The stripes open the auto-hidden panels: QtAds' own side bars take no room. */
-ads--CAutoHideSideBar[sideBarLocation="1"],
-ads--CAutoHideSideBar[sideBarLocation="2"] {
-  min-width: 0px;
-  max-width: 0px;
-  border: none;
-}
-
-ads--CAutoHideSideBar[sideBarLocation="0"],
-ads--CAutoHideSideBar[sideBarLocation="3"] {
-  min-height: 0px;
-  max-height: 0px;
-  border: none;
 }
 
 QLabel#panelHint {
@@ -248,9 +249,9 @@ QLabel#panelHint {
   padding: 12px 14px;
 }
 
-/* ---- Layers ---- */
+/* ---- The scene tree ---- */
 
-QTreeView#layers {
+QTreeView#sceneTree {
   background-color: ${window};
   border: none;
   padding: 4px 0px;
@@ -259,37 +260,37 @@ QTreeView#layers {
   selection-background-color: transparent;
 }
 
-QTreeView#layers::item {
+QTreeView#sceneTree::item {
   height: 26px;
   padding: 0px 2px;
   border: none;
   color: ${text};
 }
 
-QTreeView#layers::item:hover {
+QTreeView#sceneTree::item:hover {
   background-color: ${hover};
 }
 
-QTreeView#layers::item:selected {
+QTreeView#sceneTree::item:selected {
   background-color: ${accent_soft};
   color: ${text};
 }
 
-QTreeView#layers::branch {
+QTreeView#sceneTree::branch {
   background-color: transparent;
   border-image: none;
   image: none;
 }
 
-QTreeView#layers::branch:has-children:closed {
+QTreeView#sceneTree::branch:has-children:closed {
   image: url("${icons}/chevron-right.svg");
 }
 
-QTreeView#layers::branch:has-children:open {
+QTreeView#sceneTree::branch:has-children:open {
   image: url("${icons}/chevron-down.svg");
 }
 
-/* ---- Options and Settings: forms of fields ---- */
+/* ---- The inspector's and the settings' forms of fields ---- */
 
 QScrollArea#options,
 QScrollArea#settings {
@@ -655,24 +656,28 @@ QScrollBar::sub-page {
   height: 0px;
 }
 
-/* ---- Phantom editor: the layout switch and the guided steps ---- */
+/* ---- Phantom editor: the steps and their pages ---- */
 
-QToolButton#layoutSwitch {
+QToolButton#moreFold {
   color: ${muted};
-  background-color: ${field};
-  border: 1px solid ${border};
-  padding: 4px 12px;
+  border: none;
+  background-color: transparent;
+  padding: 4px 0px 4px 10px;
+  text-align: left;
 }
 
-QToolButton#layoutSwitch:checked {
+QToolButton#moreFold:hover {
   color: ${text};
-  background-color: ${accent_soft};
-  font-weight: bold;
+}
+
+QFrame#drawCard {
+  background-color: ${accent_faint};
+  border: 1px solid ${accent};
+  border-radius: 5px;
 }
 
 QWidget#stepRail {
-  background-color: ${bar};
-  border-right: 1px solid ${border};
+  background-color: ${window};
 }
 
 QFrame#stepRow {
@@ -734,16 +739,4 @@ QPushButton#nextStep {
 
 QPushButton#nextStep:hover {
   background-color: ${accent_light};
-}
-
-QToolButton#stepChip {
-  color: ${text};
-  background-color: transparent;
-  border: none;
-  border-radius: 4px;
-  padding: 2px 6px;
-}
-
-QToolButton#stepChip:hover {
-  background-color: ${hover};
 }

@@ -50,8 +50,6 @@ ICONS = {
     "eye-open": ("eye", "text"),
     "eye-closed": ("eye-off", "faint"),
     "eye-mixed": ("eye-dashed", "muted"),
-    "delete": ("trash-2", "faint"),
-    "delete-hover": ("trash-2", "danger"),
     "enlarge": ("maximize-2", "muted"),
     "restore": ("minimize-2", "muted"),
     "check": ("check", "on_accent"),
@@ -59,27 +57,13 @@ ICONS = {
     "chevron-right": ("chevron-right", "muted"),
     "chevron-down": ("chevron-down", "muted"),
     "chevron-up": ("chevron-up", "muted"),
-    "pin": ("pin", "muted"),
-    "unpin": ("pin-off", "muted"),
     "close": ("x", "muted"),
     "info": ("info", "muted"),
     "step-ready": ("check", "accent"),
     "step-waiting": ("circle", "faint"),
+    "settings": ("settings", "muted"),
+    "help": ("circle-help", "muted"),
 }
-# The icons of the stripes' buttons: muted, and in the accent while the panel is open.
-STRIPE_ICONS = (
-    "layers",
-    "tags",
-    "camera",
-    "spline",
-    "sliders-horizontal",
-    "scan-search",
-    "chart-column-stacked",
-    "settings",
-    "circle-help",
-)
-ICONS |= {f"stripe-{s}": (s, "muted") for s in STRIPE_ICONS}
-ICONS |= {f"stripe-{s}-on": (s, "accent") for s in STRIPE_ICONS}
 
 _requested: tuple[Theme, str] | None = None  # the theme and accent last asked for
 _applied: tuple[bool, str] | None = None  # dark or not, and the accent, as styled

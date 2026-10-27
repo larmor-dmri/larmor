@@ -12,6 +12,7 @@ from larmor.viewer.model.events import (
     Event,
     ItemAdded,
     ItemRemoved,
+    ItemRenamed,
     OptionChanged,
     PhantomChanged,
     SourceChanged,
@@ -114,6 +115,12 @@ class Scene:
         item = self.item(item_id)
         item.source, item.part, item.registration = source, None, None
         self._emit(SourceChanged(item))
+
+    def rename(self, item_id: ItemId, name: str) -> None:
+        """Gives an item a new name; sends ItemRenamed."""
+        item = self.item(item_id)
+        item.name = name
+        self._emit(ItemRenamed(item))
 
     def set_option(self, item_id: ItemId, name: OptionName, value: object) -> None:
         """Replaces one option of an item; sends OptionChanged if it changes."""

@@ -37,6 +37,13 @@ class SourceChanged:
 
 
 @dataclass(frozen=True)
+class ItemRenamed:
+    """An item was given a new name."""
+
+    item: Item
+
+
+@dataclass(frozen=True)
 class OptionChanged:
     """One option of an item changed from `old` to `new`."""
 
@@ -72,6 +79,7 @@ type Event = (
     | ItemRemoved
     | DataChanged
     | SourceChanged
+    | ItemRenamed
     | OptionChanged
     | ViewStateChanged
     | PhantomChanged
