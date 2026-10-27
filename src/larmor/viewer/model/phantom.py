@@ -410,8 +410,8 @@ class PhantomState:
         draft: The bundle being drawn; None outside draw mode.
         proxies: (map, overlay item) pairs of the proxy maps shown.
         output: The folder a run writes to; None until chosen.
-        show_box: Whether the grid's box is outlined in the views; it is
-            always outlined while a bundle is drawn.
+        show_box: Whether the grid's box is outlined in the views of the
+            Simulate workspace; it is always outlined while a bundle is drawn.
         serial: A number that tells phantoms apart; a new or loaded phantom gets
             a new one, and an edit keeps it.
     """

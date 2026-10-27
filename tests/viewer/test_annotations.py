@@ -8,6 +8,7 @@ import pytest
 from larmor.types import Volume
 from larmor.viewer import Category, Convention, OptionName, Readout, Viewer, ViewKind
 from larmor.viewer.model.camera import Camera2D, screen_axes
+from larmor.viewer.model.view_state import Workspace
 from larmor.viewer.render.annotations import readout_text
 from larmor.viewer.render.backing import Backing
 from larmor.viewer.render.scene_renderer import SceneRenderer
@@ -142,6 +143,7 @@ def test_hiding_the_grid_box_removes_it_from_every_view(
     views: dict[ViewKind, ViewRenderer],
 ) -> None:
     viewer, renderer = scene_renderer
+    viewer.set_workspace(Workspace.SIMULATE)
     viewer.new_phantom((20.0, 20.0, 20.0), 2.0)
     boxes = [group.children[0] for group in renderer.phantom_guides.groups.values()]
     assert len(boxes) == len(views) and all(box.visible for box in boxes)
@@ -149,6 +151,25 @@ def test_hiding_the_grid_box_removes_it_from_every_view(
     assert not any(box.visible for box in boxes)
     viewer.start_bundle()  # always outlined while drawing
     assert all(box.visible for box in boxes)
+
+
+def test_the_grid_box_shows_only_in_the_simulate_workspace_or_while_drawing(
+    scene_renderer: tuple[Viewer, SceneRenderer],
+) -> None:
+    viewer, renderer = scene_renderer
+    viewer.new_phantom((20.0, 20.0, 20.0), 2.0)
+    groups = renderer.phantom_guides.groups.values()
+    boxes = [group.children[0] for group in groups]
+    assert not any(box.visible for box in boxes)
+    viewer.set_workspace(Workspace.SIMULATE)
+    assert all(box.visible for box in boxes)
+    viewer.start_bundle()
+    viewer.add_bundle_point((0.0, 0.0, 0.0))
+    viewer.set_workspace(Workspace.VIEW)
+    assert all(box.visible for box in boxes)  # still drawing
+    assert all(group.children[2].visible for group in groups)  # its point
+    viewer.cancel_bundle()
+    assert not any(box.visible for box in boxes)
 
 
 # The information overlay switch

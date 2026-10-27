@@ -1467,8 +1467,8 @@ class Viewer:
     def show_grid_box(self, shown: bool = True) -> None:
         """Outlines the phantom's grid box in the views, or hides it.
 
-        The box is outlined while a bundle is drawn whatever this says; a
-        session keeps the choice.
+        The box is shown only in the Simulate workspace, and always while a
+        bundle is drawn whatever this says; a session keeps the choice.
 
         Args:
             shown: Outline it, or hide it.
