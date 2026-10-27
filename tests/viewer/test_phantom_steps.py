@@ -6,7 +6,7 @@ from pytestqt.qtbot import QtBot
 
 from larmor.viewer import Category, Viewer
 from larmor.viewer.model.phantom import PhantomStep
-from larmor.viewer.qt.docks import Panel
+from larmor.viewer.qt.docks import SIDE_WIDTHS, Panel
 from larmor.viewer.qt.help_panel import GUIDES
 from larmor.viewer.qt.main_window import MainWindow
 from larmor.viewer.qt.phantom_steps import (
@@ -130,3 +130,22 @@ def test_the_guide_quotes_the_default_scan_as_the_scan_page_does() -> None:
     text = " ".join(guide.read_text(encoding="utf-8").split())
     sentence = default_scan_text().removeprefix("The ").removesuffix(".")
     assert sentence in text
+
+
+def test_every_step_page_fits_the_width_of_the_right_panel(qtbot: QtBot) -> None:
+    window = _window(qtbot)
+    viewer = window.viewer
+    window.new_phantom()
+    viewer.start_bundle()
+    for point in [(-6.0, 0.0, 0.0), (0.0, 2.0, 0.0), (6.0, 0.0, 0.0)]:
+        viewer.add_bundle_point(point)
+    viewer.finish_bundle()
+    page = window.step_page
+    for section in page.panel.sections.values():
+        section.set_more_shown(True)
+    page.panel.bundle_table.selectRow(0)  # shows the bundle's own fields too
+    content = page.area.widget()
+    assert content is not None
+    for step in PhantomStep:
+        window.steps.go_to(step)
+        assert content.minimumSizeHint().width() <= SIDE_WIDTHS[1], step

@@ -294,6 +294,7 @@ class StepsPanel(QWidget):
         self.new_button = QPushButton("New", self)
         self.new_button.clicked.connect(self.new_requested)
         self.open_button = QToolButton(self)
+        self.open_button.setObjectName("menuButton")
         self.open_button.setText("Open")
         self.open_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         menu = QMenu(self.open_button)
@@ -347,6 +348,8 @@ class StepPage(QWidget):
         self.area = QScrollArea(self)
         self.area.setWidgetResizable(True)
         self.area.setFrameShape(QFrame.Shape.NoFrame)
+        # The page fits the panel's width: its text wraps and its tables scroll.
+        self.area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         content = QWidget(self.area)
         page = QVBoxLayout(content)
         page.setContentsMargins(12, 12, 12, 12)

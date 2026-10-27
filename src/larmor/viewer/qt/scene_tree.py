@@ -434,6 +434,7 @@ class ScenePanel(QWidget):
         self.open_button.setToolTip("Open images, tractograms or surfaces (Ctrl+O)")
         self.open_button.clicked.connect(self.open_requested)
         self.session_button = QToolButton(self)
+        self.session_button.setObjectName("menuButton")
         self.session_button.setText("Session")
         self.session_button.setToolTip("Open or save the items and the views")
         self.session_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)

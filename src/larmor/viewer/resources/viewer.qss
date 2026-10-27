@@ -443,6 +443,34 @@ QPushButton:focus {
   border-color: ${accent};
 }
 
+/* A button that opens a menu, as Session and Open do, with its arrow after the text. */
+QToolButton#menuButton {
+  color: ${text};
+  background-color: ${field};
+  border: 1px solid ${border};
+  border-radius: 4px;
+  padding: 2px 24px 2px 12px;
+  min-height: 20px;
+}
+
+QToolButton#menuButton:hover {
+  border-color: ${muted};
+  background-color: ${hover};
+}
+
+QToolButton#menuButton:pressed {
+  background-color: ${pressed};
+}
+
+QToolButton#menuButton::menu-indicator {
+  image: url("${icons}/chevron-down.svg");
+  subcontrol-origin: padding;
+  subcontrol-position: center right;
+  right: 6px;
+  width: 12px;
+  height: 12px;
+}
+
 QPushButton#colourField {
   font-family: "Menlo", "Consolas", "DejaVu Sans Mono", monospace;
 }

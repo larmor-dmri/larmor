@@ -4,7 +4,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any, cast, override
 
-from PySide6.QtCore import QEvent, QObject, QRectF, QSignalBlocker, Qt, Signal
+from PySide6.QtCore import QEvent, QObject, QRectF, QSignalBlocker, QSize, Qt, Signal
 from PySide6.QtGui import QColor, QIcon, QPainter, QPaintEvent, QResizeEvent, QShowEvent
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -24,6 +24,9 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QSizePolicy,
     QSpinBox,
+    QStyle,
+    QStyleOptionToolButton,
+    QStylePainter,
     QTableWidget,
     QTableWidgetItem,
     QToolButton,
@@ -89,6 +92,7 @@ SECTION_HELP = {
     "Run": "Simulates the phantom and writes the images and the ground truth into a "
     "folder, then opens them.",
 }
+BOX_FIELD_WIDTH = 64  # px, the least width of each of the box's three sizes
 # What each section's More fold holds, as its button names it.
 MORE = {
     "Grid": "More: grid box, background, tissue maps",
@@ -333,7 +337,7 @@ class Section(QWidget):
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
         self.body = QWidget(self)
-        self.form = QFormLayout(self.body)
+        self.form = _form(self.body)
         self.form.setContentsMargins(14, 4, 8, 8)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -357,14 +361,13 @@ class Section(QWidget):
 
     def _build_more(self, layout: QVBoxLayout, title: str) -> None:
         """Adds the More button and the form of the fields it unfolds."""
-        self.more_button = QToolButton(self)
+        self.more_button = FoldButton(MORE.get(title, "More"), self)
         self.more_button.setObjectName("moreFold")
-        self.more_button.setText(MORE.get(title, "More"))
         self.more_button.setCheckable(True)
         self.more_button.setAutoRaise(True)
         self.more_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.more = QWidget(self)
-        self.more_form = QFormLayout(self.more)
+        self.more_form = _form(self.more)
         self.more_form.setContentsMargins(14, 0, 8, 8)
         layout.addWidget(self.more_button)
         layout.addWidget(self.more)
@@ -413,6 +416,46 @@ class Section(QWidget):
         for child in self.findChildren(FieldLabel):
             if child.parent() is self:
                 child.setVisible(shown)
+
+
+class FoldButton(QToolButton):
+    """A fold's button that cuts its text short with an ellipsis when it is narrow."""
+
+    NARROWEST = 80  # px, the least room it asks for
+
+    def __init__(self, text: str, parent: QWidget | None = None) -> None:
+        """Creates the button with its full text."""
+        super().__init__(parent)
+        self.setText(text)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+    @override
+    def minimumSizeHint(self) -> QSize:
+        """Returns a narrow size: the text is cut short rather than widen the panel."""
+        hint = super().minimumSizeHint()
+        return QSize(min(hint.width(), self.NARROWEST), hint.height())
+
+    @override
+    def paintEvent(self, event: QPaintEvent) -> None:  # noqa: N802
+        """Draws the button with as much of its text as its width takes."""
+        painter = QStylePainter(self)
+        option = QStyleOptionToolButton()
+        self.initStyleOption(option)
+        metrics = self.fontMetrics()
+        # The room the icon and padding take, then what is left for the text.
+        frame = self.sizeHint().width() - metrics.horizontalAdvance(self.text())
+        option.text = metrics.elidedText(
+            self.text(), Qt.TextElideMode.ElideRight, self.width() - frame
+        )
+        painter.drawComplexControl(QStyle.ComplexControl.CC_ToolButton, option)
+
+
+def _form(parent: QWidget | None = None) -> QFormLayout:
+    """Creates a form whose fields go below their labels when the panel is narrow."""
+    form = QFormLayout(parent)
+    form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
+    form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+    return form
 
 
 class FractionBar(QWidget):
@@ -652,6 +695,8 @@ class PhantomPanel(QWidget):
         self.size_boxes = [_spin(1, 2000, 1) for _ in range(3)]
         for spin in self.size_boxes:
             spin.setValue(60.0)
+            # Narrower than the widest value, so the three fit a narrow panel.
+            spin.setMinimumWidth(BOX_FIELD_WIDTH)
             box.addWidget(spin)
         form.addRow(FieldLabel("Box (mm)", HELP["Box (mm)"], self), box)
         for spin in self.size_boxes:
@@ -675,7 +720,7 @@ class PhantomPanel(QWidget):
         )
         self.grid_label = QLabel(self)
         form.addRow(self.grid_label)
-        self.map_form = QFormLayout()
+        self.map_form = _form()
         more.addRow(self.map_form)
         self.background = ChoiceBox(self)
         self.background.chosen.connect(
@@ -702,7 +747,7 @@ class PhantomPanel(QWidget):
         self.preset.chosen.connect(self._edit_preset)
         add_field_row(form, "Made of", HELP["Made of"], self.preset, self)
         self.parameters = QWidget(self)
-        self.parameter_form = QFormLayout(self.parameters)
+        self.parameter_form = _form(self.parameters)
         self.parameter_form.setContentsMargins(0, 0, 0, 0)
         form.addRow(self.parameters)
         self.parameter_boxes: dict[str, QDoubleSpinBox] = {}
@@ -745,9 +790,9 @@ class PhantomPanel(QWidget):
             QAbstractItemView.SelectionMode.SingleSelection
         )
         self.bundle_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.bundle_table.horizontalHeader().setSectionResizeMode(
-            0, QHeaderView.ResizeMode.Stretch
-        )
+        header = self.bundle_table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.bundle_table.setMinimumHeight(90)
         self.bundle_table.itemSelectionChanged.connect(self._select_bundle)
         self._build_bundle_buttons(form, more)
@@ -836,6 +881,9 @@ class PhantomPanel(QWidget):
         """Adds the table of the drawn bundle's points and its buttons."""
         self.points = QTableWidget(0, 3, self)
         self.points.setHorizontalHeaderLabels(["x", "y", "z"])
+        self.points.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
         self.points.setMinimumHeight(100)
         self.points.itemChanged.connect(lambda _: self._edit_points())
         form.addRow(self.points)
@@ -899,6 +947,9 @@ class PhantomPanel(QWidget):
         self.shells = QTableWidget(0, 2, self)
         self.shells.setHorizontalHeaderLabels(["b (s/mm^2)", "Directions"])
         self.shells.verticalHeader().setVisible(False)
+        self.shells.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
         self.shells.setMinimumHeight(90)
         self.shells.itemChanged.connect(lambda _: self._edit_shells())
         form.addRow(self.shells)
