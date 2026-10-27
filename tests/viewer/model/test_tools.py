@@ -5,7 +5,7 @@ import pytest
 from scipy.spatial import cKDTree
 
 from larmor.simulation.bundles import centreline_spline
-from larmor.viewer import Tool, Viewer
+from larmor.viewer import Colouring, Tool, Viewer
 from larmor.viewer.model.phantom_editor import (
     BUNDLE_POINTS_DRAWN,
     STROKE_POINTS,
@@ -55,6 +55,7 @@ def test_a_drawn_bundle_is_shown_with_smooth_bends() -> None:
     viewer.add_bundle_stroke([(-20.0, 0.0, 0.0), (0.0, 15.0, 0.0), (20.0, 0.0, 0.0)])
     item = viewer.finish_bundle()
     assert item.options.points == BUNDLE_POINTS_DRAWN  # type: ignore[attr-defined]
+    assert item.options.colouring == Colouring.DIRECTION  # type: ignore[attr-defined]
 
 
 def test_a_stroke_that_never_moves_gives_one_point() -> None:

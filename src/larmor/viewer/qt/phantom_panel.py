@@ -177,8 +177,82 @@ def _map_help(tissue: str) -> str:
     )
 
 
-def _parameter_help(key: str) -> str:
-    """Returns the help of a preset parameter, from its name."""
+# Labels and help of the preset parameters whose names alone are unclear,
+# above all the fractions, which name a different compartment in each preset.
+PARAMETER_TEXT: dict[tuple[TissuePreset, str], tuple[str, str]] = {
+    (TissuePreset.STANDARD_MODEL, "intra_fraction"): (
+        "Inside axons (fraction)",
+        "The share of the tissue's water inside the axons, from 0 to 1. The water "
+        "around the axons takes what the free water and this leave.",
+    ),
+    (TissuePreset.STANDARD_MODEL, "free_water_fraction"): (
+        "Free water (fraction)",
+        "The share of the tissue's water that diffuses freely, as in CSF, from 0 "
+        "to 1. At 0 the tissue has none.",
+    ),
+    (TissuePreset.STANDARD_MODEL, "intra_diffusivity"): (
+        "Inside axons, along (um^2/ms)",
+        "How fast water diffuses along the axons, inside them. Across them it "
+        "does not move.",
+    ),
+    (TissuePreset.STANDARD_MODEL, "extra_parallel_diffusivity"): (
+        "Around axons, along (um^2/ms)",
+        "How fast the water around the axons diffuses along them.",
+    ),
+    (TissuePreset.STANDARD_MODEL, "extra_perpendicular_diffusivity"): (
+        "Around axons, across (um^2/ms)",
+        "How fast the water around the axons diffuses across them.",
+    ),
+    (TissuePreset.STANDARD_MODEL, "intra_t2_ms"): (
+        "T2 inside axons (ms)",
+        "The T2 of the water inside the axons, which a spin echo uses.",
+    ),
+    (TissuePreset.STANDARD_MODEL, "extra_t2_ms"): (
+        "T2 around axons (ms)",
+        "The T2 of the water around the axons, which a spin echo uses.",
+    ),
+    (TissuePreset.NODDI, "intra_fraction"): (
+        "Neurites (fraction)",
+        "The neurites' share of the water that is not free water, from 0 to 1 "
+        "(NODDI's v_ic). The rest of that water lies around the neurites.",
+    ),
+    (TissuePreset.NODDI, "free_water_fraction"): (
+        "Free water (fraction)",
+        "The share of the whole tissue's water that diffuses freely, as in CSF, "
+        "from 0 to 1 (NODDI's v_iso).",
+    ),
+    (TissuePreset.NODDI, "diffusivity"): (
+        "Along neurites (um^2/ms)",
+        "How fast water diffuses along the neurites. The water around them "
+        "follows from it and from kappa.",
+    ),
+    (TissuePreset.SANDI, "neurite_fraction"): (
+        "Neurites (fraction)",
+        "The share of the tissue's water inside neurites, from 0 to 1. The water "
+        "outside cells takes what the somas and this leave.",
+    ),
+    (TissuePreset.SANDI, "soma_fraction"): (
+        "Somas (fraction)",
+        "The share of the tissue's water inside cell bodies, from 0 to 1.",
+    ),
+    (TissuePreset.SANDI, "extracellular_diffusivity"): (
+        "Outside cells (um^2/ms)",
+        "How fast the water outside cells diffuses, the same in every direction.",
+    ),
+}
+
+
+def _parameter_label(preset: TissuePreset, key: str) -> str:
+    """Returns a preset parameter's form label, with its unit."""
+    text = PARAMETER_TEXT.get((preset, key))
+    return text[0] if text is not None else _label(key)
+
+
+def _parameter_help(preset: TissuePreset, key: str) -> str:
+    """Returns the help of a preset parameter."""
+    text = PARAMETER_TEXT.get((preset, key))
+    if text is not None:
+        return text[1]
     if "fraction" in key:
         return "The share of the tissue's volume in this compartment, from 0 to 1."
     if "diffusivity" in key:
@@ -751,6 +825,7 @@ class PhantomPanel(QWidget):
         self.parameter_form.setContentsMargins(0, 0, 0, 0)
         form.addRow(self.parameters)
         self.parameter_boxes: dict[str, QDoubleSpinBox] = {}
+        self._parameter_preset: TissuePreset | None = None
         self._build_compartments()
         more.addRow(self.custom)
 
@@ -1159,7 +1234,11 @@ class PhantomPanel(QWidget):
             self.sections["Tissues"].set_more_shown(True)  # the table is under More
         if not custom:
             keys = list(preset_defaults(tissue.preset))
-            if list(self.parameter_boxes) != keys:
+            if (
+                list(self.parameter_boxes) != keys
+                or self._parameter_preset != tissue.preset
+            ):
+                self._parameter_preset = tissue.preset
                 while self.parameter_form.rowCount():
                     self.parameter_form.removeRow(0)
                 self.parameter_boxes = {}
@@ -1171,8 +1250,8 @@ class PhantomPanel(QWidget):
                     self.parameter_boxes[key] = box
                     add_field_row(
                         self.parameter_form,
-                        _label(key),
-                        _parameter_help(key),
+                        _parameter_label(tissue.preset, key),
+                        _parameter_help(tissue.preset, key),
                         box,
                         self,
                     )

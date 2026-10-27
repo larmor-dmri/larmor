@@ -252,3 +252,27 @@ def test_the_window_opens_a_phantom_file_in_the_background(
     state = window.viewer.phantom
     assert state is not None and len(state.bundles) == 1
     assert window.viewer.scene.view.workspace == Workspace.SIMULATE
+
+
+def test_each_fraction_names_its_compartment(qtbot: QtBot) -> None:
+    viewer = Viewer()
+    viewer.new_phantom()
+    panel = PhantomPanel(viewer)
+    qtbot.addWidget(panel)
+
+    def labels() -> dict[str, tuple[str, str]]:
+        form = panel.parameter_form
+        found = {}
+        for key, box in panel.parameter_boxes.items():
+            label = form.labelForField(box)
+            assert isinstance(label, FieldLabel)
+            found[key] = (label.text(), label.toolTip())
+        return found
+
+    standard = labels()
+    assert standard["intra_fraction"][0].startswith("Inside axons")
+    assert "free" in standard["free_water_fraction"][1].lower()
+    viewer.set_tissue("WM", TissuePreset.NODDI)
+    noddi = labels()
+    assert noddi["intra_fraction"][0].startswith("Neurites")
+    assert "not free water" in noddi["intra_fraction"][1]

@@ -15,7 +15,6 @@ from larmor.viewer.model.breakdown import BreakdownTool
 from larmor.viewer.model.item import Category, Item, ItemId
 from larmor.viewer.model.options import (
     Colormap,
-    Colouring,
     OptionError,
     OptionName,
     option_fields,
@@ -586,7 +585,6 @@ class PhantomEditor:
             return
         name = f"Bundle {len(state.bundles) + 1}"
         item = self.viewer.add(streamlines, Category.TRACTOGRAMS, name=name)
-        self.viewer.set(item.id, OptionName.COLOURING, Colouring.PER_TRACTOGRAM)
         # Enough points per drawn streamline that a bend looks smooth in 2D.
         self.viewer.set(item.id, OptionName.POINTS, BUNDLE_POINTS_DRAWN)
         state = self.require()
@@ -696,8 +694,6 @@ class PhantomEditor:
             )
             self._apply_options(item.id, bundle.options)
             settings = replace(bundle.settings, item_id=item.id)
-            if settings.geometry is not None and not bundle.options:
-                self.viewer.set(item.id, OptionName.COLOURING, Colouring.PER_TRACTOGRAM)
             bundles.append(settings)
         maps = []
         for tissue, volume, path in loaded.maps:
