@@ -2,10 +2,11 @@
 
 from pathlib import Path
 
+import PySide6QtAds as QtAds
 import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QScrollArea
 from pytestqt.qtbot import QtBot
 
 from larmor.viewer.model.settings import AppSettings, Settings
@@ -121,3 +122,25 @@ def test_the_signal_breakdown_opens_only_when_asked_for(
     second = _window(qtbot, tmp_path)
     second.viewer.set_workspace(Workspace.SIMULATE)
     assert not second.docks.is_open(Panel.SIGNAL_BREAKDOWN)
+
+
+def test_the_breakdowns_close_button_closes_it_each_time_it_opens(
+    qtbot: QtBot,
+) -> None:
+    window = _window(qtbot)
+    window.viewer.set_workspace(Workspace.SIMULATE)
+    for _ in range(2):
+        window.show_breakdown()
+        area = window.docks.docks[Panel.SIGNAL_BREAKDOWN].dockAreaWidget()
+        area.titleBar().button(QtAds.TitleBarButtonClose).click()
+        assert not window.docks.is_open(Panel.SIGNAL_BREAKDOWN)
+
+
+def test_the_breakdown_scrolls_when_its_dock_is_low(qtbot: QtBot) -> None:
+    window = _window(qtbot)
+    window.viewer.set_workspace(Workspace.SIMULATE)
+    panel = window.show_breakdown()
+    parent = panel.parentWidget()
+    while parent is not None and not isinstance(parent, QScrollArea):
+        parent = parent.parentWidget()
+    assert parent is not None

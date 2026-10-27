@@ -37,7 +37,7 @@ A first simulation follows the steps in their order.
 5. On the Run step, **Run** starts the simulation. If no output folder is set, it first asks for a folder to save
    the results in. The results open as items when the run ends.
 
-Under "Optional, any time", the list also links to the Signal breakdown of a voxel (see below), to the tissue maps
+Under "Optional", the list also links to the Signal breakdown of a voxel (see below), to the tissue maps
 and the background, which a first simulation does not need, and to **All settings**. All settings opens a window
 that shows every section and field of the editor at once, including the proxy maps and the phantom's Close button.
 The pages and the window show the same phantom, so a change made in one shows in the other.

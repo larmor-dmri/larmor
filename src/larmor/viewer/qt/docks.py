@@ -146,8 +146,9 @@ class Docks(QObject):
         if self._breakdown is None:
             self._breakdown = self._make_breakdown()
             dock = self.docks[Panel.SIGNAL_BREAKDOWN]
+            # It scrolls when the dock is lower than the table and the chart.
             dock.setWidget(
-                self._breakdown, QtAds.CDockWidget.eInsertMode.ForceNoScrollArea
+                self._breakdown, QtAds.CDockWidget.eInsertMode.ForceScrollArea
             )
             # A panel that names what it shows, as the Signal breakdown names
             # its voxel, titles its dock.
@@ -185,8 +186,23 @@ class Docks(QObject):
         if panel == Panel.SIGNAL_BREAKDOWN:
             self.breakdown()
         self.docks[panel].toggleView(True)
+        if panel == Panel.SIGNAL_BREAKDOWN:
+            self._wire_close_button()
         if first:
             self._set_breakdown_height(BOTTOM_HEIGHT)
+
+    def _wire_close_button(self) -> None:
+        """Makes the close button of the Signal breakdown's title bar close it.
+
+        The button closes the current tab, and a dock without tabs has none, so
+        it would do nothing on its own.
+        """
+        area = self.docks[Panel.SIGNAL_BREAKDOWN].dockAreaWidget()
+        if area is None or area.property("close_wired"):
+            return
+        button = area.titleBar().button(QtAds.TitleBarButtonClose)
+        button.clicked.connect(lambda: self.close(Panel.SIGNAL_BREAKDOWN))
+        area.setProperty("close_wired", True)
 
     def _set_breakdown_height(self, height: int) -> None:
         """Sets the height of the Signal breakdown below the views, in px.

@@ -264,7 +264,7 @@ class StepsPanel(QWidget):
             self.rows[step] = row
             layout.addWidget(row)
         layout.addStretch(1)
-        optional = QLabel("Optional, any time", self)
+        optional = QLabel("Optional", self)
         optional.setObjectName("railNote")
         layout.addWidget(optional)
         self.links: dict[str, QPushButton] = {}
