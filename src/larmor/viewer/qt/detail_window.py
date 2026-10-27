@@ -90,6 +90,8 @@ class DetailWindow(QWidget):
         super().__init__(parent, Qt.WindowType.Window)
         self.viewer = viewer
         self.detail_id = detail_id
+        # A closed window goes, with its drawing, instead of staying hidden.
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self._closing = False
         self.canvas = QRenderWidget(update_mode="ondemand", max_fps=MAX_FPS)
         self.box = _AspectBox(self.canvas, self)

@@ -9,6 +9,7 @@ from PySide6.QtCore import QEvent, QPoint, QPointF, Qt
 from PySide6.QtGui import QMouseEvent
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
+from pytestqt.qtbot import QtBot
 
 from larmor.types import Tractogram, Volume
 from larmor.viewer import (
@@ -20,6 +21,7 @@ from larmor.viewer import (
     Viewer,
     ViewKind,
 )
+from larmor.viewer.model.detail import DetailId
 from larmor.viewer.model.options import RegionOptions, TractogramOptions
 from larmor.viewer.qt.detail_window import DetailWindow
 from larmor.viewer.qt.main_window import MainWindow
@@ -44,6 +46,10 @@ def window(shared_window: MainWindow) -> Iterator[MainWindow]:
     yield shared_window
     for detail_window in shared_window.findChildren(DetailWindow):
         detail_window.close()
+
+
+def _detail_windows(window: MainWindow, detail_id: DetailId) -> list[DetailWindow]:
+    return [w for w in window.findChildren(DetailWindow) if w.detail_id == detail_id]
 
 
 def _panel(window: MainWindow, view: ViewKind) -> ViewPanel:
@@ -191,8 +197,8 @@ def test_a_zoom_box_drag_opens_a_detail_window_snapped_to_the_voxels(
     _drag(panel, _point(panel, (4.2, y, 6.1)), _point(panel, (9.6, y, 12.3)))
     (detail,) = viewer.scene.details.values()
     assert detail.box == (4, 6, 7, 7)
-    windows = window.findChildren(DetailWindow)
-    assert [w.detail_id for w in windows] == [detail.id]
+    windows = _detail_windows(window, detail.id)
+    assert len(windows) == 1
     assert windows[0].windowTitle().endswith("7 x 7 voxels")
     # Dragging the box's edge moves the detail by whole voxels.
     edge = _point(panel, (3.5, y, 9.0))
@@ -315,12 +321,20 @@ def test_a_right_click_offers_regions_and_a_zoom_box_there(
     assert detail.box[2:] == (12, 12)
 
 
+def test_a_closed_detail_window_is_deleted(window: MainWindow, qtbot: QtBot) -> None:
+    detail_id = window.viewer.open_detail(ViewKind.AXIAL, (2, 2, 8, 4))
+    (detail_window,) = _detail_windows(window, detail_id)
+    detail_window.close()
+    qtbot.waitUntil(lambda: not _detail_windows(window, detail_id))
+    assert detail_id not in window.viewer.scene.details
+
+
 def test_the_detail_window_s_toolbar_sets_the_detail_and_saves_it(
     window: MainWindow, tmp_path: Path
 ) -> None:
     viewer = window.viewer
     detail_id = viewer.open_detail(ViewKind.AXIAL, (2, 2, 8, 4))
-    (detail_window,) = window.findChildren(DetailWindow)
+    (detail_window,) = _detail_windows(window, detail_id)
     detail_window.voxel_grid.trigger()
     detail_window.glyph_detail.setValue(6)
     detail = viewer.scene.details[detail_id]
