@@ -11,7 +11,7 @@ from pytestqt.qtbot import QtBot
 from larmor.viewer.model.settings import AppSettings, Settings
 from larmor.viewer.model.view_state import Workspace
 from larmor.viewer.qt import docks
-from larmor.viewer.qt.docks import LAYOUT_FILE, SIDE_WIDTHS, Panel
+from larmor.viewer.qt.docks import LAYOUT_FILE, SIDE_WIDTHS, SIDES, Panel
 from larmor.viewer.qt.main_window import MainWindow
 
 
@@ -96,3 +96,28 @@ def test_each_workspace_shows_its_own_panels_either_side(qtbot: QtBot) -> None:
     assert window.steps_panel.isVisible() and window.step_page.isVisible()
     assert not window.scene_panel.isVisible()
     assert window.docks.docks[Panel.RIGHT].windowTitle() == "Step"
+
+
+def test_the_side_panels_have_no_title_bar_and_the_breakdown_keeps_its_own(
+    qtbot: QtBot,
+) -> None:
+    window = _window(qtbot)
+    for panel in SIDES:
+        area = window.docks.docks[panel].dockAreaWidget()
+        assert not area.titleBar().isVisible()
+    window.show_breakdown()
+    area = window.docks.docks[Panel.SIGNAL_BREAKDOWN].dockAreaWidget()
+    qtbot.waitUntil(area.titleBar().isVisible)
+
+
+def test_the_signal_breakdown_opens_only_when_asked_for(
+    qtbot: QtBot, tmp_path: Path
+) -> None:
+    first = _window(qtbot, tmp_path)
+    first.viewer.set_workspace(Workspace.SIMULATE)
+    assert not first.docks.is_open(Panel.SIGNAL_BREAKDOWN)
+    first.show_breakdown()
+    first.close()  # saves the layout with the breakdown open
+    second = _window(qtbot, tmp_path)
+    second.viewer.set_workspace(Workspace.SIMULATE)
+    assert not second.docks.is_open(Panel.SIGNAL_BREAKDOWN)

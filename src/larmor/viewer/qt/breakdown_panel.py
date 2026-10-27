@@ -117,12 +117,24 @@ class BreakdownPanel(QWidget):
         self._relayout.timeout.connect(self._draw_chart)
         self.canvas.installEventFilter(self)
         layout.addWidget(self.canvas, stretch=1)
+        # Takes the room the chart leaves while it is hidden, so the choices stay up.
+        layout.addStretch(0)
+        self.figure.set_facecolor(self._theme()["figure.facecolor"])
 
     @override
     def showEvent(self, event: QShowEvent) -> None:  # noqa: N802
         """Starts following the phantom's signal."""
         super().showEvent(event)
         self.viewer.show_breakdown(True)
+
+    @override
+    def changeEvent(self, event: QEvent) -> None:  # noqa: N802
+        """Draws the chart again in the new colours when the theme changes."""
+        super().changeEvent(event)
+        changes = (QEvent.Type.PaletteChange, QEvent.Type.ApplicationPaletteChange)
+        if event.type() in changes and hasattr(self, "_relayout"):
+            self.figure.set_facecolor(self._theme()["figure.facecolor"])
+            self._relayout.start()
 
     @override
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
@@ -146,7 +158,10 @@ class BreakdownPanel(QWidget):
             self._show_choices()
 
     def redraw(self) -> None:
-        """Shows the breakdown as the scene holds it: table, choices and chart."""
+        """Shows the breakdown as the scene holds it: table, choices and chart.
+
+        With no voxel, only the hint and the empty choices show.
+        """
         state = self.viewer.breakdown
         self.title_changed.emit(title(state))
         breakdown = state.breakdown if state is not None else None
@@ -157,9 +172,10 @@ class BreakdownPanel(QWidget):
             self.hint.setText("" if state is None else state.problem or "")
             self.hint.show()
             self._show_choices()
-            self.canvas.draw_idle()  # type: ignore[no-untyped-call]
+            self.canvas.hide()
             return
         self.hint.hide()
+        self.canvas.show()
         self.heading.setText(heading(state))
         self.heading.show()
         self._show_rows(card_rows(breakdown))

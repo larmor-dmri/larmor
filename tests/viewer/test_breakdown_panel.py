@@ -3,8 +3,10 @@
 import numpy as np
 import pytest
 from matplotlib.axes import Axes
+from matplotlib.colors import to_hex
 from matplotlib.figure import Figure
 from PySide6.QtCore import QPoint, Qt
+from PySide6.QtGui import QColor, QPalette
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QWidget
 from pytestqt.qtbot import QtBot
@@ -229,3 +231,20 @@ def test_the_panel_closes_in_the_view_workspace_and_comes_back_in_simulate(
     assert window.viewer.breakdown is None
     window.viewer.set_workspace(Workspace.SIMULATE)
     assert window.docks.is_open(Panel.SIGNAL_BREAKDOWN)
+
+
+def test_without_a_voxel_only_the_hint_shows_and_the_chart_follows_the_theme(
+    qtbot: QtBot,
+) -> None:
+    viewer = Viewer()
+    phantom(viewer)
+    panel = BreakdownPanel(viewer)
+    qtbot.addWidget(panel)
+    panel.show()
+    assert panel.canvas.isHidden() and not panel.hint.isHidden()
+    palette = panel.palette()
+    palette.setColor(QPalette.ColorRole.Window, QColor("#202124"))
+    panel.setPalette(palette)
+    viewer.pin_breakdown((0.0, 1.0, 0.0))
+    assert not panel.canvas.isHidden()
+    assert to_hex(panel.figure.get_facecolor()) == "#202124"

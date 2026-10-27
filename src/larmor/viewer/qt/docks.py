@@ -103,6 +103,7 @@ class Docks(QObject):
         )
         breakdown.viewToggled.connect(self._breakdown_toggled)
         breakdown.toggleView(False)
+        self._hide_side_title_bars()
         self.set_side_widths(*SIDE_WIDTHS)
         # The arrangement at first start, which Reset goes back to.
         self._default = self.manager.saveState(LAYOUT_VERSION)
@@ -128,6 +129,17 @@ class Docks(QObject):
         )
         self.docks[panel] = dock
         return dock
+
+    def _hide_side_title_bars(self) -> None:
+        """Hides the empty title bars of the side panels, which start under the bars.
+
+        The Signal breakdown keeps its title bar for its close button.
+        """
+        flag = QtAds.CDockAreaWidget.eDockAreaFlag.HideSingleWidgetTitleBar
+        for panel in SIDES:
+            area = self.docks[panel].dockAreaWidget()
+            if area is not None:
+                area.setDockAreaFlag(flag, True)
 
     def breakdown(self) -> QWidget:
         """Returns the Signal breakdown's content, made now if it has not been yet."""
@@ -169,9 +181,24 @@ class Docks(QObject):
 
     def open(self, panel: Panel) -> None:
         """Opens a panel's dock where it was last."""
+        first = panel == Panel.SIGNAL_BREAKDOWN and self._breakdown is None
         if panel == Panel.SIGNAL_BREAKDOWN:
             self.breakdown()
         self.docks[panel].toggleView(True)
+        if first:
+            self._set_breakdown_height(BOTTOM_HEIGHT)
+
+    def _set_breakdown_height(self, height: int) -> None:
+        """Sets the height of the Signal breakdown below the views, in px.
+
+        It takes at most half the height, so the views keep the rest.
+        """
+        area = self.docks[Panel.SIGNAL_BREAKDOWN].dockAreaWidget()
+        splitter = area.parentWidget() if area is not None else None
+        if isinstance(splitter, QtAds.CDockSplitter) and splitter.count() == 2:
+            total = sum(splitter.sizes())
+            height = min(height, total // 2)
+            self.manager.setSplitterSizes(area, [total - height, height])
 
     def close(self, panel: Panel) -> None:
         """Closes a panel's dock."""
@@ -198,6 +225,7 @@ class Docks(QObject):
     def reset(self) -> None:
         """Goes back to the arrangement at first start."""
         self.manager.restoreState(self._default, LAYOUT_VERSION)
+        self._hide_side_title_bars()
         for panel in SIDES:
             self.open(panel)
 
@@ -206,7 +234,7 @@ class Docks(QObject):
         return bytes(self.manager.saveState(LAYOUT_VERSION).data())
 
     def restore_state(self, state: bytes) -> bool:
-        """Arranges the panels as saved, in a shown window.
+        """Arranges the panels as saved, in a shown window; the Signal breakdown closes.
 
         Returns False, keeping the arrangement it had, if the state is unreadable
         or older, puts two panels in one area as tabs, leaves an open side panel
@@ -228,8 +256,9 @@ class Docks(QObject):
         ):
             self.manager.restoreState(before, LAYOUT_VERSION)
             restored = False
-        if self.is_open(Panel.SIGNAL_BREAKDOWN):
-            self.breakdown()
+        self._hide_side_title_bars()
+        # The Signal breakdown opens only when asked for, never from a saved layout.
+        self.close(Panel.SIGNAL_BREAKDOWN)
         return restored
 
     def save(self, path: Path) -> bool:
