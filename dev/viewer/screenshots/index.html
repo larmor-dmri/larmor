@@ -6,19 +6,19 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta content="Screenshots in BrainViewer: saving views as images, separate views, and rotation videos of the 3D view." name="description" />
-<meta property="og:title" content="Screenshots" />
+<meta content="Exporting from BrainViewer: images, separate views and rotation videos of the 3D view, drawn with presets." name="description" />
+<meta property="og:title" content="Exporting images and videos" />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://larmor.org/viewer/screenshots/" />
 <meta property="og:site_name" content="Larmor" />
-<meta property="og:description" content="Screenshots in BrainViewer: saving views as images, separate views, and rotation videos of the 3D view." />
+<meta property="og:description" content="Exporting from BrainViewer: images, separate views and rotation videos of the 3D view, drawn with presets." />
 <meta property="og:image" content="https://larmor.org/_static/larmor-card.png" />
 <meta property="og:image:alt" content="Larmor: a Python library and viewer for diffusion MRI" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 
-<title>Screenshots - Larmor</title>
+<title>Exporting images and videos - Larmor</title>
   
   
   
@@ -486,7 +486,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../fod-glyphs/">FOD glyphs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../peaks/">Peaks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../settings/">Settings</a></li>
-<li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">Screenshots</a></li>
+<li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">Exporting images and videos</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../sessions/">Sessions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../surfaces/">Surfaces</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../matlab-files/">MATLAB files</a></li>
@@ -535,7 +535,7 @@
     
     <li class="breadcrumb-item"><a href="../" class="nav-link">Viewer</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Screenshots</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Exporting images and videos</span></li>
   </ul>
 </nav>
 </div>
@@ -552,47 +552,63 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section class="tex2jax_ignore mathjax_ignore" id="screenshots">
-<h1>Screenshots<a class="headerlink" href="#screenshots" title="Link to this heading">#</a></h1>
-<p>The Screenshots panel saves what the views show as an image or a video, for a paper or a slide. Open it with
-File &gt; Screenshots, with the camera icon on the left, or with <strong>Ctrl+Shift+S</strong>. The panel shows a preview of the
-image before it is saved, and has these fields.</p>
+  <section class="tex2jax_ignore mathjax_ignore" id="exporting-images-and-videos">
+<h1>Exporting images and videos<a class="headerlink" href="#exporting-images-and-videos" title="Link to this heading">#</a></h1>
+<p>The Export sheet saves what the views show as an image or a video, for a paper, a slide or a web page. Open it with
+<strong>Export…</strong> in the header, with File &gt; Export… or with <strong>Ctrl+Shift+S</strong> (Cmd+Shift+S on macOS). The sheet is a
+window of its own: a preview of the export is on its left and the choices are on its right, and the preview follows
+the views while the sheet is open.</p>
+<p><strong>What</strong> chooses what to save: <strong>One image</strong>, <strong>2D views as separate images</strong> or <strong>3D rotation video</strong>. For one
+image, <strong>View</strong> chooses one of the four views, or <strong>All views</strong> as the window lays them out (only the enlarged view,
+if one is enlarged); it starts on the view last clicked. <strong>Image size</strong> says how large the image or each frame will
+be.</p>
+<section id="presets">
+<h2>Presets<a class="headerlink" href="#presets" title="Link to this heading">#</a></h2>
+<p>A preset decides how the export is drawn. It sets the size of the image, which the views share when the image shows
+all of them, or keeps the size the views have on the screen, a scale that multiplies that size, the background
+colour, whether the information overlay is drawn, and whether the background is transparent. It can also give the
+items other options while the export is drawn, such as tubes for the tractograms, and hold a position of the 3D
+camera. Those options apply only to the export: the views on the screen are as they were once it is saved. The small
+table under <strong>Preset</strong> shows the chosen preset’s values.</p>
+<p>The viewer comes with four presets.</p>
 <ul class="simple">
-<li><p><strong>Save</strong> chooses what to save: <strong>One image</strong>, <strong>2D views as separate images</strong> or <strong>3D rotation video</strong> (see
-below).</p></li>
-<li><p><strong>View</strong> chooses one of the four views, or <strong>All views</strong> as the window lays them out (only the enlarged view,
-if one is enlarged). It starts on the view last clicked.</p></li>
-<li><p><strong>Scale (x screen)</strong> goes from 1 to 4. At 1 the image has the screen’s pixels and matches what the views show.
-At 2 to 4 the image is drawn again at that many times the resolution, so it stays sharp in a paper or on a
-slide.</p></li>
-<li><p><strong>Information overlay</strong> puts the views’ names and slices, the readout, the orientation letters and the colour
-bars in the image, or leaves them out. The views on the screen keep their own setting.</p></li>
-<li><p><strong>Transparent background</strong> leaves the space around the images see-through, for PNG and TIFF. JPEG has no
-transparency.</p></li>
-<li><p><strong>Image size</strong> shows the size in pixels of the image that will be saved.</p></li>
+<li><p><strong>Screen</strong> draws the views as they are on the screen, at the screen’s size and resolution.</p></li>
+<li><p><strong>Figure</strong> draws them at twice the resolution on a white background, without the overlay and with a transparent
+background, for a paper.</p></li>
+<li><p><strong>Talk</strong> draws them at twice the resolution on a black background, without the overlay, with tractograms as tubes
+with ambient occlusion, for a slide.</p></li>
+<li><p><strong>Website</strong> draws images of 1800 x 1200 pixels on a black background, without the overlay, with tractograms as
+tubes of 0.25 mm with ambient occlusion, the smoothest FOD glyphs and blocky slices, and the 3D view seen from
+the subject’s front right, 12 degrees above the horizontal.</p></li>
 </ul>
-<p><strong>Save…</strong> asks for a file, which can be PNG, TIFF or, for an image without transparency, JPEG. The fields start
-with the screenshot values in <a class="reference internal" href="../settings/"><span class="std std-doc">Settings</span></a>; changing them here does not change Settings.</p>
+<p><strong>Edit preset…</strong> changes the chosen preset’s name, size, scale, background, overlay and transparency, and can save
+the 3D view’s camera as it is now. The preset is saved as a TOML file in the <code class="docutils literal notranslate"><span class="pre">export_presets</span></code> folder beside the
+settings (see <a class="reference internal" href="../settings/"><span class="std std-doc">Settings</span></a>), so it is there the next time; a preset saved under the name of one of the
+four replaces it.</p>
+<p><strong>Camera</strong> chooses where the 3D view is seen from: the preset’s own position, when it has one, the 3D view’s current
+camera, or the axial, coronal or sagittal position. <strong>Transparent background</strong> leaves the space around the images
+see-through, for PNG, TIFF and WebP; it starts as the preset says. <strong>Also save the session beside the image</strong> writes
+a session file with the image’s name, such as <code class="docutils literal notranslate"><span class="pre">figure.lar.json</span></code> beside <code class="docutils literal notranslate"><span class="pre">figure.png</span></code>, so that you can open the same
+view again later (see <a class="reference internal" href="../sessions/"><span class="std std-doc">Sessions</span></a>).</p>
+<p><strong>Save…</strong> asks for a file, which can be PNG, TIFF or, for an image without transparency, JPEG, and <strong>Cancel</strong>
+closes the sheet.</p>
+</section>
 <section id="separate-views-and-rotation-videos">
 <h2>Separate views and rotation videos<a class="headerlink" href="#separate-views-and-rotation-videos" title="Link to this heading">#</a></h2>
-<p><strong>2D views as separate images</strong> saves the axial, coronal and sagittal views at once, each in its own file, so
-saving <code class="docutils literal notranslate"><span class="pre">figure.png</span></code> writes <code class="docutils literal notranslate"><span class="pre">figure_axial.png</span></code>, <code class="docutils literal notranslate"><span class="pre">figure_coronal.png</span></code> and <code class="docutils literal notranslate"><span class="pre">figure_sagittal.png</span></code>. If any of them
-exists, the panel asks once before replacing them.</p>
-<p><strong>3D rotation video</strong> saves the 3D view turning round, starting from where it is now, as an animated WebP or GIF.
-Three fields set the video.</p>
-<ul class="simple">
-<li><p><strong>Speed</strong> is in degrees per second (30 by default). A negative speed turns the other way.</p></li>
-<li><p><strong>Duration</strong> is the length of the video in seconds (12 by default, one full turn at 30 degrees per second).</p></li>
-<li><p><strong>Frames per second</strong> is 30 by default.</p></li>
-</ul>
-<p>The preview plays the rotation in a loop at the chosen speed; <strong>Pause</strong> stops it on a frame and <strong>Play</strong> goes on.
-A progress window follows the recording, and <strong>Cancel</strong> stops it without writing a file. The 3D view in the main
-window does not move while the video is recorded. A transparent background needs WebP, because GIF has no partial
-transparency. GIF also has fewer colours and plays at most 50 frames per second, so above that rate the file
-dialog offers only WebP.</p>
-<p>From Python, without a window, <code class="docutils literal notranslate"><span class="pre">viewer.screenshot(None,</span> <span class="pre">&quot;figure.png&quot;,</span> <span class="pre">scale=2,</span> <span class="pre">transparent=True)</span></code> saves all
-views, <code class="docutils literal notranslate"><span class="pre">viewer.screenshot_views(&quot;figure.png&quot;)</span></code> saves the three 2D views, and <code class="docutils literal notranslate"><span class="pre">viewer.record_rotation(&quot;turn.webp&quot;)</span></code>
-saves the video.</p>
+<p><strong>2D views as separate images</strong> saves the axial, coronal and sagittal views at once, each in its own file, so saving
+<code class="docutils literal notranslate"><span class="pre">figure.png</span></code> writes <code class="docutils literal notranslate"><span class="pre">figure_axial.png</span></code>, <code class="docutils literal notranslate"><span class="pre">figure_coronal.png</span></code> and <code class="docutils literal notranslate"><span class="pre">figure_sagittal.png</span></code>. If any of them exists, the
+sheet asks once before replacing them.</p>
+<p><strong>3D rotation video</strong> saves the 3D view turning round as an animated WebP or GIF. It starts from the camera the
+sheet chooses, and three fields set the video: <strong>Speed</strong> in degrees per second (30 by default; a negative speed
+turns the other way), <strong>Duration</strong> in seconds (12 by default, one full turn at 30 degrees per second) and <strong>Frames
+per second</strong> (30 by default). A progress window follows the recording, and its <strong>Cancel</strong> stops it without writing
+a file. A transparent background needs WebP, because GIF has no partial transparency. GIF also has fewer colours and
+plays at most 50 frames per second, so above that rate the file dialog offers only WebP.</p>
+<p>From Python, without a window, <code class="docutils literal notranslate"><span class="pre">viewer.export(&quot;Website&quot;,</span> <span class="pre">&quot;slide.png&quot;,</span> <span class="pre">ViewKind.THREE_D)</span></code> saves one view with a
+preset, <code class="docutils literal notranslate"><span class="pre">viewer.export_views(&quot;Figure&quot;,</span> <span class="pre">&quot;figure.png&quot;)</span></code> saves the three 2D views and
+<code class="docutils literal notranslate"><span class="pre">viewer.export_rotation(&quot;Talk&quot;,</span> <span class="pre">&quot;turn.webp&quot;)</span></code> saves the video. <code class="docutils literal notranslate"><span class="pre">viewer.screenshot(None,</span> <span class="pre">&quot;figure.png&quot;,</span> <span class="pre">scale=2)</span></code>,
+<code class="docutils literal notranslate"><span class="pre">viewer.screenshot_views</span></code> and <code class="docutils literal notranslate"><span class="pre">viewer.record_rotation</span></code> take the size, scale and switches themselves instead of a
+preset.</p>
 </section>
 </section>
 
@@ -619,6 +635,7 @@ saves the video.</p>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#presets">Presets</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#separate-views-and-rotation-videos">Separate views and rotation videos</a></li>
 </ul>
   </nav></div>

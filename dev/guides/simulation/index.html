@@ -564,7 +564,7 @@ is not.</p>
 <section id="building-a-phantom">
 <h2>Building a phantom<a class="headerlink" href="#building-a-phantom" title="Link to this heading">#</a></h2>
 <p>The phantom below is one straight bundle on a grid of 24 x 24 x 24 voxels of 1 mm. The bundle’s
-<a class="reference internal" href="../../reference/api/simulation/#larmor.simulation.BundleGeometry" title="larmor.simulation.BundleGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">BundleGeometry</span></code></a> is a spline through control points in world coordinates (mm), with
+<a class="reference internal" href="../../reference/api/simulation/#larmor.simulation.BundleGeometry" title="larmor.simulation.BundleGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">BundleGeometry</span></code></a> is a smooth curve through control points in world coordinates (mm), with
 <code class="docutils literal notranslate"><span class="pre">num_streamlines</span></code> streamlines spread over a disc of the given <code class="docutils literal notranslate"><span class="pre">radius</span></code> around it, and its seed makes the
 streamlines the same on every run. A phantom has the tissues WM, GM and CSF by default, and a bundle is filled
 with WM unless you name another tissue.</p>

@@ -745,12 +745,12 @@ the streamlines drawn from a geometry. Defaults to 0.</p>
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.simulation.</span></span><span class="sig-name descname"><span class="pre">BundleGeometry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">control_points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_streamlines</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fan_start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fan_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fan_sharpness</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dispersion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.BundleGeometry" title="Link to this definition">#</a></dt>
 <dd><p>The shape of a synthetic bundle.</p>
 <p>A geometry describes a bundle by a few control points along its centreline,
-a radius, and how much the bundle fans out at its ends. Each streamline is a
-spline through the control points, shifted across the centreline by an
-offset drawn uniformly in a disc of <code class="xref py py-obj docutils literal notranslate"><span class="pre">radius</span></code>. The offset is scaled by
+a radius, and how much the bundle fans out at its ends. Each streamline
+follows the centreline (see <code class="xref py py-obj docutils literal notranslate"><span class="pre">centreline_spline</span></code>) at a fixed offset across
+it, drawn uniformly in a disc of <code class="xref py py-obj docutils literal notranslate"><span class="pre">radius</span></code>. The offset is scaled by
 1 + fan_start (1 - u)^p + fan_end u^p, where u in [0, 1] is the position
-along the centreline and p is fan_sharpness. A random wander of standard
-deviation <code class="xref py py-obj docutils literal notranslate"><span class="pre">dispersion</span></code> is added at the inner control points.</p>
+along the centreline and p is fan_sharpness. A smooth random wander of
+standard deviation <code class="xref py py-obj docutils literal notranslate"><span class="pre">dispersion</span></code>, zero at both ends, is added along the way.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1268,7 +1268,7 @@ to None.</p></li>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="larmor.simulation.PhantomFile.viewer">
 <span class="sig-name descname"><span class="pre">viewer</span></span><a class="headerlink" href="#larmor.simulation.PhantomFile.viewer" title="Link to this definition">#</a></dt>
-<dd><p>The settings of the viewer’s Phantom panel, such as the
+<dd><p>The settings of the viewer’s Simulate workspace, such as the
 bundles’ names, kept as they are; empty if none.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
