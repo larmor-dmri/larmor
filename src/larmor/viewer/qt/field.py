@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QColorDialog,
     QComboBox,
+    QDoubleSpinBox,
     QFileDialog,
     QFormLayout,
     QHBoxLayout,
@@ -19,11 +20,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from larmor.viewer.model.options import Colour, OptionInfo
+from larmor.viewer.model.options import Colour, Lengths, OptionInfo
 from larmor.viewer.model.viewer import MIXED
 from larmor.viewer.qt.style import icon_path
 
 SLIDER_MIN_WIDTH = 80  # px
+LENGTH_RANGE = (0.1, 500.0)  # mm, what a lengths field takes
 
 
 class SliderField(QWidget):
@@ -95,6 +97,43 @@ class SliderField(QWidget):
                 assert isinstance(value, (int, float))
                 self.slider.setValue(round((value - self.minimum) / self.step))
                 self.text.setText(f"{value:g}")
+
+
+class LengthsField(QWidget):
+    """Edits three lengths along x, y and z, in mm, such as a box's size."""
+
+    edited = Signal(object)
+
+    def __init__(self, info: OptionInfo, parent: QWidget | None = None) -> None:
+        """Creates a number box per axis."""
+        super().__init__(parent)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.boxes: list[QDoubleSpinBox] = []
+        for axis in "xyz":
+            box = QDoubleSpinBox(self)
+            box.setRange(LENGTH_RANGE[0], LENGTH_RANGE[1])
+            box.setDecimals(1)
+            box.setSingleStep(0.5)
+            box.setToolTip(f"{info.label} along {axis}")
+            box.setKeyboardTracking(False)  # sends the value once typed, not per key
+            box.valueChanged.connect(lambda _: self._send())
+            layout.addWidget(box)
+            self.boxes.append(box)
+
+    def _send(self) -> None:
+        """Sends the three lengths."""
+        self.edited.emit(Lengths(tuple(box.value() for box in self.boxes)))
+
+    def show_value(self, value: object) -> None:
+        """Shows lengths from the model without sending `edited`; MIXED clears them."""
+        for index, box in enumerate(self.boxes):
+            with QSignalBlocker(box):
+                if value is MIXED:
+                    box.clear()
+                else:
+                    assert isinstance(value, tuple)
+                    box.setValue(float(value[index]))
 
 
 class CheckField(QCheckBox):
@@ -227,7 +266,13 @@ class ColourField(QPushButton):
 
 
 type OptionField = (
-    CheckField | ChoiceField | ColourField | ItemField | PathField | SliderField
+    CheckField
+    | ChoiceField
+    | ColourField
+    | ItemField
+    | LengthsField
+    | PathField
+    | SliderField
 )
 
 
@@ -253,6 +298,8 @@ def field_for(
         return PathField(info, parent)
     if isinstance(f.default, Colour):
         return ColourField(info.label, parent)
+    if isinstance(f.default, Lengths):
+        return LengthsField(info, parent)
     if isinstance(f.default, bool):
         return CheckField(parent)
     if isinstance(f.default, (float, int)):

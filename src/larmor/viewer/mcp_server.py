@@ -142,7 +142,7 @@ def actions(viewer: Viewer) -> dict[str, Callable[..., Any]]:
 
 
 SCENE_DESCRIPTION = (
-    "The items in the scene, in Layers order (id, category, name, "
+    "The items in the scene, in scene tree order (id, category, name, "
     "source file, number of volumes, value range and options), and the "
     "state of the views (cursor, main volume, selection, cameras, ...). "
     "Other tools name items by these ids."
@@ -185,7 +185,7 @@ def to_json(value: object) -> object:
 
 
 def scene_summary(viewer: Viewer) -> dict[str, object]:
-    """Returns the items, in Layers order, and the state of the views."""
+    """Returns the items, in scene tree order, and the state of the views."""
     return {
         "items": [to_json(item) for item in viewer.scene.items],
         "view": to_json(viewer.scene.view),

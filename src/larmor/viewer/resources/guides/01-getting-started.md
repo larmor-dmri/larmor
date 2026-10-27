@@ -4,7 +4,7 @@ BrainViewer, Larmor's viewer, shows brain images, tractograms, fibre orientation
 cortical surfaces in three 2D views and a 3D view. This guide shows how to open files, how to install the viewer on
 its own, and how its window is laid out.
 
-![The viewer's window: Layers on the left, the four views in the middle, Options on the right](images/window.png)
+![The viewer's window: the scene tree on the left, the four views in the middle, the inspector on the right](images/window.png)
 
 The pictures in these guides show the simulated brain of the ISMRM 2015 Tractography Challenge (Maier-Hein et
 al., Nature Communications 8 (2017) 1349; https://doi.org/10.5281/zenodo.572345, CC BY 4.0): its T1-like image,
@@ -14,8 +14,9 @@ image.
 
 ## Opening files
 
-The viewer sorts what it shows into six categories: volumes, overlays, tractograms, FODs, peaks and surfaces.
-Each way of opening files decides which category they go into.
+The viewer sorts what it shows into seven categories: volumes, overlays, tractograms, FODs, peaks, surfaces and
+regions. Files open into the first six, and each way of opening them decides which category they go into; regions
+are drawn in the views instead (see [Tractograms](05-tractograms.md)).
 
 - From the command line, give each file after the option of its category:
   `lar bv -v t1.nii.gz -o mask.nii.gz --tracts tracts.tck -f fod.mif -p peaks.nii.gz`. The options are `-v` for
@@ -28,8 +29,8 @@ Each way of opening files decides which category they go into.
   it on the viewer's icon in the Dock.
 - With **File > Open** (Ctrl+O, Cmd+O on macOS), choose the files. The file type you pick at the bottom of the
   dialog sets their category.
-- Drag files onto a category's row in Layers, or onto one of its items. The rows that would take the files are
-  highlighted while you drag, and files the category cannot read are refused.
+- Drag files onto a category's row in the scene tree, or onto one of its items. Every category shows while you
+  drag, the rows that would take the files are highlighted, and files the category cannot read are refused.
 - From Python, run `from larmor.viewer import view`, then `view(volumes="t1.nii.gz", tracts="tracts.tck")`.
 
 Images are read from NIfTI (`.nii`, `.nii.gz`) and MRtrix (`.mif`, `.mif.gz`, `.mih`) files, and tractograms from
@@ -98,35 +99,56 @@ If you installed with pipx, use `pipx uninstall larmor-dmri` instead. Only the v
 in `~/Library/Application Support/larmor` (macOS), `~/.config/larmor` (Linux) or `%APPDATA%\larmor` (Windows).
 Delete that folder too to leave nothing behind.
 
-## Panels
+## Workspaces
 
-Panels are the parts of the window beside the views, such as Layers and Options. A stripe of icons on each edge
-of the window opens and closes them. The left stripe holds Layers (Ctrl+1), Labels (Ctrl+3), Screenshots
-(Ctrl+Shift+S) and Phantom (Ctrl+5). The right stripe holds Options (Ctrl+2), Inspect FOD (Ctrl+4), Signal
-breakdown (Ctrl+6), Settings (Ctrl+,) and Help (F1). On macOS, Cmd takes the place of Ctrl. Click an icon to open
-its panel and click it again to close it; the views take up the room the panels leave. **Ctrl+0** hides all the
-panels and brings them back. Hover over an icon to see its name and key; View > Panels lists them too.
+The window has two workspaces, which the switch at the left of the header chooses. **View** (Ctrl+1, Cmd+1 on
+macOS) shows the scene tree on the left of the views and the inspector on the right, and is where you look at
+images, tractograms and the rest. **Simulate** (Ctrl+2) shows the steps of a phantom on the left and the page of
+one step on the right, as [Phantoms](15-phantoms.md) explains. View > Workspace switches between them too, and a
+session remembers the workspace it was saved in.
 
-The pin at the top of a panel makes it auto-hide: it then slides out over the views when you click its icon, and
-slides back when you click the views. Click the pin again to keep the panel beside the views. You can also drag a
-panel by its title to the other side of the window, or above or below another panel. The viewer remembers which
-panels are open, where they are and how large they are. View > Panels > Reset Layout puts every panel back where
-it was at first start. After an update that changes the panels, they start once in their first places.
+The header also names what is open, the session's name or else the main volume's file, and has **Export...** (see
+[Exporting images and videos](10-screenshots.md)), the gear that opens [Settings](09-settings.md) and the question
+mark that opens this help (F1). In Simulate it also has **Run**, which is greyed out until the phantom can run.
 
-## Layers and Options
+Below the header, a toolbar holds the pointer tools of the workspace, each with its key: in View the Cursor (V),
+which moves the crosshair, the Sphere ROI (O) and Box ROI (B) tools, and the Zoom box (Z); in Simulate the Cursor
+and Draw bundle (N). Next to them are the three layouts of the views: **2 x 2**, **1 + 3**, which shows the
+selected view large with the other three stacked beside it, and **1**, which shows the selected view alone. The
+Crosshair (X) and Overlay (I) switches on the right show or hide the crosshair and the text over the views.
 
-**Layers**, on the left, lists the loaded items (each file or object you opened) by category: Volumes,
-Overlays, Tractograms, FODs, Peaks and Surfaces. Each row has an eye, which shows or hides the item, and a cross,
-which removes it. A category's eye and cross act on all its items.
+**Ctrl+0** hides the panels either side of the views and brings them back. You can drag the edge between a panel
+and the views to make it wider, and the viewer remembers the widths.
 
-**Options**, on the right, shows the options of what is selected in Layers. Select an item to change that item
-alone, or select a category to change all its items at once; where the items differ, a field shows "mixed".
-Double-click an item or a category to bring up Options when it is closed or auto-hidden. A single click also
-opens Options, but only while no other panel is open on the right.
+## The scene tree
 
-The options come in sections, such as Display, Colour and 3D. Click a section's title to fold it away; it then
-stays folded for that kind of item. Options marked (2D) or (3D), or in a 2D or 3D section, apply to those views
-only.
+The scene tree, on the left of the View workspace, lists the loaded items (each file or object you opened) by
+category: Volumes, Overlays, Tractograms, FODs, Peaks and Surfaces. A category shows only while it has items, and
+every category shows while you drag files over the tree, so that you can drop them on the one that should read
+them. Each row has an eye, which shows or hides the item, the item's name, with its file as a tooltip, and a short
+note on its state: an overlay's colormap and threshold, an FOD's basis, or how many of a tractogram's streamlines
+its regions keep. A category's eye acts on all its items.
+
+The **Delete** key removes the selected item, or every item of the selected category after asking. An item's
+right-click menu has **Remove**, **Save As...** and **Rename**. Below the tree, **Open files...** opens files and
+**Session** opens or saves a session (see [Sessions](11-sessions.md)).
+
+## The inspector
+
+The inspector, on the right of the View workspace, has three tabs. **Item** shows the options of what is selected
+in the scene tree. Select an item to change that item alone, or select a category to change all its items at
+once; where the items differ, a field shows "mixed". The options come in sections, such as Display, Colour and 3D.
+Click a section's title to fold it away; it then stays folded for that kind of item. Options marked (2D) or (3D),
+or in a 2D or 3D section, apply to those views only, and options that do not apply to the item as it is shown,
+such as a colour while it is coloured by direction, are hidden.
+
+**Cursor** lists what each visible item holds at the crosshair, such as an image's value or a parcellation's
+label. It also shows the FOD at the crosshair as one large glyph (see [FOD glyphs](07-fod-glyphs.md)) and the
+labels of a parcellation to draw in 3D (see [Parcellations](04-parcellations.md)).
+
+**Scene** sets how the views show the scene: the display convention, the background and crosshair colours,
+whether new images start smooth, whether the crosshair shows, the layout of the views and the position of the 3D
+camera.
 
 ## The four views
 

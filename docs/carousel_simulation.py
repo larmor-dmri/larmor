@@ -1,8 +1,9 @@
 """Renders the website's simulation images with BrainViewer, off screen.
 
 Runs the crossing phantom that ships with Larmor and saves, into the current folder,
-the carousel's three slides, each 900 x 600 (the phantom editor, the Signal breakdown
-and FOD glyphs), and the editor and the panel for the Simulation page. It needs no
+the carousel's three slides (the Simulate workspace, the Signal breakdown and FOD
+glyphs, the last with the Website export preset), and the step page and the panel
+for the Simulation page. It needs no
 data. `update_carousel.py` runs it and turns the screenshots into the site's images.
 The viewer's settings go to a temporary home folder, so the user's own are untouched.
 """
@@ -37,15 +38,13 @@ from larmor.viewer.model.phantom import PhantomStep  # noqa: E402
 from larmor.viewer.model.settings import AppSettings, Settings, Theme  # noqa: E402
 from larmor.viewer.qt.docks import Panel  # noqa: E402
 from larmor.viewer.qt.main_window import MainWindow  # noqa: E402
-from larmor.viewer.qt.phantom_steps import PhantomEditor  # noqa: E402
 from larmor.viewer.qt.style import apply_style  # noqa: E402
 
 SIZE = (900, 600)
-# The breakdown slide is drawn in a larger window, then scaled down to the slide, so
-# the chart has room under the panel's table.
-WINDOW = (1125, 750)
-PANEL_WIDTH = 520  # the Signal breakdown panel's column in that window
-EDITOR_ON_PAGE = (780, 600)  # the editor as the Simulation page shows it
+# The slides are drawn in a larger window, then scaled down to the slide, so the
+# panels have room.
+WINDOW = (1350, 900)
+BREAKDOWN_HEIGHT = 380  # the Signal breakdown's dock below the views, px
 CENTRE = (20.0, 20.0, 20.0)  # where the bundles cross, in mm
 STEP = PhantomStep.TISSUE  # the step the editor shows
 ZOOM = 3.5  # of the glyphs' view, about the crossing
@@ -104,18 +103,19 @@ def save_breakdown(window: MainWindow) -> None:
     viewer = window.viewer
     viewer.remove(Category.OVERLAYS)
     viewer.remove(Category.PEAKS)
-    for panel in (Panel.LAYERS, Panel.OPTIONS, Panel.PHANTOM):
-        if window.docks.is_open(panel):
-            window.docks.close(panel)
     viewer.toggle_maximised(ViewKind.AXIAL)
     viewer.toggle_overlay()
     window.show_breakdown()
+    window.docks.toggle_sides()
     viewer.pin_breakdown(CENTRE)
     gradients = viewer.breakdown_gradients()
     assert gradients is not None
     along_x = np.where(gradients.bvals > 1500, np.abs(gradients.bvecs[:, 0]), -1.0)
     viewer.set_breakdown_volume(int(np.argmax(along_x)))
-    window.docks.set_side_widths(0, PANEL_WIDTH)
+    window.docks.manager.setSplitterSizes(
+        window.docks.docks[Panel.SIGNAL_BREAKDOWN].dockAreaWidget(),
+        [WINDOW[1] - BREAKDOWN_HEIGHT, BREAKDOWN_HEIGHT],
+    )
     settle(150)
     grabbed = Path("simulation_breakdown_window.png")
     window.grab().save(str(grabbed))
@@ -123,26 +123,24 @@ def save_breakdown(window: MainWindow) -> None:
         image.convert("RGB").resize(SIZE, Image.Resampling.LANCZOS).save(
             "simulation_breakdown.png"
         )
-    window.docks.widget(Panel.SIGNAL_BREAKDOWN).grab().save(
-        "simulation_page_breakdown.png"
-    )
+    window.docks.breakdown().grab().save("simulation_page_breakdown.png")
 
 
 def save_editor(window: MainWindow) -> None:
-    """Saves the guided phantom editor on its Tissue step, for the slide and page."""
-    # It opens as a window of its own, which is sized to the slide, then to the page.
+    """Saves the Simulate workspace on its Tissue step, for the slide and the page."""
+    window.docks.close(Panel.SIGNAL_BREAKDOWN)
+    window.docks.toggle_sides()
+    window.viewer.toggle_maximised(ViewKind.AXIAL)
     window.show_phantom()
-    editor = window.docks.widget(Panel.PHANTOM)
-    assert isinstance(editor, PhantomEditor)
-    editor.go_to(STEP)
-    shots = (
-        (SIZE, "simulation_editor.png"),
-        (EDITOR_ON_PAGE, "simulation_page_editor.png"),
-    )
-    for size, name in shots:
-        editor.window().resize(*size)
-        settle()
-        editor.grab().save(name)
+    window.steps.go_to(STEP)
+    settle(150)
+    grabbed = Path("simulation_editor_window.png")
+    window.grab().save(str(grabbed))
+    with Image.open(grabbed) as image:
+        image.convert("RGB").resize(SIZE, Image.Resampling.LANCZOS).save(
+            "simulation_editor.png"
+        )
+    window.step_page.grab().save("simulation_page_editor.png")
 
 
 def save_fods(folder: Path) -> None:
@@ -164,7 +162,7 @@ def save_fods(folder: Path) -> None:
     glyphs.move_cursor(CENTRE)
     glyphs.toggle_crosshair()
     glyphs.zoom(ViewKind.AXIAL, ZOOM, about=CENTRE)
-    glyphs.screenshot(ViewKind.AXIAL, "simulation_fods.png", size=SIZE, overlay=False)
+    glyphs.export("Website", "simulation_fods.png", ViewKind.AXIAL)
 
 
 if __name__ == "__main__":

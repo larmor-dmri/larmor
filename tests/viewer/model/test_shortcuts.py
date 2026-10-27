@@ -5,10 +5,11 @@ import numpy as np
 import pytest
 
 from larmor.types import Volume
-from larmor.viewer import CameraPreset, Category, OptionName, Viewer, ViewKind
+from larmor.viewer import CameraPreset, Category, OptionName, Tool, Viewer, ViewKind
 from larmor.viewer.model.camera import Camera2D, Camera3D, screen_axes
 from larmor.viewer.model.item import VIEW_KINDS
 from larmor.viewer.model.shortcuts import SHORTCUTS, ZOOM_STEP, Command, run
+from larmor.viewer.model.view_state import ViewState, Workspace
 
 VIEWS_2D: list[ViewKind] = [ViewKind.AXIAL, ViewKind.CORONAL, ViewKind.SAGITTAL]
 AXIS: dict[ViewKind, int] = {
@@ -38,12 +39,15 @@ KEYS: dict[Command, tuple[str, ...]] = {
     Command.OPEN: ("Ctrl+O",),
     Command.OPEN_SESSION: ("Ctrl+Shift+O",),
     Command.SAVE_SESSION: ("Ctrl+S",),
-    Command.LAYERS: ("Ctrl+1",),
-    Command.OPTIONS: ("Ctrl+2",),
-    Command.LABELS: ("Ctrl+3",),
-    Command.INSPECT_FOD: ("Ctrl+4", "F"),
-    Command.SCREENSHOT: ("Ctrl+Shift+S",),
-    Command.PHANTOM: ("Ctrl+5",),
+    Command.WORKSPACE_VIEW: ("Ctrl+1",),
+    Command.WORKSPACE_SIMULATE: ("Ctrl+2",),
+    Command.TOOL_CURSOR: ("V",),
+    Command.TOOL_SPHERE: ("O",),
+    Command.TOOL_BOX: ("B",),
+    Command.TOOL_ZOOM_BOX: ("Z",),
+    Command.DELETE_ITEM: ("Delete", "Ctrl+Backspace"),
+    Command.NEXT_ROLE: ("Tab",),
+    Command.EXPORT: ("Ctrl+Shift+S",),
     Command.NEW_BUNDLE: ("N",),
     Command.FINISH_BUNDLE: ("Return", "Enter"),
     Command.REMOVE_POINT: ("Backspace",),
@@ -127,12 +131,7 @@ WINDOW_COMMANDS = [
     Command.OPEN,
     Command.OPEN_SESSION,
     Command.SAVE_SESSION,
-    Command.LAYERS,
-    Command.OPTIONS,
-    Command.LABELS,
-    Command.INSPECT_FOD,
-    Command.SCREENSHOT,
-    Command.PHANTOM,
+    Command.EXPORT,
     Command.RUN_PHANTOM,
     Command.SIGNAL_BREAKDOWN,
     Command.SETTINGS,
@@ -311,3 +310,25 @@ def test_the_shortcut_registry_loads_no_qt_or_gpu_library() -> None:
     )
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == ""
+
+
+def _view(viewer: Viewer) -> ViewState:
+    return viewer.scene.view
+
+
+def test_the_workspace_keys_switch_the_workspace() -> None:
+    viewer = _viewer()
+    assert run(viewer, Command.WORKSPACE_SIMULATE)
+    assert _view(viewer).workspace == Workspace.SIMULATE
+    assert run(viewer, Command.WORKSPACE_VIEW)
+    assert _view(viewer).workspace == Workspace.VIEW
+
+
+def test_the_region_tool_keys_work_only_in_the_view_workspace() -> None:
+    viewer = _viewer()
+    assert run(viewer, Command.TOOL_SPHERE)
+    assert _view(viewer).tool == Tool.SPHERE
+    viewer.set_workspace(Workspace.SIMULATE)
+    assert _view(viewer).tool == Tool.CURSOR  # Simulate offers no spheres
+    assert not run(viewer, Command.TOOL_BOX)
+    assert _view(viewer).tool == Tool.CURSOR

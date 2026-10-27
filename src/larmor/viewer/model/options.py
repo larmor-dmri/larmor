@@ -43,9 +43,10 @@ COLORMAPS: tuple[Colormap, ...] = tuple(Colormap)
 
 
 class OptionGroup(StrEnum):
-    """The sections of the Options panel, in the order they are shown."""
+    """The sections of the inspector's Item tab, in the order they are shown."""
 
     DISPLAY = "Display"
+    REGION = "Region"
     GLYPHS = "Glyphs"
     LINES = "Lines"
     COLOUR = "Colour"
@@ -112,13 +113,14 @@ class OptionName(StrEnum):
     VALUES_FILE = "values_file"
     VALUES_VOLUME = "values_volume"
     REGION_FILTER = "region_filter"
-    INCLUDE_MASKS = "include_masks"
-    EXCLUDE_MASKS = "exclude_masks"
-    INCLUDE_SPHERES = "include_spheres"
-    EXCLUDE_SPHERES = "exclude_spheres"
-    WITHIN_MASKS = "within_masks"
-    WITHIN_SPHERES = "within_spheres"
+    REGIONS = "regions"
     ENDS_ONLY = "ends_only"
+    SHAPE = "shape"
+    ROLE = "role"
+    CENTRE = "centre"
+    RADIUS = "radius"
+    SIZE = "size"
+    MASK = "mask"
 
 
 @dataclass(frozen=True)
@@ -137,8 +139,12 @@ class OptionInfo:
     panel: bool = True  # False for one edited in its own window, not the panel
     item_ref: bool = False  # another item's id, or None for no item
     data_key: bool = False  # the name of some of the item's data, or None
-    group: OptionGroup | None = None  # its Options panel section; None for settings
+    group: OptionGroup | None = None  # its section of the Item tab; None for settings
     help: str = ""  # one sentence explaining it, shown as a tooltip; "" for none
+    # Shown in the panel only while this holds of the item's options; None for always.
+    shown_when: Callable[[Any], bool] | None = None
+    # Editable only while this holds of the item's options; None for always.
+    enabled_when: Callable[[Any], bool] | None = None
 
 
 class OptionError(ValueError):
@@ -149,8 +155,12 @@ class Colour(str):
     """A colour as "#rrggbb", edited with a colour chooser."""
 
 
-class Spheres(tuple[tuple[float, float, float, float], ...]):
-    """Spheres as (x, y, z, radius) in world coordinates, mm."""
+class Position(tuple[float, float, float]):
+    """A point (x, y, z) in world coordinates, mm."""
+
+
+class Lengths(tuple[float, float, float]):
+    """Three lengths along x, y and z, mm, each positive."""
 
 
 def check_colour(value: object) -> None:
@@ -176,6 +186,8 @@ def option[T](
     data_key: bool = False,
     group: OptionGroup | None = None,
     help: str = "",
+    shown_when: Callable[[Any], bool] | None = None,
+    enabled_when: Callable[[Any], bool] | None = None,
 ) -> T:
     """Returns a dataclass field with its OptionInfo in its metadata (key "option")."""
     info = OptionInfo(
@@ -193,6 +205,8 @@ def option[T](
         data_key,
         group,
         help,
+        shown_when,
+        enabled_when,
     )
     return field(default=default, metadata={"option": info})
 
@@ -262,11 +276,18 @@ def _as_kind(info: OptionInfo, kind: type, value: object) -> object:
         value = int(value)
     elif kind in (str, Colour) and not isinstance(value, str):
         raise OptionError(f"{info.label} must be text; got {value!r}.")
-    elif kind is tuple:
-        value = _whole_numbers(info, value)
-    elif kind is Spheres:
-        value = _spheres(info, value)
+    elif kind in (tuple, Position, Lengths):
+        value = _as_tuple(info, kind, value)
     return value
+
+
+def _as_tuple(info: OptionInfo, kind: type, value: object) -> object:
+    """Returns value as whole numbers, a Position or Lengths, as kind says."""
+    if kind is Position:
+        return Position(_three_numbers(info, value, positive=False))
+    if kind is Lengths:
+        return Lengths(_three_numbers(info, value, positive=True))
+    return _whole_numbers(info, value)
 
 
 def _check_range(info: OptionInfo, value: float) -> None:
@@ -289,29 +310,24 @@ def _whole_numbers(info: OptionInfo, value: object) -> tuple[int, ...]:
     return tuple(sorted({int(v) for v in values}))
 
 
-def _spheres(info: OptionInfo, value: object) -> Spheres:
-    """Returns a collection of (x, y, z, radius) as Spheres, in the order given."""
-    error = OptionError(
-        f"{info.label} must be spheres as (x, y, z, radius) in mm, each a finite "
-        f"number and the radius positive; got {value!r}."
-    )
+def _three_numbers(
+    info: OptionInfo, value: object, *, positive: bool
+) -> tuple[float, float, float]:
+    """Returns three finite numbers as floats; with positive, each above 0."""
+    need = "positive numbers" if positive else "finite numbers"
+    error = OptionError(f"{info.label} must be three {need} (mm); got {value!r}.")
     if isinstance(value, (str, bytes)) or not isinstance(value, Iterable):
         raise error
-    spheres: list[tuple[float, float, float, float]] = []
-    for sphere in value:
-        if isinstance(sphere, (str, bytes)) or not isinstance(sphere, Iterable):
-            raise error
-        numbers = list(sphere)
-        if len(numbers) != 4 or any(
-            isinstance(n, bool) or not isinstance(n, Real) or not math.isfinite(n)
-            for n in numbers
-        ):
-            raise error
-        x, y, z, radius = (float(n) for n in numbers)
-        if radius <= 0:
-            raise error
-        spheres.append((x, y, z, radius))
-    return Spheres(spheres)
+    numbers = list(value)
+    if len(numbers) != 3 or any(
+        isinstance(n, bool) or not isinstance(n, Real) or not math.isfinite(n)
+        for n in numbers
+    ):
+        raise error
+    x, y, z = (float(n) for n in numbers)
+    if positive and min(x, y, z) <= 0:
+        raise error
+    return (x, y, z)
 
 
 def _check_lookup_table(value: object) -> None:
@@ -331,6 +347,36 @@ def range_text(info: OptionInfo) -> str:
     if info.minimum is not None:
         return f"at least {info.minimum:g}"
     return f"at most {info.maximum:g}"
+
+
+def _drawn_in_3d(options: object) -> bool:
+    """Tells whether the 3D view draws items with these options; it skips glyphs."""
+    return not isinstance(options, (FodOptions, PeaksOptions))
+
+
+def _without_dti(options: object) -> bool:
+    """Tells whether an image is shown without DTI colours."""
+    return not getattr(options, "dti", False)
+
+
+def _with_dti(options: object) -> bool:
+    """Tells whether an image is shown with DTI colours."""
+    return bool(getattr(options, "dti", False))
+
+
+def _single_colour(options: object) -> bool:
+    """Tells whether the item is drawn in its one colour."""
+    return getattr(options, "colouring", None) == Colouring.SINGLE
+
+
+def _by_value(options: object) -> bool:
+    """Tells whether a tractogram is coloured by a value per point."""
+    return getattr(options, "colouring", None) == Colouring.VALUES
+
+
+def _normals_single(options: object) -> bool:
+    """Tells whether a surface's normals are drawn in one colour."""
+    return getattr(options, "normals_colouring", None) == Colouring.SINGLE
 
 
 @dataclass(frozen=True)
@@ -355,6 +401,7 @@ class ItemOptions:
         step=0.01,
         scope=Scope.THREE_D,
         group=OptionGroup.DISPLAY,
+        shown_when=_drawn_in_3d,
     )
 
 
@@ -372,7 +419,11 @@ class VolumeOptions(ItemOptions):
         help="Which volume of a 4D image is shown.",
     )
     colormap: Colormap = option(
-        Colormap.GRAY, "Colormap", choices=COLORMAPS, group=OptionGroup.COLOUR
+        Colormap.GRAY,
+        "Colormap",
+        choices=COLORMAPS,
+        group=OptionGroup.COLOUR,
+        enabled_when=_without_dti,
     )
     interpolate: bool = option(
         True,
@@ -381,10 +432,24 @@ class VolumeOptions(ItemOptions):
         help="Smooth (trilinear) or blocky (nearest voxel) slices.",
     )
     # No fixed bounds: the slider spans the data's range, and a volume starts at it.
-    minimum: float = option(0.0, "Minimum", group=OptionGroup.COLOUR)
-    maximum: float = option(1.0, "Maximum", group=OptionGroup.COLOUR)
+    minimum: float = option(
+        0.0,
+        "Minimum",
+        group=OptionGroup.COLOUR,
+        enabled_when=_without_dti,
+    )
+    maximum: float = option(
+        1.0,
+        "Maximum",
+        group=OptionGroup.COLOUR,
+        enabled_when=_without_dti,
+    )
     colour_bar: bool = option(
-        False, "Colour bar", scope=Scope.TWO_D, group=OptionGroup.TWO_D
+        False,
+        "Colour bar",
+        scope=Scope.TWO_D,
+        group=OptionGroup.TWO_D,
+        enabled_when=_without_dti,
     )
     slices_3d: bool = option(
         True,
@@ -408,6 +473,7 @@ class VolumeOptions(ItemOptions):
         group=OptionGroup.COLOUR,
         help="An image on the same grid whose values, clipped to 0 to 1, scale the "
         "colours (such as FA).",
+        enabled_when=_with_dti,
     )
 
 
@@ -435,6 +501,7 @@ class OverlayOptions(VolumeOptions):
         group=OptionGroup.COLOUR,
         help="Values at or below it are transparent, so only the part of the map "
         "above it shows.",
+        enabled_when=_without_dti,
     )
     # The mesh where the image crosses the threshold, drawn in the 3D view; for an
     # overlay shown as labels, a mesh per label of surface_labels instead.
@@ -452,6 +519,7 @@ class OverlayOptions(VolumeOptions):
         "Labels",
         group=OptionGroup.LABELS,
         help="Shows the image as a parcellation: one colour per label.",
+        enabled_when=_without_dti,
     )
     lookup_table: str = option(
         "",
@@ -461,8 +529,9 @@ class OverlayOptions(VolumeOptions):
         group=OptionGroup.LABELS,
         help="The file naming and colouring the labels (FreeSurfer or MRtrix "
         "format); empty for built-in colours.",
+        enabled_when=_without_dti,
     )  # "" for the built-in colours
-    # The labels drawn as surfaces in the 3D view, chosen in the Labels panel; none
+    # The labels drawn as surfaces in the 3D view, chosen in the Cursor tab; none
     # at first, as an aparc+aseg's hundred surfaces take a while to compute.
     surface_labels: tuple[int, ...] = option(
         (),
@@ -504,7 +573,10 @@ class RegionRole(StrEnum):
     WITHIN = "within"  # streamlines stay inside it
 
 
-# The defaults new tractograms start with; the Settings panel changes them.
+REGION_ROLES: tuple[RegionRole, ...] = tuple(RegionRole)
+
+
+# The defaults new tractograms start with; the Settings sheet changes them.
 POINTS_PER_STREAMLINE: Final = 20
 SLAB_THICKNESS: Final = 5.0  # mm, centred on the slice
 
@@ -523,7 +595,11 @@ class TractogramOptions(ItemOptions):
         "volume sampled along the streamlines, through the colormap.",
     )
     colour: Colour = option(
-        Colour("#ffffff"), "Colour", check=check_colour, group=OptionGroup.COLOUR
+        Colour("#ffffff"),
+        "Colour",
+        check=check_colour,
+        group=OptionGroup.COLOUR,
+        shown_when=_single_colour,
     )
     # The values to colour by: a TSF file, or a volume sampled at the drawn points.
     # Setting one clears the other and resets the colormap's range, so both come
@@ -547,16 +623,31 @@ class TractogramOptions(ItemOptions):
         "for colouring by value; 0 outside the image.",
     )
     colormap: Colormap = option(
-        Colormap.VIRIDIS, "Colormap", choices=COLORMAPS, group=OptionGroup.COLOUR
+        Colormap.VIRIDIS,
+        "Colormap",
+        choices=COLORMAPS,
+        group=OptionGroup.COLOUR,
+        shown_when=_by_value,
     )
-    minimum: float = option(0.0, "Minimum", group=OptionGroup.COLOUR)
-    maximum: float = option(1.0, "Maximum", group=OptionGroup.COLOUR)
+    minimum: float = option(
+        0.0,
+        "Minimum",
+        group=OptionGroup.COLOUR,
+        shown_when=_by_value,
+    )
+    maximum: float = option(
+        1.0,
+        "Maximum",
+        group=OptionGroup.COLOUR,
+        shown_when=_by_value,
+    )
     colour_bar: bool = option(
         False,
         "Colour bar",
         scope=Scope.TWO_D,
         group=OptionGroup.TWO_D,
         help="Shows the colormap's range in the 2D views when colouring by value.",
+        shown_when=_by_value,
     )
     # A percentage of the streamlines, drawn up to the drawing cap (a setting).
     subset: float = option(
@@ -597,49 +688,13 @@ class TractogramOptions(ItemOptions):
         help="Tests only the first and last point of each streamline against the "
         "regions, to keep the streamlines that start or end in them.",
     )
-    include_masks: tuple[int, ...] = option(
+    # The region items this tractogram is filtered by; each item gives its role.
+    regions: tuple[int, ...] = option(
         (),
-        "Include masks",
+        "Regions",
         per_item=True,
         panel=False,
         item_ref=True,
-        group=OptionGroup.REGIONS,
-    )
-    exclude_masks: tuple[int, ...] = option(
-        (),
-        "Exclude masks",
-        per_item=True,
-        panel=False,
-        item_ref=True,
-        group=OptionGroup.REGIONS,
-    )
-    include_spheres: Spheres = option(
-        Spheres(),
-        "Include spheres",
-        per_item=True,
-        panel=False,
-        group=OptionGroup.REGIONS,
-    )
-    exclude_spheres: Spheres = option(
-        Spheres(),
-        "Exclude spheres",
-        per_item=True,
-        panel=False,
-        group=OptionGroup.REGIONS,
-    )
-    within_masks: tuple[int, ...] = option(
-        (),
-        "Within masks",
-        per_item=True,
-        panel=False,
-        item_ref=True,
-        group=OptionGroup.REGIONS,
-    )
-    within_spheres: Spheres = option(
-        Spheres(),
-        "Within spheres",
-        per_item=True,
-        panel=False,
         group=OptionGroup.REGIONS,
     )
     slab: bool = option(
@@ -694,6 +749,115 @@ class TractogramOptions(ItemOptions):
         help="Draws the streamlines as capsules of the tube radius, ray traced "
         "through a voxel grid on the GPU, with shadows; below full opacity, every "
         "layer shows in order.",
+    )
+
+
+class RegionShape(StrEnum):
+    """What a region item is: a sphere, a box, or a mask image."""
+
+    SPHERE = "sphere"
+    BOX = "box"
+    MASK = "mask"  # the non-zero voxels of an image item
+
+
+REGION_SHAPES: tuple[RegionShape, ...] = tuple(RegionShape)
+
+
+def _sphere(options: object) -> bool:
+    """Tells whether the region is a sphere."""
+    return getattr(options, "shape", None) == RegionShape.SPHERE
+
+
+def _box(options: object) -> bool:
+    """Tells whether the region is a box."""
+    return getattr(options, "shape", None) == RegionShape.BOX
+
+
+# The colour a region of each role starts with; they differ in lightness as well
+# as in hue, so they stay apart in grey.
+ROLE_COLOURS: Final = {
+    RegionRole.INCLUDE: Colour("#26b5a5"),
+    RegionRole.EXCLUDE: Colour("#ff9a3c"),
+    RegionRole.WITHIN: Colour("#8a5cd6"),
+}
+# The radius of the first sphere and the size of the first box, mm.
+SPHERE_RADIUS: Final = 5.0
+BOX_SIZE: Final = Lengths((10.0, 10.0, 10.0))
+
+
+@dataclass(frozen=True)
+class RegionOptions(ItemOptions):
+    """A region's options: its shape, role, place and size, and how it is drawn.
+
+    A sphere uses the centre and the radius, a box the centre and the size, and a
+    mask region names the image whose non-zero voxels it is.
+    """
+
+    opacity_3d: float = option(
+        0.25,
+        "Opacity (3D)",
+        minimum=0.0,
+        maximum=1.0,
+        step=0.01,
+        scope=Scope.THREE_D,
+        group=OptionGroup.DISPLAY,
+    )
+    shape: RegionShape = option(
+        RegionShape.SPHERE,
+        "Shape",
+        choices=REGION_SHAPES,
+        per_item=True,
+        panel=False,
+        group=OptionGroup.REGION,
+    )
+    role: RegionRole = option(
+        RegionRole.INCLUDE,
+        "Role",
+        choices=REGION_ROLES,
+        group=OptionGroup.REGION,
+        help="Include keeps the streamlines that pass through the region, exclude "
+        "drops them, and within keeps those that stay inside it.",
+    )
+    colour: Colour = option(
+        ROLE_COLOURS[RegionRole.INCLUDE],
+        "Colour",
+        check=check_colour,
+        group=OptionGroup.REGION,
+        help="Starts as the role's colour and follows the role until changed.",
+    )
+    centre: Position = option(
+        Position((0.0, 0.0, 0.0)),
+        "Centre (mm)",
+        per_item=True,
+        panel=False,
+        group=OptionGroup.REGION,
+    )
+    radius: float = option(
+        SPHERE_RADIUS,
+        "Radius (mm)",
+        minimum=0.1,
+        maximum=500.0,
+        step=0.5,
+        per_item=True,
+        group=OptionGroup.REGION,
+        help="The radius of a sphere region.",
+        shown_when=_sphere,
+    )
+    size: Lengths = option(
+        BOX_SIZE,
+        "Size (mm)",
+        per_item=True,
+        group=OptionGroup.REGION,
+        help="The lengths of a box region along x, y and z.",
+        shown_when=_box,
+    )
+    mask: int | None = option(
+        None,
+        "Mask",
+        per_item=True,
+        panel=False,
+        item_ref=True,
+        group=OptionGroup.REGION,
     )
 
 
@@ -797,6 +961,7 @@ class FodOptions(ItemOptions):
         check=check_colour,
         scope=Scope.TWO_D,
         group=OptionGroup.COLOUR,
+        shown_when=_single_colour,
     )
 
 
@@ -909,6 +1074,7 @@ class SurfaceOptions(ItemOptions):
         check=check_colour,
         group=OptionGroup.NORMALS,
         help="The normals' colour when they are drawn in one colour.",
+        shown_when=_normals_single,
     )
 
 
@@ -975,4 +1141,5 @@ class PeaksOptions(ItemOptions):
         check=check_colour,
         scope=Scope.TWO_D,
         group=OptionGroup.COLOUR,
+        shown_when=_single_colour,
     )

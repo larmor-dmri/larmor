@@ -3,8 +3,10 @@
 import numpy as np
 import pytest
 from matplotlib.axes import Axes
+from matplotlib.colors import to_hex
 from matplotlib.figure import Figure
 from PySide6.QtCore import QPoint, Qt
+from PySide6.QtGui import QColor, QPalette
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QWidget
 from pytestqt.qtbot import QtBot
@@ -12,8 +14,8 @@ from pytestqt.qtbot import QtBot
 from larmor.plot import plot_signal_breakdown
 from larmor.viewer import ScanField, Viewer, ViewKind
 from larmor.viewer.model.breakdown import voxel_at
-from larmor.viewer.model.settings import PhantomLayout, SettingName
 from larmor.viewer.model.shortcuts import Command
+from larmor.viewer.model.view_state import Workspace
 from larmor.viewer.qt.breakdown_panel import BreakdownPanel
 from larmor.viewer.qt.docks import Panel
 from larmor.viewer.qt.main_window import MainWindow
@@ -174,8 +176,7 @@ def test_the_pointer_and_clicks_drive_the_dock_and_escape_unpins(
 def test_a_right_click_offers_the_breakdown_of_that_voxel(window: MainWindow) -> None:
     position = (6.0, 0.0, 0.0)
     menu = window.view_menu(position)
-    (action,) = menu.actions()
-    assert action.text() == "Signal breakdown here"
+    (action,) = [a for a in menu.actions() if a.text() == "Signal breakdown here"]
     action.trigger()
     assert window.docks.is_open(Panel.SIGNAL_BREAKDOWN)
     state = window.viewer.breakdown
@@ -220,17 +221,30 @@ def test_toggling_the_panel_again_and_again_ends_in_a_sane_state(
     assert len(viewer.scene._subscribers) == subscribers
 
 
-def test_the_panel_docks_and_follows_the_pointer_beside_the_guided_editor(
-    window: MainWindow, qtbot: QtBot
+def test_the_panel_closes_in_the_view_workspace_and_comes_back_in_simulate(
+    window: MainWindow,
 ) -> None:
-    window.settings.set(SettingName.PHANTOM_LAYOUT, PhantomLayout.GUIDED)
-    window.show_phantom()
     window.show_breakdown()
-    dock = window.docks.docks[Panel.SIGNAL_BREAKDOWN]
-    assert not dock.isInFloatingContainer()
-    canvas, middle = hover(qtbot, window)
-    assert window.viewer.breakdown is not None
-    QTest.mouseClick(
-        canvas, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, middle
-    )
-    assert window.viewer.breakdown.pinned
+    assert window.viewer.scene.view.workspace == Workspace.SIMULATE
+    window.viewer.set_workspace(Workspace.VIEW)
+    assert not window.docks.is_open(Panel.SIGNAL_BREAKDOWN)
+    assert window.viewer.breakdown is None
+    window.viewer.set_workspace(Workspace.SIMULATE)
+    assert window.docks.is_open(Panel.SIGNAL_BREAKDOWN)
+
+
+def test_without_a_voxel_only_the_hint_shows_and_the_chart_follows_the_theme(
+    qtbot: QtBot,
+) -> None:
+    viewer = Viewer()
+    phantom(viewer)
+    panel = BreakdownPanel(viewer)
+    qtbot.addWidget(panel)
+    panel.show()
+    assert panel.canvas.isHidden() and not panel.hint.isHidden()
+    palette = panel.palette()
+    palette.setColor(QPalette.ColorRole.Window, QColor("#202124"))
+    panel.setPalette(palette)
+    viewer.pin_breakdown((0.0, 1.0, 0.0))
+    assert not panel.canvas.isHidden()
+    assert to_hex(panel.figure.get_facecolor()) == "#202124"

@@ -32,7 +32,7 @@ While you turn or zoom the 3D view, it draws only part of the streamlines, and a
 
 Each point of a streamline can be coloured by a value, such as the FA where it passes, through a colormap. The
 values come from one of two places, which you choose under Colour in the options of a single tractogram (the
-tractogram selected alone in Layers, not its category).
+tractogram selected alone in the scene tree, not its category).
 
 - A **TSF file** is a track scalar file in the MRtrix TSF format, with one value per point of a tractogram. It
   must match the tractogram's file streamline by streamline, or it is refused with a message. A tractogram read
@@ -55,36 +55,55 @@ colormap and the range.
 
 ## Filtering by regions
 
-You can draw only the streamlines that pass through, avoid or stay within chosen regions. The Regions section of
-a single tractogram's options lists the regions its streamlines are filtered by, and has buttons to add more.
+You can draw only the streamlines that pass through, avoid or stay within chosen regions. A region is an item of its
+own, listed under **Regions** in the scene tree, so one region can filter several tractograms and you can select it,
+hide it, rename it or remove it like any other item. There are three kinds of region. A sphere has a centre and a
+radius, a box has a centre and a size along x, y and z (its edges run along the world axes), and a mask is an image
+of a single volume, already loaded as a volume or an overlay on any grid. A point is in a mask when the voxel
+nearest to it holds a value that rounds to a whole number other than 0, so a binary mask, or a probability map above
+one half, works as it is.
 
-- **Add as** sets the role of the next region you add. **Include** keeps only the streamlines that pass through
-  the region, **Exclude** drops them, and **Within** keeps only the streamlines whose points all lie inside it.
-- **Add mask** adds an image of a single volume, already loaded as a volume or an overlay, on any grid. A point
-  is in the mask when the voxel nearest to it holds a value that rounds to a whole number other than 0, so a
-  binary mask, or a probability map above one half, works as it is.
-- **Add sphere at cursor** adds a sphere centred on the crosshair, with the radius in the field next to the
-  button, so move the crosshair to where the sphere should go first.
+Each region has a role. **Include** keeps only the streamlines that pass through the region, **Exclude** drops
+them, and **Within** keeps only the streamlines whose points all lie inside it. A region starts in its role's
+colour (teal for include, orange for exclude and violet for within), and its colour follows the role until you
+choose another colour in its options. Tab gives the selected region the next role.
 
-A streamline passes through a region when at least one of its stored points lies inside it; the line between two
+The Sphere tool (**O**) and the Box tool (**B**) place regions in the views. With the Sphere tool, a click places
+a sphere with the radius of the last one (5 mm at first) centred on the click, and a drag from the centre sets
+the radius as you place it, with the radius shown in the status bar. With the Box tool, a drag draws a box over
+the rectangle, as deep across the slice as the tractogram's slab (5 mm by default). In the 3D view, a click with
+either tool places the region on the streamline, slice or surface under the pointer. A right click in a view
+offers the same regions at the point clicked. A new region is applied to every tractogram loaded. To add a mask,
+use `add_mask` from Python or an agent; it is removed with its image.
+
+Every 2D view draws each sphere and box where its slice cuts it: a sphere as a circle (dashed when the sphere's
+centre is on another slice), a box as a rectangle. The 3D view draws them as translucent shapes. A mask is not
+drawn, as its overlay already shows it. Click a region's outline or its centre to select it; the selected region
+shows its centre and a handle on its ring or corners. Drag the centre to move the region in the view's plane, and
+drag the ring or a corner to resize it. In the 3D view, a click selects the region under the pointer and the
+wheel over the selected region resizes it. Delete removes the selected item.
+
+The Regions section of a tractogram's options lists every region of the scene with a tick box, ticked for the
+regions that filter this tractogram, so ticking and unticking a region applies it or stops applying it. A
+streamline passes through a region when at least one of its stored points lies inside it; the line between two
 points is not tested. With several regions, a streamline is drawn only when it passes through every include
 region, through none of the exclude regions, and stays within every within region. **Ends only** tests only each
 streamline's first and last point, to keep the streamlines that start or end in the regions. These are the same
-tests as `passes_through` and `stays_within` in `larmor.tractography`.
+tests as `passes_through` and `stays_within` in `larmor.tractography`. Turning **Filter by regions** off draws
+every streamline again but keeps the regions ticked, so turning it back on filters again. **Save kept...** writes
+the streamlines that the ticked regions keep, out of all those loaded, to a tractogram file.
 
-**Remove** takes out the regions chosen in the list, and **Clear** takes out all of them. Turning **Filter by
-regions** off draws every streamline again but keeps the regions, so turning it back on filters again. A mask can
-have only one role.
+The filter runs over all the loaded streamlines, in the background, each time a region changes, and the scene tree
+then shows how many of them pass beside the tractogram. The subset and the points per streamline apply afterwards,
+to the streamlines kept, so a subset of 50% draws half of those. A session saves the regions (a sphere or box by its
+centre and size, a mask by its image) and the regions each tractogram applies.
 
-The filter runs over all the loaded streamlines, in the background, each time the regions change, and the status
-bar then says how many of them pass. The subset and the points per streamline apply afterwards, to the
-streamlines kept, so a subset of 50% draws half of those. A session saves the regions, masks by their item and
-spheres by their centre and radius in mm.
-
-From Python, `viewer.add_mask(tracts.id, mask.id)` adds a mask and `viewer.add_sphere(tracts.id, 5.0)` adds a
-sphere (at the cursor, or at `centre=(x, y, z)`). Both take `role=RegionRole.EXCLUDE` for an exclude region or
-`RegionRole.WITHIN` for a within region. `viewer.clear_regions(tracts.id)` removes all the regions, and
-`viewer.kept_streamlines(tracts.id)` counts the streamlines kept.
+From Python, `viewer.add_sphere((x, y, z), 5.0, apply=True)` adds a sphere and applies it to every tractogram,
+and `viewer.add_box` and `viewer.add_mask(mask.id)` do the same for a box and a mask. Each takes
+`role=RegionRole.EXCLUDE` or `RegionRole.WITHIN` for the other roles, and returns the region's id.
+`viewer.apply_region(tracts.id, region_id, False)` stops applying a region, `viewer.clear_regions(tracts.id)`
+stops applying all of them, `viewer.kept_streamlines(tracts.id)` counts the streamlines kept, and
+`viewer.save_kept(tracts.id, "kept.tck")` writes them.
 
 ![The streamlines that pass through a sphere of radius 8 mm in the brainstem, seen from the front](images/tracts-regions.png)
 

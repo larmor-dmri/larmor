@@ -20,6 +20,7 @@ from larmor.viewer import (
     Viewer,
 )
 from larmor.viewer.model import viewer as viewer_module
+from larmor.viewer.model.events import FilterChanged
 from larmor.viewer.model.registry import SUBSET_SEED
 from larmor.viewer.render import (
     tractogram_adapter,
@@ -182,16 +183,24 @@ def test_a_tsf_file_colours_a_tractogram_read_as_a_subset_of_its_file(
         assert np.array_equal(drawn.values[start:stop], by_streamline[j])
 
 
-def test_the_renderer_tells_how_many_streamlines_the_regions_keep(
+def test_the_drawn_filter_says_how_many_streamlines_the_regions_keep(
     scene_renderer: tuple[Viewer, SceneRenderer], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     viewer, renderer = scene_renderer
     told: list[str] = []
     renderer.subscribe_notices(told.append)
+    counts: list[tuple[int, int]] = []
+    viewer.scene.subscribe(
+        lambda e: (
+            counts.append((e.kept, e.total)) if isinstance(e, FilterChanged) else None
+        )
+    )
     data = _streamlines()
     adapter = _tracts(viewer, renderer, data)
-    viewer.add_sphere(adapter.item.id, 15.0, centre=(0.0, 0.0, 0.0))
-    assert told == ["Tractogram 1: 69 of 200 streamlines pass the regions."]
+    viewer.add_sphere((0.0, 0.0, 0.0), 15.0, apply=True)
+    assert counts == [(69, 200)]
+    assert told == []  # the status bar gets no sentence
+
     # The viewer keeps the adapter's selection: counting filters no more.
     monkeypatch.setattr(viewer_module, "passes_regions", None)
     assert viewer.kept_streamlines(adapter.item.id) == 69

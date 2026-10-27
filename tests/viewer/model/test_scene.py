@@ -159,3 +159,24 @@ def test_an_item_keeps_the_value_range_it_is_added_with() -> None:
     other = scene.add(Category.TRACTOGRAMS, "b", None, object(), ItemOptions())
     assert image.value_range == (-1.0, 2.0)
     assert other.value_range is None
+
+
+def test_renaming_an_item_sends_one_event_and_an_empty_name_is_refused() -> None:
+    import numpy as np
+
+    from larmor.types import Volume
+    from larmor.viewer import Viewer
+    from larmor.viewer.model.events import ItemRenamed
+
+    viewer = Viewer()
+    item = viewer.add(
+        Volume(np.zeros((2, 2, 2), np.float32), np.eye(4)), Category.VOLUMES
+    )
+    events: list[object] = []
+    viewer.scene.subscribe(events.append)
+    viewer.rename(item.id, "  T1 brain  ")
+    assert viewer.scene.item(item.id).name == "T1 brain"
+    assert [type(e) for e in events] == [ItemRenamed]
+    with pytest.raises(ValueError, match="name"):
+        viewer.rename(item.id, "   ")
+    assert viewer.scene.item(item.id).name == "T1 brain"

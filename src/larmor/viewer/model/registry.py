@@ -23,6 +23,7 @@ from larmor.viewer.model.options import (
     ItemOptions,
     OverlayOptions,
     PeaksOptions,
+    RegionOptions,
     SurfaceOptions,
     TractogramOptions,
     VolumeOptions,
@@ -43,7 +44,7 @@ class ItemType:
     """How one category of item is loaded, and which options it has."""
 
     category: Category
-    label: str  # the name in the Layers tree, such as "Volumes"
+    label: str  # the name in the scene tree, such as "Volumes"
     load: Loader
     data_type: type  # the type `load` returns and objects from Python must have
     options: type[ItemOptions]
@@ -52,6 +53,11 @@ class ItemType:
     prefixes: tuple[str, ...] = ()
     # An object given from Python that data_type wraps, such as a Surface.
     wraps: type | None = None
+
+    @property
+    def from_files(self) -> bool:
+        """Tells whether the category's items are read from files."""
+        return bool(self.extensions or self.prefixes)
 
     def reads(self, path: Path) -> bool:
         """Tells whether `load` reads this file, from its name only."""
@@ -119,6 +125,14 @@ def _read_surface(path: Path, progress: Progress | None, limit: int | None) -> o
     return read_surface(path)
 
 
+def _read_region(path: Path, progress: Progress | None, limit: int | None) -> object:
+    """Refuses to read a region, as regions are made in the views, not read."""
+    raise ValueError(
+        f"{path.name}: regions are not read from files; add a mask region from a "
+        "loaded image instead."
+    )
+
+
 _VOLUME_EXTENSIONS = tuple(e for exts in VOLUME_EXTENSIONS.values() for e in exts)
 _TRACTOGRAM_EXTENSIONS = tuple(
     e for exts in TRACTOGRAM_EXTENSIONS.values() for e in exts
@@ -180,8 +194,23 @@ REGISTRY: dict[Category, ItemType] = {
             prefixes=("lh.", "rh."),
             wraps=Surface,
         ),
+        # Made by the views' tools and the region actions; never read from a file.
+        ItemType(
+            Category.REGIONS,
+            "Regions",
+            _read_region,
+            object,
+            RegionOptions,
+            (),
+        ),
     )
 }
+
+
+# The categories whose items are read from files, in scene tree order.
+FILE_CATEGORIES: tuple[Category, ...] = tuple(
+    c for c, kind in REGISTRY.items() if kind.from_files
+)
 
 
 def item_type(category: Category) -> ItemType:

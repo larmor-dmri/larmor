@@ -1,24 +1,23 @@
 # Settings
 
-The Settings panel holds the viewer's preferences, such as its colours, how many streamlines it reads and draws,
-and whether it serves agents. Open it with Settings > Settings, with the gear icon on the right, or with Ctrl+,
-(Cmd+, on macOS). A change applies at once and is saved, so the viewer starts with it next time.
+The Settings sheet holds the viewer's preferences: its theme, how many streamlines it reads and draws, its graphics
+and whether it serves agents. Open it with the gear at the right of the header or with Ctrl+, (Cmd+, on macOS). It
+is a window of its own, so it can stay open beside the views. A change applies at once and is saved, so the viewer
+starts with it next time.
 
-![The Settings panel](images/settings.png)
+![The Settings sheet](images/settings.png)
+
+How the views show the scene is set in the Scene tab of the inspector instead: the display convention (RAS, which
+puts the subject's right on the right of the screen, or LAS, which puts it on the left; see
+[The 2D views](02-2d-views.md)), the background and crosshair colours, and **Interpolate new images**, which
+chooses whether images opened from now on start smooth (trilinear) or blocky (nearest voxel). These are saved with
+the other settings too.
 
 ## Appearance
 
 - **Theme** is system, light or dark. System follows the computer's light or dark mode, also when it changes.
 - **Accent colour** is the one colour in the panels. It marks the selected item, the focused field, the selected
   view, checked boxes and sliders.
-- **Display convention** is RAS, which puts the subject's right on the right of the screen, or LAS, which puts it
-  on the left (see [The 2D views](02-2d-views.md)).
-- **Background** and **Crosshair** set the colour behind the images in the views and the crosshair's colour.
-
-## Images
-
-**Interpolate new images** chooses whether images opened from now on start smooth (trilinear) or blocky (nearest
-voxel).
 
 ## Tractograms
 
@@ -34,19 +33,6 @@ voxel).
   within this slab around the slice.
 - **Slab memory (GB)** is the memory that the 2D views' slabs may take. Past it, the slabs are cut in a slower
   way.
-
-## Screenshots
-
-**Screenshot scale**, **Information overlay in screenshots** and **Transparent screenshots** set the values that
-the Screenshots panel starts with: how many image pixels each screen pixel becomes, whether the views' labels and
-colour bars are included, and whether the background is transparent instead of the views' colour (see
-[Screenshots](10-screenshots.md)).
-
-## Phantom editor
-
-**Phantom editor layout** is either guided, which shows the steps to a first simulation one at a time, or all,
-which shows every section of the editor at once (see [Phantoms](15-phantoms.md)). The switch at the top right of
-the editor changes it too.
 
 ## Graphics
 

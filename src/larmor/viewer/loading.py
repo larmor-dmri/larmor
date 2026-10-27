@@ -54,7 +54,7 @@ class _Job:
     generation: int  # a cancel starts a new generation; older jobs are dropped
     number: int
     max_streamlines: int | None  # the read limit when the job was queued
-    item_name: str | None = None  # the name in Layers; the file's if None
+    item_name: str | None = None  # the name in the scene tree; the file's if None
     then: Then | None = None  # told the outcome instead of on_error
     part: MatlabPart | None = None  # what to read inside a MATLAB file
     registration: Registration | None = None  # brought through it once read

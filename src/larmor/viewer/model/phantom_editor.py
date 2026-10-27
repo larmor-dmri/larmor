@@ -7,13 +7,14 @@ from enum import Enum, auto
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import numpy as np
+
 from larmor._log import LarmorLogger
 from larmor.types import Grid, Tractogram, Volume
 from larmor.viewer.model.breakdown import BreakdownTool
 from larmor.viewer.model.item import Category, Item, ItemId
 from larmor.viewer.model.options import (
     Colormap,
-    Colouring,
     OptionError,
     OptionName,
     option_fields,
@@ -58,6 +59,7 @@ from larmor.viewer.model.phantom import (
     viewer_block,
     with_bundle_value,
 )
+from larmor.viewer.model.view_state import Tool, ViewField
 
 if TYPE_CHECKING:
     from larmor.simulation import Phantom
@@ -70,6 +72,10 @@ type Schedule = Callable[[Callable[[], None]], None]
 type ShownBundles = list[tuple[BundleSettings, Tractogram, Path | None]]
 type ShownMaps = list[tuple[str, Volume, Path | None]]
 
+# The most control points one freehand stroke gives.
+STROKE_POINTS = 24
+# The points per streamline a newly drawn bundle is shown with.
+BUNDLE_POINTS_DRAWN = 100
 # The colormap each proxy map starts with.
 PROXY_COLORMAPS = {
     ProxyMap.FILL: Colormap.HOT,
@@ -125,7 +131,14 @@ class PhantomEditor:
         The breakdown is asked for again unless only the proxy maps or the output
         folder changed.
         """
-        self.viewer.scene.set_phantom(state, part)
+        scene = self.viewer.scene
+        scene.set_phantom(state, part)
+        # The bundle tool is chosen exactly while a bundle is being drawn.
+        drawing = state is not None and state.draft is not None
+        if drawing and scene.view.tool != Tool.DRAW_BUNDLE:
+            scene.set_view(ViewField.TOOL, Tool.DRAW_BUNDLE)
+        elif not drawing and scene.view.tool == Tool.DRAW_BUNDLE:
+            scene.set_view(ViewField.TOOL, Tool.CURSOR)
         if part not in (PhantomPart.PROXIES, PhantomPart.OUTPUT):
             self._request(_Rebuild.BREAKDOWN)
 
@@ -572,7 +585,8 @@ class PhantomEditor:
             return
         name = f"Bundle {len(state.bundles) + 1}"
         item = self.viewer.add(streamlines, Category.TRACTOGRAMS, name=name)
-        self.viewer.set(item.id, OptionName.COLOURING, Colouring.PER_TRACTOGRAM)
+        # Enough points per drawn streamline that a bend looks smooth in 2D.
+        self.viewer.set(item.id, OptionName.POINTS, BUNDLE_POINTS_DRAWN)
         state = self.require()
         assert state.draft is not None
         self._set(
@@ -680,8 +694,6 @@ class PhantomEditor:
             )
             self._apply_options(item.id, bundle.options)
             settings = replace(bundle.settings, item_id=item.id)
-            if settings.geometry is not None and not bundle.options:
-                self.viewer.set(item.id, OptionName.COLOURING, Colouring.PER_TRACTOGRAM)
             bundles.append(settings)
         maps = []
         for tissue, volume, path in loaded.maps:
@@ -824,6 +836,82 @@ class PhantomEditor:
             if bundle.geometry is not None and path.is_file():
                 scene.set_source(bundle.item_id, path)
         self.set_output(files.folder)
+
+
+def simplify_stroke(
+    points: Sequence[Vec3], tolerance: float, most: int = STROKE_POINTS
+) -> list[Vec3]:
+    """Returns control points for a freehand stroke, evenly spaced along it.
+
+    They are the fewest evenly spaced points, from 2 to `most` and always with
+    the stroke's first and last, whose bundle centreline (see
+    `centreline_spline`) stays within `tolerance` of the stroke; `most` points
+    when no fewer do.
+
+    Args:
+        points: The stroke, world mm, in order.
+        tolerance: How far the centreline may stray from the stroke, mm.
+        most: The most points returned, at least 2.
+
+    Returns:
+        The points, in order; one point for a stroke that never moves.
+    """
+    stroke = np.asarray(points, dtype=float).reshape(-1, 3)
+    if len(stroke) == 0:
+        return []
+    steps = np.linalg.norm(np.diff(stroke, axis=0), axis=1)
+    if not np.any(steps > 0):
+        return [_vec3(stroke[0])]
+    stroke = np.vstack([stroke[:1], stroke[1:][steps > 0]])
+    arc = np.concatenate([[0.0], np.cumsum(steps[steps > 0])])
+    limit = max(tolerance, 1e-9)
+    # The stroke resampled finely enough that nearest samples measure distances.
+    count = int(min(np.ceil(arc[-1] / (limit / 4)), 4000)) + 1
+    dense = _along(stroke, arc, np.linspace(0.0, arc[-1], count))
+    chosen = stroke[[0, -1]]
+    for n in range(2, max(most, 2) + 1):
+        chosen = _along(stroke, arc, np.linspace(0.0, arc[-1], n))
+        chosen[0], chosen[-1] = stroke[0], stroke[-1]
+        if _follows(chosen, dense, limit):
+            break
+    return [_vec3(p) for p in chosen]
+
+
+def _along(stroke: np.ndarray, arc: np.ndarray, at: np.ndarray) -> np.ndarray:
+    """Returns the points of the stroke at the arc lengths `at`, (N, 3).
+
+    Args:
+        stroke: The stroke's points, (M, 3).
+        arc: The arc length at each of them, (M,), increasing.
+        at: The arc lengths wanted, (N,).
+    """
+    return np.column_stack([np.interp(at, arc, stroke[:, k]) for k in range(3)])
+
+
+def _follows(control: np.ndarray, dense: np.ndarray, tolerance: float) -> bool:
+    """Returns whether the centreline through `control` keeps close to a stroke.
+
+    Every point of the centreline must be within `tolerance` of the finely
+    resampled stroke `dense`, and every point of `dense` within `tolerance` of
+    the centreline.
+    """
+    from scipy.spatial import cKDTree
+
+    # Imported here, so that opening the viewer does not load the simulation.
+    from larmor.simulation.bundles import centreline_spline
+
+    if np.any(np.linalg.norm(np.diff(control, axis=0), axis=1) == 0):
+        return False
+    centreline, _ = centreline_spline(control)
+    curve = centreline(np.linspace(0.0, 1.0, len(dense)))
+    stray = cKDTree(dense).query(curve)[0].max()
+    missed = cKDTree(curve).query(dense)[0].max()
+    return bool(max(stray, missed) <= tolerance)
+
+
+def _vec3(point: np.ndarray) -> Vec3:
+    """Returns a point as a tuple of three floats."""
+    return (float(point[0]), float(point[1]), float(point[2]))
 
 
 def item_sources(state: PhantomState, scene: Scene) -> dict[ItemId, ItemSource]:

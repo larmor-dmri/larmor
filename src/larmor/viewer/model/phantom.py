@@ -80,7 +80,7 @@ class EchoKind(StrEnum):
 
 
 class ProxyMap(StrEnum):
-    """A map of the phantom the Phantom panel shows without a simulation.
+    """A map of the phantom the editor shows without a simulation.
 
     It is an overlay that follows every edit of the phantom.
     """
@@ -410,8 +410,8 @@ class PhantomState:
         draft: The bundle being drawn; None outside draw mode.
         proxies: (map, overlay item) pairs of the proxy maps shown.
         output: The folder a run writes to; None until chosen.
-        show_box: Whether the grid's box is outlined in the views; it is
-            always outlined while a bundle is drawn.
+        show_box: Whether the grid's box is outlined in the views of the
+            Simulate workspace; it is always outlined while a bundle is drawn.
         serial: A number that tells phantoms apart; a new or loaded phantom gets
             a new one, and an edit keeps it.
     """

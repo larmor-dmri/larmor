@@ -1,44 +1,64 @@
-# Screenshots
+# Exporting images and videos
 
-The Screenshots panel saves what the views show as an image or a video, for a paper or a slide. Open it with
-File > Screenshots, with the camera icon on the left, or with **Ctrl+Shift+S**. The panel shows a preview of the
-image before it is saved, and has these fields.
+The Export sheet saves what the views show as an image or a video, for a paper, a slide or a web page. Open it with
+**Export...** in the header, with File > Export... or with **Ctrl+Shift+S** (Cmd+Shift+S on macOS). The sheet is a
+window of its own: a preview of the export is on its left and the choices are on its right, and the preview follows
+the views while the sheet is open.
 
-- **Save** chooses what to save: **One image**, **2D views as separate images** or **3D rotation video** (see
-  below).
-- **View** chooses one of the four views, or **All views** as the window lays them out (only the enlarged view,
-  if one is enlarged). It starts on the view last clicked.
-- **Scale (x screen)** goes from 1 to 4. At 1 the image has the screen's pixels and matches what the views show.
-  At 2 to 4 the image is drawn again at that many times the resolution, so it stays sharp in a paper or on a
-  slide.
-- **Information overlay** puts the views' names and slices, the readout, the orientation letters and the colour
-  bars in the image, or leaves them out. The views on the screen keep their own setting.
-- **Transparent background** leaves the space around the images see-through, for PNG and TIFF. JPEG has no
-  transparency.
-- **Image size** shows the size in pixels of the image that will be saved.
+**What** chooses what to save: **One image**, **2D views as separate images** or **3D rotation video**. For one
+image, **View** chooses one of the four views, or **All views** as the window lays them out (only the enlarged view,
+if one is enlarged); it starts on the view last clicked. **Image size** says how large the image or each frame will
+be.
 
-**Save...** asks for a file, which can be PNG, TIFF or, for an image without transparency, JPEG. The fields start
-with the screenshot values in [Settings](09-settings.md); changing them here does not change Settings.
+## Presets
+
+A preset decides how the export is drawn. It sets the size of the image, which the views share when the image shows
+all of them, or keeps the size the views have on the screen, a scale that multiplies that size, the background
+colour, whether the information overlay is drawn, and whether the background is transparent. It can also give the
+items other options while the export is drawn, such as tubes for the tractograms, and hold a position of the 3D
+camera. Those options apply only to the export: the views on the screen are as they were once it is saved. The small
+table under **Preset** shows the chosen preset's values.
+
+The viewer comes with four presets.
+
+- **Screen** draws the views as they are on the screen, at the screen's size and resolution.
+- **Figure** draws them at twice the resolution on a white background, without the overlay and with a transparent
+  background, for a paper.
+- **Talk** draws them at twice the resolution on a black background, without the overlay, with tractograms as tubes
+  with ambient occlusion, for a slide.
+- **Website** draws images of 1800 x 1200 pixels on a black background, without the overlay, with tractograms as
+  tubes of 0.25 mm with ambient occlusion, the smoothest FOD glyphs and blocky slices, and the 3D view seen from
+  the subject's front right, 12 degrees above the horizontal.
+
+**Edit preset...** changes the chosen preset's name, size, scale, background, overlay and transparency, and can save
+the 3D view's camera as it is now. The preset is saved as a TOML file in the `export_presets` folder beside the
+settings (see [Settings](09-settings.md)), so it is there the next time; a preset saved under the name of one of the
+four replaces it.
+
+**Camera** chooses where the 3D view is seen from: the preset's own position, when it has one, the 3D view's current
+camera, or the axial, coronal or sagittal position. **Transparent background** leaves the space around the images
+see-through, for PNG, TIFF and WebP; it starts as the preset says. **Also save the session beside the image** writes
+a session file with the image's name, such as `figure.lar.json` beside `figure.png`, so that you can open the same
+view again later (see [Sessions](11-sessions.md)).
+
+**Save...** asks for a file, which can be PNG, TIFF or, for an image without transparency, JPEG, and **Cancel**
+closes the sheet.
 
 ## Separate views and rotation videos
 
-**2D views as separate images** saves the axial, coronal and sagittal views at once, each in its own file, so
-saving `figure.png` writes `figure_axial.png`, `figure_coronal.png` and `figure_sagittal.png`. If any of them
-exists, the panel asks once before replacing them.
+**2D views as separate images** saves the axial, coronal and sagittal views at once, each in its own file, so saving
+`figure.png` writes `figure_axial.png`, `figure_coronal.png` and `figure_sagittal.png`. If any of them exists, the
+sheet asks once before replacing them.
 
-**3D rotation video** saves the 3D view turning round, starting from where it is now, as an animated WebP or GIF.
-Three fields set the video.
+**3D rotation video** saves the 3D view turning round as an animated WebP or GIF. It starts from the camera the
+sheet chooses, and three fields set the video: **Speed** in degrees per second (30 by default; a negative speed
+turns the other way), **Duration** in seconds (12 by default, one full turn at 30 degrees per second) and **Frames
+per second** (30 by default). A progress window follows the recording, and its **Cancel** stops it without writing
+a file. A transparent background needs WebP, because GIF has no partial transparency. GIF also has fewer colours and
+plays at most 50 frames per second, so above that rate the file dialog offers only WebP.
 
-- **Speed** is in degrees per second (30 by default). A negative speed turns the other way.
-- **Duration** is the length of the video in seconds (12 by default, one full turn at 30 degrees per second).
-- **Frames per second** is 30 by default.
-
-The preview plays the rotation in a loop at the chosen speed; **Pause** stops it on a frame and **Play** goes on.
-A progress window follows the recording, and **Cancel** stops it without writing a file. The 3D view in the main
-window does not move while the video is recorded. A transparent background needs WebP, because GIF has no partial
-transparency. GIF also has fewer colours and plays at most 50 frames per second, so above that rate the file
-dialog offers only WebP.
-
-From Python, without a window, `viewer.screenshot(None, "figure.png", scale=2, transparent=True)` saves all
-views, `viewer.screenshot_views("figure.png")` saves the three 2D views, and `viewer.record_rotation("turn.webp")`
-saves the video.
+From Python, without a window, `viewer.export("Website", "slide.png", ViewKind.THREE_D)` saves one view with a
+preset, `viewer.export_views("Figure", "figure.png")` saves the three 2D views and
+`viewer.export_rotation("Talk", "turn.webp")` saves the video. `viewer.screenshot(None, "figure.png", scale=2)`,
+`viewer.screenshot_views` and `viewer.record_rotation` take the size, scale and switches themselves instead of a
+preset.

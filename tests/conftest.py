@@ -27,7 +27,9 @@ if any(
 ):
     collect_ignore = [
         "viewer/test_window.py",
-        "viewer/test_layers.py",
+        "viewer/test_scene_tree.py",
+        "viewer/test_chrome.py",
+        "viewer/test_inspector.py",
         "viewer/test_options_panel.py",
         "viewer/test_render.py",
         "viewer/test_colour_bars.py",
@@ -35,13 +37,14 @@ if any(
         "viewer/test_annotations.py",
         "viewer/test_keys.py",
         "viewer/test_view_input.py",
+        "viewer/test_view_tools.py",
         "viewer/test_settings_panel.py",
         "viewer/test_redraws.py",
         "viewer/test_style.py",
         "viewer/test_fod_adapter.py",
         "viewer/test_peaks_adapter.py",
         "viewer/test_surface_adapter.py",
-        "viewer/test_screenshot_panel.py",
+        "viewer/test_export_sheet.py",
         "viewer/test_dti_render.py",
         "viewer/test_help_panel.py",
         "viewer/test_fod_inspector.py",
@@ -64,6 +67,8 @@ if importlib.util.find_spec("pygfx") is None:
         "viewer/test_screenshot.py",
         "viewer/test_worker.py",
         "viewer/test_view_labels.py",
+        "viewer/test_render_regions.py",
+        "viewer/test_detail_renderer.py",
     ]
 if importlib.util.find_spec("mcp") is None:
     collect_ignore += ["viewer/test_mcp_server.py"]
@@ -74,12 +79,14 @@ if importlib.util.find_spec("mcp") is None:
 # which have no GPU, leaves them out with -m "not qt_widgets"; macOS runs them all.
 QT_WIDGET_TESTS = {
     "test_breakdown_panel.py",
+    "test_chrome.py",
     "test_docks.py",
     "test_help_panel.py",
     "test_inspect_fod.py",
+    "test_inspector.py",
     "test_keys.py",
     "test_labels_panel.py",
-    "test_layers.py",
+    "test_scene_tree.py",
     "test_matlab_dialog.py",
     "test_opening.py",
     "test_options_panel.py",
@@ -89,10 +96,11 @@ QT_WIDGET_TESTS = {
     "test_regions_editor.py",
     "test_registration_dialog.py",
     "test_save_and_jobs.py",
-    "test_screenshot_panel.py",
+    "test_export_sheet.py",
     "test_session_window.py",
     "test_settings_panel.py",
     "test_view_input.py",
+    "test_view_tools.py",
     "test_window.py",
 }
 

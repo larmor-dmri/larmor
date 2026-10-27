@@ -1,4 +1,4 @@
-"""The main window: menus, the views, and the panels docked around them."""
+"""The main window: the header, the toolbar, the views and the panels around them."""
 
 import sys
 from collections.abc import Callable
@@ -6,20 +6,22 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QObject, QPoint, QSignalBlocker, Qt, QTimer
-from PySide6.QtGui import QAction, QCloseEvent, QShowEvent
+from PySide6.QtCore import QObject, Qt, QTimer, Signal
+from PySide6.QtGui import QAction, QActionGroup, QCloseEvent, QShowEvent
 from PySide6.QtWidgets import (
     QFileDialog,
     QMainWindow,
     QMenu,
     QMessageBox,
     QPushButton,
+    QStackedWidget,
+    QToolBar,
     QWidget,
 )
 
 from larmor.types import Tractogram
 from larmor.viewer import APP_NAME
-from larmor.viewer.jobs import JobBusyError, JobRunner
+from larmor.viewer.jobs import JobBusyError, JobRunner, JobStatus
 from larmor.viewer.loading import DEFAULT, Default, Loader
 from larmor.viewer.mcp_server import (
     Background,
@@ -28,7 +30,8 @@ from larmor.viewer.mcp_server import (
     PortInUseError,
 )
 from larmor.viewer.model.breakdown import title
-from larmor.viewer.model.item import Category, Item, ItemId
+from larmor.viewer.model.events import Event, ViewStateChanged
+from larmor.viewer.model.item import Category, Item, ItemId, ViewKind
 from larmor.viewer.model.matlab_import import (
     LoadAs,
     MatlabPreset,
@@ -40,12 +43,12 @@ from larmor.viewer.model.registry import REGISTRY, SUBSETS
 from larmor.viewer.model.session import SUFFIX, SessionReport, read_session
 from larmor.viewer.model.settings import (
     AppSettings,
-    PhantomLayout,
     SettingChanged,
     SettingName,
     Settings,
 )
 from larmor.viewer.model.shortcuts import Command
+from larmor.viewer.model.view_state import Layout, ViewField, Workspace
 from larmor.viewer.model.viewer import SAVABLE, Viewer
 from larmor.viewer.phantom_jobs import (
     start_open,
@@ -54,16 +57,20 @@ from larmor.viewer.phantom_jobs import (
 )
 from larmor.viewer.qt.docks import (
     LAYOUT_FILE,
-    PANELS,
+    SIDE_WIDTHS,
     Docks,
     ItemPanel,
     Panel,
-    Side,
 )
-from larmor.viewer.qt.fod_inspector_panel import FodInspectorPanel
-from larmor.viewer.qt.help_panel import HelpPanel
-from larmor.viewer.qt.labels_panel import LabelsButton, LabelsPanel
-from larmor.viewer.qt.layers import LayersPanel
+from larmor.viewer.qt.export_sheet import ExportSheet
+from larmor.viewer.qt.header import Header, ViewToolbar
+from larmor.viewer.qt.help_panel import HelpWindow
+from larmor.viewer.qt.inspector import (
+    LAYOUT_NAMES,
+    Inspector,
+    InspectorTab,
+)
+from larmor.viewer.qt.labels_panel import LabelsButton
 from larmor.viewer.qt.loading import (
     JobBar,
     LoadingBar,
@@ -72,20 +79,91 @@ from larmor.viewer.qt.loading import (
     create_loader,
 )
 from larmor.viewer.qt.matlab_dialog import MatlabChoice, MatlabImportDialog
-from larmor.viewer.qt.options_panel import OptionsPanel
 from larmor.viewer.qt.phantom_panel import PhantomPanel
-from larmor.viewer.qt.phantom_steps import PhantomEditor
+from larmor.viewer.qt.phantom_steps import (
+    AllSettingsWindow,
+    StepNavigator,
+    StepPage,
+    StepsPanel,
+)
 from larmor.viewer.qt.regions_editor import RegionsEditor
 from larmor.viewer.qt.registration_dialog import RegistrationDialog
-from larmor.viewer.qt.screenshot_panel import ScreenshotPanel
-from larmor.viewer.qt.settings_panel import McpSwitch, SettingsPanel
+from larmor.viewer.qt.scene_tree import ScenePanel
+from larmor.viewer.qt.settings_panel import McpSwitch, SettingsSheet
 from larmor.viewer.qt.shortcuts import ShortcutsDialog, shortcut_actions
-from larmor.viewer.qt.views import ViewGrid
+from larmor.viewer.qt.view_grid import ViewGrid
+from larmor.viewer.qt.view_menu import build_view_menu, connect_views
 from larmor.viewer.render.scene_renderer import SceneRenderer
 
 if TYPE_CHECKING:
     # matplotlib, which the panel draws with, loads when the panel first opens.
     from larmor.viewer.qt.breakdown_panel import BreakdownPanel
+
+# The side panels' titles in each workspace: left, then right.
+SIDE_TITLES = {
+    Workspace.VIEW: ("Scene", "Inspector"),
+    Workspace.SIMULATE: ("Steps", "Step"),
+}
+
+
+class RunJobBar(JobBar):
+    """The job bar, which also tells whether a job runs."""
+
+    running = Signal(bool)
+
+    def show_job(self, status: JobStatus | None) -> None:
+        """Shows how far the job is, and tells whether one runs."""
+        super().show_job(status)
+        self.running.emit(status is not None)
+
+
+class Workspaces(QObject):
+    """Shows the panels of the workspace the view state names either side of the views.
+
+    The Signal breakdown belongs to Simulate: it closes in View and opens again
+    in Simulate if it was open.
+    """
+
+    def __init__(
+        self,
+        viewer: Viewer,
+        docks: Docks,
+        view: tuple[QWidget, QWidget],
+        simulate: tuple[QWidget, QWidget],
+        parent: QObject,
+    ) -> None:
+        """Holds each workspace's left and right panels, and shows the current ones."""
+        super().__init__(parent)
+        self.viewer = viewer
+        self.docks = docks
+        self.panels = {Workspace.VIEW: view, Workspace.SIMULATE: simulate}
+        self.breakdown_was_open = False  # in Simulate, when View was last shown
+        unsubscribe = viewer.scene.subscribe(self._on_event)
+        self.destroyed.connect(lambda *_: unsubscribe())
+        self.show()
+
+    def _on_event(self, event: Event) -> None:
+        """Shows the workspace's panels when the workspace changes."""
+        if isinstance(event, ViewStateChanged) and event.name == ViewField.WORKSPACE:
+            self.show()
+
+    def show(self) -> None:
+        """Shows the current workspace's panels and dock titles."""
+        workspace = self.viewer.scene.view.workspace
+        left, right = self.panels[workspace]
+        for widget in (left, right):
+            stack = widget.parentWidget()
+            assert isinstance(stack, QStackedWidget)
+            stack.setCurrentWidget(widget)
+        titles = SIDE_TITLES[workspace]
+        self.docks.set_title(Panel.LEFT, titles[0])
+        self.docks.set_title(Panel.RIGHT, titles[1])
+        if workspace == Workspace.SIMULATE:
+            if self.breakdown_was_open:
+                self.docks.open(Panel.SIGNAL_BREAKDOWN)
+        else:
+            self.breakdown_was_open = self.docks.is_open(Panel.SIGNAL_BREAKDOWN)
+            self.docks.close(Panel.SIGNAL_BREAKDOWN)
 
 
 class MainWindow(QMainWindow):
@@ -107,8 +185,8 @@ class MainWindow(QMainWindow):
         self.resize(1400, 900)
 
         self.viewer = viewer if viewer is not None else Viewer()
+        self.settings = settings if settings is not None else Settings()
         self.views = ViewGrid(self.viewer, self)
-
         self.renderer = SceneRenderer(
             self.viewer, {kind: panel.view for kind, panel in self.views.panels.items()}
         )
@@ -116,58 +194,96 @@ class MainWindow(QMainWindow):
         renderer = self.renderer
         self.destroyed.connect(lambda *_: renderer.close())
 
-        self.layers = LayersPanel(self.viewer, self)
-        self.options = self._create_options()
+        self._create_panels()
         self._create_loader_and_jobs()
-        self.settings = settings if settings is not None else Settings()
         self._create_mcp()
         self._follow_settings()
         self.shortcuts = shortcut_actions(self, self.viewer)
-        self._create_docks()
+        self._create_bars()
+        self.docks = Docks(
+            self,
+            self.views,
+            {Panel.LEFT: self.left, Panel.RIGHT: self.right},
+            partial(_breakdown_panel, self.viewer),
+        )
         self._build_menus()
+        self._connect()
+        self._sheets: dict[str, QWidget] = {}  # the sheets and windows opened once
         self.layout_path = (
             self.settings.path.parent / LAYOUT_FILE
             if self.settings.path is not None
             else None
         )
         self._layout_restored = False  # restored when the window first shows
-
-    def _create_options(self) -> OptionsPanel:
-        """Creates the Options panel, with the widgets some option groups end with."""
-        # An FOD's options end with the button that inspects it, an overlay's with
-        # the one that chooses its labels in 3D, a tractogram's regions with
-        # their list.
-        return OptionsPanel(
+        self.workspaces = Workspaces(
             self.viewer,
+            self.docks,
+            (self.scene_panel, self.inspector),
+            (self.steps_panel, self.step_page),
+            self,
+        )
+
+    def _create_panels(self) -> None:
+        """Creates the panels of both workspaces, stacked on each side of the views."""
+        viewer = self.viewer
+        self.scene_panel = ScenePanel(viewer, self)
+        self.scene_tree = self.scene_panel.tree
+        self.inspector = Inspector(
+            viewer,
+            self.settings,
             self,
             extras={
                 Category.FODS: (OptionGroup.GLYPHS, _inspect_button),
                 Category.OVERLAYS: (
                     OptionGroup.LABELS,
-                    partial(_labels_button, self.viewer),
+                    partial(_labels_button, viewer),
                 ),
                 Category.TRACTOGRAMS: (
                     OptionGroup.REGIONS,
-                    partial(RegionsEditor, self.viewer),
+                    partial(RegionsEditor, viewer),
                 ),
             },
         )
+        self.options = self.inspector.item
+        self.steps = StepNavigator(viewer, self)
+        self.steps_panel = StepsPanel(viewer, self.steps, self)
+        self.step_page = StepPage(viewer, self.steps, self)
+        self.left = QStackedWidget(self)
+        self.left.addWidget(self.scene_panel)
+        self.left.addWidget(self.steps_panel)
+        self.right = QStackedWidget(self)
+        self.right.addWidget(self.inspector)
+        self.right.addWidget(self.step_page)
+
+    def _create_bars(self) -> None:
+        """Puts the header and, below it, the views' toolbar across the window."""
+        self.header = Header(self.viewer, self)
+        self.toolbar = ViewToolbar(self.viewer, self)
+        for widget, name in ((self.header, "Header"), (self.toolbar, "Tools")):
+            bar = QToolBar(name, self)
+            bar.setObjectName(f"{name.lower()}Bar")
+            bar.setMovable(False)
+            bar.setFloatable(False)
+            bar.setContextMenuPolicy(Qt.ContextMenuPolicy.PreventContextMenu)
+            bar.toggleViewAction().setVisible(False)
+            bar.addWidget(widget)
+            self.addToolBar(Qt.ToolBarArea.TopToolBarArea, bar)
+            if widget is self.header:
+                self.addToolBarBreak(Qt.ToolBarArea.TopToolBarArea)
 
     def _create_loader_and_jobs(self) -> None:
         """Creates the loader, the job runner, their bars and the frame scheduler.
 
-        It also connects the Layers panel's drop and Save As, the views' refused
-        messages to the status bar, and the views' context menu.
+        It also connects the views' refused messages to the status bar, and the
+        views' context menu.
         """
         self.loading_bar = LoadingBar(self)
         self.statusBar().addPermanentWidget(self.loading_bar)
         self.loader = create_loader(self.viewer, self, self.loading_bar)
         loader = self.loader  # not `self` in the lambda, as for the renderer
         self.destroyed.connect(lambda *_: loader.stop())
-        self.layers.files_dropped.connect(self.loader.open)
-        self.layers.save_requested.connect(self.ask_save_item)
         # Long jobs, such as a simulation, with their own bar and Cancel.
-        self.job_bar = JobBar(self)
+        self.job_bar = RunJobBar(self)
         self.statusBar().addPermanentWidget(self.job_bar)
         self.jobs = create_jobs(self, self.job_bar)
         jobs = self.jobs  # not `self` in the lambda, as for the renderer
@@ -177,7 +293,9 @@ class MainWindow(QMainWindow):
             view_input.refused.connect(
                 lambda text: status_bar.showMessage(text, NOTICE_MS)
             )
-            view_input.menu_requested.connect(self._popup_view_menu)
+        connect_views(
+            self, self.viewer, self.views.inputs.values(), self.show_breakdown_at
+        )
         # The phantom's rebuilds wait for the next frame, so that several point
         # edits in one frame draw the bundle once. The viewer outlives the window.
         self.frames = FrameScheduler(self)
@@ -237,53 +355,69 @@ class MainWindow(QMainWindow):
 
         unsubscribe_port = self.settings.subscribe(move_mcp)
         self.destroyed.connect(lambda *_: unsubscribe_port())
-        status = self.statusBar()
         stop_notices = self.renderer.subscribe_notices(
             lambda text: status.showMessage(text, NOTICE_MS)
         )
         self.destroyed.connect(lambda *_: stop_notices())
 
-    def _create_docks(self) -> None:
-        """Creates the docks, whose panels are made on first use."""
-        # Not `self` in the makers, as for the renderer.
-        viewer, views, values = self.viewer, self.views, self.settings
-        layers, options, mcp = self.layers, self.options, self.mcp
-        switch = McpSwitch(mcp, lambda: _start_mcp(mcp, values.values.mcp_port))
-        self.docks = Docks(
-            self,
-            self.views,
-            {
-                Panel.LAYERS: lambda: layers,
-                Panel.OPTIONS: lambda: options,
-                Panel.LABELS: lambda: LabelsPanel(viewer),
-                Panel.SCREENSHOTS: lambda: ScreenshotPanel(viewer, views, values),
-                Panel.PHANTOM: lambda: _phantom_editor(viewer, values),
-                Panel.INSPECT_FOD: lambda: FodInspectorPanel(viewer),
-                # `docks` is bound below, before any panel is made.
-                Panel.SIGNAL_BREAKDOWN: lambda: _breakdown_panel(viewer, docks),
-                Panel.SETTINGS: lambda: SettingsPanel(values, None, switch),
-                Panel.HELP: lambda: HelpPanel(),
-            },
-            self.shortcuts,
-        )
-        # A double click on a layer shows its options; a single click does too
-        # while no right panel shows. Bound to the docks, not the window, so the
-        # connections keep no reference to the window and it can be freed.
-        docks = self.docks
-        layers.name_double_clicked.connect(partial(docks.open, Panel.OPTIONS))
-        layers.name_clicked.connect(partial(_options_if_right_empty, docks))
+    def _connect(self) -> None:
+        """Connects the panels', header's and toolbar's requests to the window."""
+        status = self.statusBar()
+        tree = self.scene_tree
+        tree.files_dropped.connect(self.loader.open)
+        tree.save_requested.connect(self.ask_save_item)
+        inspector = self.inspector
+        tree.activated_name.connect(lambda: inspector.show_tab(InspectorTab.ITEM))
+        self.scene_panel.open_requested.connect(self._open_files)
+        self.scene_panel.open_session_requested.connect(self._ask_open_session)
+        self.scene_panel.save_session_requested.connect(self._ask_save_session)
+        self.header.export_requested.connect(self.show_export)
+        self.header.settings_requested.connect(self.show_settings)
+        self.header.help_requested.connect(self.show_help)
+        self.header.run_requested.connect(self.run_phantom)
+        self.toolbar.refused.connect(lambda text: status.showMessage(text, NOTICE_MS))
+        steps = self.steps_panel
+        steps.new_requested.connect(self.new_phantom)
+        steps.open_requested.connect(self.ask_open_phantom)
+        steps.open_simulation_requested.connect(self._ask_open_simulation)
+        steps.save_requested.connect(self.ask_save_phantom)
+        steps.breakdown_requested.connect(self.show_breakdown)
+        steps.all_settings_requested.connect(self.show_all_settings)
+        self._connect_phantom_panel(self.step_page.panel)
+        self.job_bar.running.connect(self._show_running)
+        for command, slot in (
+            (Command.SETTINGS, self.show_settings),
+            (Command.HELP, self.show_help),
+            (Command.EXPORT, self.show_export),
+            (Command.SIGNAL_BREAKDOWN, self.toggle_breakdown),
+            (Command.HIDE_PANELS, self.docks.toggle_sides),
+            (Command.RUN_PHANTOM, self.run_phantom),
+        ):
+            self.shortcuts[command].triggered.connect(slot)
+
+    def _connect_phantom_panel(self, panel: PhantomPanel) -> None:
+        """Lets the window carry out a phantom panel's file and run buttons."""
+        panel.new_requested.connect(self.new_phantom)
+        panel.open_requested.connect(self.ask_open_phantom)
+        panel.save_requested.connect(self.ask_save_phantom)
+        panel.run_requested.connect(self.run_phantom)
+        panel.cancel_requested.connect(self.cancel_job)
+        panel.save_bundle_requested.connect(self.ask_save_item)
+        panel.set_running(self.jobs.busy)
+
+    def _show_running(self, running: bool) -> None:
+        """Shows in the header and the phantom panels whether a job runs."""
+        self.header.set_running(running)
+        for panel in self.findChildren(PhantomPanel):
+            panel.set_running(running)
+
+    # Menus
 
     def _build_menus(self) -> None:
-        """Builds the menu bar."""
+        """Builds the menu bar: File, View and Help."""
         bar = self.menuBar()
         self._build_file_menu(bar.addMenu("&File"))
         self._build_view_menu(bar.addMenu("&View"))
-        settings = bar.addMenu("&Settings")
-        preferences = self.shortcuts[Command.SETTINGS]
-        # Kept in this menu: macOS would move a preferences item into the app menu,
-        # titled "Python" when run from Python, and hide this menu as empty.
-        preferences.setMenuRole(QAction.MenuRole.NoRole)
-        settings.addAction(preferences)
         self._build_help_menu(bar.addMenu("&Help"))
 
     def _build_file_menu(self, file: QMenu) -> None:
@@ -309,48 +443,27 @@ class MainWindow(QMainWindow):
         save_session.triggered.connect(self._ask_save_session)
 
         self.save_item_action = QAction("Save &As...", self)
-        self.save_item_action.setToolTip("Save the item selected in Layers to a file")
+        self.save_item_action.setToolTip("Save the item selected in the scene tree")
         self.save_item_action.triggered.connect(self._save_selected)
 
-        screenshot = self.shortcuts[Command.SCREENSHOT]
+        export = self.shortcuts[Command.EXPORT]
+        export.setText("&Export...")
 
-        file.addAction(open_action)
-        file.addAction(open_registered)
-        file.addAction(self.save_item_action)
+        for action in (open_action, open_registered, self.save_item_action):
+            file.addAction(action)
         file.addSeparator()
         file.addAction(open_session)
         file.addAction(save_session)
         file.addSeparator()
-        file.addAction(screenshot)
-        file.addSeparator()
-        self._add_phantom_items(file)
+        file.addAction(export)
         file.addSeparator()
         file.addAction(quit_action)
         file.aboutToShow.connect(self._show_file_menu)
         self._show_file_menu()
 
-    def _add_phantom_items(self, file: QMenu) -> None:
-        """Adds the phantom's and the simulation's items to the File menu."""
-        new_phantom = QAction("&New Phantom", self)
-        new_phantom.triggered.connect(self.new_phantom)
-        open_phantom = QAction("Open P&hantom...", self)
-        open_phantom.triggered.connect(self.ask_open_phantom)
-        self.save_phantom_action = QAction("Save Phan&tom...", self)
-        self.save_phantom_action.triggered.connect(self.ask_save_phantom)
-        open_simulation = QAction("Open Si&mulation...", self)
-        open_simulation.triggered.connect(self._ask_open_simulation)
-        run = self.shortcuts[Command.RUN_PHANTOM]
-        run.setText("&Run Phantom")
-        run.triggered.connect(self.run_phantom)
-        for action in (new_phantom, open_phantom, self.save_phantom_action, run):
-            file.addAction(action)
-        file.addAction(open_simulation)
-
     def _build_view_menu(self, view: QMenu) -> None:
-        """Fills the View menu.
-
-        Its ticks are read from the settings and the view state when it opens.
-        """
+        """Fills the View menu; its ticks are read from the view state when it opens."""
+        viewer = self.viewer  # not `self` in the lambdas, as for the renderer
         overlay = self.shortcuts[Command.INFORMATION_OVERLAY]
         overlay.setText("&Information overlay")
         overlay.setCheckable(True)
@@ -362,42 +475,42 @@ class MainWindow(QMainWindow):
         reset = self.shortcuts[Command.RESET_VIEW]
         reset.setText("Reset &view")
         view.addAction(reset)
-        panels = view.addMenu("&Panels")
-        for info in PANELS.values():
-            panels.addAction(self.shortcuts[info.command])
-        panels.addSeparator()
-        panels.addAction(self.shortcuts[Command.HIDE_PANELS])
-        reset_layout = QAction("Reset &Layout", self)
-        reset_layout.setToolTip("Put the panels back where they were at first start")
-        reset_layout.triggered.connect(self.reset_layout)
-        panels.addAction(reset_layout)
-        self.grid_box_action = QAction("Phantom &grid box", self)
-        self.grid_box_action.setCheckable(True)
-        self.grid_box_action.toggled.connect(self._toggle_grid_box)
-        view.addAction(self.grid_box_action)
-        self.guided_action = QAction("G&uided phantom editor", self)
-        self.guided_action.setToolTip(
-            "The phantom editor's steps to a first simulation, one at a time"
-        )
-        self.guided_action.setCheckable(True)
-        self.guided_action.toggled.connect(self._toggle_guided)
-        view.addAction(self.guided_action)
-        view.aboutToShow.connect(self._show_view_menu)
-        self._show_view_menu()
+        layouts = view.addMenu("&Layout")
+        group = QActionGroup(self)
+        self.layout_actions: dict[Layout, QAction] = {}
+        for layout, name in LAYOUT_NAMES.items():
+            action = layouts.addAction(name)
+            action.setCheckable(True)
+            action.triggered.connect(lambda _, lay=layout, v=viewer: v.set_layout(lay))
+            group.addAction(action)
+            self.layout_actions[layout] = action
         camera = view.addMenu("3D &camera")
-        presets = {
+        names = {
             Command.CAMERA_AXIAL: "&Axial",
             Command.CAMERA_CORONAL: "&Coronal",
             Command.CAMERA_SAGITTAL: "&Sagittal",
             Command.CAMERA_RESET: "&Reset",
         }
-        for command, name in presets.items():
+        for command, name in names.items():
             self.shortcuts[command].setText(name)
             camera.addAction(self.shortcuts[command])
+        workspaces = view.addMenu("&Workspace")
+        for command, name in (
+            (Command.WORKSPACE_VIEW, "&View"),
+            (Command.WORKSPACE_SIMULATE, "&Simulate"),
+        ):
+            action = self.shortcuts[command]
+            action.setText(name)
+            action.setCheckable(True)
+            workspaces.addAction(action)
+        view.aboutToShow.connect(self._show_view_menu)
+        self._show_view_menu()
 
     def _build_help_menu(self, help_menu: QMenu) -> None:
         """Fills the Help menu."""
-        help_menu.addAction(self.shortcuts[Command.HELP])
+        help_action = self.shortcuts[Command.HELP]
+        help_action.setText("&Help")
+        help_menu.addAction(help_action)
         shortcuts = QAction("&Shortcuts", self)
         shortcuts.triggered.connect(self.show_shortcuts)
         help_menu.addAction(shortcuts)
@@ -405,6 +518,130 @@ class MainWindow(QMainWindow):
         about.setMenuRole(QAction.MenuRole.AboutRole)
         about.triggered.connect(self._about)
         help_menu.addAction(about)
+
+    def _show_view_menu(self) -> None:
+        """Updates the View menu's ticks from the view state."""
+        state = self.viewer.scene.view
+        self.shortcuts[Command.INFORMATION_OVERLAY].setChecked(state.overlay_visible)
+        self.crosshair.setChecked(state.crosshair_visible)
+        for layout, action in self.layout_actions.items():
+            action.setChecked(layout == state.layout)
+        self.shortcuts[Command.WORKSPACE_VIEW].setChecked(
+            state.workspace == Workspace.VIEW
+        )
+        self.shortcuts[Command.WORKSPACE_SIMULATE].setChecked(
+            state.workspace == Workspace.SIMULATE
+        )
+
+    def _show_file_menu(self) -> None:
+        """Enables the File menu's items that apply to the scene now."""
+        selected = self.viewer.scene.view.selected
+        self.save_item_action.setEnabled(
+            isinstance(selected, int)
+            and self.viewer.scene.item(selected).category in SAVABLE
+        )
+
+    # Workspaces
+
+    def set_workspace(self, workspace: Workspace) -> None:
+        """Shows a workspace, as its switch in the header does."""
+        self.viewer.set_workspace(workspace)
+
+    # Sheets and windows
+
+    def _sheet[T: QWidget](self, key: str, make: Callable[[], T]) -> T:
+        """Shows a sheet or window made the first time, and returns it."""
+        sheet = self._sheets.get(key)
+        if sheet is None:
+            sheet = make()
+            self._sheets[key] = sheet
+        sheet.show()
+        sheet.raise_()
+        sheet.activateWindow()
+        return sheet  # type: ignore[return-value]  # made by `make` for this key
+
+    def show_settings(self) -> SettingsSheet:
+        """Opens the Settings sheet."""
+        mcp, values = self.mcp, self.settings
+        switch = McpSwitch(mcp, lambda: _start_mcp(mcp, values.values.mcp_port))
+        return self._sheet("settings", lambda: SettingsSheet(values, self, switch))
+
+    def show_help(self) -> HelpWindow:
+        """Opens the Help window."""
+        return self._sheet("help", lambda: HelpWindow(self))
+
+    def show_export(self) -> ExportSheet:
+        """Opens the Export sheet."""
+        return self._sheet(
+            "export", lambda: ExportSheet(self.viewer, self.views, self.settings, self)
+        )
+
+    def show_all_settings(self) -> PhantomPanel:
+        """Opens the phantom editor's All settings window and returns its panel."""
+
+        def make() -> AllSettingsWindow:
+            window = AllSettingsWindow(self.viewer, self)
+            self._connect_phantom_panel(window.panel)
+            return window
+
+        return self._sheet("all settings", make).panel
+
+    def show_shortcuts(self) -> None:
+        """Opens the list of shortcuts."""
+        ShortcutsDialog(self).exec()
+
+    def _about(self) -> None:
+        """Shows the About box with the version."""
+        from larmor import __version__
+
+        QMessageBox.about(self, "About", f"<b>{APP_NAME}</b><br>Larmor {__version__}")
+
+    def inspect_fod(self, item_id: ItemId | None = None) -> ItemPanel:
+        """Shows the inspector's Cursor tab with the FOD glyph, of this FOD if given.
+
+        Returns:
+            ItemPanel: The panel of the FOD glyph.
+
+        Raises:
+            ValueError: If the item is not an FOD.
+        """
+        self._check_category(item_id, Category.FODS)
+        self.set_workspace(Workspace.VIEW)
+        self.inspector.show_tab(InspectorTab.CURSOR)
+        panel = self.inspector.cursor_tab.fod
+        if item_id is not None:
+            panel.show_item(item_id)
+        return panel
+
+    def choose_labels(self, item_id: ItemId | None = None) -> ItemPanel:
+        """Shows the inspector's Cursor tab with the labels, of this overlay if given.
+
+        Returns:
+            ItemPanel: The panel of the labels.
+
+        Raises:
+            ValueError: If the item is not an overlay.
+        """
+        self._check_category(item_id, Category.OVERLAYS)
+        self.set_workspace(Workspace.VIEW)
+        self.inspector.show_tab(InspectorTab.CURSOR)
+        panel = self.inspector.cursor_tab.labels
+        if item_id is not None:
+            panel.show_item(item_id)
+        self.inspector.cursor_tab.refresh()
+        return panel
+
+    def _check_category(self, item_id: ItemId | None, category: Category) -> None:
+        """Raises ValueError if the item, when given, is not in the category."""
+        if item_id is None:
+            return
+        item = self.viewer.scene.item(item_id)
+        if item.category != category:
+            raise ValueError(
+                f"{item.name} is in {item.category.value}, not {category.value}."
+            )
+
+    # Opening and saving files
 
     def _open_files(self) -> None:
         """Asks for files and a category, whose filter is the category choice.
@@ -414,10 +651,14 @@ class MainWindow(QMainWindow):
         filters: dict[str, Category | None] = {
             f"{kind.label} ({kind.patterns()})": category
             for category, kind in REGISTRY.items()
+            if kind.from_files
         }
         filters[MATLAB_FILTER] = None
         current = _category_of(self.viewer, self.viewer.scene.view.selected)
-        chosen = next(f for f, c in filters.items() if c == current)
+        chosen = next(
+            (f for f, c in filters.items() if c == current), next(iter(filters))
+        )
+
         paths, chosen = QFileDialog.getOpenFileNames(
             self, "Open", "", ";;".join(filters), chosen
         )
@@ -495,12 +736,14 @@ class MainWindow(QMainWindow):
 
         A file that is not a session, or that cannot be read, is reported in a
         message box, as are the session's missing files and refused options once
-        it has opened. The read limit defaults to the Settings panel's.
+        it has opened. The read limit defaults to the Settings sheet's.
         """
         try:
             self.loader.open_session(path, self._session_opened, max_streamlines)
         except (OSError, ValueError) as e:
             self._message("Cannot open session", str(e))
+            return
+        self.header.set_session(_session_name(path))
 
     def _session_opened(self, report: SessionReport) -> None:
         """Shows the problems of a session that has opened, if any."""
@@ -537,6 +780,7 @@ class MainWindow(QMainWindow):
         except (OSError, ValueError) as e:
             self._message("Cannot save session", f"Cannot save {path}: {e}")
             return
+        self.header.set_session(_session_name(path))
         self.statusBar().showMessage(f"Session saved to {path}", NOTICE_MS)
         if skipped:
             names = "\n".join(f"- {name}" for name in skipped)
@@ -545,17 +789,6 @@ class MainWindow(QMainWindow):
                 f"These items were added from Python without a file, so the "
                 f"session cannot reopen them:\n\n{names}",
             )
-
-    def _show_file_menu(self) -> None:
-        """Enables the File menu's items that apply to the scene now."""
-        phantom = self.viewer.phantom is not None
-        self.save_phantom_action.setEnabled(phantom)
-        self.shortcuts[Command.RUN_PHANTOM].setEnabled(True)
-        selected = self.viewer.scene.view.selected
-        self.save_item_action.setEnabled(
-            isinstance(selected, int)
-            and self.viewer.scene.item(selected).category in SAVABLE
-        )
 
     def _save_selected(self) -> None:
         """Asks for a file and saves the selected item to it."""
@@ -603,36 +836,43 @@ class MainWindow(QMainWindow):
     # The phantom editor
 
     def show_phantom(self) -> PhantomPanel:
-        """Shows the Phantom panel."""
-        return self._show(Panel.PHANTOM, PhantomEditor).panel
+        """Shows the Simulate workspace and returns its step page's panel."""
+        self.set_workspace(Workspace.SIMULATE)
+        return self.step_page.panel
 
     def show_breakdown(self) -> BreakdownPanel:
-        """Shows the Signal breakdown panel."""
+        """Opens the Signal breakdown below the views, in the Simulate workspace."""
         from larmor.viewer.qt.breakdown_panel import BreakdownPanel
 
-        return self._show(Panel.SIGNAL_BREAKDOWN, BreakdownPanel)
+        self.set_workspace(Workspace.SIMULATE)
+        self.docks.open(Panel.SIGNAL_BREAKDOWN)
+        panel = self.docks.breakdown()
+        assert isinstance(panel, BreakdownPanel)
+        self.docks.set_title(Panel.SIGNAL_BREAKDOWN, title(self.viewer.breakdown))
+        return panel
+
+    def toggle_breakdown(self) -> None:
+        """Opens the Signal breakdown, or closes it if it is open."""
+        if self.docks.is_open(Panel.SIGNAL_BREAKDOWN):
+            self.docks.close(Panel.SIGNAL_BREAKDOWN)
+        else:
+            self.show_breakdown()
 
     def show_breakdown_at(self, position: tuple[float, float, float]) -> None:
-        """Shows the Signal breakdown panel, pinned to the voxel at a position."""
+        """Shows the Signal breakdown, pinned to the voxel at a position."""
         self.show_breakdown()
         try:
             self.viewer.pin_breakdown(position)
         except ValueError as e:
             self.statusBar().showMessage(str(e), NOTICE_MS)
 
-    def view_menu(self, position: tuple[float, float, float]) -> QMenu:
-        """Returns the context menu of a voxel of the phantom in a 2D view."""
-        menu = QMenu(self)
-        menu.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
-        here = menu.addAction("Signal breakdown here")
-        here.triggered.connect(lambda: self.show_breakdown_at(position))
-        return menu
-
-    def _popup_view_menu(
-        self, position: tuple[float, float, float], point: QPoint
-    ) -> None:
-        """Shows the context menu of a voxel at a point on the screen."""
-        self.view_menu(position).popup(point)
+    def view_menu(
+        self, position: tuple[float, float, float], kind: ViewKind = ViewKind.AXIAL
+    ) -> QMenu:
+        """Returns the right-click menu of a view at a world position."""
+        return build_view_menu(
+            self, self.viewer, kind, position, self.show_breakdown_at
+        )
 
     def new_phantom(self) -> None:
         """Starts a phantom on the views' grid, or the default box, and shows it."""
@@ -750,100 +990,19 @@ class MainWindow(QMainWindow):
         box.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         box.show()
 
-    def reset_layout(self) -> None:
-        """Puts the panels back as at first start, and forgets the saved layout."""
-        self.docks.reset()
-        if self.layout_path is not None:
-            self.layout_path.unlink(missing_ok=True)
-
-    def _toggle_grid_box(self, shown: bool) -> None:
-        """Shows or hides the phantom's grid box."""
-        if self.viewer.phantom is not None:
-            self.viewer.show_grid_box(shown)
-
-    def _toggle_guided(self, guided: bool) -> None:
-        """Switches the phantom editor between its guided steps and all its sections."""
-        layout = PhantomLayout.GUIDED if guided else PhantomLayout.ALL
-        self.settings.set(SettingName.PHANTOM_LAYOUT, layout)
-
-    def _show_view_menu(self) -> None:
-        """Updates the View menu's ticks from the settings and the view state."""
-        phantom = self.viewer.phantom
-        with QSignalBlocker(self.guided_action):
-            guided = self.settings.values.phantom_layout == PhantomLayout.GUIDED
-            self.guided_action.setChecked(guided)
-        self.grid_box_action.setEnabled(phantom is not None)
-        with QSignalBlocker(self.grid_box_action):
-            self.grid_box_action.setChecked(phantom is not None and phantom.show_box)
-        state = self.viewer.scene.view
-        self.shortcuts[Command.INFORMATION_OVERLAY].setChecked(state.overlay_visible)
-        self.crosshair.setChecked(state.crosshair_visible)
-
-    def show_settings(self) -> SettingsPanel:
-        """Shows the Settings panel."""
-        return self._show(Panel.SETTINGS, SettingsPanel)
-
-    def show_screenshot(self) -> ScreenshotPanel:
-        """Shows the Screenshots panel."""
-        return self._show(Panel.SCREENSHOTS, ScreenshotPanel)
-
-    def inspect_fod(self, item_id: ItemId | None = None) -> FodInspectorPanel:
-        """Shows the Inspect FOD panel, on this FOD if given.
-
-        Returns:
-            FodInspectorPanel: The panel.
-
-        Raises:
-            ValueError: If the item is not an FOD.
-        """
-        self._check_category(item_id, Category.FODS)
-        return self._show_item(Panel.INSPECT_FOD, FodInspectorPanel, item_id)
-
-    def choose_labels(self, item_id: ItemId | None = None) -> LabelsPanel:
-        """Shows the Labels panel, on this overlay if given.
-
-        Returns:
-            LabelsPanel: The panel.
-
-        Raises:
-            ValueError: If the item is not an overlay.
-        """
-        self._check_category(item_id, Category.OVERLAYS)
-        return self._show_item(Panel.LABELS, LabelsPanel, item_id)
-
-    def _check_category(self, item_id: ItemId | None, category: Category) -> None:
-        """Raises ValueError if the item, when given, is not in the category."""
-        if item_id is None:
-            return
-        item = self.viewer.scene.item(item_id)
-        if item.category != category:
-            raise ValueError(
-                f"{item.name} is in {item.category.value}, not {category.value}."
-            )
-
-    def _show[T: QWidget](self, panel: Panel, kind: type[T]) -> T:
-        """Opens a panel and returns its widget."""
-        self.docks.open(panel)
-        widget = self.docks.widget(panel)
-        assert isinstance(widget, kind)
-        return widget
-
-    def _show_item[T: ItemPanel](
-        self, panel: Panel, kind: type[T], item_id: ItemId | None
-    ) -> T:
-        """Opens an item panel, on the item if given, and returns its widget."""
-        widget = self._show(panel, kind)
-        if item_id is not None:
-            widget.show_item(item_id)
-        return widget
+    # Showing and closing
 
     def showEvent(self, event: QShowEvent) -> None:  # noqa: N802
         """Restores the panels' layout the first time the window shows."""
         super().showEvent(event)
         if not self._layout_restored:
             self._layout_restored = True
-            if self.layout_path is not None:
-                self.docks.restore(self.layout_path)
+            restored = self.layout_path is not None and self.docks.restore(
+                self.layout_path
+            )
+            if not restored:
+                self.docks.set_side_widths(*SIDE_WIDTHS)
+            self.workspaces.show()
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
         """Saves the panels' layout, stops the MCP server and the item panels."""
@@ -853,6 +1012,8 @@ class MainWindow(QMainWindow):
         # The viewer outlives the window: the panels' items stop following it.
         for panel in self.findChildren(ItemPanel):
             panel.drop()
+        for sheet in self._sheets.values():
+            sheet.close()
         super().closeEvent(event)
 
     def start_mcp(self, port: int | None = None) -> None:
@@ -866,16 +1027,6 @@ class MainWindow(QMainWindow):
         _start_mcp(
             self.mcp, port if port is not None else self.settings.values.mcp_port
         )
-
-    def show_shortcuts(self) -> None:
-        """Opens the list of shortcuts."""
-        ShortcutsDialog(self).exec()
-
-    def _about(self) -> None:
-        """Shows the About box with the version."""
-        from larmor import __version__
-
-        QMessageBox.about(self, "About", f"<b>{APP_NAME}</b><br>Larmor {__version__}")
 
 
 def _start_mcp(mcp: McpServer, port: int) -> None:
@@ -1000,9 +1151,9 @@ def _apply_to_viewer(values: AppSettings, viewer: Viewer, name: SettingName) -> 
 
 
 def _inspect_button(item_id: ItemId, parent: QWidget) -> QWidget:
-    """Creates an FOD's Inspect FOD button, which shows it in the Inspect FOD panel."""
-    button = QPushButton("Inspect FOD", parent)
-    button.setToolTip("Show this FOD at the crosshair, large, in the Inspect FOD panel")
+    """Creates an FOD's button that shows its glyph at the cursor, large."""
+    button = QPushButton("Show at the cursor", parent)
+    button.setToolTip("Show this FOD's glyph at the crosshair in the Cursor tab")
 
     def clicked() -> None:
         # The window found when clicked: holding it would keep it alive.
@@ -1015,7 +1166,7 @@ def _inspect_button(item_id: ItemId, parent: QWidget) -> QWidget:
 
 
 def _labels_button(viewer: Viewer, item_id: ItemId, parent: QWidget) -> QWidget:
-    """Creates an overlay's Choose labels button, which shows it in the Labels panel."""
+    """Creates an overlay's Choose labels button, which lists them in the Cursor tab."""
     button = LabelsButton(viewer, item_id, parent)
 
     def clicked() -> None:
@@ -1028,53 +1179,24 @@ def _labels_button(viewer: Viewer, item_id: ItemId, parent: QWidget) -> QWidget:
     return button
 
 
-def _main_window(widget: QWidget) -> MainWindow | None:
-    """Returns the main window a widget is in, also from a floating panel."""
-    # Through the parents: a floating panel's window() is its own container.
-    found = widget.parentWidget()
-    while found is not None and not isinstance(found, MainWindow):
-        found = found.parentWidget()
-    return found
-
-
-def _phantom_editor(viewer: Viewer, settings: Settings) -> PhantomEditor:
-    """Creates the Phantom editor, whose file and run buttons the window carries out."""
-    editor = PhantomEditor(viewer, settings)
-    panel = editor.panel
-
-    def call(name: str, *args: object) -> None:
-        # Found when clicked: holding the window would keep it alive.
-        found = _main_window(editor)
-        if found is not None:
-            getattr(found, name)(*args)
-
-    panel.new_requested.connect(lambda: call("new_phantom"))
-    panel.open_requested.connect(lambda: call("ask_open_phantom"))
-    panel.save_requested.connect(lambda: call("ask_save_phantom"))
-    panel.run_requested.connect(lambda: call("run_phantom"))
-    panel.cancel_requested.connect(lambda: call("cancel_job"))
-    panel.save_bundle_requested.connect(lambda item_id: call("ask_save_item", item_id))
-    return editor
-
-
-def _breakdown_panel(viewer: Viewer, docks: Docks) -> BreakdownPanel:
-    """Creates the Signal breakdown panel, whose dock's title names the voxel shown."""
+def _breakdown_panel(viewer: Viewer) -> BreakdownPanel:
+    """Creates the Signal breakdown panel, made when its dock first opens."""
     from larmor.viewer.qt.breakdown_panel import BreakdownPanel
 
-    panel = BreakdownPanel(viewer)
-    panel.title_changed.connect(partial(docks.set_title, Panel.SIGNAL_BREAKDOWN))
-    docks.set_title(Panel.SIGNAL_BREAKDOWN, title(viewer.breakdown))
-    return panel
+    return BreakdownPanel(viewer)
 
 
-def _options_if_right_empty(docks: Docks) -> None:
-    """Shows the Options panel if no panel of the right stripe shows."""
-    if not docks.side_open(Side.RIGHT):
-        docks.open(Panel.OPTIONS)
+def _session_name(path: str | Path) -> str:
+    """Returns the name the header shows for a session file, without its suffix."""
+    name = Path(path).name
+    for suffix in (SUFFIX, ".json"):
+        if name.endswith(suffix):
+            return name[: -len(suffix)]
+    return name
 
 
 def _category_of(viewer: Viewer, target: ItemId | Category | None) -> Category:
-    """Returns the category a Layers selection stands for; Volumes if none."""
+    """Returns the category the scene tree's selection stands for; Volumes if none."""
     if target is None:
         return Category.VOLUMES
     if isinstance(target, Category):

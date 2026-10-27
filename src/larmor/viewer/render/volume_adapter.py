@@ -1,5 +1,7 @@
 """Draws volumes and overlays as slices in the 2D views and as objects in 3D."""
 
+from typing import ClassVar
+
 import numpy as np
 import pygfx as gfx
 
@@ -48,7 +50,13 @@ COLORMAP_MAPS = {
 
 
 class VolumeAdapter(Adapter):
-    """Draws an image from one texture, as a slice in each 2D view and in 3D."""
+    """Draws an image from one texture, as a slice in each 2D view and in 3D.
+
+    It draws in the views it is given, so a detail window gives it one 2D view.
+    """
+
+    # Whether the slices may be smoothed; a detail window's never are.
+    smooth: ClassVar[bool] = True
 
     def __init__(
         self,
@@ -72,10 +80,12 @@ class VolumeAdapter(Adapter):
         # means none asked.
         self._dti: gfx.Texture | None = None
         self._dti_asked: tuple[ItemId | None] | tuple[()] = ()
-        self._dti_worker = Worker(views[ViewKind.AXIAL].canvas)
+        self._dti_worker = Worker(next(iter(views.values())).canvas)
 
         cursor = viewer.scene.view.cursor
         for kind in VIEWS_2D:
+            if kind not in views:
+                continue
             material = gfx.VolumeSliceMaterial(plane=_plane(kind, cursor))
             material.depth_test = item.category == Category.VOLUMES
             obj = gfx.Volume(gfx.Geometry(grid=self._values), material)
@@ -147,9 +157,9 @@ class VolumeAdapter(Adapter):
             obj.material.opacity = o.opacity_2d
             obj.material.clim = slice_map[1]
             obj.material.map = slice_map[2]
-            obj.material.interpolation = interpolation
+            obj.material.interpolation = interpolation if self.smooth else "nearest"
 
-        for kind in VIEWS_2D:
+        for kind in self.slices:
             self.views[kind].request_draw()
 
     def _count_labels(self) -> tuple[np.ndarray, gfx.Texture] | None:

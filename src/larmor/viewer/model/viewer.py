@@ -2,13 +2,14 @@
 
 import importlib.util
 import math
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import replace
 from enum import StrEnum
 from functools import partial
 from numbers import Real
 from pathlib import Path
-from typing import Any, Final
+from typing import TYPE_CHECKING, Any, Final, TypeIs
 
 import numpy as np
 
@@ -27,7 +28,23 @@ from larmor.viewer.model.camera import (
     field_of_view,
     screen_axes,
 )
-from larmor.viewer.model.item import Category, Item, ItemId, ViewKind
+from larmor.viewer.model.detail import (
+    VIEW_AXIS,
+    Detail,
+    DetailId,
+    DetailOption,
+    FigureBackground,
+    clipped_box,
+    detail_title,
+    picture_size,
+)
+from larmor.viewer.model.export import (
+    DEFAULT_SIZE,
+    ExportPreset,
+    find_preset,
+    view_size,
+)
+from larmor.viewer.model.item import VIEW_GRID, Category, Item, ItemId, ViewKind
 from larmor.viewer.model.labels import labels_in
 from larmor.viewer.model.matlab_import import (
     LoadAs,
@@ -41,14 +58,21 @@ from larmor.viewer.model.matlab_import import (
     values_spec,
 )
 from larmor.viewer.model.options import (
+    BOX_SIZE,
+    ROLE_COLOURS,
+    SPHERE_RADIUS,
     SURFACE_COLOUR,
     SURFACE_COLOURS,
     Colormap,
     Colouring,
+    Lengths,
     OptionError,
     OptionName,
     OverlayOptions,
+    Position,
+    RegionOptions,
     RegionRole,
+    RegionShape,
     SurfaceOptions,
     TractogramOptions,
     VolumeOptions,
@@ -68,17 +92,21 @@ from larmor.viewer.model.phantom import (
     SimulationOutputs,
     TissuePreset,
     box_grid,
+    drawable,
     existing_outputs,
     read_phantom_file,
     run_simulation,
     simulation_outputs,
 )
-from larmor.viewer.model.phantom_editor import PhantomEditor, Schedule
+from larmor.viewer.model.phantom_editor import PhantomEditor, Schedule, simplify_stroke
 from larmor.viewer.model.readout import Readout, closest_axis, read_volume
+from larmor.viewer.model.readout import slice_index as volume_slice
 from larmor.viewer.model.regions import (
     RegionKey,
     mask_ids,
+    mask_regions_of,
     passes_regions,
+    region_data,
     region_filter,
     region_key,
 )
@@ -96,6 +124,7 @@ from larmor.viewer.model.session import (
     SessionReport,
     missing_file,
     read_session,
+    region_entries,
     view_state,
     write_session,
 )
@@ -104,8 +133,18 @@ from larmor.viewer.model.surface import (
     CURVATURES,
     SurfaceData,
 )
-from larmor.viewer.model.view_state import ViewField, ViewState
+from larmor.viewer.model.view_state import (
+    Layout,
+    Tool,
+    ViewField,
+    ViewState,
+    Workspace,
+)
 from larmor.viewer.system import INSTALL_HINT, ViewerUnavailableError
+
+if TYPE_CHECKING:
+    # Only for annotations: the model itself never loads pygfx.
+    from larmor.viewer.render.offscreen import OffscreenRenderer
 
 
 class _Mixed:
@@ -144,22 +183,23 @@ _RESET_BY_VALUES: Final = (
     OptionName.MAXIMUM,
 )
 
-# The options listing a tractogram's regions.
-REGION_LISTS: Final = (
-    OptionName.INCLUDE_MASKS,
-    OptionName.EXCLUDE_MASKS,
-    OptionName.WITHIN_MASKS,
-    OptionName.INCLUDE_SPHERES,
-    OptionName.EXCLUDE_SPHERES,
-    OptionName.WITHIN_SPHERES,
+# The options of a region item that change its data.
+_REGION_GEOMETRY: Final = (
+    OptionName.CENTRE,
+    OptionName.RADIUS,
+    OptionName.SIZE,
+    OptionName.MASK,
 )
-
-# The lists of masks; a mask may be in one of them only.
-_MASK_LISTS: Final = (
-    OptionName.INCLUDE_MASKS,
-    OptionName.EXCLUDE_MASKS,
-    OptionName.WITHIN_MASKS,
-)
+# The name a new region of each shape gets, a number after it.
+_REGION_NAMES: Final = {
+    RegionShape.SPHERE: "Sphere",
+    RegionShape.BOX: "Box",
+    RegionShape.MASK: "Mask",
+}
+# The range of a detail window's export scale, times its picture's size.
+DETAIL_SCALES: Final = (1.0, 8.0)
+# The range of a detail window's glyph detail.
+GLYPH_DETAILS: Final = (2, 16)
 
 # The categories whose items `save_item` writes to a file.
 SAVABLE: Final = (
@@ -169,6 +209,12 @@ SAVABLE: Final = (
     Category.FODS,
     Category.PEAKS,
 )
+
+# The pointer tools each workspace offers.
+WORKSPACE_TOOLS: Final = {
+    Workspace.VIEW: (Tool.CURSOR, Tool.SPHERE, Tool.BOX, Tool.ZOOM_BOX),
+    Workspace.SIMULATE: (Tool.CURSOR, Tool.DRAW_BUNDLE),
+}
 
 # Set on the methods that agents may call; see `agent_action`.
 AGENT_ACTION = "agent_action"
@@ -231,6 +277,13 @@ class Viewer:
         self._versions: dict[ItemId, int] = {}
         # Carries out the phantom actions; the phantom itself is `scene.phantom`.
         self._phantom = PhantomEditor(self)
+        # How many control points each click or stroke added to the bundle being
+        # drawn, so that Backspace takes back a whole stroke.
+        self._point_groups: list[int] = []
+        # The radius and size the next sphere and box get when none is given,
+        # those of the last one added or resized.
+        self.region_radius: float = SPHERE_RADIUS
+        self.box_size: Lengths = BOX_SIZE
 
     # Items
 
@@ -457,7 +510,7 @@ class Viewer:
                 peaks), in world coordinates, and for surfaces a `Surface`.
             category: Where the item goes: `Category.VOLUMES`, `OVERLAYS`,
                 `TRACTOGRAMS`, `FODS`, `PEAKS` or `SURFACES`.
-            name: The name shown in Layers; "Volume 2" and so on if None.
+            name: The name shown in the scene tree; "Volume 2" and so on if None.
             source: The file the object came from, if any.
             part: What it was read from inside a MATLAB file `source`, if so; a
                 session reopens it from there.
@@ -475,6 +528,10 @@ class Viewer:
         """
         had_grid = self._reference_grid() is not None
         _require(category, Category)
+        if category == Category.REGIONS:
+            raise ValueError(
+                "Regions are added with add_sphere, add_box or add_mask, not add."
+            )
         kind = item_type(category)
 
         data = _checked_data(category, data)
@@ -532,7 +589,7 @@ class Viewer:
     def remove(self, target: ItemId | Category) -> None:
         """Removes an item, or every item of a category.
 
-        When the main volume is removed, the next volume in Layers order becomes
+        When the main volume is removed, the next volume in scene tree order becomes
         the main volume, and is shown if the removed one was. The views keep
         their field of view.
 
@@ -552,6 +609,9 @@ class Viewer:
                 self.remove(item.id)
         else:
             item = self.scene.item(target)
+            # A mask region goes with its image.
+            for region in mask_regions_of(self.scene, target):
+                self.remove(region.id)
             if self.scene.view.selected == target:
                 self.scene.set_view(ViewField.SELECTED, None)
             # Before it goes, so that no option ever names an item not in the scene.
@@ -589,10 +649,31 @@ class Viewer:
             self.scene.set_view(ViewField.MAIN_VOLUME, others[0].id)
 
     def clear(self) -> None:
-        """Removes every item and closes the phantom; the views stay as they are."""
+        """Removes every item, closes the phantom and the detail windows.
+
+        The views stay as they are.
+        """
         self._phantom.close()
+        for detail_id in list(self.scene.details):
+            self.scene.remove_detail(detail_id)
         for category in Category:
             self.remove(category)
+
+    @agent_action
+    def rename(self, item_id: ItemId, name: str) -> None:
+        """Gives an item a new name, as the scene tree and sessions show it.
+
+        Args:
+            item_id: The item.
+            name: The new name; spaces at its ends are dropped.
+
+        Raises:
+            ValueError: If there is no item with that id, or the name is empty.
+        """
+        text = str(name).strip()
+        if not text:
+            raise ValueError("A name needs at least one character.")
+        self.scene.rename(item_id, text)
 
     @agent_action
     def save_item(self, item_id: ItemId, path: str | Path) -> Item:
@@ -671,7 +752,7 @@ class Viewer:
         self.scene.set_option(item.id, OptionName.VALUES_FILE, str(tsf))
 
     def replace_data(self, item_id: ItemId, data: object) -> None:
-        """Gives an item new data, keeping its id, options and place in Layers.
+        """Gives an item new data, keeping its id, options and place in the scene tree.
 
         The data is checked as `add` checks it, and is not copied. The item then
         refers to no file: a session leaves it out until it is saved with
@@ -723,7 +804,8 @@ class Viewer:
         self._versions[item_id] = self._versions.get(item_id, 0) + 1
         # Its own selection, and those of the tractograms it is a mask of.
         for other in list(self._selections):
-            if other == item_id or item_id in mask_ids(self.scene.item(other)):
+            tract = self.scene.item(other)
+            if other == item_id or item_id in mask_ids(self.scene, tract):
                 del self._selections[other]
 
     # Sessions
@@ -746,7 +828,7 @@ class Viewer:
             path: The session file to write; an existing file is replaced.
 
         Returns:
-            The names of the items left out, in Layers order.
+            The names of the items left out, in scene tree order.
 
         Raises:
             OSError: If the file cannot be written.
@@ -758,8 +840,12 @@ class Viewer:
         """
         state = self.scene.phantom
         owned = state.owned() if state is not None else set()
+        # Regions have no file: the session holds them in a list of their own.
+        owned |= {r.id for r in self.scene.in_category(Category.REGIONS)}
         block = self._phantom.session_block()
-        skipped = write_session(self.scene, Path(path), block, owned)
+        skipped = write_session(
+            self.scene, Path(path), block, owned, region_entries(self.scene)
+        )
         for name in skipped:
             LarmorLogger.warning(f"{name} has no file, so the session leaves it out.")
         return skipped
@@ -850,6 +936,11 @@ class Viewer:
         ids = {old: new for old, new in ids.items() if new in present}
         entries = [e for e in session.items if e.id in ids]
         names = {e.id: e.name for e in session.items}
+        # The regions next, as the tractograms' options name them.
+        added, refused = self._restore_regions(session, ids)
+        problems += refused
+        ids = {**ids, **added}
+        names |= {e.id: e.name for e in session.regions}
         # Options naming an item wait until every item has its other options.
         for refs in (False, True):
             for entry in entries:
@@ -926,6 +1017,43 @@ class Viewer:
                     self.set(item.id, name, entry.options[name])
                 except OptionError, TypeError, ValueError:
                     pass  # reported when the options were first set
+
+    def _restore_regions(
+        self, session: Session, ids: Mapping[ItemId, ItemId]
+    ) -> tuple[dict[ItemId, ItemId], list[str]]:
+        """Adds a session's regions, a mask region's image named through `ids`.
+
+        Returns:
+            The id each region had when saved, mapped to the new region's id, and
+            the regions or options refused, one sentence each.
+        """
+        added: dict[ItemId, ItemId] = {}
+        problems: list[str] = []
+        for entry in session.regions:
+            changes: dict[str, Any] = {}
+            for key, value in entry.options.items():
+                try:
+                    name = OptionName(key)
+                    if name == OptionName.MASK:
+                        changes[name] = ids.get(value) if _is_id(value) else None
+
+                        continue
+
+                    changes[name] = validate(RegionOptions, name, value)
+                except (OptionError, TypeError, ValueError) as e:
+                    problems.append(f"{entry.name}: {key} is ignored: {e}")
+            options = replace(RegionOptions(), **changes)
+            if options.shape == RegionShape.MASK and options.mask is None:
+                problems.append(
+                    f"{entry.name} is dropped, as the image it is a mask of was not "
+                    "opened."
+                )
+                continue
+            added[entry.id] = self._add_region(
+                options, entry.name, apply=False, defaults=False
+            )
+
+        return added, problems
 
     # Phantom
 
@@ -1139,11 +1267,12 @@ class Viewer:
 
     @agent_action
     def start_bundle(self) -> None:
-        """Starts drawing a new bundle: clicks in the 2D views add its points.
+        """Starts drawing a new bundle: strokes and clicks in the 2D views add points.
 
-        Starts a phantom on the views' grid if none is open. A bundle being
-        drawn is finished first if it has two points, else dropped. The new
-        bundle starts with the last bundle's settings and a new seed.
+        Starts a phantom on the views' grid if none is open, and chooses the
+        `Tool.DRAW_BUNDLE` tool. A bundle being drawn is finished first if it
+        has two points, else dropped. The new bundle starts with the last
+        bundle's settings and a new seed.
         """
         self._phantom.start_bundle()
 
@@ -1168,17 +1297,62 @@ class Viewer:
                 "grid; draw inside the box.".format(*point)
             )
         self._phantom.set_points((*draft.points, point))
+        self._point_groups = [*self._current_groups(draft.points), 1]
+
+    @agent_action
+    def add_bundle_stroke(self, points: list[tuple[float, float, float]]) -> int:
+        """Adds the control points of a stroke, as a freehand drag draws one.
+
+        The stroke becomes the fewest points evenly spaced along it, at most 24
+        and always its first and last, whose centreline stays within about one
+        voxel of the views' grid of the stroke; those inside the phantom's grid
+        box are added at the end of the bundle being drawn.
+
+        Args:
+            points: The stroke's points (x, y, z), world mm, in order.
+
+        Returns:
+            The number of control points added.
+
+        Raises:
+            ValueError: If no bundle is being drawn, a point is not three finite
+                numbers, or no point of the stroke is inside the grid box.
+        """
+        state, draft = self._phantom.draft()
+        stroke = [_position(p) for p in points]
+        grid = self._reference_grid() or state.grid
+        tolerance = float(np.linalg.norm(grid.affine[:3, :3], axis=0).min())
+        kept = [p for p in simplify_stroke(stroke, tolerance) if state.contains(p)]
+        if not kept:
+            raise ValueError(
+                "The stroke is outside the phantom's grid; draw inside the box."
+            )
+        self._phantom.set_points((*draft.points, *kept))
+        self._point_groups = [*self._current_groups(draft.points), len(kept)]
+        return len(kept)
 
     @agent_action
     def remove_bundle_point(self) -> None:
-        """Removes the last control point of the bundle being drawn.
+        """Removes the last point or stroke added to the bundle being drawn.
+
+        A freehand stroke is taken back whole, a point placed by a click alone.
 
         Raises:
             ValueError: If no bundle is being drawn.
         """
         _, draft = self._phantom.draft()
-        if draft.points:
-            self._phantom.set_points(draft.points[:-1])
+        if not draft.points:
+            return
+        groups = self._current_groups(draft.points)
+        last = groups.pop() if groups else 1
+        self._phantom.set_points(draft.points[:-last])
+        self._point_groups = groups
+
+    def _current_groups(self, points: Sequence[object]) -> list[int]:
+        """Returns the point groups if they still add up to `points`, else one each."""
+        if sum(self._point_groups) == len(points):
+            return list(self._point_groups)
+        return [1] * len(points)
 
     @agent_action
     def set_bundle_points(self, points: list[tuple[float, float, float]]) -> None:
@@ -1294,8 +1468,8 @@ class Viewer:
     def show_grid_box(self, shown: bool = True) -> None:
         """Outlines the phantom's grid box in the views, or hides it.
 
-        The box is outlined while a bundle is drawn whatever this says; a
-        session keeps the choice.
+        The box is shown only in the Simulate workspace, and always while a
+        bundle is drawn whatever this says; a session keeps the choice.
 
         Args:
             shown: Outline it, or hide it.
@@ -1582,10 +1756,9 @@ class Viewer:
                 or another item's id (or None) for an option that names an
                 item, such as `OptionName.MODULATE` or `VALUES_VOLUME`, or a
                 name (or None) for `OptionName.COLOUR_BY`. A tractogram's
-                `INCLUDE_MASKS`, `EXCLUDE_MASKS` and `WITHIN_MASKS` are items'
-                ids, each one of `item_choices`, and `INCLUDE_SPHERES`,
-                `EXCLUDE_SPHERES` and `WITHIN_SPHERES` are (x, y, z, radius) in
-                world coordinates, mm.
+                `REGIONS` are region items' ids. A region's `CENTRE` is
+                (x, y, z) in world coordinates and its `SIZE` three lengths,
+                mm; its shape is set when it is added.
 
         Raises:
             TypeError: If target or name is of the wrong type.
@@ -1637,8 +1810,8 @@ class Viewer:
         _, info = option_fields(type(item.options))[name]
         if info.data_key and value is not None:
             self._check_data_key(item, name, value)
-        if name in _MASK_LISTS and isinstance(value, tuple):
-            self._check_mask_lists(item, name, value)
+        if isinstance(item.options, RegionOptions):
+            _check_region_option(item, name, value)
         if info.item_ref and value is not None:
             self._check_item_refs(item, name, value)
         return value
@@ -1670,24 +1843,11 @@ class Viewer:
             numbers = ", ".join(map(str, missing))
             raise OptionError(f"{item.name} has no label {numbers}.")
 
-    def _check_mask_lists(
-        self, item: Item, name: OptionName, value: tuple[ItemId, ...]
-    ) -> None:
-        """Raises OptionError if a mask is already in another of the mask lists."""
-        _, info = option_fields(type(item.options))[name]
-        for other_name in _MASK_LISTS:
-            other = getattr(item.options, other_name)
-            for one in value:
-                if other_name != name and one in other:
-                    _, other_info = option_fields(type(item.options))[other_name]
-                    raise OptionError(
-                        f"{info.label}: {self.scene.item(one).name} is one "
-                        f"of the {other_info.label.lower()} already; a mask "
-                        "is an include, exclude or within region, not two."
-                    )
-
     def _apply_option(self, item: Item, name: OptionName, value: object) -> None:
         """Sets a checked option on one item, with the changes it brings first."""
+        if isinstance(item.options, RegionOptions):
+            self._apply_region_option(item, name, value)
+            return
         if name == OptionName.VOLUME_INDEX:
             assert isinstance(value, int)
             # First, so that no surface is made of a label the volume lacks.
@@ -1777,100 +1937,293 @@ class Viewer:
         self.scene.item(item_id)
         return self._tsf_values.get(item_id)
 
-    # Filtering by regions
+    # Regions
 
-    @agent_action
-    def add_mask(
-        self,
-        item_id: ItemId,
-        mask_id: ItemId,
-        *,
-        role: RegionRole = RegionRole.INCLUDE,
-    ) -> None:
-        """Adds a mask to the regions a tractogram's streamlines are filtered by.
+    def _apply_region_option(self, item: Item, name: OptionName, value: object) -> None:
+        """Sets a checked option of a region item, its data and colour following it.
 
-        With the filter on (`OptionName.REGION_FILTER`, on by default), only the
-        streamlines that pass through every include region, through no exclude
-        region and stay within every within region are drawn; a point is inside
-        a mask when it lies in a voxel whose value rounds to a non-zero integer.
-        A streamline passes through a region when one of its points is inside
-        it, and stays within it when all of them are. The subset and the points
-        per streamline then apply to the streamlines kept.
-
-        Args:
-            item_id: The tractogram's id.
-            mask_id: The mask: a volume or an overlay with one volume, on any
-                grid, one of `item_choices`.
-            role: `RegionRole.INCLUDE` to keep the streamlines that pass through
-                it, `EXCLUDE` to drop them, `WITHIN` to keep only those that stay
-                within it.
-
-        Raises:
-            ValueError: If there is no item with either id.
-            TypeError: If role is not a RegionRole.
-            OptionError: If the item is not a tractogram or the mask is not one it
-                can be filtered by.
+        The data is replaced before the option's event, so that whoever follows
+        the event sees the region as it now is. A colour that is the old role's
+        follows the role.
         """
-        name = _region_list(
-            role,
-            OptionName.INCLUDE_MASKS,
-            OptionName.EXCLUDE_MASKS,
-            OptionName.WITHIN_MASKS,
+        o = item.options
+        assert isinstance(o, RegionOptions)
+        if name == OptionName.ROLE and value != o.role:
+            assert isinstance(value, RegionRole)
+            if o.colour == ROLE_COLOURS[o.role]:
+                self.scene.set_option(item.id, OptionName.COLOUR, ROLE_COLOURS[value])
+        if name in _REGION_GEOMETRY and value != getattr(o, name):
+            changes: dict[str, Any] = {name: value}
+            item.data = region_data(replace(o, **changes))
+        if name == OptionName.RADIUS and o.shape == RegionShape.SPHERE:
+            assert isinstance(value, float)
+            self.region_radius = value
+        if name == OptionName.SIZE and o.shape == RegionShape.BOX:
+            assert isinstance(value, Lengths)
+            self.box_size = value
+        self.scene.set_option(item.id, name, value)
+
+    def _add_region(
+        self,
+        options: RegionOptions,
+        name: str | None,
+        apply: bool,
+        defaults: bool = True,
+    ) -> ItemId:
+        """Adds a region item with these options, applied to every tractogram if asked.
+
+        With defaults, the values set by `set_default` for regions replace those
+        of the options.
+
+        Returns:
+            The new region's id.
+        """
+        if name is None:
+            label = _REGION_NAMES[options.shape]
+            count = sum(
+                1
+                for r in self.scene.in_category(Category.REGIONS)
+                if isinstance(r.options, RegionOptions)
+                and r.options.shape == options.shape
+            )
+            name = f"{label} {count + 1}"
+        if defaults:
+            changes: dict[str, Any] = {
+                str(n): v for n, v in self._defaults.get(Category.REGIONS, {}).items()
+            }
+            options = replace(options, **changes)
+        item = self.scene.add(
+            Category.REGIONS, name, None, region_data(options), options
         )
-        masks = getattr(self._tractogram_options(item_id), name)
-        self.set(item_id, name, (*masks, mask_id))
+        if apply:
+            for tract in self.scene.in_category(Category.TRACTOGRAMS):
+                self.apply_region(tract.id, item.id)
+        return item.id
 
     @agent_action
     def add_sphere(
         self,
-        item_id: ItemId,
-        radius: float,
-        *,
         centre: tuple[float, float, float] | None = None,
+        radius: float | None = None,
         role: RegionRole = RegionRole.INCLUDE,
-    ) -> None:
-        """Adds a sphere to the regions a tractogram's streamlines are filtered by.
+        name: str | None = None,
+        *,
+        apply: bool = False,
+    ) -> ItemId:
+        """Adds a sphere region, an item of `Category.REGIONS`.
 
-        As `add_mask`; a point is inside the sphere when it is at most `radius`
-        from the centre.
+        A region filters the streamlines of the tractograms it is applied to
+        (`apply_region`): a point is inside the sphere when it is at most the
+        radius from the centre. The sphere starts in its role's colour.
 
         Args:
-            item_id: The tractogram's id.
-            radius: The sphere's radius in mm, positive.
-            centre: Its centre in world coordinates, mm; the cursor if None.
-            role: `RegionRole.INCLUDE` to keep the streamlines that pass through
-                it, `EXCLUDE` to drop them, `WITHIN` to keep only those that stay
-                within it.
+            centre: Its centre (x, y, z), world mm; the cursor if None.
+            radius: Its radius in mm, at least 0.1; the last sphere's radius
+                (5 mm at first) if None.
+            role: `RegionRole.INCLUDE` keeps the streamlines that pass through
+                it, `EXCLUDE` drops them, `WITHIN` keeps those that stay inside.
+            name: Its name in the scene tree; "Sphere 1" and so on if None.
+            apply: Apply it to every tractogram in the scene.
+
+        Returns:
+            The region's id.
 
         Raises:
-            ValueError: If there is no item with that id.
-            OptionError: If the item is not a tractogram, the centre or the
-                radius is not a finite number, or the radius is not positive.
+            TypeError: If role is not a RegionRole.
+            ValueError: If centre is not three finite numbers.
+            OptionError: If the radius is not a number of at least 0.1.
         """
-        name = _region_list(
-            role,
-            OptionName.INCLUDE_SPHERES,
-            OptionName.EXCLUDE_SPHERES,
-            OptionName.WITHIN_SPHERES,
+        _require(role, RegionRole)
+        where = _position(self.scene.view.cursor if centre is None else centre)
+        size = self.region_radius if radius is None else radius
+        checked = validate(RegionOptions, OptionName.RADIUS, size)
+        assert isinstance(checked, float)
+        options = RegionOptions(
+            shape=RegionShape.SPHERE,
+            role=role,
+            colour=ROLE_COLOURS[role],
+            centre=Position(where),
+            radius=checked,
         )
-        spheres = getattr(self._tractogram_options(item_id), name)
-        x, y, z = self.scene.view.cursor if centre is None else centre
-        self.set(item_id, name, (*spheres, (x, y, z, radius)))
+        self.region_radius = checked
+        return self._add_region(options, name, apply)
 
     @agent_action
-    def clear_regions(self, item_id: ItemId) -> None:
-        """Removes every region a tractogram is filtered by, so all are drawn.
+    def add_box(
+        self,
+        centre: tuple[float, float, float] | None = None,
+        size: tuple[float, float, float] | None = None,
+        role: RegionRole = RegionRole.INCLUDE,
+        name: str | None = None,
+        *,
+        apply: bool = False,
+    ) -> ItemId:
+        """Adds a box region, its edges along the world axes.
+
+        As `add_sphere`; a point is inside the box when it is at most half the
+        size from the centre along each of x, y and z.
 
         Args:
-            item_id: The tractogram.
+            centre: Its centre (x, y, z), world mm; the cursor if None.
+            size: Its edges' lengths along x, y and z, mm, each positive; the
+                last box's size (10 mm a side at first) if None.
+            role: `RegionRole.INCLUDE`, `EXCLUDE` or `WITHIN`, as for a sphere.
+            name: Its name in the scene tree; "Box 1" and so on if None.
+            apply: Apply it to every tractogram in the scene.
+
+        Returns:
+            The region's id.
+
+        Raises:
+            TypeError: If role is not a RegionRole.
+            ValueError: If centre is not three finite numbers.
+            OptionError: If size is not three positive numbers.
+        """
+        _require(role, RegionRole)
+        where = _position(self.scene.view.cursor if centre is None else centre)
+        lengths = validate(
+            RegionOptions, OptionName.SIZE, self.box_size if size is None else size
+        )
+        assert isinstance(lengths, Lengths)
+        options = RegionOptions(
+            shape=RegionShape.BOX,
+            role=role,
+            colour=ROLE_COLOURS[role],
+            centre=Position(where),
+            size=lengths,
+        )
+        self.box_size = lengths
+        return self._add_region(options, name, apply)
+
+    @agent_action
+    def add_mask(
+        self,
+        mask_id: ItemId,
+        role: RegionRole = RegionRole.INCLUDE,
+        name: str | None = None,
+        *,
+        apply: bool = False,
+    ) -> ItemId:
+        """Adds a mask region: the voxels of an image whose value is not zero.
+
+        A point is inside the mask when it lies in a voxel whose value rounds to
+        a whole number other than 0. The region is removed with its image.
+
+        Args:
+            mask_id: The image: a volume or an overlay of one volume, on any grid.
+            role: `RegionRole.INCLUDE`, `EXCLUDE` or `WITHIN`, as for a sphere.
+            name: Its name in the scene tree; the image's name and "(mask)" if None.
+            apply: Apply it to every tractogram in the scene.
+
+        Returns:
+            The region's id.
+
+        Raises:
+            TypeError: If role is not a RegionRole.
+            ValueError: If there is no item with that id.
+            OptionError: If the item is not an image of one volume.
+        """
+        _require(role, RegionRole)
+        mask = self.scene.item(mask_id)
+        if mask not in self._images_of_one_volume():
+            raise OptionError(f"{mask.name} is not a volume or overlay of one volume.")
+        options = RegionOptions(
+            shape=RegionShape.MASK, role=role, colour=ROLE_COLOURS[role], mask=mask_id
+        )
+        return self._add_region(options, name or f"{mask.name} (mask)", apply)
+
+    @agent_action
+    def apply_region(
+        self, tract_id: ItemId, region_id: ItemId, applied: bool = True
+    ) -> None:
+        """Applies a region to a tractogram's streamlines, or stops applying it.
+
+        With the filter on (`OptionName.REGION_FILTER`, on by default), only the
+        streamlines that pass through every include region applied, through no
+        exclude one, and stay within every within one are drawn. A streamline
+        passes through a region when one of its points is inside it, and stays
+        within it when all are. The subset and the points per streamline then
+        apply to the streamlines kept. One region can filter several tractograms.
+
+        Args:
+            tract_id: The tractogram.
+            region_id: The region item.
+            applied: Apply it, or stop applying it.
+
+        Raises:
+            ValueError: If there is no item with either id.
+            OptionError: If the first item is not a tractogram or the second not
+                a region.
+        """
+        regions = self._tractogram_options(tract_id).regions
+        if self.scene.item(region_id).category != Category.REGIONS:
+            raise OptionError(f"{self.scene.item(region_id).name} is not a region.")
+        if applied:
+            kept = (*regions, region_id)
+        else:
+            kept = tuple(r for r in regions if r != region_id)
+        self.set(tract_id, OptionName.REGIONS, kept)
+
+    @agent_action
+    def clear_regions(self, tract_id: ItemId) -> None:
+        """Stops applying every region to a tractogram, so all are drawn.
+
+        The region items stay.
+
+        Args:
+            tract_id: The tractogram.
 
         Raises:
             ValueError: If there is no item with that id.
             OptionError: If the item is not a tractogram.
         """
-        self._tractogram_options(item_id)
-        for name in REGION_LISTS:
-            self.set(item_id, name, ())
+        self._tractogram_options(tract_id)
+        self.set(tract_id, OptionName.REGIONS, ())
+
+    @agent_action
+    def save_kept(self, tract_id: ItemId, path: str | Path) -> Path:
+        """Writes the streamlines a tractogram's regions keep to a file.
+
+        The selection is made with `larmor.tractography.edit`, the same tests
+        as the views', over every streamline loaded (not only the subset
+        drawn). With the filter off or no region applied, all are written. The
+        item itself does not change.
+
+        Args:
+            tract_id: The tractogram.
+            path: The file, TCK, TRK, VTK or FIB by its extension; an existing
+                file is replaced.
+
+        Returns:
+            The path written.
+
+        Raises:
+            ValueError: If there is no item with that id or the extension is not
+                one a tractogram is written as.
+            OptionError: If the item is not a tractogram.
+            OSError: If the file cannot be written.
+        """
+        self._tractogram_options(tract_id)
+        item = self.scene.item(tract_id)
+        tractogram = item.data
+        assert isinstance(tractogram, Tractogram)
+        regions = region_filter(self.scene, item)
+        kept = tractogram
+        if regions is not None:
+            from larmor.tractography import EditOptions, edit
+
+            options = EditOptions(
+                include=regions.include,
+                exclude=regions.exclude,
+                within=regions.within,
+                ends_only=regions.ends_only,
+            )
+            kept = edit(tractogram, options)
+        p = Path(path).absolute()
+        save_tractogram(
+            kept, p, reference=tractogram.reference or self._reference_grid()
+        )
+        return p
 
     def region_selection(self, item_id: ItemId) -> np.ndarray | None:
         """Returns which of a tractogram's streamlines its regions keep.
@@ -1932,7 +2285,8 @@ class Viewer:
     ) -> None:
         """Keeps a tractogram's selection for the region options `key`.
 
-        Ignored for an item no longer in the scene.
+        Sends FilterChanged when the selection is new. Ignored for an item no
+        longer in the scene.
 
         Args:
             item_id: The tractogram.
@@ -1941,8 +2295,17 @@ class Viewer:
         """
         present = any(i.id == item_id for i in self.scene.items)
         # Not a selection made for data replaced since.
-        if present and key == self._region_key(item_id):
-            self._selections[item_id] = (key, selection)
+        if not present or key != self._region_key(item_id):
+            return
+        known = self._selections.get(item_id)
+        self._selections[item_id] = (key, selection)
+        if known is not None and known[0] == key:
+            return
+        data = self.scene.item(item_id).data
+        assert isinstance(data, Tractogram)
+        total = data.num_streamlines
+        kept = total if selection is None else int(np.count_nonzero(selection))
+        self.scene.filtered(item_id, kept, total)
 
     @agent_action
     def kept_streamlines(self, item_id: ItemId) -> int:
@@ -1978,12 +2341,12 @@ class Viewer:
             ValueError: If there is no item with that id.
             OptionError: If the item is not a tractogram.
         """
-        options = self._tractogram_options(item_id)
+        self._tractogram_options(item_id)
+        item = self.scene.item(item_id)
         versions = tuple(
-            self._versions.get(i, 0)
-            for i in (item_id, *mask_ids(self.scene.item(item_id)))
+            self._versions.get(i, 0) for i in (item_id, *mask_ids(self.scene, item))
         )
-        return (*region_key(options), versions)
+        return (*region_key(self.scene, item), versions)
 
     def _tractogram_options(self, item_id: ItemId) -> TractogramOptions:
         """Returns a tractogram's options; raises OptionError for another item."""
@@ -2036,8 +2399,8 @@ class Viewer:
     def set_default(self, category: Category, name: OptionName, value: object) -> None:
         """Sets the value an option starts with on the items added to a category.
 
-        Items already in the scene keep their value. The Settings panel uses it
-        for the default interpolation of new images.
+        Items already in the scene keep their value. The window uses it for the
+        settings of new images and tractograms.
 
         Args:
             category: The category whose new items start with the value.
@@ -2094,16 +2457,16 @@ class Viewer:
 
         For `OptionName.MODULATE`: the other volumes and overlays that are 3D
         and on the same grid (shape and affine) as the item. For
-        `OptionName.VALUES_VOLUME`, and the masks a tractogram is filtered by
-        (`INCLUDE_MASKS`, `EXCLUDE_MASKS`, `WITHIN_MASKS`): the volumes and
+        `OptionName.VALUES_VOLUME` and a region's `MASK`: the volumes and
         overlays with one volume (3D, or 4D with a single volume), on any grid.
+        For a tractogram's `REGIONS`: the region items.
 
         Args:
             item_id: The item whose option it is.
             name: An option that names an item, such as `OptionName.MODULATE`.
 
         Returns:
-            The items, in Layers order.
+            The items, in scene tree order.
 
         Raises:
             TypeError: If item_id or name is of the wrong type.
@@ -2115,13 +2478,10 @@ class Viewer:
         known = option_fields(item.options)
         if name not in known or not known[name][1].item_ref:
             raise OptionError(f"{name} of {item.name} is not an option naming an item.")
-        if isinstance(item.data, Tractogram):
-            return [
-                other
-                for other in self.scene.items
-                if other.category in (Category.VOLUMES, Category.OVERLAYS)
-                and other.volume_count == 1
-            ]
+        if name == OptionName.REGIONS:
+            return self.scene.in_category(Category.REGIONS)
+        if isinstance(item.data, Tractogram) or item.category == Category.REGIONS:
+            return self._images_of_one_volume()
         assert isinstance(item.data, Volume)
         grid = item.data.grid
         return [
@@ -2133,6 +2493,15 @@ class Viewer:
             and other.data.data.ndim == 3
             and other.data.grid.shape[:3] == grid.shape[:3]
             and np.allclose(other.data.affine, grid.affine)
+        ]
+
+    def _images_of_one_volume(self) -> list[Item]:
+        """Returns the volumes and overlays with one volume, in scene tree order."""
+        return [
+            other
+            for other in self.scene.items
+            if other.category in (Category.VOLUMES, Category.OVERLAYS)
+            and other.volume_count == 1
         ]
 
     @agent_action
@@ -2174,9 +2543,9 @@ class Viewer:
 
     @agent_action
     def select(self, target: ItemId | Category | None) -> None:
-        """Selects an item or a category, as a click in Layers does.
+        """Selects an item or a category, as a click in the scene tree does.
 
-        The selection is what the Options panel shows, and the image the left
+        The selection is what the inspector's Item tab shows, and the image the left
         and right arrows step through.
 
         Args:
@@ -2559,6 +2928,11 @@ class Viewer:
         self.scene.set_view(ViewField.MAXIMISED, state.maximised)
         self.scene.set_view(ViewField.OVERLAY_VISIBLE, state.overlay_visible)
         self.scene.set_view(ViewField.CROSSHAIR_VISIBLE, state.crosshair_visible)
+        # Drawing a bundle is not restored, so neither is its tool.
+        drawing = state.tool == Tool.DRAW_BUNDLE and not self.drawing
+        self.scene.set_view(ViewField.TOOL, Tool.CURSOR if drawing else state.tool)
+        self.scene.set_view(ViewField.WORKSPACE, state.workspace)
+        self.scene.set_view(ViewField.LAYOUT, state.layout)
         self.move_cursor(cursor)
 
     @agent_action
@@ -2570,6 +2944,342 @@ class Viewer:
         """
         visible = not self.scene.view.overlay_visible
         self.scene.set_view(ViewField.OVERLAY_VISIBLE, visible)
+
+    @agent_action
+    def set_tool(self, tool: Tool) -> None:
+        """Chooses the pointer tool of the views, which decides what a click does.
+
+        `Tool.CURSOR` moves the crosshair, `SPHERE` and `BOX` place regions,
+        `ZOOM_BOX` opens a rectangle of a 2D view in a detail window, and
+        `DRAW_BUNDLE` draws a phantom bundle: choosing it starts one, as
+        `start_bundle` does, and choosing another tool while drawing finishes
+        the bundle if it has two points, else drops it.
+
+        Args:
+            tool: The tool.
+        """
+        tool = Tool(tool)
+        if tool == Tool.DRAW_BUNDLE:
+            if not self.drawing:
+                self.start_bundle()  # which chooses the tool
+            return
+        if self.drawing:
+            _, draft = self._phantom.draft()
+            if drawable(draft.points):
+                self.finish_bundle()
+            else:
+                self.cancel_bundle()
+        self.scene.set_view(ViewField.TOOL, tool)
+
+    # Detail windows
+
+    @agent_action
+    def open_detail(self, view: ViewKind, box: tuple[int, int, int, int]) -> DetailId:
+        """Opens a detail window: a rectangle of a 2D view, drawn on its own.
+
+        The window shows the rectangle's voxels filling its picture, with the
+        slices drawn without smoothing, FOD glyphs built for the rectangle alone
+        at the window's own sphere detail (12 at first), and optional voxel
+        edges and scale bar. It follows the crosshair's slice while linked
+        (`set_detail`). In the window the detail is shown in its own floating
+        window, and its rectangle is outlined in the view.
+
+        Args:
+            view: `ViewKind.AXIAL`, `CORONAL` or `SAGITTAL`.
+            box: The rectangle in the voxels of the main volume, or of the first
+                visible FOD when there is none: the lowest index and
+                the size along each of the two voxel axes in the view's plane,
+                the lower axis first, (i, j, size i, size j). The part inside the
+                grid is kept.
+
+        Returns:
+            The detail window's id.
+
+        Raises:
+            TypeError: If view is not a ViewKind.
+            ValueError: If view is the 3D view, nothing with a grid is loaded,
+                box is not four whole numbers with positive sizes, or it lies
+                outside the grid.
+        """
+        grid, box = self._detail_box(view, box)
+        detail = Detail(
+            0, view, box, self.scene.view.cursor, size=picture_size(grid, view, box)
+        )
+        return self.scene.add_detail(detail).id
+
+    @agent_action
+    def move_detail(self, detail_id: DetailId, box: tuple[int, int, int, int]) -> None:
+        """Gives a detail window another rectangle of its view.
+
+        Args:
+            detail_id: The detail window.
+            box: The rectangle, as for `open_detail`.
+
+        Raises:
+            ValueError: If there is no such detail window, or the rectangle is
+                refused as in `open_detail`.
+        """
+        detail = self.scene.detail(detail_id)
+        grid, box = self._detail_box(detail.view, box)
+        size = detail.size
+        if box[2:] != detail.box[2:]:
+            size = picture_size(grid, detail.view, box)
+        self.scene.set_detail(replace(detail, box=box, size=size))
+
+    @agent_action
+    def close_detail(self, detail_id: DetailId) -> None:
+        """Closes a detail window.
+
+        Args:
+            detail_id: The detail window.
+
+        Raises:
+            ValueError: If there is no such detail window.
+        """
+        self.scene.remove_detail(detail_id)
+
+    @agent_action
+    def set_detail(
+        self, detail_id: DetailId, name: DetailOption, value: object
+    ) -> None:
+        """Changes one setting of a detail window.
+
+        Args:
+            detail_id: The detail window.
+            name: `DetailOption.LINKED` (follow the crosshair's slice; unlinked,
+                it keeps the slice it shows), `VOXEL_GRID` (draw the voxels'
+                edges), `SCALE_BAR` or `GLYPH_DETAIL` (the sphere detail of its
+                FOD glyphs, 2 to 16).
+            value: True or False, or a whole number for `GLYPH_DETAIL`.
+
+        Raises:
+            TypeError: If name is not a DetailOption, or value is not of its type.
+            ValueError: If there is no such detail window, or the glyph detail is
+                out of range.
+        """
+        _require(name, DetailOption)
+        detail = self.scene.detail(detail_id)
+        if name == DetailOption.GLYPH_DETAIL:
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise TypeError(f"A glyph detail is a whole number; got {value!r}.")
+            low, high = GLYPH_DETAILS
+            if not low <= value <= high:
+                raise ValueError(
+                    f"A glyph detail is between {low} and {high}; got {value}."
+                )
+            self.scene.set_detail(replace(detail, glyph_detail=value))
+            return
+        if not isinstance(value, bool):
+            raise TypeError(f"{name} is True or False; got {value!r}.")
+        if name == DetailOption.LINKED:
+            # Unlinked, it keeps the slice it shows now.
+            position = self.detail_position(detail_id)
+            self.scene.set_detail(replace(detail, linked=value, position=position))
+        elif name == DetailOption.VOXEL_GRID:
+            self.scene.set_detail(replace(detail, voxel_grid=value))
+        else:
+            self.scene.set_detail(replace(detail, scale_bar=value))
+
+    def resize_detail(self, detail_id: DetailId, size: tuple[int, int]) -> None:
+        """Records the size of a detail window's picture, as the window shows it.
+
+        Args:
+            detail_id: The detail window.
+            size: Its width and height, logical pixels, each at least 1.
+
+        Raises:
+            ValueError: If there is no such detail window or a size is below 1.
+        """
+        width, height = (int(v) for v in size)
+        if width < 1 or height < 1:
+            raise ValueError(f"A picture's size is at least 1 x 1; got {size}.")
+        detail = self.scene.detail(detail_id)
+        self.scene.set_detail(replace(detail, size=(width, height)))
+
+    def detail_position(self, detail_id: DetailId) -> Vec3:
+        """Returns a point of the slice a detail window shows: the cursor if linked.
+
+        Args:
+            detail_id: The detail window.
+
+        Returns:
+            The point (x, y, z), world mm.
+
+        Raises:
+            ValueError: If there is no such detail window.
+        """
+        detail = self.scene.detail(detail_id)
+        return self.scene.view.cursor if detail.linked else detail.position
+
+    def detail_title(self, detail_id: DetailId) -> str:
+        """Returns a detail window's title: the image, view, slice and size.
+
+        The image is the selected FOD, else the first visible FOD, else the main
+        volume.
+
+        Args:
+            detail_id: The detail window.
+
+        Returns:
+            The title, such as "Detail - wmfod.mif - coronal y 60 - 12 x 12 voxels".
+
+        Raises:
+            ValueError: If there is no such detail window.
+        """
+        detail = self.scene.detail(detail_id)
+        selected = self.scene.view.selected
+        fods = [i for i in self.scene.in_category(Category.FODS) if i.options.visible]
+        named: Item | None = None
+        if isinstance(selected, int) and self.scene.item(selected) in fods:
+            named = self.scene.item(selected)
+        elif fods:
+            named = fods[0]
+        elif self.scene.view.main_volume is not None:
+            named = self.scene.item(self.scene.view.main_volume)
+        axis = VIEW_AXIS[detail.view]
+        slice_text = "xyz"[axis]
+        grid = self._detail_grid()
+        if grid is not None:
+            index, _ = volume_slice(grid, self.detail_position(detail_id), axis)
+            slice_text += f" {index}"
+        return detail_title(
+            None if named is None else named.name, detail.view, slice_text, detail.box
+        )
+
+    @agent_action
+    def save_detail(
+        self,
+        detail_id: DetailId,
+        path: str | Path,
+        scale: float = 1.0,
+        *,
+        transparent: bool = False,
+    ) -> Path:
+        """Draws a detail window's picture off screen and writes it to a file.
+
+        Args:
+            detail_id: The detail window.
+            path: The image file; .png or .tif keep a transparent background.
+                An existing file is replaced.
+            scale: The image's size as a multiple of the window's picture, 1 to
+                8.
+            transparent: Whether the background is transparent.
+
+        Returns:
+            The path written.
+
+        Raises:
+            ViewerUnavailableError: If the viewer's dependencies are not installed.
+            ValueError: If there is no such detail window, scale is out of range,
+                or the extension is not an image format (or is JPEG with a
+                transparent background).
+            OSError: If the file cannot be written.
+        """
+        detail = self.scene.detail(detail_id)
+        _check_screenshot(None, transparent)
+        _check_detail_scale(scale)
+        from larmor.viewer.render.detail_renderer import save_detail
+
+        return save_detail(self, detail, Path(path), float(scale), transparent)
+
+    @agent_action
+    def save_detail_figure(
+        self,
+        detail_id: DetailId,
+        path: str | Path,
+        scale: float = 1.0,
+        background: FigureBackground = FigureBackground.WHITE,
+    ) -> Path:
+        """Writes a figure of a detail: its view with the rectangle, and the detail.
+
+        The view is drawn whole (zoom 1) with the rectangle outlined, and the
+        detail beside it at the view's height, with two lines joining the
+        rectangle's corners to the detail's.
+
+        Args:
+            detail_id: The detail window.
+            path: The image file, such as .png or .tif; an existing file is
+                replaced.
+            scale: The size as a multiple of the window's picture, 1 to 8.
+            background: `FigureBackground.WHITE` or `BLACK`, around and between
+                the two pictures.
+
+        Returns:
+            The path written.
+
+        Raises:
+            ViewerUnavailableError: If the viewer's dependencies are not installed.
+            TypeError: If background is not a FigureBackground.
+            ValueError: If there is no such detail window, scale is out of range,
+                or the extension is not an image format.
+            OSError: If the file cannot be written.
+        """
+        detail = self.scene.detail(detail_id)
+        _require(background, FigureBackground)
+        _check_screenshot(None, False)
+        _check_detail_scale(scale)
+        from larmor.viewer.render.detail_renderer import save_figure
+
+        return save_figure(self, detail, Path(path), float(scale), background)
+
+    def _detail_box(
+        self, view: ViewKind, box: object
+    ) -> tuple[Grid, tuple[int, int, int, int]]:
+        """Returns the details' grid and a detail's rectangle, checked and clipped.
+
+        Raises:
+            TypeError: If view is not a ViewKind.
+            ValueError: As for `open_detail`.
+        """
+        _require(view, ViewKind)
+        if view not in VIEW_AXIS:
+            raise ValueError(f"The {view} view has no slices to show in detail.")
+        grid = self._detail_grid()
+        if grid is None:
+            raise ValueError("Open an image first: a detail is a rectangle of voxels.")
+        values = tuple(box) if isinstance(box, Iterable) else ()
+        if len(values) != 4 or not all(_is_id(v) for v in values):
+            raise ValueError(f"A detail's box is four whole numbers; got {box!r}.")
+        i, j, size_i, size_j = (int(v) for v in values)
+        if size_i < 1 or size_j < 1:
+            raise ValueError(f"A detail's box has positive sizes; got {box!r}.")
+        clipped = clipped_box(grid, view, (i, j, size_i, size_j))
+        if clipped is None:
+            raise ValueError(f"The box {box!r} lies outside the grid.")
+        return grid, clipped
+
+    @agent_action
+    def set_workspace(self, workspace: Workspace) -> None:
+        """Shows the window's View or Simulate workspace.
+
+        A pointer tool the new workspace does not offer goes back to the cursor.
+
+        Args:
+            workspace: `Workspace.VIEW` for the scene tree and the inspector, or
+                `Workspace.SIMULATE` for the phantom editor's steps.
+
+        Raises:
+            TypeError: If workspace is not a Workspace.
+        """
+        _require(workspace, Workspace)
+        if self.scene.view.tool not in WORKSPACE_TOOLS[workspace]:
+            self.scene.set_view(ViewField.TOOL, Tool.CURSOR)
+        self.scene.set_view(ViewField.WORKSPACE, workspace)
+
+    @agent_action
+    def set_layout(self, layout: Layout) -> None:
+        """Lays the four views out in a grid, as one large and three small, or alone.
+
+        Args:
+            layout: `Layout.GRID` (two by two), `Layout.ONE_PLUS_THREE` (the
+                selected view large on the left, the others stacked on the
+                right) or `Layout.ONE` (the selected view only).
+
+        Raises:
+            TypeError: If layout is not a Layout.
+        """
+        _require(layout, Layout)
+        self.scene.set_view(ViewField.LAYOUT, layout)
 
     @agent_action
     def toggle_crosshair(self) -> None:
@@ -2633,13 +3343,8 @@ class Viewer:
         if view is not None:
             _require(view, ViewKind)
         _check_screenshot(overlay, transparent)
-        # Imported here: the model itself never loads pygfx.
-        from larmor.viewer.render.offscreen import OffscreenRenderer, check_image
-
-        # Before the renderer, which starts the GPU and uploads the scene.
-        check_image(Path(path), transparent)
-        with OffscreenRenderer(self, size, scale) as renderer:
-            return renderer.save(view, path, overlay=overlay, transparent=transparent)
+        preset = ExportPreset("", size, scale, overlay=overlay, transparent=transparent)
+        return self.export_image(preset, path, view)
 
     @agent_action
     def screenshot_views(
@@ -2680,12 +3385,8 @@ class Viewer:
             >>> viewer.screenshot_views("fig.png", scale=2)
         """
         _check_screenshot(overlay, transparent)
-        from larmor.viewer.render.offscreen import OffscreenRenderer, check_image
-
-        # Before the renderer, which starts the GPU and uploads the scene.
-        check_image(Path(path), transparent)
-        with OffscreenRenderer(self, size, scale) as renderer:
-            return renderer.save_views(path, overlay=overlay, transparent=transparent)
+        preset = ExportPreset("", size, scale, overlay=overlay, transparent=transparent)
+        return self.export_view_images(preset, path)
 
     @agent_action
     def record_rotation(
@@ -2745,20 +3446,292 @@ class Viewer:
             >>> viewer.record_rotation("half.gif", speed=45, duration=4, fps=20)
         """
         _check_screenshot(overlay, transparent)
-        from larmor.viewer.render.offscreen import OffscreenRenderer, check_video
+        preset = ExportPreset("", size, scale, overlay=overlay, transparent=transparent)
+        return self.export_video(
+            preset,
+            path,
+            speed=speed,
+            duration=duration,
+            fps=fps,
+            on_progress=on_progress,
+        )
+
+    @agent_action
+    def export(
+        self, preset: str, path: str | Path, view: ViewKind | None = None
+    ) -> Path:
+        """Draws one view, or the window's layout, off screen with an export preset.
+
+        The preset sets the size, the scale, the background, the information
+        overlay, the transparency, the 3D camera and the options given to the
+        items while the image is drawn; the scene is as it was afterwards. The
+        preset's size is the whole image's, which the window's layout shares
+        among its views. The shipped presets are "Screen", "Figure", "Talk" and
+        "Website", and the Export sheet saves others in the settings folder.
+
+        Args:
+            preset: The preset's name.
+            path: The image file to write; its extension sets the format (.png,
+                .jpg, .tif, ...). An existing file is replaced.
+            view: The view to draw, or None for the window's layout, as in
+                `screenshot`.
+
+        Returns:
+            The path written.
+
+        Raises:
+            ViewerUnavailableError: If the viewer's dependencies are not installed.
+            TypeError: If view is neither a ViewKind nor None.
+            ValueError: If there is no such preset, the image is larger than
+                the GPU draws, or the extension is not an image format (or is
+                JPEG with a transparent background).
+            OSError: If the file cannot be written.
+
+        Example:
+            >>> viewer.export("Website", "slide.png", ViewKind.THREE_D)
+        """
+        if view is not None:
+            _require(view, ViewKind)
+        _check_screenshot(None, False)
+        chosen = find_preset(preset)
+        if (
+            chosen.size is not None
+            and view is None
+            and self.scene.view.maximised is None
+        ):
+            # The preset's size is the whole image's, which the four views share.
+            chosen = replace(chosen, size=view_size(chosen.size, VIEW_GRID))
+        return self.export_image(chosen, path, view)
+
+    @agent_action
+    def export_views(self, preset: str, path: str | Path) -> tuple[Path, ...]:
+        """Draws the three 2D views off screen with an export preset, a file each.
+
+        Args:
+            preset: The preset's name, as for `export`.
+            path: The name the files are made from, as in `screenshot_views`.
+
+        Returns:
+            The paths written: axial, coronal, sagittal.
+
+        Raises:
+            ViewerUnavailableError: If the viewer's dependencies are not installed.
+            ValueError: As for `export`.
+            OSError: If a file cannot be written.
+        """
+        _check_screenshot(None, False)
+        return self.export_view_images(find_preset(preset), path)
+
+    @agent_action
+    def export_rotation(
+        self,
+        preset: str,
+        path: str | Path,
+        *,
+        speed: float = ROTATION_SPEED,
+        duration: float = ROTATION_DURATION,
+        fps: int = ROTATION_FPS,
+    ) -> Path | None:
+        """Records the 3D view turning, off screen, with an export preset.
+
+        The turn starts from the preset's 3D camera, or from the 3D view's if
+        the preset has none.
+
+        Args:
+            preset: The preset's name, as for `export`.
+            path: The file to write, .webp or .gif, as in `record_rotation`.
+            speed: Degrees the scene turns per second.
+            duration: Seconds of video.
+            fps: Frames per second, a whole number; a GIF takes at most 50.
+
+        Returns:
+            The path written.
+
+        Raises:
+            ViewerUnavailableError: If the viewer's dependencies are not installed.
+            TypeError: As for `record_rotation`.
+            ValueError: If there is no such preset, or as for `record_rotation`.
+            OSError: If the file cannot be written.
+        """
+        _check_screenshot(None, False)
+        return self.export_video(
+            find_preset(preset), path, speed=speed, duration=duration, fps=fps
+        )
+
+    def export_image(
+        self,
+        preset: ExportPreset,
+        path: str | Path,
+        view: ViewKind | None = None,
+        *,
+        size: tuple[int, int] | None = None,
+    ) -> Path:
+        """Draws one view, or the window's layout, off screen as a preset says.
+
+        Args:
+            preset: The preset.
+            path: The image file to write.
+            view: The view, or None for the window's layout.
+            size: Each view's size in logical pixels when the preset has none;
+                `DEFAULT_SIZE` if None.
+
+        Returns:
+            The path written.
+
+        Raises:
+            ValueError: As for `export`.
+            OSError: If the file cannot be written.
+        """
+        from larmor.viewer.render.offscreen import check_image
 
         # Before the renderer, which starts the GPU and uploads the scene.
-        check_video(Path(path), speed, duration, fps, transparent)
-        with OffscreenRenderer(self, size, scale) as renderer:
+        check_image(Path(path), preset.transparent)
+        with self._export_renderer(preset, size) as renderer:
+            return renderer.save(
+                view, path, overlay=preset.overlay, transparent=preset.transparent
+            )
+
+    def export_view_images(
+        self,
+        preset: ExportPreset,
+        path: str | Path,
+        *,
+        size: tuple[int, int] | None = None,
+    ) -> tuple[Path, ...]:
+        """Draws the three 2D views off screen as a preset says, each into a file.
+
+        Args:
+            preset: The preset.
+            path: The name the files are made from, as in `screenshot_views`.
+            size: Each view's size in logical pixels when the preset has none;
+                `DEFAULT_SIZE` if None.
+
+        Returns:
+            The paths written: axial, coronal, sagittal.
+
+        Raises:
+            ValueError: As for `export`.
+            OSError: If a file cannot be written.
+        """
+        from larmor.viewer.render.offscreen import check_image
+
+        check_image(Path(path), preset.transparent)
+        with self._export_renderer(preset, size) as renderer:
+            return renderer.save_views(
+                path, overlay=preset.overlay, transparent=preset.transparent
+            )
+
+    def export_video(
+        self,
+        preset: ExportPreset,
+        path: str | Path,
+        *,
+        size: tuple[int, int] | None = None,
+        speed: float = ROTATION_SPEED,
+        duration: float = ROTATION_DURATION,
+        fps: int = ROTATION_FPS,
+        on_progress: Progress | None = None,
+    ) -> Path | None:
+        """Records the 3D view turning, off screen, as a preset says.
+
+        Args:
+            preset: The preset.
+            path: The file to write, .webp or .gif.
+            size: The 3D view's size in logical pixels when the preset has none;
+                `DEFAULT_SIZE` if None.
+            speed: Degrees the scene turns per second.
+            duration: Seconds of video.
+            fps: Frames per second.
+            on_progress: Called after each frame, as in `record_rotation`.
+
+        Returns:
+            The path written, or None if on_progress cancelled the video.
+
+        Raises:
+            ValueError: As for `record_rotation`.
+            OSError: If the file cannot be written.
+        """
+        from larmor.viewer.render.offscreen import check_video
+
+        check_video(Path(path), speed, duration, fps, preset.transparent)
+        with self._export_renderer(preset, size) as renderer:
             return renderer.save_rotation(
                 path,
                 speed,
                 duration,
                 fps,
-                overlay=overlay,
-                transparent=transparent,
+                overlay=preset.overlay,
+                transparent=preset.transparent,
                 on_progress=on_progress,
             )
+
+    @contextmanager
+    def _export_renderer(
+        self, preset: ExportPreset, size: tuple[int, int] | None
+    ) -> Iterator[OffscreenRenderer]:
+        """Yields an off-screen renderer that draws as a preset says."""
+        # Imported here: the model itself never loads pygfx.
+        from larmor.viewer.render.annotations import CROSSHAIR_COLOUR
+        from larmor.viewer.render.offscreen import OffscreenRenderer
+
+        shape = preset.size or size or DEFAULT_SIZE
+        with self.preset_options(preset):
+            with OffscreenRenderer(self, shape, preset.scale) as renderer:
+                if preset.background is not None:
+                    renderer.set_colours(preset.background, CROSSHAIR_COLOUR)
+                yield renderer
+
+    @contextmanager
+    def preset_options(self, preset: ExportPreset) -> Iterator[None]:
+        """Gives the items a preset's options and the 3D view its camera, for a block.
+
+        Each item of a category the preset names takes the options it has of
+        the preset's overrides; an option an item refuses is left as it is.
+        Every option and the camera are set back at the end of the block.
+
+        Args:
+            preset: The preset.
+        """
+        saved: list[tuple[ItemId, OptionName, object]] = []
+        camera = self.scene.view.cameras.three_d
+        try:
+            for category, values in preset.overrides.items():
+                for item in self.scene.in_category(category):
+                    for name, value in values.items():
+                        old = getattr(item.options, name, None)
+                        if old is None or old == value:
+                            continue
+                        try:
+                            self.set(item.id, name, value)
+                        except OptionError:
+                            continue
+                        saved.append((item.id, name, old))
+            if preset.camera is not None:
+                self._set_camera(ViewKind.THREE_D, preset.camera)
+            yield
+        finally:
+            present = {i.id for i in self.scene.items}
+            for item_id, name, old in reversed(saved):
+                if item_id in present:
+                    self.set(item_id, name, old)
+            if preset.camera is not None:
+                self._set_camera(ViewKind.THREE_D, camera)
+
+    def _detail_grid(self) -> Grid | None:
+        """Returns the grid whose voxels the detail windows' rectangles count.
+
+        Returns:
+            The main volume's grid; else the first visible FOD's, else the first
+            FOD's, so that a rectangle over the glyphs fits their voxels; else
+            the views' grid (see `_reference_grid`).
+        """
+        if self.scene.view.main_volume is None:
+            fods = self.scene.in_category(Category.FODS)
+            shown = [i for i in fods if i.options.visible] or fods
+            if shown:
+                assert isinstance(shown[0].data, Volume)
+                return shown[0].data.grid
+        return self._reference_grid()
 
     def _reference_grid(self) -> Grid | None:
         """Returns the grid the 2D views slice along, whose voxel is a slice step.
@@ -2823,6 +3796,17 @@ def _check_screenshot(overlay: object, transparent: object) -> None:
         raise ViewerUnavailableError(
             f"Screenshots need the viewer's dependencies. {INSTALL_HINT}"
         )
+
+
+def _check_detail_scale(scale: object) -> None:
+    """Raises ValueError unless scale is a number within DETAIL_SCALES."""
+    low, high = DETAIL_SCALES
+    error = ValueError(f"A scale is between {low:g} and {high:g}; got {scale!r}.")
+    if not _is_number(scale):
+        raise error
+    assert isinstance(scale, Real)
+    if not low <= float(scale) <= high:
+        raise error
 
 
 def _is_number(value: object) -> bool:
@@ -3023,6 +4007,9 @@ def _check_view_types(state: ViewState) -> None:
     if state.maximised is not None:
         _require(state.maximised, ViewKind)
     _require(state.convention, Convention)
+    _require(state.tool, Tool)
+    _require(state.workspace, Workspace)
+    _require(state.layout, Layout)
     for flag in (state.overlay_visible, state.crosshair_visible):
         if not isinstance(flag, bool):
             raise TypeError(f"A switch is True or False; got {flag!r}.")
@@ -3049,7 +4036,7 @@ def _check_cortex(item: Item) -> None:
         )
 
 
-def _is_id(value: object) -> bool:
+def _is_id(value: object) -> TypeIs[int]:
     """Tells whether a session's value can be an item's id: a whole number."""
     return isinstance(value, int) and not isinstance(value, bool)
 
@@ -3059,17 +4046,14 @@ def _known_id(value: object, ids: Mapping[ItemId, ItemId]) -> bool:
     return _is_id(value) and value in ids
 
 
-def _region_list(
-    role: RegionRole,
-    include_name: OptionName,
-    exclude_name: OptionName,
-    within_name: OptionName,
-) -> OptionName:
-    """Returns the option a new region of this role goes in."""
-    _require(role, RegionRole)
-    if role == RegionRole.EXCLUDE:
-        return exclude_name
-    return within_name if role == RegionRole.WITHIN else include_name
+def _check_region_option(item: Item, name: OptionName, value: object) -> None:
+    """Raises OptionError for a region's shape that changes, or a mask on a shape."""
+    o = item.options
+    assert isinstance(o, RegionOptions)
+    if name == OptionName.SHAPE and value != o.shape:
+        raise OptionError(f"{item.name}: a region's shape is set when it is added.")
+    if name == OptionName.MASK and o.shape != RegionShape.MASK:
+        raise OptionError(f"{item.name} is a {o.shape}, so it names no mask.")
 
 
 def _item_ref_error(scene: Scene, item: Item, name: OptionName, value: int) -> str:
@@ -3081,7 +4065,9 @@ def _item_ref_error(scene: Scene, item: Item, name: OptionName, value: int) -> s
         other = scene.item(value)
     except ValueError:
         return f"{info.label}: there is no item {value}."
-    if isinstance(item.data, Tractogram):
+    if name == OptionName.REGIONS:
+        return f"{info.label}: {other.name} is not a region."
+    if isinstance(item.data, Tractogram) or item.category == Category.REGIONS:
         return f"{info.label}: {other.name} is not a volume or overlay of one volume."
     return (
         f"{info.label}: {other.name} is not a 3D volume or overlay on the grid of "

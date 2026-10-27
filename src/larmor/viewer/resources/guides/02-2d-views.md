@@ -9,7 +9,7 @@ view moves the slices of the others.
 
 | Mouse or key | Does |
 |---|---|
-| Click or drag | Moves the crosshair there, and selects the view |
+| Click or drag, with the Cursor tool | Moves the crosshair there, and selects the view |
 | Scroll, or Up and Down | Next or previous slice, one voxel of the main volume at a time |
 | Ctrl + scroll, or pinch | Zooms about the pointer |
 | Ctrl++ and Ctrl+- | Zoom in and out about the crosshair |
@@ -17,6 +17,28 @@ view moves the slices of the others.
 | R | Shows the whole view again (zoom 1, centred) |
 
 Ctrl is Cmd on macOS. The keys act on the selected view, which has a thin frame in the accent colour.
+
+## Pointer tools
+
+What a click and a drag do in the views depends on the pointer tool, which you choose with a key. Whatever the
+tool, Ctrl+drag pans and the wheel steps the slice, and a press on the outline or the centre of a region, or on
+the edge of a detail window's box, takes that instead of the tool.
+
+| Key | Tool | A click or a drag in a 2D view |
+|---|---|---|
+| V | Cursor | Moves the crosshair, as above |
+| O | Sphere | Places a sphere region at the click; a drag from the centre sets its radius |
+| B | Box | Draws a box region over the rectangle dragged, as deep as a tractogram's slab |
+| Z | Zoom box | Drags a rectangle that opens in a detail window |
+| N | Draw bundle | Draws a phantom bundle (see [Phantoms](15-phantoms.md)) |
+
+Escape returns to the Cursor tool once it has done its other jobs, such as stopping a bundle being drawn. Regions
+and their handles are explained in [Tractograms](05-tractograms.md). The zoom box snaps to the voxels of the main
+volume (of the FOD when no volume is loaded) while you drag, and the status bar gives its size in voxels and in mm;
+Shift keeps it square and Alt grows it from the point pressed. When you let go, the rectangle opens in a detail
+window (see [FOD glyphs](07-fod-glyphs.md)) and stays outlined in the view, and dragging its edge moves the detail.
+A right click in a view offers to add a sphere or box region at that point, or to open a 12 x 12 voxel zoom box
+around it.
 
 ## The crosshair and the readout
 

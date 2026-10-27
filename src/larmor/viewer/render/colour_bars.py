@@ -62,7 +62,7 @@ class ColourBars:
         self._build()
 
     def items(self) -> list[Item]:
-        """Returns the items with a bar, in Layers order."""
+        """Returns the items with a bar, in scene tree order."""
         shown = []
         for item in self.viewer.scene.items:
             o = item.options

@@ -6,12 +6,18 @@ from pathlib import Path
 from typing import Any
 
 from larmor.viewer.model.breakdown import BreakdownState
+from larmor.viewer.model.detail import Detail, DetailId
 from larmor.viewer.model.events import (
     BreakdownChanged,
     DataChanged,
+    DetailChanged,
+    DetailClosed,
+    DetailOpened,
     Event,
+    FilterChanged,
     ItemAdded,
     ItemRemoved,
+    ItemRenamed,
     OptionChanged,
     PhantomChanged,
     SourceChanged,
@@ -26,17 +32,20 @@ from larmor.viewer.model.view_state import ViewField, ViewState
 
 
 class Scene:
-    """The loaded items in Layers order and the view state, with an event per change."""
+    """The loaded items in scene tree order and the view state, with change events."""
 
     def __init__(self) -> None:
         """Creates an empty scene."""
-        self._items: dict[ItemId, Item] = {}  # insertion order is Layers order
+        self._items: dict[ItemId, Item] = {}  # insertion order is scene tree order
         self._next_id: ItemId = 1
         self.view = ViewState()
         # The phantom editor's state; None while no phantom is open.
         self.phantom: PhantomState | None = None
         # What the Signal breakdown dock shows; None while it is closed.
         self.breakdown: BreakdownState | None = None
+        # The open detail windows, by id, in the order opened.
+        self.details: dict[DetailId, Detail] = {}
+        self._next_detail: DetailId = 1
         self._subscribers: list[Callable[[Event], None]] = []
 
     def subscribe(self, callback: Callable[[Event], None]) -> Callable[[], None]:
@@ -52,7 +61,7 @@ class Scene:
 
     @property
     def items(self) -> list[Item]:
-        """The items, in Layers order."""
+        """The items, in scene tree order."""
         return list(self._items.values())
 
     def item(self, item_id: ItemId) -> Item:
@@ -62,7 +71,7 @@ class Scene:
         return self._items[item_id]
 
     def in_category(self, category: Category) -> list[Item]:
-        """Returns the items of a category, in Layers order."""
+        """Returns the items of a category, in scene tree order."""
         return [item for item in self._items.values() if item.category == category]
 
     def add(
@@ -76,7 +85,7 @@ class Scene:
         part: MatlabPart | None = None,
         registration: Registration | None = None,
     ) -> Item:
-        """Adds an item at the end of Layers and returns it."""
+        """Adds an item at the end of the scene tree and returns it."""
         item = Item(
             self._next_id,
             category,
@@ -115,6 +124,12 @@ class Scene:
         item.source, item.part, item.registration = source, None, None
         self._emit(SourceChanged(item))
 
+    def rename(self, item_id: ItemId, name: str) -> None:
+        """Gives an item a new name; sends ItemRenamed."""
+        item = self.item(item_id)
+        item.name = name
+        self._emit(ItemRenamed(item))
+
     def set_option(self, item_id: ItemId, name: OptionName, value: object) -> None:
         """Replaces one option of an item; sends OptionChanged if it changes."""
         item = self.item(item_id)
@@ -143,6 +158,36 @@ class Scene:
         """Replaces the Signal breakdown dock's state; sends BreakdownChanged."""
         self.breakdown = state
         self._emit(BreakdownChanged())
+
+    def filtered(self, item_id: ItemId, kept: int, total: int) -> None:
+        """Says a tractogram's filter by its regions finished; sends FilterChanged."""
+        self._emit(FilterChanged(self.item(item_id), kept, total))
+
+    def detail(self, detail_id: DetailId) -> Detail:
+        """Returns the detail window with this id; raises ValueError if none."""
+        if detail_id not in self.details:
+            raise ValueError(f"There is no detail window {detail_id}.")
+        return self.details[detail_id]
+
+    def add_detail(self, detail: Detail) -> Detail:
+        """Adds a detail window, given its next id; sends DetailOpened."""
+        detail = replace(detail, id=self._next_detail)
+        self._next_detail += 1
+        self.details[detail.id] = detail
+        self._emit(DetailOpened(detail))
+        return detail
+
+    def set_detail(self, detail: Detail) -> None:
+        """Replaces a detail window by its id; sends DetailChanged if it changes."""
+        if self.detail(detail.id) == detail:
+            return
+        self.details[detail.id] = detail
+        self._emit(DetailChanged(detail))
+
+    def remove_detail(self, detail_id: DetailId) -> None:
+        """Removes a detail window; sends DetailClosed."""
+        detail = self.details.pop(self.detail(detail_id).id)
+        self._emit(DetailClosed(detail))
 
     def to_dict(self) -> dict[str, object]:
         """Returns the scene as plain data for a session file."""

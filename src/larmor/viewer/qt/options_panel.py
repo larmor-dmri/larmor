@@ -1,4 +1,4 @@
-"""The Options panel, with a field per option of what is selected in Layers."""
+"""The options form, with a field per option of what the scene tree selects."""
 
 from collections.abc import Callable, Mapping
 
@@ -23,7 +23,6 @@ from larmor.viewer.model.events import (
 )
 from larmor.viewer.model.item import Category, ItemId
 from larmor.viewer.model.options import (
-    DTI_UNUSED,
     ItemOptions,
     OptionError,
     OptionGroup,
@@ -54,6 +53,10 @@ GROUP_ORDER: dict[OptionGroup, int] = {g: i for i, g in enumerate(OptionGroup)}
 class OptionsPanel(QScrollArea):
     """Edits the selected item's or category's options, in groups that fold away.
 
+    The inspector's Item tab shows it. A field whose option does not apply to
+    the item's other options now, such as a colour while colouring by
+    direction, is hidden or greyed out, as its option's metadata says.
+
     `extras` gives the items of a category a widget at the end of a group, made
     each time the panel shows one of them, and folded with the group.
     """
@@ -74,6 +77,8 @@ class OptionsPanel(QScrollArea):
         self._errors: dict[OptionName, QLabel] = {}
         self._headers: dict[OptionGroup, QToolButton] = {}
         self._members: dict[OptionGroup, list[OptionName]] = {}
+        self._infos: dict[OptionName, OptionInfo] = {}
+        self._layout: QFormLayout | None = None
         self._extra: tuple[OptionGroup, QWidget] | None = None
         # The groups folded away, per category, while the program runs.
         self._folded: set[tuple[Category, OptionGroup]] = set()
@@ -117,11 +122,10 @@ class OptionsPanel(QScrollArea):
             # New values to colour by span another range.
             self._rebound([OptionName.MINIMUM, OptionName.MAXIMUM])
         self._update([name])
-        if name == OptionName.DTI:
-            self._enable()
+        self._apply_rules()
 
     def _build(self) -> None:
-        """Builds the page of the item or category selected in Layers."""
+        """Builds the page of the item or category selected in the scene tree."""
         form = QWidget()
         form.setObjectName("optionsForm")
         layout = form_layout(form)
@@ -129,17 +133,19 @@ class OptionsPanel(QScrollArea):
         self._errors = {}
         self._headers = {}
         self._members = {}
+        self._infos = {}
+        self._layout = layout
         self._extra = None
         target = self.viewer.scene.view.selected
         if target is None:
-            layout.addRow(QLabel("Select an item or a category in Layers."))
+            layout.addRow(QLabel("Select an item or a category in the scene tree."))
         else:
             self._build_page(layout, form, target)
 
         self.setWidget(form)
         self._refresh_items()
         self._update(list(self._fields))
-        self._enable()
+        self._apply_rules()
 
     def _build_page(
         self, layout: QFormLayout, form: QWidget, target: ItemId | Category
@@ -173,6 +179,7 @@ class OptionsPanel(QScrollArea):
             layout.addRow(error)  # a hidden row takes no room
             self._fields[name] = field
             self._errors[name] = error
+            self._infos[name] = info
             self._members[group].append(name)
             ends[group] = layout.rowCount()
         if not isinstance(target, Category) and category in self.extras:
@@ -239,8 +246,9 @@ class OptionsPanel(QScrollArea):
         header.blockSignals(False)
         header.setIcon(QIcon(icon_path("chevron-down" if shown else "chevron-right")))
         for name in self._members[group]:
-            layout.setRowVisible(self._fields[name], shown)
-            if not shown:
+            applies = self._applies(name)
+            layout.setRowVisible(self._fields[name], shown and applies)
+            if not (shown and applies):
                 self._errors[name].hide()  # a folded field's message is dropped
         if self._extra is not None and self._extra[0] == group:
             layout.setRowVisible(self._extra[1], shown)
@@ -258,17 +266,35 @@ class OptionsPanel(QScrollArea):
                     field.set_choices([(i.id, i.name) for i in choices])
                 field.show_value(self._value(name))
 
-    def _enable(self) -> None:
-        """Greys out the fields that DTI colours make unused, or that need them."""
+    def _rule_options(self) -> list[object]:
+        """Returns the options the fields' rules are checked against.
+
+        They are the selected item's, or each item's of the selected category,
+        or the category's defaults while it is empty.
+        """
         target = self.viewer.scene.view.selected
-        if not isinstance(target, int):
-            return  # the per-item DTI option is not on a category's page
-        dti = getattr(self.viewer.scene.item(target).options, OptionName.DTI, False)
+        if target is None:
+            return []
+        if isinstance(target, Category):
+            items = self.viewer.scene.in_category(target)
+            return [i.options for i in items] or [REGISTRY[target].options()]
+        return [self.viewer.scene.item(target).options]
+
+    def _applies(self, name: OptionName) -> bool:
+        """Returns whether an option's field shows, as its shown_when rule says."""
+        rule = self._infos[name].shown_when
+        return rule is None or any(rule(o) for o in self._rule_options())
+
+    def _apply_rules(self) -> None:
+        """Hides the fields whose options do not apply and greys out the unusable."""
+        if self._layout is None:
+            return
+        options = self._rule_options()
+        for group, header in self._headers.items():
+            self._show_group(self._layout, group, header.isChecked())
         for name, field in self._fields.items():
-            if name == OptionName.MODULATE:
-                field.setEnabled(dti)
-            elif name in DTI_UNUSED:
-                field.setEnabled(not dti)
+            rule = self._infos[name].enabled_when
+            field.setEnabled(rule is None or any(rule(o) for o in options))
 
     def _bounds(
         self, target: ItemId | Category, name: OptionName

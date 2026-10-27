@@ -1,4 +1,4 @@
-"""The Help panel, which shows the guides shipped with the package."""
+"""The Help window, which shows the guides shipped with the package."""
 
 import re
 from dataclasses import dataclass
@@ -8,6 +8,7 @@ from typing import Any, override
 from PySide6.QtCore import QByteArray, QSignalBlocker, Qt, QUrl
 from PySide6.QtGui import QImage, QTextDocument
 from PySide6.QtWidgets import (
+    QDialog,
     QListWidget,
     QSplitter,
     QTextBrowser,
@@ -20,7 +21,9 @@ from larmor.viewer.qt.style import RESOURCES
 GUIDES = RESOURCES / "guides"
 # A guide is a Markdown file whose name starts with its place in the list.
 GUIDE_NAME = re.compile(r"\d{2}-.+\.md")  # two digits, so the names sort in order
-MAX_IMAGE_WIDTH = 260  # wider images, such as the whole window, fit the panel
+MAX_IMAGE_WIDTH = 640  # wider images, such as the whole window, fit the guide
+WINDOW_SIZE = (980, 720)  # px, the Help window when it first opens
+LIST_WIDTH = 220  # px, the list of guides
 
 
 @dataclass(frozen=True)
@@ -68,7 +71,7 @@ class GuideBrowser(QTextBrowser):
 
 
 class HelpPanel(QWidget):
-    """Lists the guides at the top and shows the selected one below."""
+    """Lists the guides on the left and shows the selected one beside them."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         """Lists the guides and shows the first one."""
@@ -86,11 +89,11 @@ class HelpPanel(QWidget):
         self.list.currentRowChanged.connect(self._show)
         self.browser.sourceChanged.connect(self._follow)
 
-        splitter = QSplitter(Qt.Orientation.Vertical, self)
+        splitter = QSplitter(Qt.Orientation.Horizontal, self)
         splitter.addWidget(self.list)
         splitter.addWidget(self.browser)
         splitter.setStretchFactor(1, 1)
-        splitter.setSizes([160, 600])
+        splitter.setSizes([LIST_WIDTH, WINDOW_SIZE[0] - LIST_WIDTH])
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(splitter)
@@ -110,3 +113,18 @@ class HelpPanel(QWidget):
             if guide.path.resolve() == path:
                 with QSignalBlocker(self.list):
                     self.list.setCurrentRow(row)
+
+
+class HelpWindow(QDialog):
+    """Shows the Help panel in a window of its own, beside the main window."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        """Creates the window around a new Help panel."""
+        super().__init__(parent)
+        self.setWindowTitle("Help")
+        self.setModal(False)
+        self.panel = HelpPanel(self)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.panel)
+        self.resize(*WINDOW_SIZE)

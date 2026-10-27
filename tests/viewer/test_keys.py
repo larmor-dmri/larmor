@@ -16,6 +16,7 @@ from larmor.viewer.model.shortcuts import (
     SHORTCUTS,
     ZOOM_STEP,
     Command,
+    views_text,
 )
 from larmor.viewer.qt.field import ChoiceField, SliderField
 from larmor.viewer.qt.main_window import MainWindow
@@ -218,8 +219,8 @@ def test_ctrl_keys_still_zoom_from_a_text_field(
 
 
 def _widget(window: MainWindow, name: str) -> QWidget:
-    if name == "layers":
-        return window.layers
+    if name == "scene tree":
+        return window.scene_tree
     fields = window.options._fields
     if name == "slider":
         field = fields[OptionName.OPACITY_2D]
@@ -230,7 +231,7 @@ def _widget(window: MainWindow, name: str) -> QWidget:
     return combo
 
 
-@pytest.mark.parametrize("name", ["layers", "slider", "combo"])
+@pytest.mark.parametrize("name", ["scene tree", "slider", "combo"])
 def test_the_arrows_still_step_after_the_focus_moves_to_a_panel(
     name: str, window: MainWindow, qtbot: QtBot
 ) -> None:
@@ -256,8 +257,10 @@ def test_every_registry_entry_has_a_window_action_with_its_keys(
         keys = [QKeySequence(k) for k in SHORTCUTS[command].keys]
         assert action.shortcuts() == keys
         assert action in window.actions()
-        # A key that works only at times, such as Enter while drawing, starts off.
-        enabled = SHORTCUTS[command].active and SHORTCUTS[command].enabled_when is None
+        # A key that works only at times, such as Enter while drawing, is enabled
+        # only then.
+        when = SHORTCUTS[command].enabled_when
+        enabled = SHORTCUTS[command].active and (when is None or when(window.viewer))
         assert action.isEnabled() == enabled
 
 
@@ -368,20 +371,16 @@ def test_the_3d_camera_menu_holds_the_shortcut_actions(
     [
         ("File", "Open...", Command.OPEN),
         ("File", "Quit", Command.QUIT),
-        ("Settings", "Settings", Command.SETTINGS),
+        ("File", "Export...", Command.EXPORT),
+        ("Help", "Help", Command.HELP),
     ],
 )
-def test_the_file_and_settings_menus_hold_the_shortcut_actions(
+def test_the_file_and_help_menus_hold_the_shortcut_actions(
     title: str, text: str, command: Command, window: MainWindow
 ) -> None:
     item = _entry(_menu(window, title), text)
     assert item is window.shortcuts[command]
     assert item.isEnabled()
-
-
-def test_settings_stays_in_its_menu_on_macos(window: MainWindow) -> None:
-    item = window.shortcuts[Command.SETTINGS]
-    assert item.menuRole() == QAction.MenuRole.NoRole
 
 
 def test_ctrl_o_opens_the_file_dialog(
@@ -456,8 +455,7 @@ def test_the_shortcuts_list_has_a_row_per_mouse_control(qtbot: QtBot) -> None:
         gesture = control.gesture
         if sys.platform == "darwin":
             gesture = gesture.replace("Ctrl", "Cmd")
-        where = "3D" if control.views == (ViewKind.THREE_D,) else "2D views"
-        assert row == [gesture, control.description, where]
+        assert row == [gesture, control.description, views_text(control.views)]
 
 
 def test_help_shortcuts_opens_the_list(

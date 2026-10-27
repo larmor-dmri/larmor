@@ -7,6 +7,31 @@ from larmor.viewer.model.camera import EMPTY_FIELD, Cameras, Convention, Vec3
 from larmor.viewer.model.item import Category, ItemId, ViewKind
 
 
+class Tool(StrEnum):
+    """The pointer tools of the views, which decide what a click and a drag do."""
+
+    CURSOR = "cursor"  # moves the crosshair
+    SPHERE = "sphere"  # places a sphere region
+    BOX = "box"  # places a box region
+    ZOOM_BOX = "zoom_box"  # opens a rectangle of a 2D view in a detail window
+    DRAW_BUNDLE = "draw_bundle"  # adds the points of a phantom bundle
+
+
+class Workspace(StrEnum):
+    """The window's workspaces, each with its own panels and tools."""
+
+    VIEW = "view"  # the scene tree and the inspector
+    SIMULATE = "simulate"  # the phantom editor's steps
+
+
+class Layout(StrEnum):
+    """How the window lays out the four views."""
+
+    GRID = "grid"  # two by two
+    ONE_PLUS_THREE = "one_plus_three"  # the selected view large, the others beside it
+    ONE = "one"  # the selected view alone
+
+
 class ViewField(StrEnum):
     """The fields of the view state, as ViewStateChanged names them."""
 
@@ -20,6 +45,9 @@ class ViewField(StrEnum):
     CROSSHAIR_VISIBLE = "crosshair_visible"
     CAMERAS = "cameras"
     FIELD_OF_VIEW = "field_of_view"
+    TOOL = "tool"
+    WORKSPACE = "workspace"
+    LAYOUT = "layout"
 
 
 @dataclass(frozen=True)
@@ -37,3 +65,6 @@ class ViewState:
     cameras: Cameras = Cameras()
     # The world box (lowest and highest corner, mm) the 2D views show at zoom 1.
     field_of_view: tuple[Vec3, Vec3] = EMPTY_FIELD
+    tool: Tool = Tool.CURSOR
+    workspace: Workspace = Workspace.VIEW
+    layout: Layout = Layout.GRID

@@ -3,8 +3,9 @@
 Runs the gallery's examples that draw the simulated brain of the ISMRM 2015
 Tractography Challenge, and docs/carousel_simulation.py, which draws the phantom
 editor, the Signal breakdown panel and FODs of a simulated crossing, in a temporary
-folder. It saves the screenshots the slides use, each 900 x 600, as WebP in
-docs/_static/carousel/, and the editor and the panel at their size on screen in
+folder. It saves the screenshots the slides use, each 900 x 600 (a larger image of
+that shape is scaled down), as WebP in docs/_static/carousel/, and the editor's step
+page and the panel at their size on screen in
 docs/_static/simulation/, for the Simulation page. The examples need the data, so
 LARMOR_DATA_DIR must name the folder it is (or will be) downloaded into:
 
@@ -83,8 +84,12 @@ def main() -> None:
                 rgb = image.convert("RGB")
                 if shot in FRAMED:
                     rgb = frame(rgb)
-                if rgb.size != SIZE:
-                    sys.exit(f"{shot} is {rgb.size}, not {SIZE}")
+                elif rgb.size != SIZE:
+                    # The Website export preset draws twice the slide's size.
+                    width, height = rgb.size
+                    if width * SIZE[1] != height * SIZE[0]:
+                        sys.exit(f"{shot} is {rgb.size}, not the shape of {SIZE}")
+                    rgb = rgb.resize(SIZE, Image.Resampling.LANCZOS)
                 rgb.save(CAROUSEL / slide, quality=QUALITY, method=6)
         for shot, name in SIMULATION_PAGE.items():
             # Lossless, so the text of the panels stays sharp.

@@ -11,18 +11,17 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 from pytestqt.qtbot import QtBot
 from rendercanvas.qt import QRenderWidget
-from viewer_helpers import double_click, zeros_volume
+from viewer_helpers import zeros_volume
 
 from larmor.viewer import APP_NAME, Category, OptionName, Viewer, ViewKind
 from larmor.viewer.app import ICON, application
 from larmor.viewer.model.events import Event
 from larmor.viewer.qt import views
-from larmor.viewer.qt.docks import PANELS, Panel, Side
+from larmor.viewer.qt.docks import Panel
 from larmor.viewer.qt.field import SliderField
-from larmor.viewer.qt.layers import DELETE_COLUMN, VISIBILITY_COLUMN, LayersPanel
 from larmor.viewer.qt.main_window import MainWindow
-from larmor.viewer.qt.options_panel import OptionsPanel
-from larmor.viewer.qt.views import MAX_FPS, ViewGrid, ViewPanel
+from larmor.viewer.qt.view_grid import ViewGrid
+from larmor.viewer.qt.views import MAX_FPS, ViewPanel
 from larmor.viewer.render.scene_renderer import SceneRenderer
 from larmor.viewer.render.volume_adapter import VolumeAdapter
 
@@ -73,17 +72,15 @@ def test_every_view_canvas_draws_up_to_120_frames_a_second(
     assert asked == [MAX_FPS] * len(KINDS)
 
 
-def test_layers_and_options_start_docked_either_side_of_the_views(
+def test_the_scene_tree_and_the_inspector_start_either_side_of_the_views(
     shown: MainWindow,
 ) -> None:
     docks = shown.docks
     assert shown.centralWidget() is docks.manager
-    assert [p for p in Panel if docks.is_open(p)] == [Panel.LAYERS, Panel.OPTIONS]
-    assert isinstance(docks.widget(Panel.LAYERS), LayersPanel)
-    assert isinstance(docks.widget(Panel.OPTIONS), OptionsPanel)
+    assert [p for p in Panel if docks.is_open(p)] == [Panel.LEFT, Panel.RIGHT]
     assert isinstance(shown.views, ViewGrid)
-    left = [w.mapTo(shown, QPoint()).x() for w in (shown.layers, shown.views)]
-    right = shown.options.mapTo(shown, QPoint()).x()
+    left = [w.mapTo(shown, QPoint()).x() for w in (shown.scene_tree, shown.views)]
+    right = shown.inspector.mapTo(shown, QPoint()).x()
     assert left[0] < left[1] < right
 
 
@@ -92,9 +89,9 @@ def test_view_grid_has_the_four_views(window: MainWindow) -> None:
     assert [p.kind for p in window.views.panels.values()] == KINDS
 
 
-def test_menu_bar_has_file_view_settings_help(window: MainWindow) -> None:
+def test_menu_bar_has_file_view_help(window: MainWindow) -> None:
     titles = [a.text().replace("&", "") for a in window.menuBar().actions()]
-    assert titles == ["File", "View", "Settings", "Help"]
+    assert titles == ["File", "View", "Help"]
 
 
 def test_all_views_are_shown_at_start(shown: MainWindow) -> None:
@@ -315,7 +312,7 @@ def test_a_second_window_on_the_viewer_works_after_the_first_is_deleted(
     viewer.select(item.id)
     viewer.set(item.id, OptionName.OPACITY_2D, 0.5)
     viewer.toggle_maximised(ViewKind.AXIAL)
-    assert second.layers.currentItem() is second.layers._rows[item.id]
+    assert second.scene_tree.currentItem() is second.scene_tree.row(item.id)
     field = second.options._fields[OptionName.OPACITY_2D]
     assert isinstance(field, SliderField)
     assert field.text.text() == "0.5"
@@ -342,80 +339,3 @@ def test_a_deleted_window_closes_its_renderer_and_is_freed(
     # The closed renderer follows the scene no more.
     viewer.add(zeros_volume(), Category.OVERLAYS)
     assert renderer.adapters == {}
-
-
-def _click_row(
-    window: MainWindow,
-    qtbot: QtBot,
-    name: str,
-    column: int = 0,
-    double: bool = False,
-) -> None:
-    layers = window.layers
-    # A panel opened or closed lays Layers out again only once events run.
-    qtbot.waitUntil(layers.isVisible)
-    flags = Qt.MatchFlag.MatchExactly | Qt.MatchFlag.MatchRecursive
-    (row,) = layers.findItems(name, flags, 0)
-    x = (
-        layers.header().sectionViewportPosition(column)
-        + layers.columnWidth(column) // 2
-    )
-    at = QPoint(x, layers.visualItemRect(row).center().y())
-    if double:
-        double_click(layers.viewport(), at)
-    else:
-        QTest.mouseClick(
-            layers.viewport(),
-            Qt.MouseButton.LeftButton,
-            Qt.KeyboardModifier.NoModifier,
-            at,
-        )
-
-
-RIGHT = [p for p, info in PANELS.items() if info.side is Side.RIGHT]
-
-
-def _right_open(window: MainWindow) -> set[Panel]:
-    return {p for p in RIGHT if window.docks.is_open(p)}
-
-
-@pytest.mark.parametrize("name", ["t1", "Volumes"])
-def test_double_clicking_a_layer_name_shows_options_beside_another_panel(
-    name: str, shown: MainWindow, qtbot: QtBot
-) -> None:
-    shown.viewer.add(zeros_volume(), Category.VOLUMES, name="t1")
-    shown.docks.close(Panel.OPTIONS)
-    shown.docks.open(Panel.INSPECT_FOD)
-    _click_row(shown, qtbot, name, double=True)
-    assert _right_open(shown) == {Panel.OPTIONS, Panel.INSPECT_FOD}
-
-
-def test_clicking_a_layer_name_with_the_right_side_empty_shows_options(
-    shown: MainWindow, qtbot: QtBot
-) -> None:
-    shown.viewer.add(zeros_volume(), Category.VOLUMES, name="t1")
-    shown.docks.close(Panel.OPTIONS)
-    _click_row(shown, qtbot, "t1")
-    assert _right_open(shown) == {Panel.OPTIONS}
-
-
-def test_clicking_a_layer_name_beside_another_right_panel_keeps_the_panels(
-    shown: MainWindow, qtbot: QtBot
-) -> None:
-    shown.viewer.add(zeros_volume(), Category.VOLUMES, name="t1")
-    shown.docks.close(Panel.OPTIONS)
-    shown.docks.open(Panel.INSPECT_FOD)
-    _click_row(shown, qtbot, "t1")
-    assert _right_open(shown) == {Panel.INSPECT_FOD}
-
-
-@pytest.mark.parametrize("column", [VISIBILITY_COLUMN, DELETE_COLUMN])
-@pytest.mark.parametrize("double", [False, True])
-def test_clicking_a_layer_eye_or_cross_never_shows_options(
-    column: int, double: bool, shown: MainWindow, qtbot: QtBot
-) -> None:
-    shown.viewer.add(zeros_volume(), Category.VOLUMES, name="t1")
-    shown.viewer.add(zeros_volume(), Category.VOLUMES, name="t2")
-    shown.docks.close(Panel.OPTIONS)
-    _click_row(shown, qtbot, "t1", column, double)
-    assert _right_open(shown) == set()

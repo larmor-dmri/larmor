@@ -32,7 +32,7 @@ class PhantomFile:
     Attributes:
         phantom: The phantom.
         protocol: The scan, if the file has one.
-        viewer: The settings of the viewer's Phantom panel, such as the
+        viewer: The settings of the viewer's Simulate workspace, such as the
             bundles' names, kept as they are; empty if none.
     """
 

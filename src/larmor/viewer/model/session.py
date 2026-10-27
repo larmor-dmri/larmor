@@ -4,7 +4,7 @@ import json
 import math
 import os
 from collections.abc import Callable, Collection, Mapping
-from dataclasses import dataclass, field, replace
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from typing import Any, Final
 
@@ -13,7 +13,13 @@ from larmor.viewer.model.item import Category, Item, ItemId, ViewKind
 from larmor.viewer.model.matlab_import import MatlabPart
 from larmor.viewer.model.registration import Registration
 from larmor.viewer.model.scene import Scene
-from larmor.viewer.model.view_state import ViewField, ViewState
+from larmor.viewer.model.view_state import (
+    Layout,
+    Tool,
+    ViewField,
+    ViewState,
+    Workspace,
+)
 
 # The format name a session file holds.
 FORMAT: Final = "larmor-viewer-session"
@@ -49,14 +55,24 @@ class SessionItem:
 
 
 @dataclass(frozen=True)
+class SessionRegion:
+    """One region item of a session file, with its options as JSON holds them."""
+
+    id: ItemId  # its id when saved, which the tractograms' options name
+    name: str
+    options: Mapping[str, object]  # a mask region's image named by its saved id
+
+
+@dataclass(frozen=True)
 class Session:
-    """A session file as read, with its items in Layers order and its view state."""
+    """A session file as read, with its items in scene tree order and its view state."""
 
     items: tuple[SessionItem, ...]
     view: Mapping[str, object]  # view-state field to value, as JSON holds them
     problems: tuple[str, ...] = ()  # entries that could not be read, for the user
     # The phantom editor's state, items named by their saved ids; None if none.
     phantom: Mapping[str, Any] | None = None
+    regions: tuple[SessionRegion, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -64,7 +80,7 @@ class SessionReport:
     """What opening a session did.
 
     Attributes:
-        items: The items opened, in Layers order.
+        items: The items opened, in scene tree order.
         problems: The files that could not be opened and the options or view-state
             fields that were refused, one sentence each.
     """
@@ -79,16 +95,25 @@ def missing_file(entry: SessionItem) -> str:
     return f"Cannot open {entry.name}: no file at {' or '.join(where) or 'no path'}."
 
 
+def region_entries(scene: Scene) -> list[dict[str, object]]:
+    """Returns the scene's region items as a session file holds them."""
+    return [
+        {"id": r.id, "name": r.name, "options": asdict(r.options)}
+        for r in scene.in_category(Category.REGIONS)
+    ]
+
+
 def session_data(
     scene: Scene,
     folder: Path,
     phantom: Mapping[str, object] | None = None,
     owned: Collection[ItemId] = (),
+    regions: list[dict[str, object]] | None = None,
 ) -> tuple[dict[str, object], list[str]]:
     """Returns the scene as a session file's JSON data, and the items left out.
 
     Items without a file (objects given from Python) are left out; those in
-    `owned`, which the phantom block makes again, are not reported.
+    `owned`, which the phantom block or the regions make again, are not reported.
 
     Returns:
         The JSON data, and the names of the items left out.
@@ -126,6 +151,8 @@ def session_data(
     data = {"format": FORMAT, "version": VERSION, "items": items, "view": plain["view"]}
     if phantom is not None:
         data["phantom"] = dict(phantom)
+    if regions:
+        data["regions"] = regions
     return data, skipped
 
 
@@ -134,10 +161,11 @@ def write_session(
     path: Path,
     phantom: Mapping[str, object] | None = None,
     owned: Collection[ItemId] = (),
+    regions: list[dict[str, object]] | None = None,
 ) -> list[str]:
     """Writes the scene to a session file; returns the names of the items left out."""
     path = Path(path).absolute()
-    data, skipped = session_data(scene, path.parent, phantom, owned)
+    data, skipped = session_data(scene, path.parent, phantom, owned, regions)
     path.write_text(
         json.dumps(data, indent=2, allow_nan=False) + "\n", encoding="utf-8"
     )
@@ -169,6 +197,15 @@ def read_session(path: Path) -> Session:
             items.append(_item(raw, path.parent))
         except (KeyError, TypeError, ValueError) as e:
             problems.append(f"Item {number} of the session cannot be read: {e}.")
+    regions: list[SessionRegion] = []
+    raw_regions = data.get("regions", [])
+    for number, raw in enumerate(
+        raw_regions if isinstance(raw_regions, list) else [], 1
+    ):
+        try:
+            regions.append(_region(raw))
+        except (KeyError, TypeError) as e:
+            problems.append(f"Region {number} of the session cannot be read: {e}.")
     view = data.get("view", {})
     phantom = data.get("phantom")
     return Session(
@@ -176,7 +213,21 @@ def read_session(path: Path) -> Session:
         view if isinstance(view, dict) else {},
         tuple(problems),
         phantom if isinstance(phantom, dict) else None,
+        tuple(regions),
     )
+
+
+def _region(raw: object) -> SessionRegion:
+    """Reads one region's entry; raises KeyError or TypeError if malformed."""
+    if not isinstance(raw, dict):
+        raise TypeError("it is not a JSON object")
+    region_id = raw["id"]
+    if isinstance(region_id, bool) or not isinstance(region_id, int):
+        raise TypeError(f"its id is not a whole number: {region_id!r}")
+    options = raw.get("options", {})
+    if not isinstance(options, dict):
+        raise TypeError("its options are not a JSON object")
+    return SessionRegion(region_id, str(raw.get("name", "Region")), options)
 
 
 def _item(raw: object, folder: Path) -> SessionItem:
@@ -368,4 +419,7 @@ _VIEW_FIELDS: Final[
     ViewField.CROSSHAIR_VISIBLE: _flag,
     ViewField.CAMERAS: _cameras,
     ViewField.FIELD_OF_VIEW: _field_of_view,
+    ViewField.TOOL: lambda value, ids: Tool(_text(value)),
+    ViewField.WORKSPACE: lambda value, ids: Workspace(_text(value)),
+    ViewField.LAYOUT: lambda value, ids: Layout(_text(value)),
 }

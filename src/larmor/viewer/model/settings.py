@@ -32,6 +32,15 @@ CONFIG_FOLDER = "larmor"
 SETTINGS_FILE = "viewer.toml"
 # The default port of the MCP server.
 MCP_PORT = 8765
+# Settings that earlier versions saved and this one no longer has; read quietly.
+RETIRED = frozenset(
+    {
+        "screenshot_scale",
+        "screenshot_overlay",
+        "screenshot_transparent",
+        "phantom_layout",
+    }
+)
 
 
 class Theme(StrEnum):
@@ -40,13 +49,6 @@ class Theme(StrEnum):
     SYSTEM = "system"
     LIGHT = "light"
     DARK = "dark"
-
-
-class PhantomLayout(StrEnum):
-    """How the phantom editor lays out its sections."""
-
-    GUIDED = "guided"  # one step at a time, beside a list of the steps
-    ALL = "all"  # every section at once
 
 
 class SettingName(StrEnum):
@@ -64,10 +66,6 @@ class SettingName(StrEnum):
     POINTS_PER_STREAMLINE = "points_per_streamline"
     SLAB_THICKNESS = "slab_thickness"
     SLAB_MEMORY = "slab_memory"
-    SCREENSHOT_SCALE = "screenshot_scale"
-    SCREENSHOT_OVERLAY = "screenshot_overlay"
-    SCREENSHOT_TRANSPARENT = "screenshot_transparent"
-    PHANTOM_LAYOUT = "phantom_layout"
     LOWER_RESOLUTION = "lower_resolution"
     GPU = "gpu"
     MCP_PORT = "mcp_port"
@@ -75,7 +73,7 @@ class SettingName(StrEnum):
 
 @dataclass(frozen=True)
 class AppSettings:
-    """The preferences of the whole viewer, as the Settings panel shows them."""
+    """The preferences of the whole viewer, as the Settings sheet shows them."""
 
     theme: Theme = option(
         Theme.SYSTEM,
@@ -170,34 +168,6 @@ class AppSettings:
         step=0.5,
         help="The memory the 2D views' slabs may take; past it, they are cut in a "
         "slower way.",
-    )
-    screenshot_scale: int = option(
-        2,
-        "Screenshot scale",
-        minimum=1,
-        maximum=4,
-        step=1,
-        help="How many image pixels each screen pixel becomes in a screenshot, as "
-        "the Screenshots panel starts.",
-    )
-    screenshot_overlay: bool = option(
-        True,
-        "Information overlay in screenshots",
-        help="Whether screenshots include the view's labels and colour bars, as the "
-        "Screenshots panel starts.",
-    )
-    screenshot_transparent: bool = option(
-        False,
-        "Transparent screenshots",
-        help="Whether screenshots have a transparent background instead of the "
-        "views' colour, as the Screenshots panel starts.",
-    )
-    phantom_layout: PhantomLayout = option(
-        PhantomLayout.GUIDED,
-        "Phantom editor layout",
-        choices=tuple(PhantomLayout),
-        help="Guided shows the steps to a first simulation one at a time; all shows "
-        "every section of the phantom editor at once.",
     )
     lower_resolution: bool = option(
         False,
@@ -369,6 +339,8 @@ def read_settings(path: Path) -> AppSettings:
         return AppSettings()
     values: dict[str, Any] = {}
     for key, value in saved.items():
+        if key in RETIRED:
+            continue
         try:
             name = SettingName(key)
             values[str(name)] = validate_setting(name, value)

@@ -1,4 +1,4 @@
-"""Spheres and masks that select and crop streamlines."""
+"""Spheres, boxes and masks that select and crop streamlines."""
 
 import math
 from collections.abc import Callable
@@ -49,28 +49,69 @@ class Sphere:
         object.__setattr__(self, "radius", radius)
 
 
-type Region = Sphere | Volume
-"""A sphere, or a 3D mask `Volume` on any grid (or 4D with one volume)."""
+@dataclass(frozen=True, eq=False)
+class Box:
+    """A box in world coordinates, its edges along the world axes.
+
+    A point is inside when it is at most half the size from the centre along
+    each of x, y and z, computed in float32 like the points of a tractogram.
+
+    Args:
+        centre: (3,) the centre in world coordinates (RAS+), mm. Stored as a
+            read-only float64 array.
+        size: (3,) the lengths of the edges along x, y and z, mm, finite and not
+            negative. Stored as a read-only float64 array.
+
+    Raises:
+        ValueError: If `centre` is not three finite values, or `size` is not three
+            finite values that are not negative.
+    """
+
+    centre: np.ndarray
+    size: np.ndarray
+
+    def __post_init__(self) -> None:
+        """Checks the centre and the size, and makes both read-only."""
+        centre = np.array(self.centre, dtype=np.float64)
+        if centre.shape != (3,) or not np.isfinite(centre).all():
+            raise ValueError(
+                f"A box's centre must be three finite values, got {self.centre}."
+            )
+        size = np.array(self.size, dtype=np.float64)
+        if size.shape != (3,) or not np.isfinite(size).all() or (size < 0).any():
+            raise ValueError(
+                "A box's size must be three finite values, none negative, got "
+                f"{self.size}."
+            )
+        centre.flags.writeable = False
+        size.flags.writeable = False
+        object.__setattr__(self, "centre", centre)
+        object.__setattr__(self, "size", size)
+
+
+type Region = Sphere | Box | Volume
+"""A sphere, a box, or a 3D mask `Volume` on any grid (or 4D with one volume)."""
 
 
 def points_inside(points: np.ndarray, region: Region) -> np.ndarray:
     """Tests which points lie inside a region.
 
     For a sphere, a point is inside when its squared distance to the centre is at
-    most the squared radius. For a mask, a point is inside when its nearest voxel,
-    rounding halves away from zero, is in the image and its scaled value, rounded
-    the same way, is not zero. Only the given points are tested, with no
-    interpolation between them.
+    most the squared radius. For a box, a point is inside when it is at most half
+    the size from the centre along each axis. For a mask, a point is inside when
+    its nearest voxel, rounding halves away from zero, is in the image and its
+    scaled value, rounded the same way, is not zero. Only the given points are
+    tested, with no interpolation between them.
 
     Args:
         points: (P, 3) points in world coordinates (RAS+), mm.
-        region: A `Sphere`, or a 3D mask `Volume` on any grid.
+        region: A `Sphere`, a `Box`, or a 3D mask `Volume` on any grid.
 
     Returns:
         np.ndarray: (P,) bool, True where the point is inside the region.
 
     Raises:
-        TypeError: If `region` is neither a `Sphere` nor a `Volume`.
+        TypeError: If `region` is not a `Sphere`, a `Box` or a `Volume`.
         ValueError: If `points` is not (P, 3) or the mask is not 3D (a 4D mask
             with a single volume counts as 3D).
 
@@ -98,22 +139,25 @@ def point_test(region: Region) -> Callable[[np.ndarray], np.ndarray]:
     points.
 
     Args:
-        region: A `Sphere` or a mask `Volume`.
+        region: A `Sphere`, a `Box` or a mask `Volume`.
 
     Returns:
         A function taking (P, 3) points and returning a boolean array of shape (P,),
         True for the points inside.
 
     Raises:
-        TypeError: If `region` is neither a `Sphere` nor a `Volume`.
+        TypeError: If `region` is not a `Sphere`, a `Box` or a `Volume`.
         ValueError: If the mask is not 3D (or 4D with a single volume).
     """
     if isinstance(region, Sphere):
         return _sphere_test(region)
+    if isinstance(region, Box):
+        return _box_test(region)
     if isinstance(region, Volume):
         return _mask_test(region)
     raise TypeError(
-        f"A region must be a Sphere or a mask Volume, got {type(region).__name__}."
+        "A region must be a Sphere, a Box or a mask Volume, got "
+        f"{type(region).__name__}."
     )
 
 
@@ -128,6 +172,22 @@ def _sphere_test(sphere: Sphere) -> Callable[[np.ndarray], np.ndarray]:
     def test(points: np.ndarray) -> np.ndarray:
         offsets = points.astype(np.float32, copy=False) - centre
         inside: np.ndarray = np.einsum("ij,ij->i", offsets, offsets) <= squared_radius
+        return inside
+
+    return test
+
+
+def _box_test(box: Box) -> Callable[[np.ndarray], np.ndarray]:
+    """Returns the test of points at most half the size from the centre on each axis.
+
+    The offsets are computed in float32, like the points of a tractogram.
+    """
+    centre = box.centre.astype(np.float32)
+    half = (box.size / 2).astype(np.float32)
+
+    def test(points: np.ndarray) -> np.ndarray:
+        offsets = np.abs(points.astype(np.float32, copy=False) - centre)
+        inside: np.ndarray = np.all(offsets <= half, axis=1)
         return inside
 
     return test

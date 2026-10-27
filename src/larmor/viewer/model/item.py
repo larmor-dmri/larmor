@@ -20,7 +20,7 @@ class Category(StrEnum):
     """A kind of item the viewer shows, such as volumes or tractograms.
 
     The category of an item decides how its file is read and how it is drawn,
-    and each category has its own group in the Layers panel.
+    and each category has its own group in the scene tree.
     """
 
     VOLUMES = "volumes"
@@ -29,6 +29,7 @@ class Category(StrEnum):
     FODS = "fods"
     PEAKS = "peaks"
     SURFACES = "surfaces"
+    REGIONS = "regions"  # spheres, boxes and masks that filter tractograms
 
 
 class ViewKind(StrEnum):
@@ -68,7 +69,8 @@ class Item:
         category: Which kind of item it is.
         name: The file's name, or the name given from Python.
         source: The file, or None for an object given from Python.
-        data: The `Volume`, `Tractogram` or surface data it shows.
+        data: The `Volume`, `Tractogram` or surface data it shows; for a region,
+            its `Sphere`, `Box` or `MaskRegion`.
         options: The item's options.
         value_range: The data's minimum and maximum in scaled units for an image,
             the range of all of a surface's values per vertex; None for the others.

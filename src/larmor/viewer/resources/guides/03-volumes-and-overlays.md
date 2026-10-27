@@ -11,7 +11,7 @@ Any number of overlays can be shown at once.
 
 ## Their options
 
-Volumes and overlays share most of their options, which you set in the Options panel.
+Volumes and overlays share most of their options, which you set in the Item tab of the inspector.
 
 - **Colormap** is one of gray, hot, viridis, inferno, magma, plasma, cividis, jet, bone, cool, gray_r (white to
   black) or blue_dark_red (blue below the middle of the range, dark at it, red above).

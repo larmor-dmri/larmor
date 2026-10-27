@@ -101,6 +101,15 @@ constraints listed by Novikov et al. (2019, Sec. 3.4.2), which are 1.7e-3 mm^2/s
 tortuosity `(1 - f) 1.7e-3`, about 0.5e-3 mm^2/s, across it at the intra-axonal fraction f = 0.7. A few defaults
 are choices without a source, namely the intra-axonal fraction and the SANDI fractions and radius.
 
+## Bundles
+
+A synthetic bundle is built around its centreline, a centripetal Catmull-Rom spline through the control points
+(Yuksel et al. 2011). This curve passes through every point and does not loop or form a cusp between two of them,
+even when the points are unevenly spaced, as they are when a bundle is drawn freehand. Each streamline keeps a fixed
+offset from the centreline, drawn at random in a disc of the bundle's radius and carried along without twisting, so
+the bundle keeps its width round a bend as long as the bend is not tighter than the radius. Fanning widens the disc
+towards the ends, and dispersion adds a smooth random wander that is zero at both ends.
+
 ## Tissues in a voxel
 
 A voxel is shared between tissues in three steps, and a fraction is never scaled up.
@@ -205,6 +214,8 @@ it does not model the following effects.
   and parameter estimation. NMR Biomed 32 (2019) e3998.
 - Pasternak O, Sochen N, Gur Y, Intrator N, Assaf Y. Free water elimination and mapping from diffusion MRI. Magn
   Reson Med 62 (2009) 717-730.
+- Yuksel C, Schaefer S, Keyser J. Parameterization and applications of Catmull-Rom curves. Comput Aided Des 43
+  (2011) 747-755.
 - Wansapura JP, Holland SK, Dunn RS, Ball WS. NMR relaxation times in the human brain at 3.0 tesla. J Magn Reson
   Imaging 9 (1999) 531-538.
 - Veraart J, Novikov DS, Fieremans E. TE dependent Diffusion Imaging (TEdDI) distinguishes between compartmental

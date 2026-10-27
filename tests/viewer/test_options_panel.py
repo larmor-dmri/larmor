@@ -52,6 +52,7 @@ from larmor.viewer.model.options import (
     option_fields,
     validate,
 )
+from larmor.viewer.model.registry import FILE_CATEGORIES
 from larmor.viewer.model.surface import SurfaceData
 from larmor.viewer.model.view_state import ViewField
 from larmor.viewer.model.viewer import MIXED
@@ -60,6 +61,7 @@ from larmor.viewer.qt.field import (
     ChoiceField,
     ColourField,
     ItemField,
+    LengthsField,
     OptionField,
     PathField,
     SliderField,
@@ -961,6 +963,8 @@ def _shown(panel: OptionsPanel) -> dict[OptionName, object]:
             # An item by its name, as the drop-down shows it.
             chosen = None if field.currentText() == "None" else field.currentText()
             shown[name] = MIXED if field.currentIndex() == -1 else chosen
+        elif isinstance(field, LengthsField):
+            shown[name] = tuple(box.value() for box in field.boxes)
         else:
             text = field.text.text()
             shown[name] = MIXED if text == "" else float(text)
@@ -974,7 +978,7 @@ def test_nothing_selected_shows_a_hint_and_no_fields(panel: OptionsPanel) -> Non
     assert hint
 
 
-@pytest.mark.parametrize("category", list(Category))
+@pytest.mark.parametrize("category", FILE_CATEGORIES)
 def test_selected_item_shows_its_name_and_one_field_per_option(
     category: Category, viewer: Viewer, panel: OptionsPanel
 ) -> None:
@@ -2209,12 +2213,19 @@ def test_a_folded_group_hides_only_its_fields_and_stays_folded_in_its_category(
     panel._headers[G.COLOUR].click()
 
     def colour_folded() -> bool:
-        hidden = [panel._fields[n].isHidden() for n in panel._members[G.COLOUR]]
+        # Fields whose options do not apply now, such as a tractogram's
+        # colormap while it is coloured by direction, stay hidden either way.
+        hidden = [
+            panel._fields[n].isHidden()
+            for n in panel._members[G.COLOUR]
+            if panel._applies(n)
+        ]
         others = [
             panel._fields[n].isHidden()
             for g, names in panel._members.items()
             if g != G.COLOUR
             for n in names
+            if panel._applies(n)
         ]
         assert not any(others)
         assert all(hidden) or not any(hidden)
@@ -2343,3 +2354,49 @@ def test_the_help_icon_widens_a_form_but_not_its_minimum(qtbot: QtBot) -> None:
     plain, helped = form(""), form("Values below it are hidden.")
     assert helped.minimumSizeHint().width() == plain.minimumSizeHint().width()
     assert helped.sizeHint().width() > plain.sizeHint().width()
+
+
+def _shown_fields(panel: OptionsPanel) -> set[OptionName]:
+    return {n for n, f in panel._fields.items() if not f.isHidden()}
+
+
+def test_a_tractogram_shows_the_colour_fields_of_its_colouring(
+    viewer: Viewer, panel: OptionsPanel
+) -> None:
+    item = viewer.add(_tractogram(), Category.TRACTOGRAMS)
+    viewer.select(item.id)
+    by_value = {OptionName.COLORMAP, OptionName.MINIMUM, OptionName.MAXIMUM}
+    assert not (by_value | {OptionName.COLOUR}) & _shown_fields(panel)
+    viewer.set(item.id, OptionName.COLOURING, Colouring.SINGLE)
+    assert OptionName.COLOUR in _shown_fields(panel)
+    assert not by_value & _shown_fields(panel)
+    viewer.set(item.id, OptionName.COLOURING, Colouring.VALUES)
+    assert by_value <= _shown_fields(panel)
+    assert OptionName.COLOUR not in _shown_fields(panel)
+
+
+@pytest.mark.parametrize("category", [Category.FODS, Category.PEAKS])
+def test_glyphs_have_no_3d_opacity_as_the_3d_view_does_not_draw_them(
+    category: Category, viewer: Viewer, panel: OptionsPanel
+) -> None:
+    data = _fod() if category == Category.FODS else _peaks()
+    viewer.select(viewer.add(data, category).id)
+    assert OptionName.OPACITY_2D in _shown_fields(panel)
+    assert OptionName.OPACITY_3D not in _shown_fields(panel)
+
+
+def test_a_region_shows_the_radius_of_a_sphere_and_the_size_of_a_box(
+    viewer: Viewer, panel: OptionsPanel
+) -> None:
+    viewer.select(viewer.add_sphere((0.0, 0.0, 0.0), 4.0))
+    assert OptionName.RADIUS in _shown_fields(panel)
+    assert OptionName.SIZE not in _shown_fields(panel)
+    box = viewer.add_box((0.0, 0.0, 0.0), (6.0, 8.0, 10.0))
+    viewer.select(box)
+    assert OptionName.RADIUS not in _shown_fields(panel)
+    assert OptionName.SIZE in _shown_fields(panel)
+    field = panel._fields[OptionName.SIZE]
+    assert isinstance(field, LengthsField)
+    assert [b.value() for b in field.boxes] == [6.0, 8.0, 10.0]
+    field.boxes[2].setValue(12.0)
+    assert getattr(viewer.scene.item(box).options, OptionName.SIZE) == (6.0, 8.0, 12.0)

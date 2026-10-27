@@ -5,8 +5,10 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from larmor.viewer.model.camera import CameraPreset
-from larmor.viewer.model.item import VIEW_KINDS, ViewKind
+from larmor.viewer.model.item import VIEW_KINDS, Category, ViewKind
+from larmor.viewer.model.options import REGION_ROLES, OptionName, RegionOptions
 from larmor.viewer.model.phantom import drawable
+from larmor.viewer.model.view_state import Tool, Workspace
 from larmor.viewer.model.viewer import Viewer
 
 # The three 2D views.
@@ -38,12 +40,15 @@ class Command(StrEnum):
     OPEN = "open"
     OPEN_SESSION = "open_session"
     SAVE_SESSION = "save_session"
-    LAYERS = "layers"
-    OPTIONS = "options"
-    LABELS = "labels"
-    INSPECT_FOD = "inspect_fod"
-    SCREENSHOT = "screenshot"
-    PHANTOM = "phantom"
+    WORKSPACE_VIEW = "workspace_view"
+    WORKSPACE_SIMULATE = "workspace_simulate"
+    TOOL_CURSOR = "tool_cursor"
+    TOOL_SPHERE = "tool_sphere"
+    TOOL_BOX = "tool_box"
+    TOOL_ZOOM_BOX = "tool_zoom_box"
+    EXPORT = "export"
+    DELETE_ITEM = "delete_item"
+    NEXT_ROLE = "next_role"
     NEW_BUNDLE = "new_bundle"
     FINISH_BUNDLE = "finish_bundle"
     REMOVE_POINT = "remove_point"
@@ -113,12 +118,30 @@ def _preset(preset: CameraPreset) -> Callable[[Viewer, ViewKind], None]:
     return lambda viewer, _: viewer.set_camera(ViewKind.THREE_D, preset)
 
 
-def _panel(
-    command: Command, keys: tuple[str, ...], name: str, what: str = ""
-) -> Shortcut:
-    """Returns a shortcut that shows or hides a panel of the window."""
-    text = f"Show or hide the {name} panel" + (f" ({what})" if what else "")
+def _window(command: Command, keys: tuple[str, ...], text: str) -> Shortcut:
+    """Returns a shortcut the window carries out, such as opening a sheet."""
     return Shortcut(command, keys, text, VIEW_KINDS, None, window=True)
+
+
+def _workspace(workspace: Workspace) -> Callable[[Viewer, ViewKind], None]:
+    """Returns an action that shows a workspace."""
+    return lambda viewer, _: viewer.set_workspace(workspace)
+
+
+def _tool(tool: Tool) -> Callable[[Viewer, ViewKind], None]:
+    """Returns an action that chooses a pointer tool."""
+    return lambda viewer, _: viewer.set_tool(tool)
+
+
+def _in_view(viewer: Viewer) -> bool:
+    """Tells whether the View workspace shows, whose tools the region keys choose."""
+    return viewer.scene.view.workspace == Workspace.VIEW
+
+
+def _new_bundle(viewer: Viewer, view: ViewKind) -> None:
+    """Starts drawing a bundle with the Draw bundle tool."""
+    viewer.start_bundle()
+    viewer.set_tool(Tool.DRAW_BUNDLE)
 
 
 def _drawing(viewer: Viewer) -> bool:
@@ -146,18 +169,58 @@ def _while_drawing(
     return run
 
 
-def _escapable(viewer: Viewer) -> bool:
-    """Tells whether a bundle is drawn or the Signal breakdown has a pinned voxel."""
+def _pinned(viewer: Viewer) -> bool:
+    """Tells whether the Signal breakdown has a pinned voxel."""
     state = viewer.breakdown
-    return viewer.drawing or (state is not None and state.pinned)
+    return state is not None and state.pinned
+
+
+def _escapable(viewer: Viewer) -> bool:
+    """Tells whether a bundle is drawn, a voxel pinned, or a tool other than Cursor."""
+    tool = viewer.scene.view.tool
+    return viewer.drawing or _pinned(viewer) or tool != Tool.CURSOR
 
 
 def _escape(viewer: Viewer, view: ViewKind) -> None:
-    """Stops drawing; else unpins the Signal breakdown's voxel."""
+    """Stops drawing; else unpins the Signal breakdown's voxel; else picks Cursor."""
     if viewer.drawing:
         viewer.cancel_bundle()
-    elif _escapable(viewer):
+    elif _pinned(viewer):
         viewer.pin_breakdown(None)
+    else:
+        viewer.set_tool(Tool.CURSOR)
+
+
+def _item_selected(viewer: Viewer) -> bool:
+    """Tells whether an item is selected while no bundle is drawn."""
+    selected = viewer.scene.view.selected
+    return isinstance(selected, int) and not viewer.drawing
+
+
+def _remove_selected(viewer: Viewer, view: ViewKind) -> None:
+    """Removes the selected item."""
+    selected = viewer.scene.view.selected
+    if isinstance(selected, int):
+        viewer.remove(selected)
+
+
+def _region_selected(viewer: Viewer) -> bool:
+    """Tells whether the selected item is a region."""
+    selected = viewer.scene.view.selected
+    if not isinstance(selected, int):
+        return False
+    return viewer.scene.item(selected).category == Category.REGIONS
+
+
+def _next_role(viewer: Viewer, view: ViewKind) -> None:
+    """Gives the selected region the next role: include, exclude, within."""
+    selected = viewer.scene.view.selected
+    if not isinstance(selected, int):
+        return
+    o = viewer.scene.item(selected).options
+    if isinstance(o, RegionOptions):
+        role = REGION_ROLES[(REGION_ROLES.index(o.role) + 1) % len(REGION_ROLES)]
+        viewer.set(selected, OptionName.ROLE, role)
 
 
 def _enlarge(name: str) -> str:
@@ -307,33 +370,78 @@ SHORTCUTS: dict[Command, Shortcut] = {
             None,
             window=True,
         ),
-        _panel(Command.LAYERS, ("Ctrl+1",), "Layers"),
-        _panel(Command.OPTIONS, ("Ctrl+2",), "Options"),
-        _panel(Command.LABELS, ("Ctrl+3",), "Labels", "the labels drawn in 3D"),
-        _panel(
-            Command.INSPECT_FOD,
-            ("Ctrl+4", "F"),
-            "Inspect FOD",
-            "the selected FOD at the crosshair, large",
+        Shortcut(
+            Command.WORKSPACE_VIEW,
+            ("Ctrl+1",),
+            "Show the View workspace: the scene tree and the inspector",
+            VIEW_KINDS,
+            _workspace(Workspace.VIEW),
         ),
-        _panel(
-            Command.SCREENSHOT,
+        Shortcut(
+            Command.WORKSPACE_SIMULATE,
+            ("Ctrl+2",),
+            "Show the Simulate workspace: the steps of a phantom",
+            VIEW_KINDS,
+            _workspace(Workspace.SIMULATE),
+        ),
+        Shortcut(
+            Command.TOOL_CURSOR,
+            ("V",),
+            "Cursor tool: a click moves the crosshair",
+            VIEW_KINDS,
+            _tool(Tool.CURSOR),
+        ),
+        Shortcut(
+            Command.TOOL_SPHERE,
+            ("O",),
+            "Sphere tool: a click places a sphere region, a drag sets its radius",
+            VIEW_KINDS,
+            _tool(Tool.SPHERE),
+            enabled_when=_in_view,
+        ),
+        Shortcut(
+            Command.TOOL_BOX,
+            ("B",),
+            "Box tool: a drag in a 2D view draws a box region",
+            VIEW_KINDS,
+            _tool(Tool.BOX),
+            enabled_when=_in_view,
+        ),
+        Shortcut(
+            Command.TOOL_ZOOM_BOX,
+            ("Z",),
+            "Zoom box tool: a drag in a 2D view opens a detail window",
+            VIEW_KINDS,
+            _tool(Tool.ZOOM_BOX),
+            enabled_when=_in_view,
+        ),
+        _window(
+            Command.EXPORT,
             ("Ctrl+Shift+S",),
-            "Screenshots",
-            "views saved as images or a video",
+            "Export the views as images or a video",
         ),
-        _panel(
-            Command.PHANTOM,
-            ("Ctrl+5",),
-            "Phantom",
-            "draw bundles, set tissues and the scan, run a simulation",
+        Shortcut(
+            Command.DELETE_ITEM,
+            ("Delete", "Ctrl+Backspace"),
+            "Remove the selected item (not while drawing a bundle)",
+            VIEW_KINDS,
+            _remove_selected,
+            enabled_when=_item_selected,
+        ),
+        Shortcut(
+            Command.NEXT_ROLE,
+            ("Tab",),
+            "Give the selected region the next role: include, exclude, within",
+            VIEW_KINDS,
+            _next_role,
+            enabled_when=_region_selected,
         ),
         Shortcut(
             Command.NEW_BUNDLE,
             ("N",),
-            "Draw a new bundle: clicks in the 2D views add its points",
+            "Draw a new bundle: strokes or Ctrl+clicks in the 2D views add points",
             VIEW_KINDS,
-            lambda viewer, _: viewer.start_bundle(),
+            _new_bundle,
         ),
         Shortcut(
             Command.FINISH_BUNDLE,
@@ -355,7 +463,7 @@ SHORTCUTS: dict[Command, Shortcut] = {
             Command.LEAVE_DRAW_MODE,
             ("Escape",),
             "Stop drawing: drop the new bundle, or keep an edited one as it was; "
-            "else unpin the voxel of the Signal breakdown",
+            "else unpin the voxel of the Signal breakdown; else the Cursor tool",
             VIEW_KINDS,
             _escape,
             enabled_when=_escapable,
@@ -368,21 +476,17 @@ SHORTCUTS: dict[Command, Shortcut] = {
             None,
             window=True,
         ),
-        _panel(
+        _window(
             Command.SIGNAL_BREAKDOWN,
             ("Ctrl+6",),
-            "Signal breakdown",
-            "the signal of one voxel of the phantom, factor by factor",
+            "Show or hide the Signal breakdown of a voxel of the phantom",
         ),
-        _panel(Command.SETTINGS, ("Ctrl+,",), "Settings"),
-        _panel(Command.HELP, ("F1",), "Help", "the guides"),
-        Shortcut(
+        _window(Command.SETTINGS, ("Ctrl+,",), "Open the settings"),
+        _window(Command.HELP, ("F1",), "Open the help"),
+        _window(
             Command.HIDE_PANELS,
             ("Ctrl+0",),
-            "Hide all the panels, or show again the ones hidden",
-            VIEW_KINDS,
-            None,
-            window=True,
+            "Hide the panels either side of the views, or show them again",
         ),
         Shortcut(Command.QUIT, ("Ctrl+Q",), "Quit", VIEW_KINDS, None, window=True),
     )
@@ -394,14 +498,50 @@ MOUSE_CONTROLS: tuple[MouseControl, ...] = (
     MouseControl("Drag", "Move the crosshair", VIEWS_2D),
     MouseControl("Scroll", "Next or previous slice", VIEWS_2D),
     MouseControl("Ctrl + scroll, or pinch", "Zoom about the pointer", VIEWS_2D),
-    MouseControl("Ctrl + drag", "Pan", VIEWS_2D),
+    MouseControl("Ctrl + drag", "Pan, with any tool", VIEWS_2D),
     MouseControl(
-        "Click, while drawing a bundle",
-        "Add a point to the bundle and move the crosshair there",
+        "Click or drag on a region",
+        "Select it; drag its centre to move it, its ring or corner to resize it",
         VIEWS_2D,
     ),
+    MouseControl(
+        "Click, Sphere tool",
+        "Place a sphere of the last radius; drag from the centre to set it",
+        VIEWS_2D,
+    ),
+    MouseControl("Drag, Box tool", "Draw a box region, a slab deep", VIEWS_2D),
+    MouseControl(
+        "Drag, Zoom box tool",
+        "Open the rectangle in a detail window; Shift: square, Alt: from the centre",
+        VIEWS_2D,
+    ),
+    MouseControl(
+        "Drag, while drawing a bundle",
+        "Draw a stroke; its control points are added when you let go",
+        VIEWS_2D,
+    ),
+    MouseControl(
+        "Ctrl + click, while drawing a bundle",
+        "Add one control point and move the crosshair there",
+        VIEWS_2D,
+    ),
+    MouseControl(
+        "Drag a control point, while drawing",
+        "Move it in the view's plane",
+        VIEWS_2D,
+    ),
+    MouseControl("Right click", "Add a region or open a zoom box here", VIEW_KINDS),
     MouseControl("Drag", "Turn the scene", (ViewKind.THREE_D,)),
     MouseControl("Scroll, or pinch", "Zoom", (ViewKind.THREE_D,)),
+    MouseControl(
+        "Click, Sphere or Box tool",
+        "Place the region on the streamline, slice or surface under the pointer",
+        (ViewKind.THREE_D,),
+    ),
+    MouseControl(
+        "Click a region, Cursor tool", "Select the region", (ViewKind.THREE_D,)
+    ),
+    MouseControl("Scroll over the selected region", "Resize it", (ViewKind.THREE_D,)),
 )
 
 

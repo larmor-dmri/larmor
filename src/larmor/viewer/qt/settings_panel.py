@@ -1,10 +1,13 @@
-"""The Settings panel, with a field per setting of the application."""
+"""The settings forms, and the Settings sheet that holds the application's."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import (
     QCheckBox,
+    QDialog,
+    QDialogButtonBox,
     QFormLayout,
     QHBoxLayout,
     QLabel,
@@ -33,16 +36,27 @@ from larmor.viewer.qt.field import (
 from larmor.viewer.qt.style import form_layout
 from larmor.viewer.render.gpu import gpu_names
 
-# A heading above the first setting of each group.
+# A heading above the first setting of each group; the group runs to the next.
 SECTIONS: dict[SettingName, str] = {
     SettingName.THEME: "Appearance",
+    SettingName.CONVENTION: "Views",
     SettingName.INTERPOLATE: "Images",
     SettingName.READ_LIMIT: "Tractograms",
-    SettingName.SCREENSHOT_SCALE: "Screenshots",
-    SettingName.PHANTOM_LAYOUT: "Phantom editor",
     SettingName.LOWER_RESOLUTION: "Graphics",
     SettingName.MCP_PORT: "Agents (MCP)",
 }
+# The settings the inspector's Scene tab shows instead of the Settings sheet.
+SCENE_SETTINGS = frozenset(
+    {
+        SettingName.CONVENTION,
+        SettingName.BACKGROUND,
+        SettingName.CROSSHAIR,
+        SettingName.INTERPOLATE,
+    }
+)
+# The settings the Settings sheet shows.
+SHEET_SETTINGS = tuple(n for n in SettingName if n not in SCENE_SETTINGS)
+SHEET_SIZE = (520, 640)  # px
 DEFAULT_GPU = "Default"  # the GPU choice that leaves it to wgpu, saved as ""
 # The explanations of the MCP rows, which are not settings.
 SERVE_HELP = "Lets agents on this computer drive the viewer through MCP."
@@ -51,17 +65,22 @@ TOKEN_HELP = "The key an agent must send; a new token refuses agents with the ol
 
 
 class SettingsPanel(QWidget):
-    """Edits the application's settings; each change applies at once and is saved."""
+    """Edits settings; each change applies at once and is saved."""
 
     def __init__(
         self,
         settings: Settings,
         parent: QWidget | None = None,
         mcp: McpSwitch | None = None,
+        names: Collection[SettingName] | None = None,
     ) -> None:
-        """Builds a field for each setting, and the MCP server's switch if given."""
+        """Builds a field for each of the settings named, every one if None.
+
+        The MCP server's switch is added below its port if given.
+        """
         super().__init__(parent)
         self.settings = settings
+        self.names = frozenset(SettingName if names is None else names)
         self._fields: dict[SettingName, OptionField] = {}
         self._errors: dict[SettingName, QLabel] = {}
         self.mcp: McpSection | None = None
@@ -70,6 +89,7 @@ class SettingsPanel(QWidget):
         scroll = QScrollArea(self)
         scroll.setObjectName("settings")
         scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setWidget(form)
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -91,11 +111,16 @@ class SettingsPanel(QWidget):
         form.setObjectName("settingsForm")
         layout = form_layout(form)
         gpus = gpu_names()
+        current, shown = "", ""  # the group of the setting, and the last heading
         for name, (f, info) in setting_fields().items():
+            current = SECTIONS.get(name, current)
+            if name not in self.names:
+                continue
             if name == SettingName.GPU and len(gpus) < 2:
                 continue  # nothing to choose on a machine with one GPU
-            if name in SECTIONS:
-                section = QLabel(SECTIONS[name])
+            if current != shown:
+                shown = current
+                section = QLabel(current)
                 section.setObjectName("formSection")
                 layout.addRow(section)
             field: OptionField
@@ -148,6 +173,33 @@ class SettingsPanel(QWidget):
             return
         # Setting the current value sends no change, so tidy the field here.
         self._show(name)
+
+
+class SettingsSheet(QDialog):
+    """Holds the application's settings in a window beside the main one.
+
+    The settings of how the views show the scene are in the inspector's Scene
+    tab instead.
+    """
+
+    def __init__(
+        self,
+        settings: Settings,
+        parent: QWidget | None = None,
+        mcp: McpSwitch | None = None,
+    ) -> None:
+        """Builds the form of the sheet's settings, with the MCP switch if given."""
+        super().__init__(parent)
+        self.setWindowTitle("Settings")
+        self.setModal(False)
+        self.panel = SettingsPanel(settings, self, mcp, SHEET_SETTINGS)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close, self)
+        buttons.rejected.connect(self.close)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 8)
+        layout.addWidget(self.panel, 1)
+        layout.addWidget(buttons)
+        self.resize(*SHEET_SIZE)
 
 
 class McpSwitch:

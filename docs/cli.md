@@ -604,8 +604,8 @@ $ lar bv [OPTIONS] [files]...
 * `--surfaces <path>`: Surface files, GIfTI (.gii) or FreeSurfer. A FreeSurfer surface such as lh.white is read together with its lh.curv and ../label/lh.cortex.label when they exist. Repeat the option for several files.
 * `--max-streamlines <int range>`: A tractogram with more streamlines is reduced to a random subset of this size when read, the same subset every time. Defaults to the read limit in the viewer&#x27;s Settings (1,000,000 unless changed).  [x&gt;=0]
 * `-s, --session <path>`: Session saved from the viewer (File &gt; Save Session). It is opened first, and the files of the other options are added to it.
-* `--phantom <path>`: Phantom file (.phantom.json) to open in the Phantom panel, to edit and simulate.
-* `--simulation <path>`: Simulation folder written by lar simulate. The viewer opens its DWI, tissue masks, ground-truth peaks and bundles, and shows its phantom in the Phantom panel.
+* `--phantom <path>`: Phantom file (.phantom.json) to open in the Simulate workspace, to edit and simulate.
+* `--simulation <path>`: Simulation folder written by lar simulate. The viewer opens its DWI, tissue masks, ground-truth peaks and bundles, and shows its phantom in the Simulate workspace.
 * `--mcp`: Let AI agents control the viewer through the Model Context Protocol (MCP), served at http://127.0.0.1:&lt;port&gt;/mcp. The URL and the access token are printed.
 * `--mcp-port <int range>`: Port for --mcp; giving it also turns on --mcp. Defaults to the port in the viewer&#x27;s Settings (8765 unless changed).  [1024&lt;=x&lt;=65535]
 * `--install-launcher`: Add a launcher for the viewer of this Larmor installation to the desktop (the application menu on Linux, ~/Applications on macOS, the Start menu on Windows), then exit.
