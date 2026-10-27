@@ -14,9 +14,9 @@ A Python library and viewer for simulating and processing diffusion MRI
 <!-- One slide per line: file in _static/carousel/ | alt text | caption. -->
 ```{carousel}
 tubes.webp | Long streamlines of the whole brain drawn as lit tubes in 3D, seen from the side, coloured by direction | Whole-brain tractography drawn as tubes, coloured by direction.
-simulated-fods.webp | FOD glyphs fitted on a simulated phantom of two bundles crossing at right angles: red lobes along the horizontal bundle, green along the vertical one, and both in the crossing | FODs fitted on a simulated crossing of two bundles.
-phantom-editor.webp | The guided phantom editor on its Tissue step: the five steps listed on the left with check marks, and the compartments of a white matter tissue on the right | The phantom editor, which guides a first simulation step by step.
-signal-breakdown.webp | The viewer with two simulated bundles crossing in the axial view and the Signal breakdown panel beside it: stacked bars of the signal of the crossing voxel with no decay, after the T1 and T2 decay and after the diffusion weighting | The signal of one simulated voxel, split into its factors.
+simulated-fods.webp | FOD glyphs fitted on a simulated phantom of the brain, on a coronal slice: the corpus callosum arching left to right in red across the corticospinal tracts in blue, and the SLF seen end-on in green | FODs fitted on a phantom of the brain simulated from tractography bundles.
+phantom-editor.webp | The Simulate workspace on its Tissue step: the five steps listed on the left with check marks, the phantom of the brain in the four views, and the tissues WM, WM-sparse, GM and CSF on the right | The Simulate workspace, which guides a simulation step by step.
+signal-breakdown.webp | The phantom of the brain in the coronal view, its bundles coloured by direction, and the Signal breakdown panel beside it: stacked bars of the signal of a voxel where three bundles cross, with no decay, after the T1 and T2 decay and after the diffusion weighting | The signal of one simulated voxel, split into its factors.
 fod-glyphs.webp | FOD glyphs on a coronal slice: the corpus callosum arching left to right in red, the corticospinal tracts running up and down in blue | FOD glyphs on a coronal slice, with the round FODs hidden.
 fod-asymmetric.webp | Asymmetric FOD glyphs on a coronal slice, some lobes one-sided where fibres turn or end | Asymmetric FOD glyphs.
 peaks.webp | FOD peaks drawn as short coloured lines on a coronal slice over the T1-like image | FOD peaks drawn as lines, each as long as its amplitude.
@@ -26,7 +26,7 @@ slices-3d.webp | 3D view from above: long streamlines as thin lines over an axia
 ```
 
 ```{rst-class} lar-carousel-note
-These images were drawn by BrainViewer, from a phantom simulated with Larmor and from the ISMRM 2015 Tractography Challenge data, both processed with Larmor.
+These images were drawn by BrainViewer, from the ISMRM 2015 Tractography Challenge data and from a phantom that Larmor simulated from the challenge's ground-truth bundles, both processed with Larmor.
 ```
 
 ```{include} _snippets/ismrm-credit.md
