@@ -75,7 +75,7 @@ into these groups:
 - **Tractogram regions**: `add_mask`, `add_sphere`, `clear_regions`, `kept_streamlines`.
 - **Views**: `select`, `move_cursor`, `step_slice`, `select_view`, `step_volume`, `zoom`, `pan`,
   `reset_camera`, `rotate_camera`, `set_camera`, `set_convention`, `view_centre`, `readout`,
-  `toggle_maximised`, `toggle_overlay`, `toggle_crosshair`.
+  `toggle_maximised`, `toggle_overlay`, `toggle_crosshair`, `set_tool`.
 - **Phantoms**: `new_phantom`, `close_phantom`, `set_phantom_grid`, `set_tissue`, `set_compartments`,
   `remove_tissue`, `set_tissue_map`, `set_background_tissue`, `set_scan`, `start_bundle`, `add_bundle_point`,
   `remove_bundle_point`, `set_bundle_points`, `finish_bundle`, `cancel_bundle`, `edit_bundle`, `use_as_bundle`,

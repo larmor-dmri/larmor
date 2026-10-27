@@ -104,7 +104,7 @@ from larmor.viewer.model.surface import (
     CURVATURES,
     SurfaceData,
 )
-from larmor.viewer.model.view_state import ViewField, ViewState
+from larmor.viewer.model.view_state import Tool, ViewField, ViewState
 from larmor.viewer.system import INSTALL_HINT, ViewerUnavailableError
 
 
@@ -2570,6 +2570,16 @@ class Viewer:
         """
         visible = not self.scene.view.overlay_visible
         self.scene.set_view(ViewField.OVERLAY_VISIBLE, visible)
+
+    @agent_action
+    def set_tool(self, tool: Tool) -> None:
+        """Chooses the pointer tool of the views.
+
+        Args:
+            tool: The tool; Tool.CURSOR moves the crosshair, as the views do by
+                default.
+        """
+        self.scene.set_view(ViewField.TOOL, Tool(tool))
 
     @agent_action
     def toggle_crosshair(self) -> None:
