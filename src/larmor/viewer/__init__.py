@@ -9,6 +9,7 @@ from larmor.types import Surface, Tractogram, Volume
 from larmor.viewer.loading import DEFAULT, Default
 from larmor.viewer.mcp_server import PortInUseError
 from larmor.viewer.model.camera import CameraPreset, Convention
+from larmor.viewer.model.detail import DetailOption, FigureBackground
 from larmor.viewer.model.item import Category, Item, ItemId, ViewKind
 from larmor.viewer.model.matlab_import import LoadAs, MatlabPreset
 from larmor.viewer.model.options import (
@@ -32,6 +33,7 @@ from larmor.viewer.model.phantom import (
 from larmor.viewer.model.readout import Readout
 from larmor.viewer.model.registry import MAX_STREAMLINES, item_type
 from larmor.viewer.model.session import SessionError, SessionReport, read_session
+from larmor.viewer.model.view_state import Tool
 from larmor.viewer.model.viewer import Viewer
 from larmor.viewer.system import ViewerUnavailableError
 
@@ -67,7 +69,9 @@ __all__ = [
     "Colormap",
     "Colouring",
     "Convention",
+    "DetailOption",
     "EchoKind",
+    "FigureBackground",
     "FodInspector",
     "GlyphScaling",
     "Item",
@@ -84,6 +88,7 @@ __all__ = [
     "SessionError",
     "SessionReport",
     "TissuePreset",
+    "Tool",
     "TractStyle",
     "ViewKind",
     "Viewer",

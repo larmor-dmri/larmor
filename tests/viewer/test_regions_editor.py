@@ -6,8 +6,8 @@ from pytestqt.qtbot import QtBot
 
 from larmor.io import load_tractogram
 from larmor.types import Tractogram
-from larmor.viewer import Category, RegionRole, Viewer
-from larmor.viewer.model.options import OptionName, TractogramOptions
+from larmor.viewer import Category, OptionName, RegionRole, Viewer
+from larmor.viewer.model.options import TractogramOptions
 from larmor.viewer.qt.regions_editor import RegionsEditor
 
 

@@ -3,10 +3,10 @@ import math
 import numpy as np
 import pytest
 
-from larmor.viewer import Viewer
+from larmor.viewer import Tool, Viewer
 from larmor.viewer.model.phantom_editor import simplify_stroke
 from larmor.viewer.model.shortcuts import Command, run
-from larmor.viewer.model.view_state import Tool, ViewState
+from larmor.viewer.model.view_state import ViewState
 
 
 def _tool(viewer: Viewer) -> Tool:

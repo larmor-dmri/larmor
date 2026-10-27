@@ -8,8 +8,14 @@ from PIL import Image
 from rendercanvas.offscreen import RenderCanvas
 
 from larmor.types import Volume
-from larmor.viewer import Category, OptionName, Viewer, ViewKind
-from larmor.viewer.model.detail import DetailOption, FigureBackground
+from larmor.viewer import (
+    Category,
+    DetailOption,
+    FigureBackground,
+    OptionName,
+    Viewer,
+    ViewKind,
+)
 from larmor.viewer.render.detail_renderer import DetailRenderer, render_detail
 from larmor.viewer.render.fod_adapter import FodAdapter
 from larmor.viewer.render.glyphs import sphere

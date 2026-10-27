@@ -2,9 +2,8 @@ import numpy as np
 import pytest
 
 from larmor.types import Grid, Volume
-from larmor.viewer import Category, Viewer, ViewKind
+from larmor.viewer import Category, DetailOption, Viewer, ViewKind
 from larmor.viewer.model.detail import (
-    DetailOption,
     centred_box,
     scale_bar_length,
     voxel_box,

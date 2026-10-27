@@ -3040,6 +3040,12 @@ class Viewer:
     def detail_position(self, detail_id: DetailId) -> Vec3:
         """Returns a point of the slice a detail window shows: the cursor if linked.
 
+        Args:
+            detail_id: The detail window.
+
+        Returns:
+            The point (x, y, z), world mm.
+
         Raises:
             ValueError: If there is no such detail window.
         """
@@ -3051,6 +3057,12 @@ class Viewer:
 
         The image is the selected FOD, else the first visible FOD, else the main
         volume.
+
+        Args:
+            detail_id: The detail window.
+
+        Returns:
+            The title, such as "Detail - wmfod.mif - coronal y 60 - 12 x 12 voxels".
 
         Raises:
             ValueError: If there is no such detail window.

@@ -11,10 +11,16 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
 from larmor.types import Tractogram, Volume
-from larmor.viewer import Category, RegionRole, Viewer, ViewKind
-from larmor.viewer.model.detail import DetailOption, FigureBackground
+from larmor.viewer import (
+    Category,
+    DetailOption,
+    FigureBackground,
+    RegionRole,
+    Tool,
+    Viewer,
+    ViewKind,
+)
 from larmor.viewer.model.options import RegionOptions, TractogramOptions
-from larmor.viewer.model.view_state import Tool
 from larmor.viewer.qt.detail_window import DetailWindow
 from larmor.viewer.qt.main_window import MainWindow
 from larmor.viewer.qt.views import ViewInput, ViewPanel
