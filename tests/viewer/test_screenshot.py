@@ -502,12 +502,13 @@ def test_the_axial_view_draws_a_surface_cut_in_its_colour(
     assert red_pixels() == 0
 
 
+@pytest.mark.parametrize("view", [ViewKind.AXIAL, None], ids=["one view", "all"])
 def test_export_draws_with_a_presets_size_and_leaves_the_scene_as_it_was(
-    viewer: Viewer, tmp_path: Path
+    view: ViewKind | None, viewer: Viewer, tmp_path: Path
 ) -> None:
     item = viewer.scene.items[0]
     before = (viewer.scene.view, item.options)
-    path = viewer.export("Website", tmp_path / "w.png", ViewKind.AXIAL)
+    path = viewer.export("Website", tmp_path / "w.png", view)
     with Image.open(path) as image:
         assert image.size == (1800, 1200)
         assert image.mode == "RGB"

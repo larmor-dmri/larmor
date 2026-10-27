@@ -80,11 +80,12 @@ def test_save_writes_an_image_of_the_size_shown(
         assert image.mode == "RGB"
 
 
+@pytest.mark.parametrize("view", [ViewKind.AXIAL, None], ids=["one view", "all"])
 def test_a_preset_with_a_size_draws_that_size_times_its_scale(
-    sheet: ExportSheet, tmp_path: Path
+    view: ViewKind | None, sheet: ExportSheet, tmp_path: Path
 ) -> None:
     sheet.choose_preset("Website")
-    sheet.view_box.setCurrentIndex(sheet.view_box.findData(ViewKind.AXIAL))
+    sheet.view_box.setCurrentIndex(sheet.view_box.findData(view))
     sheet.view_box.activated.emit(sheet.view_box.currentIndex())
     assert sheet.image_size() == (1800, 1200)
     assert sheet.camera_box.currentText() == "The preset's"

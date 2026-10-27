@@ -12,12 +12,12 @@ be.
 
 ## Presets
 
-A preset decides how the export is drawn. It sets the size of each view, or keeps the size the views have on the
-screen, a scale that multiplies that size, the background colour, whether the information overlay is drawn, and
-whether the background is transparent. It can also give the items other options while the export is drawn, such
-as tubes for the tractograms, and hold a position of the 3D camera. Those options apply only to the export: the
-views on the screen are as they were once it is saved. The small table under **Preset** shows the chosen preset's
-values.
+A preset decides how the export is drawn. It sets the size of the image, which the views share when the image shows
+all of them, or keeps the size the views have on the screen, a scale that multiplies that size, the background
+colour, whether the information overlay is drawn, and whether the background is transparent. It can also give the
+items other options while the export is drawn, such as tubes for the tractograms, and hold a position of the 3D
+camera. Those options apply only to the export: the views on the screen are as they were once it is saved. The small
+table under **Preset** shows the chosen preset's values.
 
 The viewer comes with four presets.
 
@@ -26,7 +26,7 @@ The viewer comes with four presets.
   background, for a paper.
 - **Talk** draws them at twice the resolution on a black background, without the overlay, with tractograms as tubes
   with ambient occlusion, for a slide.
-- **Website** draws each view at 1800 x 1200 pixels on a black background, without the overlay, with tractograms as
+- **Website** draws images of 1800 x 1200 pixels on a black background, without the overlay, with tractograms as
   tubes of 0.25 mm with ambient occlusion, the smoothest FOD glyphs and blocky slices, and the 3D view seen from
   the subject's front right, 12 degrees above the horizontal.
 

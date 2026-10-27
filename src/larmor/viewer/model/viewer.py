@@ -42,8 +42,9 @@ from larmor.viewer.model.export import (
     DEFAULT_SIZE,
     ExportPreset,
     find_preset,
+    view_size,
 )
-from larmor.viewer.model.item import Category, Item, ItemId, ViewKind
+from larmor.viewer.model.item import VIEW_GRID, Category, Item, ItemId, ViewKind
 from larmor.viewer.model.labels import labels_in
 from larmor.viewer.model.matlab_import import (
     LoadAs,
@@ -3463,8 +3464,9 @@ class Viewer:
         The preset sets the size, the scale, the background, the information
         overlay, the transparency, the 3D camera and the options given to the
         items while the image is drawn; the scene is as it was afterwards. The
-        shipped presets are "Screen", "Figure", "Talk" and "Website", and the
-        Export sheet saves others in the settings folder.
+        preset's size is the whole image's, which the window's layout shares
+        among its views. The shipped presets are "Screen", "Figure", "Talk" and
+        "Website", and the Export sheet saves others in the settings folder.
 
         Args:
             preset: The preset's name.
@@ -3490,7 +3492,15 @@ class Viewer:
         if view is not None:
             _require(view, ViewKind)
         _check_screenshot(None, False)
-        return self.export_image(find_preset(preset), path, view)
+        chosen = find_preset(preset)
+        if (
+            chosen.size is not None
+            and view is None
+            and self.scene.view.maximised is None
+        ):
+            # The preset's size is the whole image's, which the four views share.
+            chosen = replace(chosen, size=view_size(chosen.size, VIEW_GRID))
+        return self.export_image(chosen, path, view)
 
     @agent_action
     def export_views(self, preset: str, path: str | Path) -> tuple[Path, ...]:

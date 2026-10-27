@@ -48,6 +48,7 @@ from larmor.viewer.model.export import (
     load_presets,
     presets_folder,
     save_preset,
+    view_size,
 )
 from larmor.viewer.model.item import VIEW_GAP, VIEW_KINDS, VIEW_NAMES, ViewKind
 from larmor.viewer.model.options import Colour, OptionError, check_colour
@@ -99,7 +100,7 @@ def preset_rows(preset: ExportPreset) -> list[tuple[str, str]]:
     size = "the views' size" if preset.size is None else "{} x {}".format(*preset.size)
     overlay = {None: "as the views", True: "on", False: "off"}[preset.overlay]
     rows = [
-        ("Size of each view", size),
+        ("Size", size),
         ("Scale", f"{preset.scale:g} x"),
         ("Background", preset.background or "the views'"),
         ("Information overlay", overlay),
@@ -276,11 +277,15 @@ class ExportSheet(QDialog):
     def base(self) -> tuple[tuple[int, int], float]:
         """Returns each view's size in logical pixels, and the pixels per one.
 
-        A preset without a size takes the views' size on screen and the screen's
-        pixel ratio times its scale.
+        A preset's size is that of the image, which its views share. A preset
+        without a size takes the views' size on screen and the screen's pixel
+        ratio times its scale.
         """
         if self.preset.size is not None:
-            return self.preset.size, self.preset.scale
+            size = self.preset.size
+            if self.kind is ExportKind.IMAGE:
+                size = view_size(size, self.shown_views())
+            return size, self.preset.scale
         maximised = self.viewer.scene.view.maximised
         kind = self.shown_views()[0][0]
         if not self.grid.panels[kind].isVisible() and maximised is not None:

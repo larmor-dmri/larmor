@@ -3,7 +3,7 @@
 import json
 import math
 import tomllib
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, fields
 from enum import Enum, StrEnum
 from pathlib import Path
@@ -12,7 +12,7 @@ from typing import Any
 from larmor._log import LarmorLogger
 from larmor.viewer.model import settings
 from larmor.viewer.model.camera import Camera3D
-from larmor.viewer.model.item import Category
+from larmor.viewer.model.item import VIEW_GAP, Category, ViewKind
 from larmor.viewer.model.options import (
     Colour,
     OptionError,
@@ -44,8 +44,10 @@ class ExportPreset:
 
     Attributes:
         name: The name the Export sheet and `Viewer.export` know it by.
-        size: Each view's width and height in logical pixels; None for the size
-            the views have on screen, or `DEFAULT_SIZE` without a window.
+        size: The width and height of each image or video frame in logical
+            pixels; an image of several views shares it among them. None gives
+            each view the size it has on screen, or `DEFAULT_SIZE` without a
+            window.
         scale: Pixels per logical pixel in the image.
         background: The colour behind the images, "#rrggbb"; None for the views'.
         overlay: Whether to draw the information overlay; None follows the views.
@@ -110,6 +112,24 @@ DEFAULT_PRESETS: tuple[ExportPreset, ...] = (
         camera=_three_quarter(12.0),
     ),
 )
+
+
+def view_size(
+    size: tuple[int, int], rows: Sequence[Sequence[ViewKind]]
+) -> tuple[int, int]:
+    """Returns each view's size in an image of the views laid out in rows.
+
+    The views and the lines between them fill the image's size; the image is a
+    pixel smaller when the views do not share it evenly.
+
+    Args:
+        size: The image's width and height in logical pixels.
+        rows: The views, row by row.
+    """
+    columns = max(len(row) for row in rows)
+    width = (size[0] - (columns - 1) * VIEW_GAP) // columns
+    height = (size[1] - (len(rows) - 1) * VIEW_GAP) // len(rows)
+    return max(width, 1), max(height, 1)
 
 
 def presets_folder() -> Path:
