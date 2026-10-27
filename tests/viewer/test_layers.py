@@ -685,6 +685,8 @@ def test_clicking_the_selected_item_delete_selects_nothing(
 
 
 def _fill(viewer: Viewer, category: Category, n: int) -> list[ItemId]:
+    if category == Category.REGIONS:  # made by actions, not added as data
+        return [viewer.add_sphere(name=f"{category}{i}") for i in range(n)]
     data = {
         Category.TRACTOGRAMS: _tractogram,
         Category.PEAKS: _peaks,

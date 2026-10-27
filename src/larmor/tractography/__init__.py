@@ -26,7 +26,7 @@ from larmor.tractography.file_editing import (
     load_region,
 )
 from larmor.tractography.profiles import TractProfile, Weighting, tract_profile
-from larmor.tractography.regions import Region, Sphere, points_inside
+from larmor.tractography.regions import Box, Region, Sphere, points_inside
 from larmor.tractography.resampling import resample
 from larmor.tractography.sampling import sample_volume
 from larmor.tractography.seed import (
@@ -41,6 +41,7 @@ from larmor.tractography.termination import EndStatus
 from larmor.tractography.tracker import Tracker, TractographyRun
 
 __all__ = [
+    "Box",
     "EditOptions",
     "EndStatus",
     "MaskSeeds",

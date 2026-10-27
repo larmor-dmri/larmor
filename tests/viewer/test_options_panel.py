@@ -52,6 +52,7 @@ from larmor.viewer.model.options import (
     option_fields,
     validate,
 )
+from larmor.viewer.model.registry import FILE_CATEGORIES
 from larmor.viewer.model.surface import SurfaceData
 from larmor.viewer.model.view_state import ViewField
 from larmor.viewer.model.viewer import MIXED
@@ -974,7 +975,7 @@ def test_nothing_selected_shows_a_hint_and_no_fields(panel: OptionsPanel) -> Non
     assert hint
 
 
-@pytest.mark.parametrize("category", list(Category))
+@pytest.mark.parametrize("category", FILE_CATEGORIES)
 def test_selected_item_shows_its_name_and_one_field_per_option(
     category: Category, viewer: Viewer, panel: OptionsPanel
 ) -> None:

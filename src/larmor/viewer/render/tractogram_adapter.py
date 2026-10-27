@@ -71,15 +71,14 @@ QUEUE_3D_TRANSLUCENT = 2900
 # Options whose change rebuilds the drawn lines.
 RESHAPING = (OptionName.SUBSET, OptionName.POINTS)
 # Options whose change filters the streamlines again.
-FILTERING = (
-    OptionName.REGION_FILTER,
-    OptionName.ENDS_ONLY,
-    OptionName.INCLUDE_MASKS,
-    OptionName.EXCLUDE_MASKS,
-    OptionName.WITHIN_MASKS,
-    OptionName.INCLUDE_SPHERES,
-    OptionName.EXCLUDE_SPHERES,
-    OptionName.WITHIN_SPHERES,
+FILTERING = (OptionName.REGION_FILTER, OptionName.ENDS_ONLY, OptionName.REGIONS)
+# Options of an applied region whose change filters the streamlines again.
+REGION_FILTERING = (
+    OptionName.ROLE,
+    OptionName.CENTRE,
+    OptionName.RADIUS,
+    OptionName.SIZE,
+    OptionName.MASK,
 )
 # Options whose change can call for other colours or values on the drawn lines.
 RECOLOURING = (
@@ -206,7 +205,7 @@ class TractogramAdapter(Adapter):
     ) -> None:
         """Builds the lines and adds them to the views.
 
-        `tell` is given each change of the number of streamlines the regions keep.
+        `tell` is given a notice when the regions cannot be applied.
         """
         super().__init__(item, views, viewer, order)
         assert isinstance(item.data, Tractogram)
@@ -304,6 +303,12 @@ class TractogramAdapter(Adapter):
         """Follows this item's options, the cursor and the views on screen."""
         if isinstance(event, OptionChanged) and event.item.id == self.item.id:
             self._on_option(event)
+        elif (
+            isinstance(event, OptionChanged)
+            and event.name in REGION_FILTERING
+            and event.item.id in self._options().regions
+        ):
+            self._request_selection()
         elif isinstance(event, ViewStateChanged):
             if event.name == ViewField.CURSOR:
                 assert isinstance(event.old, tuple) and isinstance(event.new, tuple)
@@ -553,12 +558,12 @@ class TractogramAdapter(Adapter):
     def _request_selection(self) -> None:
         """Filters the streamlines by the regions in the background, if any."""
         regions = region_filter(self.viewer.scene, self.item)
+        key, work = self.viewer._selection_work(self.item.id)
         if regions is None:
             self._selection_worker.cancel()
             if self.selection is not None:
-                self._take_selection(None)
+                self._take_selection(None, key)
             return
-        key, work = self.viewer._selection_work(self.item.id)
         self._selection_worker.submit(
             work,
             partial(self._take_selection, key=key),
@@ -582,15 +587,8 @@ class TractogramAdapter(Adapter):
         self._selection_version += 1
         order = self._full_order
         self._order = order if selection is None else order[selection[order]]
-        total = len(self._full_order)
-        if selection is None:
-            self.tell(f"{self.item.name}: all {total:,} streamlines kept.")
-        else:
-            self.tell(
-                f"{self.item.name}: {len(self._order):,} of {total:,} streamlines "
-                "pass the regions."
-            )
         self._request_lines()
+
         if not self._tubes_fit():
             self._drop_tubes()  # the lines show while the new ones are made
         self._show()

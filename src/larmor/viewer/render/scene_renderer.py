@@ -105,7 +105,7 @@ class SceneRenderer:
         self._noticed = notices
 
     def _tell(self, text: str) -> None:
-        """Logs and hands out a message for the user, such as streamlines kept."""
+        """Logs and hands out a message for the user, such as a filter that failed."""
         LarmorLogger.info(text)
         for callback in list(self._notice_subscribers):
             callback(text)
@@ -116,7 +116,7 @@ class SceneRenderer:
             rank = RANK[item.category]
             order = rank * 1_000_000 + float(item.id)
             if item.category == Category.TRACTOGRAMS:
-                # Told the number of streamlines its regions keep.
+                # Tells the user when its regions cannot be applied.
                 self.adapters[item.id] = TractogramAdapter(
                     item, self.views, self.viewer, order, self._tell
                 )
@@ -166,7 +166,7 @@ class SceneRenderer:
             # The tractograms it is a mask of filter their streamlines again.
             for other in self.adapters.values():
                 if isinstance(other, TractogramAdapter) and event.item.id in (
-                    mask_ids(other.item)
+                    mask_ids(self.viewer.scene, other.item)
                 ):
                     other.refilter()
             self._give_notices()

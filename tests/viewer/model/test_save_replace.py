@@ -247,7 +247,7 @@ def _masked() -> tuple[Viewer, int, int]:
     mask = np.zeros((4, 2, 1), np.float32)
     mask[0] = 1
     overlay = viewer.add(Volume(mask, np.eye(4)), Category.OVERLAYS)
-    viewer.add_mask(tract.id, overlay.id)
+    viewer.add_mask(overlay.id, apply=True)
     return viewer, tract.id, overlay.id
 
 

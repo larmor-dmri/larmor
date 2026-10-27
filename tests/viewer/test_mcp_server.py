@@ -443,13 +443,14 @@ def test_an_agent_adds_a_region_by_its_role(
     tracts = viewer.add(
         Tractogram(np.zeros((2, 3)), np.array([0, 2])), Category.TRACTOGRAMS
     )
-    arguments = {"item_id": tracts.id, "radius": 4.0, "role": "exclude"}
+    arguments = {"radius": 4.0, "role": "exclude", "apply": True}
     result = _call(server, main, "add_sphere", arguments)
     assert not result.is_error
     options = viewer.scene.item(tracts.id).options
     assert isinstance(options, TractogramOptions)
-    assert len(options.exclude_spheres) == 1
-    assert options.include_spheres == ()
+    (region,) = viewer.scene.in_category(Category.REGIONS)
+    assert options.regions == (region.id,)
+    assert region.options.role == "exclude"
 
 
 def test_an_agent_imports_a_matlab_file_by_preset_and_by_variable(

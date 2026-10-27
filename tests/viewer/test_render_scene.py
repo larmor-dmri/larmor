@@ -312,7 +312,7 @@ def test_replacing_a_mask_refilters_the_tractograms_using_it(
     mask = viewer.add(_volume(), Category.OVERLAYS)
     used = viewer.add(_tractogram(), Category.TRACTOGRAMS)
     other = viewer.add(_tractogram(), Category.TRACTOGRAMS)
-    viewer.add_mask(used.id, mask.id)
+    viewer.apply_region(used.id, viewer.add_mask(mask.id))
     refiltered: list[int] = []
     for item in (used, other):
         adapter = renderer.adapters[item.id]

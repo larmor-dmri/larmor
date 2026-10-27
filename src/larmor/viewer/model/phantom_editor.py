@@ -7,6 +7,8 @@ from enum import Enum, auto
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import numpy as np
+
 from larmor._log import LarmorLogger
 from larmor.types import Grid, Tractogram, Volume
 from larmor.viewer.model.breakdown import BreakdownTool
@@ -58,6 +60,7 @@ from larmor.viewer.model.phantom import (
     viewer_block,
     with_bundle_value,
 )
+from larmor.viewer.model.view_state import Tool, ViewField
 
 if TYPE_CHECKING:
     from larmor.simulation import Phantom
@@ -70,6 +73,8 @@ type Schedule = Callable[[Callable[[], None]], None]
 type ShownBundles = list[tuple[BundleSettings, Tractogram, Path | None]]
 type ShownMaps = list[tuple[str, Volume, Path | None]]
 
+# The most control points one freehand stroke gives.
+STROKE_POINTS = 12
 # The colormap each proxy map starts with.
 PROXY_COLORMAPS = {
     ProxyMap.FILL: Colormap.HOT,
@@ -125,7 +130,14 @@ class PhantomEditor:
         The breakdown is asked for again unless only the proxy maps or the output
         folder changed.
         """
-        self.viewer.scene.set_phantom(state, part)
+        scene = self.viewer.scene
+        scene.set_phantom(state, part)
+        # The bundle tool is chosen exactly while a bundle is being drawn.
+        drawing = state is not None and state.draft is not None
+        if drawing and scene.view.tool != Tool.DRAW_BUNDLE:
+            scene.set_view(ViewField.TOOL, Tool.DRAW_BUNDLE)
+        elif not drawing and scene.view.tool == Tool.DRAW_BUNDLE:
+            scene.set_view(ViewField.TOOL, Tool.CURSOR)
         if part not in (PhantomPart.PROXIES, PhantomPart.OUTPUT):
             self._request(_Rebuild.BREAKDOWN)
 
@@ -824,6 +836,73 @@ class PhantomEditor:
             if bundle.geometry is not None and path.is_file():
                 scene.set_source(bundle.item_id, path)
         self.set_output(files.folder)
+
+
+def simplify_stroke(
+    points: Sequence[Vec3], tolerance: float, most: int = STROKE_POINTS
+) -> list[Vec3]:
+    """Returns the points of a freehand stroke that keep its shape.
+
+    The stroke is simplified by the Ramer-Douglas-Peucker method: a point is
+    kept when the stroke strays more than `tolerance` from the line between the
+    points kept around it. While more than `most` points are left, the
+    tolerance grows by half. The first and last points are always kept.
+
+    Args:
+        points: The stroke, world mm, in order.
+        tolerance: How far the stroke may stray from the simplified line, mm.
+        most: The most points returned, at least 2.
+
+    Returns:
+        The points kept, in order; one point for a stroke that never moves.
+
+    References:
+        Douglas, D. H. and Peucker, T. K. Algorithms for the reduction of the
+        number of points required to represent a digitized line or its
+        caricature. Cartographica 10(2), 112-122 (1973).
+        doi:10.3138/FM57-6770-U75U-7727
+    """
+    stroke = np.asarray(points, dtype=float).reshape(-1, 3)
+    if len(stroke) == 0:
+        return []
+    if np.all(np.linalg.norm(stroke - stroke[0], axis=1) == 0):
+        return [_vec3(stroke[0])]
+    limit = max(tolerance, 1e-9)
+    kept = _douglas_peucker(stroke, limit)
+    while len(kept) > max(most, 2):
+        limit *= 1.5
+        kept = _douglas_peucker(stroke, limit)
+    return [_vec3(stroke[i]) for i in kept]
+
+
+def _douglas_peucker(stroke: np.ndarray, tolerance: float) -> list[int]:
+    """Returns the indices the Ramer-Douglas-Peucker method keeps, in order."""
+    keep = np.zeros(len(stroke), dtype=bool)
+    keep[0] = keep[-1] = True
+    spans = [(0, len(stroke) - 1)]
+    while spans:
+        first, last = spans.pop()
+        if last - first < 2:
+            continue
+        a, b = stroke[first], stroke[last]
+        inner = stroke[first + 1 : last]
+        line = b - a
+        length = float(np.linalg.norm(line))
+        if length == 0:
+            distances = np.linalg.norm(inner - a, axis=1)
+        else:
+            distances = np.linalg.norm(np.cross(inner - a, line / length), axis=1)
+        far = int(np.argmax(distances))
+        if distances[far] > tolerance:
+            middle = first + 1 + far
+            keep[middle] = True
+            spans += [(first, middle), (middle, last)]
+    return [int(i) for i in np.flatnonzero(keep)]
+
+
+def _vec3(point: np.ndarray) -> Vec3:
+    """Returns a point as a tuple of three floats."""
+    return (float(point[0]), float(point[1]), float(point[2]))
 
 
 def item_sources(state: PhantomState, scene: Scene) -> dict[ItemId, ItemSource]:

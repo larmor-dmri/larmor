@@ -27,6 +27,7 @@ from larmor.viewer.model.events import (
     ViewStateChanged,
 )
 from larmor.viewer.model.options import OverlayOptions, VolumeOptions
+from larmor.viewer.model.registry import FILE_CATEGORIES
 from larmor.viewer.model.view_state import ViewField
 from larmor.viewer.model.viewer import MIXED
 from larmor.viewer.system import INSTALL_HINT
@@ -739,8 +740,8 @@ def test_an_empty_tractogram_gives_no_grid_so_the_next_image_centres() -> None:
     assert viewer.scene.view.cursor == (2.0, 2.0, 4.0)
 
 
-@pytest.mark.parametrize("first", list(Category))
-@pytest.mark.parametrize("second", list(Category))
+@pytest.mark.parametrize("first", FILE_CATEGORIES)
+@pytest.mark.parametrize("second", FILE_CATEGORIES)
 def test_a_later_item_keeps_the_cursor(first: Category, second: Category) -> None:
     def data(category: Category) -> object:
         if category == Category.TRACTOGRAMS:

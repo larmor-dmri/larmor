@@ -414,10 +414,14 @@ class MainWindow(QMainWindow):
         filters: dict[str, Category | None] = {
             f"{kind.label} ({kind.patterns()})": category
             for category, kind in REGISTRY.items()
+            if kind.from_files
         }
         filters[MATLAB_FILTER] = None
         current = _category_of(self.viewer, self.viewer.scene.view.selected)
-        chosen = next(f for f, c in filters.items() if c == current)
+        chosen = next(
+            (f for f, c in filters.items() if c == current), next(iter(filters))
+        )
+
         paths, chosen = QFileDialog.getOpenFileNames(
             self, "Open", "", ";;".join(filters), chosen
         )

@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+from larmor.viewer.model.detail import Detail
 from larmor.viewer.model.item import Item
 from larmor.viewer.model.options import OptionName
 from larmor.viewer.model.phantom import PhantomPart
@@ -67,6 +68,39 @@ class BreakdownChanged:
     """The Signal breakdown dock's state changed (see `Scene.breakdown`)."""
 
 
+@dataclass(frozen=True)
+class FilterChanged:
+    """A tractogram's filter by its regions finished: `kept` of `total` streamlines.
+
+    `kept` equals `total` when no region applies or the filter is off.
+    """
+
+    item: Item
+    kept: int
+    total: int
+
+
+@dataclass(frozen=True)
+class DetailOpened:
+    """A detail window was opened (see `Scene.details`)."""
+
+    detail: Detail
+
+
+@dataclass(frozen=True)
+class DetailChanged:
+    """A detail window's rectangle or settings changed; `detail` is the new one."""
+
+    detail: Detail
+
+
+@dataclass(frozen=True)
+class DetailClosed:
+    """A detail window was closed."""
+
+    detail: Detail
+
+
 type Event = (
     ItemAdded
     | ItemRemoved
@@ -76,4 +110,8 @@ type Event = (
     | ViewStateChanged
     | PhantomChanged
     | BreakdownChanged
+    | FilterChanged
+    | DetailOpened
+    | DetailChanged
+    | DetailClosed
 )

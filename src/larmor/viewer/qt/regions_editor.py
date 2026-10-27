@@ -1,13 +1,9 @@
-"""The editor of the regions a tractogram's streamlines are filtered by."""
-
-from collections.abc import Callable
-from functools import partial
+"""The list of regions a tractogram applies, at the end of its Regions group."""
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import (
-    QComboBox,
-    QDoubleSpinBox,
-    QGridLayout,
+    QFileDialog,
     QLabel,
     QListWidget,
     QListWidgetItem,
@@ -16,197 +12,131 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from larmor.viewer.model.events import (
-    Event,
-    ItemAdded,
-    ItemRemoved,
-    OptionChanged,
-)
-from larmor.viewer.model.item import ItemId
-from larmor.viewer.model.options import OptionError, OptionName, RegionRole
-from larmor.viewer.model.viewer import REGION_LISTS, Viewer
+from larmor.viewer.model.events import Event, ItemAdded, ItemRemoved, OptionChanged
+from larmor.viewer.model.item import Category, ItemId
+from larmor.viewer.model.options import OptionError, OptionName, RegionOptions
+from larmor.viewer.model.viewer import Viewer
 
-ENTRY = Qt.ItemDataRole.UserRole  # where a row keeps its (option, index)
-SPHERE_RADIUS = 5.0  # mm, the radius a new sphere starts with
-MASKS = (OptionName.INCLUDE_MASKS, OptionName.EXCLUDE_MASKS, OptionName.WITHIN_MASKS)
-# The kind each list's regions are shown as, in the order the list shows them.
-KINDS = {
-    OptionName.INCLUDE_MASKS: "Include",
-    OptionName.INCLUDE_SPHERES: "Include",
-    OptionName.EXCLUDE_MASKS: "Exclude",
-    OptionName.EXCLUDE_SPHERES: "Exclude",
-    OptionName.WITHIN_MASKS: "Within",
-    OptionName.WITHIN_SPHERES: "Within",
-}
-# The rows of the kind choice.
-EXCLUDE_ROW = 1
-WITHIN_ROW = 2
+REGION = Qt.ItemDataRole.UserRole  # where a row keeps its region's id
+DOT = 10  # px, the colour dot before a region's name
+# The options of a region its row shows.
+SHOWN = (OptionName.ROLE, OptionName.COLOUR)
+# The file types "Save kept..." offers.
+TRACTOGRAM_FILTER = "Tractograms (*.tck *.trk *.vtk *.fib)"
 
 
 class RegionsEditor(QWidget):
-    """Lists and edits a tractogram's include, exclude and within regions.
+    """Lists every region of the scene with a tick box: ticked ones filter this item.
 
-    A mask is chosen among the images loaded; a sphere is put at the cursor
-    with the radius given. Each is added as an include, exclude or within region.
+    Regions are added with the views' tools and right-click menu; "Save kept..."
+    writes the streamlines the ticked regions keep.
     """
 
     def __init__(
         self, viewer: Viewer, item_id: ItemId, parent: QWidget | None = None
     ) -> None:
-        """Lists the item's regions."""
+        """Lists the scene's regions, ticked where the tractogram applies them."""
         super().__init__(parent)
         self.viewer = viewer
         self.item_id = item_id
-        self._create_widgets()
-        self._build_layout()
-        self._connect()
-        # The viewer can outlive the editor: stop listening when it goes.
-        unsubscribe = viewer.scene.subscribe(self._on_event)
-        self.destroyed.connect(lambda *_: unsubscribe())
-        self._fill_masks()
-        self._fill()
-
-    def _create_widgets(self) -> None:
-        """Creates the list, the buttons, the kind and mask choices and the radius."""
         self.list = QListWidget(self)
-        self.list.setMaximumHeight(110)
-        self.remove_button = QPushButton("Remove", self)
-        self.remove_button.setToolTip("Remove the regions chosen in the list")
-        self.clear_button = QPushButton("Clear", self)
-        self.clear_button.setToolTip("Remove every region: all streamlines are drawn")
-        self.kind_choice = QComboBox(self)
-        self.kind_choice.addItems(["Include", "Exclude", "Within"])
-        self.kind_choice.setToolTip(
-            "Include keeps the streamlines that pass through the region; exclude "
-            "drops them; within keeps those that stay entirely inside it."
+        self.list.setMaximumHeight(130)
+        self.empty = QLabel("Add regions with the Sphere (O) and Box (B) tools.", self)
+        self.empty.setWordWrap(True)
+        self.save_button = QPushButton("Save kept...", self)
+        self.save_button.setToolTip(
+            "Write the streamlines the ticked regions keep to a tractogram file"
         )
-        self.mask_choice = QComboBox(self)
-        self.mask_choice.setToolTip("A loaded image of one volume, on any grid")
-        self.add_mask = QPushButton("Add mask", self)
-        self.radius = QDoubleSpinBox(self)
-        self.radius.setRange(0.1, 100.0)
-        self.radius.setSingleStep(0.5)
-        self.radius.setValue(SPHERE_RADIUS)
-        self.radius.setSuffix(" mm")
-        self.radius.setToolTip("The radius of the next sphere")
-        self.add_sphere = QPushButton("Add sphere at cursor", self)
         self.error = QLabel(self)
         self.error.setObjectName("fieldError")
         self.error.setWordWrap(True)
         self.error.hide()
-
-    def _build_layout(self) -> None:
-        """Lays out the list, the buttons and the choices."""
-        grid = QGridLayout()
-        grid.setContentsMargins(0, 0, 0, 0)
-        grid.addWidget(self.remove_button, 0, 0)
-        grid.addWidget(self.clear_button, 0, 1)
-        grid.addWidget(QLabel("Add as", self), 1, 0)
-        grid.addWidget(self.kind_choice, 1, 1)
-        grid.addWidget(self.mask_choice, 2, 0)
-        grid.addWidget(self.add_mask, 2, 1)
-        grid.addWidget(self.radius, 3, 0)
-        grid.addWidget(self.add_sphere, 3, 1)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.list)
-        layout.addLayout(grid)
+        layout.addWidget(self.empty)
+        layout.addWidget(self.save_button)
         layout.addWidget(self.error)
-
-    def _connect(self) -> None:
-        """Connects the buttons to the viewer's actions."""
-        viewer, item_id = self.viewer, self.item_id
-        self.remove_button.clicked.connect(self._remove_chosen)
-        self.clear_button.clicked.connect(
-            lambda: self._act(partial(viewer.clear_regions, item_id))
-        )
-        self.add_mask.clicked.connect(self._add_mask)
-        self.add_sphere.clicked.connect(
-            lambda: self._act(
-                lambda: viewer.add_sphere(
-                    item_id,
-                    self.radius.value(),
-                    role=self._role(),
-                )
-            )
-        )
+        self.list.itemChanged.connect(self._ticked)
+        self.save_button.clicked.connect(self._ask_save)
+        # The viewer can outlive the editor: stop listening when it goes.
+        unsubscribe = viewer.scene.subscribe(self._on_event)
+        self.destroyed.connect(lambda *_: unsubscribe())
+        self._fill()
 
     def _on_event(self, event: Event) -> None:
-        """Updates the mask choices or the list after a scene event about them."""
+        """Lists the regions again when one comes, goes or changes, or is ticked."""
         if isinstance(event, (ItemAdded, ItemRemoved)):
-            if event.item.id != self.item_id:
-                self._fill_masks()
-        elif (
-            isinstance(event, OptionChanged)
-            and event.item.id == self.item_id
-            and event.name in REGION_LISTS
+            if event.item.category == Category.REGIONS:
+                self._fill()
+        elif isinstance(event, OptionChanged) and (
+            (event.item.id == self.item_id and event.name == OptionName.REGIONS)
+            or (event.item.category == Category.REGIONS and event.name in SHOWN)
         ):
             self._fill()
 
-    def _role(self) -> RegionRole:
-        """Returns the role chosen for new regions."""
-        row = self.kind_choice.currentIndex()
-        if row == EXCLUDE_ROW:
-            return RegionRole.EXCLUDE
-        return RegionRole.WITHIN if row == WITHIN_ROW else RegionRole.INCLUDE
+    def _fill(self) -> None:
+        """Lists every region, with its role and colour, ticked if applied."""
+        applied = self.viewer.scene.item(self.item_id).options
+        regions = self.viewer.scene.in_category(Category.REGIONS)
+        self.list.blockSignals(True)
+        self.list.clear()
+        for region in regions:
+            o = region.options
+            assert isinstance(o, RegionOptions)
+            row = QListWidgetItem(_dot(o.colour), f"{region.name} ({o.role})")
+            row.setData(REGION, region.id)
+            row.setFlags(row.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            ticked = region.id in getattr(applied, OptionName.REGIONS)
+            row.setCheckState(
+                Qt.CheckState.Checked if ticked else Qt.CheckState.Unchecked
+            )
+            self.list.addItem(row)
+        self.list.blockSignals(False)
+        self.list.setVisible(bool(regions))
+        self.empty.setVisible(not regions)
 
-    def _act(self, action: Callable[[], None]) -> None:
-        """Runs an action of the viewer; shows its error, if any, below."""
+    def _ticked(self, row: QListWidgetItem) -> None:
+        """Applies or stops applying the row's region."""
+        applied = row.checkState() == Qt.CheckState.Checked
         try:
-            action()
+            self.viewer.apply_region(self.item_id, row.data(REGION), applied)
         except OptionError as error:
-            self.error.setText(str(error))
-            self.error.show()
+            self._show_error(str(error))
             return
         self.error.hide()
 
-    def _add_mask(self) -> None:
-        """Adds the chosen mask as a region of the chosen role."""
-        mask_id = self.mask_choice.currentData()
-        if mask_id is None:
-            return
-        self._act(
-            partial(
-                self.viewer.add_mask,
-                self.item_id,
-                mask_id,
-                role=self._role(),
-            )
+    def _ask_save(self) -> None:
+        """Asks for a file and writes the kept streamlines to it."""
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Save Kept Streamlines", "", TRACTOGRAM_FILTER
         )
+        if path:
+            self.save(path)
 
-    def _remove_chosen(self) -> None:
-        """Removes the regions chosen in the list, all at once per option."""
-        chosen: dict[OptionName, set[int]] = {}
-        for row in self.list.selectedItems():
-            name, index = row.data(ENTRY)
-            chosen.setdefault(name, set()).add(index)
-        o = self.viewer.scene.item(self.item_id).options
-        for name, indices in chosen.items():
-            entries = getattr(o, name)
-            kept = tuple(e for i, e in enumerate(entries) if i not in indices)
-            self._act(partial(self.viewer.set, self.item_id, name, kept))
+    def save(self, path: str) -> None:
+        """Writes the kept streamlines to a file; shows the error below, if any."""
+        try:
+            self.viewer.save_kept(self.item_id, path)
+        except (OSError, ValueError) as error:
+            self._show_error(str(error))
+            return
+        self.error.hide()
 
-    def _fill_masks(self) -> None:
-        """Offers the images a mask can be chosen from."""
-        choices = self.viewer.item_choices(self.item_id, OptionName.INCLUDE_MASKS)
-        self.mask_choice.clear()
-        for item in choices:
-            self.mask_choice.addItem(item.name, item.id)
-        self.add_mask.setEnabled(bool(choices))
+    def _show_error(self, text: str) -> None:
+        """Shows an error under the list."""
+        self.error.setText(text)
+        self.error.show()
 
-    def _fill(self) -> None:
-        """Lists the regions: include ones first, then exclude and within ones."""
-        o = self.viewer.scene.item(self.item_id).options
-        self.list.clear()
-        for name, kind in KINDS.items():
-            for index, entry in enumerate(getattr(o, name)):
-                if name in MASKS:
-                    text = f"{kind}: {self.viewer.scene.item(entry).name}"
-                else:
-                    x, y, z, radius = entry
-                    text = f"{kind}: sphere ({x:g}, {y:g}, {z:g}), {radius:g} mm"
-                row = QListWidgetItem(text)
-                row.setData(ENTRY, (name, index))
-                self.list.addItem(row)
-        self.list.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
-        self.clear_button.setEnabled(self.list.count() > 0)
+
+def _dot(colour: str) -> QIcon:
+    """Returns a round dot of a colour, as a row's icon."""
+    pixmap = QPixmap(DOT, DOT)
+    pixmap.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(pixmap)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    painter.setBrush(QColor(colour))
+    painter.setPen(Qt.PenStyle.NoPen)
+    painter.drawEllipse(0, 0, DOT, DOT)
+    painter.end()
+    return QIcon(pixmap)
