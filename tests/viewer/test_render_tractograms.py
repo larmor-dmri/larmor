@@ -140,7 +140,7 @@ def test_the_drawn_streamlines_are_a_subset_of_those_the_regions_keep(
     data = _streamlines()
     adapter = _tracts(viewer, renderer, data)
     kept = _kept_starts(data, 15.0)
-    viewer.add_sphere(adapter.item.id, 15.0, centre=(0.0, 0.0, 0.0))
+    viewer.add_sphere((0.0, 0.0, 0.0), 15.0, apply=True)
     assert _starts(adapter) == kept
     # Filtering first: 40% of the 69 kept, not those kept among 40% of all.
     viewer.set(adapter.item.id, OptionName.SUBSET, 40.0)
@@ -155,7 +155,7 @@ def test_the_kept_streamlines_are_drawn_in_the_fixed_random_order(
     viewer, renderer = scene_renderer
     data = _streamlines()
     adapter = _tracts(viewer, renderer, data)
-    viewer.add_sphere(adapter.item.id, 15.0, centre=(0.0, 0.0, 0.0))
+    viewer.add_sphere((0.0, 0.0, 0.0), 15.0, apply=True)
     selection = passes_through(data, Sphere(np.zeros(3), 15.0))
     order = random_order(data.num_streamlines, SUBSET_SEED)
     expected = order[selection[order]]  # the random order, of the kept ones
@@ -222,7 +222,7 @@ def test_other_regions_keeping_as_many_streamlines_still_change_the_lines(
     def drawn() -> list[bytes]:
         return [bytes(p) for p in adapter.drawn.points[adapter.drawn.offsets[:-1]]]
 
-    viewer.add_sphere(adapter.item.id, 15.0, centre=(0.0, 0.0, 0.0))
+    viewer.add_sphere((0.0, 0.0, 0.0), 15.0, apply=True)
     assert drawn() == first_kept((0.0, 0.0, 0.0))
     # The new lines wait while the colours change: the change must not recolour
     # the lines of the old regions in their place.
@@ -230,7 +230,7 @@ def test_other_regions_keeping_as_many_streamlines_still_change_the_lines(
     monkeypatch.setattr(adapter, "_lines_worker", later)
     viewer.clear_regions(adapter.item.id)
     later.run()
-    viewer.add_sphere(adapter.item.id, 15.0, centre=(8.0, 8.0, 8.0))
+    viewer.add_sphere((8.0, 8.0, 8.0), 15.0, apply=True)
     viewer.set(adapter.item.id, OptionName.MINIMUM, 0.5)
     later.run()
     assert drawn() == first_kept((8.0, 8.0, 8.0)) != first_kept((0.0, 0.0, 0.0))
@@ -251,7 +251,7 @@ def test_regions_that_fail_tell_the_user(
     monkeypatch.setattr(viewer_module, "passes_regions", broken)
     # Off screen the error is raised again once the user is told.
     with pytest.raises(RuntimeError, match="broken filter"):
-        viewer.add_sphere(adapter.item.id, 15.0, centre=(0.0, 0.0, 0.0))
+        viewer.add_sphere((0.0, 0.0, 0.0), 15.0, apply=True)
     assert told == ["Tractogram 1: the regions could not be applied; see the log."]
     assert _starts(adapter) == every
 
@@ -264,7 +264,7 @@ def test_undoing_the_filter_draws_every_streamline_again(
     data = _streamlines()
     adapter = _tracts(viewer, renderer, data)
     every = _starts(adapter)
-    viewer.add_sphere(adapter.item.id, 15.0, centre=(0.0, 0.0, 0.0))
+    viewer.add_sphere((0.0, 0.0, 0.0), 15.0, apply=True)
     assert _starts(adapter) < every
     if undo == "clear":
         viewer.clear_regions(adapter.item.id)

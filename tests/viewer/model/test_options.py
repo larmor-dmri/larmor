@@ -326,12 +326,12 @@ def test_only_the_volume_index_and_its_per_item_options_are_set_per_item() -> No
         OptionName.COLOUR_BY,
         OptionName.VALUES_FILE,
         OptionName.VALUES_VOLUME,
-        OptionName.INCLUDE_MASKS,
-        OptionName.EXCLUDE_MASKS,
-        OptionName.INCLUDE_SPHERES,
-        OptionName.EXCLUDE_SPHERES,
-        OptionName.WITHIN_MASKS,
-        OptionName.WITHIN_SPHERES,
+        OptionName.REGIONS,
+        OptionName.SHAPE,
+        OptionName.CENTRE,
+        OptionName.RADIUS,
+        OptionName.SIZE,
+        OptionName.MASK,
     }
 
 

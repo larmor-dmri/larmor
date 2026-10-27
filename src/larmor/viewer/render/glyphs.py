@@ -193,6 +193,7 @@ def slice_glyphs(
     image_amplitude: float | None = None,
     anisotropy: float = 0.0,
     cursor_plane: tuple[int, float] | None = None,
+    crop: tuple[tuple[int, int], tuple[int, int]] | None = None,
 ) -> Glyphs:
     """Returns the glyphs of one slice of an FOD, on voxel `axis` at `index`.
 
@@ -201,7 +202,9 @@ def slice_glyphs(
     voxel gets no glyph if its largest amplitude is not above `threshold` and 0,
     or its anisotropy is below `anisotropy`. Negative amplitudes are drawn as 0.
     With `cursor_plane`, a world axis and a coordinate on it, the glyphs' centres
-    are moved onto that plane, where the views draw the slices.
+    are moved onto that plane, where the views draw the slices. With `crop`, the
+    first and past-the-last voxel along each of the slice's two other axes (the
+    lower axis first), only the glyphs inside are built.
 
     Returns:
         Glyphs: The glyphs.
@@ -220,7 +223,7 @@ def slice_glyphs(
     where[axis] = index
     plane = data[tuple(where)].copy(order="K")  # (a, b, C)
     flat = plane.reshape(-1, data.shape[3])
-    chosen = np.flatnonzero(np.any(flat != 0, axis=1))
+    chosen = _nonzero_voxels(flat, plane.shape[1], crop)
     coeffs = _coefficients(volume, flat[chosen])
     if anisotropy > 0:
         kept = sh_anisotropy(coeffs) >= anisotropy
@@ -252,6 +255,23 @@ def slice_glyphs(
     return Glyphs(
         positions.reshape(n * v, 3), normals.reshape(n * v, 3), colours, faces, n
     )
+
+
+def _nonzero_voxels(
+    flat: np.ndarray,
+    columns: int,
+    crop: tuple[tuple[int, int], tuple[int, int]] | None,
+) -> np.ndarray:
+    """Returns the rows of a slice's (n, C) coefficients that are not all zero.
+
+    With crop, only those inside it; `columns` is the slice's second size.
+    """
+    chosen = np.flatnonzero(np.any(flat != 0, axis=1))
+    if crop is not None:
+        (a0, a1), (b0, b1) = crop
+        rows, cols = np.divmod(chosen, columns)
+        chosen = chosen[(rows >= a0) & (rows < a1) & (cols >= b0) & (cols < b1)]
+    return chosen
 
 
 def _glyph_centres(

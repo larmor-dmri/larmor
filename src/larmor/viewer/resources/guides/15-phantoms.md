@@ -80,11 +80,17 @@ bundle gives them, while the dot, the ball, free water, the sphere and the powde
 
 ## Drawing bundles
 
-To draw a bundle, click **Draw (N)** or press **N**. Each click in a 2D view then adds a control point at that
-place in the view's slice and moves the crosshair there, so the other views follow it. A click outside the grid
-box adds no point, and the status bar says why. Scrolling still changes the slice, and Ctrl+drag still pans. The
-bundle is drawn again from its points as you add them. The keys below work only while you draw, so at other times
-they keep their usual meaning in Layers and in dialogs.
+To draw a bundle, click **Draw (N)** or press **N**, which chooses the Draw bundle tool. There are then two ways
+to add control points in a 2D view, and you can mix them in one bundle. Freehand, the usual way, you press, drag
+along the path the bundle should take, and let go: the stroke is simplified to the points that keep its shape
+within about one voxel, at most 12 of them and always its first and last, and these are added after the points
+already there. Another stroke adds more points. To place control points one at a time, hold Ctrl (Cmd on macOS)
+and click: each click adds a point at that place, while a Ctrl+drag still pans the view. Either way the points lie
+in the view's slice, and the crosshair moves to the last one, so the other views follow it. Points outside the
+grid box are left out, and the status bar says so when none is inside. A control point already placed can be
+dragged to a new place in the view's plane. Scrolling still changes the slice. The bundle is drawn again from its
+points as you add them. The keys below work only while you draw, so at other times they keep their usual meaning
+in Layers and in dialogs.
 
 | Key | What it does while drawing |
 |---|---|
@@ -92,6 +98,9 @@ they keep their usual meaning in Layers and in dialogs.
 | **Enter** | Finishes the bundle |
 | **Backspace** | Removes the last point |
 | **Escape** | Stops drawing; a new bundle is dropped and an edited one is kept as it was |
+
+Choosing another tool (V, O, B or Z) also stops drawing: the bundle is finished if it has two points, else
+dropped.
 
 A finished bundle is an ordinary tractogram in Layers, so all the tractogram options apply to it. Its row in the
 bundles table chooses the tissue that fills it. When you select a bundle, the editor shows its shape (the number

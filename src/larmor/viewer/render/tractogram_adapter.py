@@ -71,15 +71,14 @@ QUEUE_3D_TRANSLUCENT = 2900
 # Options whose change rebuilds the drawn lines.
 RESHAPING = (OptionName.SUBSET, OptionName.POINTS)
 # Options whose change filters the streamlines again.
-FILTERING = (
-    OptionName.REGION_FILTER,
-    OptionName.ENDS_ONLY,
-    OptionName.INCLUDE_MASKS,
-    OptionName.EXCLUDE_MASKS,
-    OptionName.WITHIN_MASKS,
-    OptionName.INCLUDE_SPHERES,
-    OptionName.EXCLUDE_SPHERES,
-    OptionName.WITHIN_SPHERES,
+FILTERING = (OptionName.REGION_FILTER, OptionName.ENDS_ONLY, OptionName.REGIONS)
+# Options of an applied region whose change filters the streamlines again.
+REGION_FILTERING = (
+    OptionName.ROLE,
+    OptionName.CENTRE,
+    OptionName.RADIUS,
+    OptionName.SIZE,
+    OptionName.MASK,
 )
 # Options whose change can call for other colours or values on the drawn lines.
 RECOLOURING = (
@@ -100,6 +99,8 @@ type ColoursKey = tuple[Colormap | None, float, float]
 # count is the number of streamlines drawn.
 type LinesKey = tuple[tuple[int, int], int, ValuesKey | None, ColoursKey | None]
 BANDS = len(BAND_QUANTILES) + 1
+# How near the pointer, in logical pixels, a drawn point of a 3D line is picked.
+PICK_PIXELS = 5.0
 # Vertices the 3D view draws while the user interacts, a random part of the lines
 # as they are laid out in random order.
 INTERACTIVE_VERTICES = 4_000_000
@@ -206,7 +207,7 @@ class TractogramAdapter(Adapter):
     ) -> None:
         """Builds the lines and adds them to the views.
 
-        `tell` is given each change of the number of streamlines the regions keep.
+        `tell` is given a notice when the regions cannot be applied.
         """
         super().__init__(item, views, viewer, order)
         assert isinstance(item.data, Tractogram)
@@ -297,6 +298,9 @@ class TractogramAdapter(Adapter):
                 view.add(slab)
         self._before_draw[kind] = partial(self._prepare, kind)
         view.canvas.add_event_handler(self._before_draw[kind], "before_draw")
+        if not two_d:
+            # Thin lines write no picks on the GPU: a click finds them on screen.
+            view.pickers.append(self._pick_line)
 
     # Events
 
@@ -304,6 +308,12 @@ class TractogramAdapter(Adapter):
         """Follows this item's options, the cursor and the views on screen."""
         if isinstance(event, OptionChanged) and event.item.id == self.item.id:
             self._on_option(event)
+        elif (
+            isinstance(event, OptionChanged)
+            and event.name in REGION_FILTERING
+            and event.item.id in self._options().regions
+        ):
+            self._request_selection()
         elif isinstance(event, ViewStateChanged):
             if event.name == ViewField.CURSOR:
                 assert isinstance(event.old, tuple) and isinstance(event.new, tuple)
@@ -353,6 +363,8 @@ class TractogramAdapter(Adapter):
             worker.close()
         for kind, view in self.views.items():
             view.canvas.remove_event_handler(self._before_draw[kind], "before_draw")
+            if self._pick_line in view.pickers:
+                view.pickers.remove(self._pick_line)
             view.remove(self.lines[kind])
             for slab in self.slabs.get(kind, []):
                 view.remove(slab)
@@ -537,6 +549,51 @@ class TractogramAdapter(Adapter):
             return (None, 0.0, 1.0)
         return (COLORMAP_MAPS[colormap].texture.data, low, high)
 
+    def _pick_line(self, view: ViewRenderer, x: float, y: float) -> np.ndarray | None:
+        """Returns the point of a drawn 3D line nearest the camera near a canvas point.
+
+        A segment counts when it passes within PICK_PIXELS of the point on screen.
+
+        Returns:
+            (3,) the point, world mm; None if the lines are hidden or none is near.
+        """
+        o = self._options()
+        if not o.visible or o.opacity_3d <= 0:
+            return None
+        points = self.drawn.points.astype(np.float64)
+        starts = np.ones(len(points), dtype=bool)
+        starts[-1:] = False
+        starts[self.drawn.offsets[1:-1] - 1] = False  # no segment across streamlines
+        first = np.flatnonzero(starts)
+        if len(first) == 0:
+            return None
+        width, height = view.logical_size()
+        view.camera.set_view_size(width, height)
+        matrix = view.camera.camera_matrix
+        clip = points @ matrix[:, :3].T + matrix[:, 3]
+        w = clip[:, 3]
+        with np.errstate(divide="ignore", invalid="ignore"):
+            ndc = clip[:, :3] / w[:, None]
+        screen = np.stack(
+            [(ndc[:, 0] + 1) * width / 2, (1 - ndc[:, 1]) * height / 2], 1
+        )
+        a, b = screen[first], screen[first + 1]
+        step = b - a
+        length = np.einsum("ij,ij->i", step, step)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            t = np.einsum("ij,ij->i", np.array([x, y]) - a, step) / length
+        t = np.clip(np.nan_to_num(t), 0.0, 1.0)
+        distance = np.linalg.norm(a + t[:, None] * step - (x, y), axis=1)
+        depth = ndc[first, 2] + t * (ndc[first + 1, 2] - ndc[first, 2])
+        visible = (w[first] > 0) & (w[first + 1] > 0) & (depth >= 0) & (depth <= 1)
+        near = visible & (distance <= PICK_PIXELS)
+        if not near.any():
+            return None
+        chosen = np.flatnonzero(near)[np.argmin(depth[near])]
+        start, end = points[first[chosen]], points[first[chosen] + 1]
+        nearest: np.ndarray = start + t[chosen] * (end - start)
+        return nearest
+
     def _request_lines(self) -> None:
         """Asks for the lines the options call for, in the background."""
         self._count = self._drawn_count()
@@ -553,12 +610,12 @@ class TractogramAdapter(Adapter):
     def _request_selection(self) -> None:
         """Filters the streamlines by the regions in the background, if any."""
         regions = region_filter(self.viewer.scene, self.item)
+        key, work = self.viewer._selection_work(self.item.id)
         if regions is None:
             self._selection_worker.cancel()
             if self.selection is not None:
-                self._take_selection(None)
+                self._take_selection(None, key)
             return
-        key, work = self.viewer._selection_work(self.item.id)
         self._selection_worker.submit(
             work,
             partial(self._take_selection, key=key),
@@ -582,15 +639,8 @@ class TractogramAdapter(Adapter):
         self._selection_version += 1
         order = self._full_order
         self._order = order if selection is None else order[selection[order]]
-        total = len(self._full_order)
-        if selection is None:
-            self.tell(f"{self.item.name}: all {total:,} streamlines kept.")
-        else:
-            self.tell(
-                f"{self.item.name}: {len(self._order):,} of {total:,} streamlines "
-                "pass the regions."
-            )
         self._request_lines()
+
         if not self._tubes_fit():
             self._drop_tubes()  # the lines show while the new ones are made
         self._show()
@@ -651,7 +701,9 @@ class TractogramAdapter(Adapter):
         view = self.views[ViewKind.THREE_D]
         geometry = _tube_geometry(made)
         if self.tubes is None:
-            material = gfx.MeshPhongMaterial(color_mode="vertex", side="front")
+            material = gfx.MeshPhongMaterial(
+                color_mode="vertex", side="front", pick_write=True
+            )
             self.tubes = gfx.Mesh(geometry, material)
             self.tubes.render_order = self.order
             view.add(self.tubes)

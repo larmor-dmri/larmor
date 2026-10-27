@@ -169,7 +169,7 @@ def test_nan_points_are_outside_a_mask_without_warnings() -> None:
 def test_region_of_another_type_is_a_type_error() -> None:
     sphere = Sphere(np.zeros(3), 1.0)
     tractogram = Tractogram(points=np.zeros((2, 3)), offsets=np.array([0, 2]))
-    with pytest.raises(TypeError, match="Sphere or a mask Volume"):
+    with pytest.raises(TypeError, match="Sphere, a Box or a mask Volume"):
         passes_through(tractogram, [sphere])  # type: ignore[arg-type]
 
 

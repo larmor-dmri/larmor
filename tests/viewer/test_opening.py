@@ -48,7 +48,12 @@ from larmor.viewer import (
 )
 from larmor.viewer import app as viewer_app
 from larmor.viewer.mcp_server import McpServer
-from larmor.viewer.model.registry import REGISTRY, ItemType, item_type
+from larmor.viewer.model.registry import (
+    FILE_CATEGORIES,
+    REGISTRY,
+    ItemType,
+    item_type,
+)
 from larmor.viewer.model.settings import AppSettings, SettingName, Settings
 from larmor.viewer.model.surface import SurfaceData
 from larmor.viewer.qt.layers import LayersPanel
@@ -686,7 +691,7 @@ class Dialog:
         return f
 
 
-@pytest.mark.parametrize("category", list(Category))
+@pytest.mark.parametrize("category", FILE_CATEGORIES)
 def test_file_open_loads_into_the_chosen_filters_category(
     category: Category,
     window: MainWindow,
@@ -707,9 +712,10 @@ def test_file_open_offers_one_filter_per_category_with_its_extensions(
     dialog = Dialog([], None)
     monkeypatch.setattr(QFileDialog, "getOpenFileNames", dialog)
     _open_action(window)
-    assert len(dialog.filters) == len(REGISTRY) + 1
+    assert len(dialog.filters) == len(FILE_CATEGORIES) + 1
     assert dialog.filters[-1] == "MATLAB files (*.mat)"
-    for category, kind in REGISTRY.items():
+    for category in FILE_CATEGORIES:
+        kind = REGISTRY[category]
         patterns = dialog.filter_of(category).split("(")[1].rstrip(")").split()
         expected = [f"*{e}" for e in kind.extensions]
         assert patterns == expected + [f"{p}*" for p in kind.prefixes]
@@ -827,7 +833,7 @@ def _highlighted(panel: LayersPanel) -> set[ItemId | Category]:
     }
 
 
-@pytest.mark.parametrize("category", list(Category))
+@pytest.mark.parametrize("category", FILE_CATEGORIES)
 def test_files_dropped_on_a_category_row_load_into_it(
     category: Category, shown: MainWindow, qtbot: QtBot, tmp_path: Path
 ) -> None:

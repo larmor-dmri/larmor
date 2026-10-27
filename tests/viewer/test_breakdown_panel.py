@@ -174,8 +174,7 @@ def test_the_pointer_and_clicks_drive_the_dock_and_escape_unpins(
 def test_a_right_click_offers_the_breakdown_of_that_voxel(window: MainWindow) -> None:
     position = (6.0, 0.0, 0.0)
     menu = window.view_menu(position)
-    (action,) = menu.actions()
-    assert action.text() == "Signal breakdown here"
+    (action,) = [a for a in menu.actions() if a.text() == "Signal breakdown here"]
     action.trigger()
     assert window.docks.is_open(Panel.SIGNAL_BREAKDOWN)
     state = window.viewer.breakdown

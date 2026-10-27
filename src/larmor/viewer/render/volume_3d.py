@@ -100,6 +100,7 @@ class Volume3D:
                 # Nothing where a magnitude image is background, which would
                 # otherwise hide the rendering as black planes.
                 material = TissueSliceMaterial()
+            material.pick_write = True  # a click in 3D finds the point on it
             obj = gfx.Volume(gfx.Geometry(grid=texture), material)
             obj.render_order = order
             obj.local.matrix = volume.affine

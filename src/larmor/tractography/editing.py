@@ -13,7 +13,7 @@ import numpy as np
 
 from larmor._log import LarmorLogger
 from larmor.tractography import regions as region_module
-from larmor.tractography.regions import Region, Sphere, point_test
+from larmor.tractography.regions import Box, Region, Sphere, point_test
 from larmor.tractography.resampling import resample
 from larmor.types import Grid, Tractogram, Volume
 
@@ -254,7 +254,10 @@ def _as_region_list(regions: Region | Sequence[Region]) -> list[Region]:
     Raises:
         ValueError: If no region is given.
     """
-    listed = [regions] if isinstance(regions, (Sphere, Volume)) else list(regions)
+    if isinstance(regions, (Sphere, Box, Volume)):
+        listed = [regions]
+    else:
+        listed = list(regions)
     if not listed:
         raise ValueError("Expected at least one region, got none.")
     return listed
@@ -339,14 +342,14 @@ def passes_through(
 
     Args:
         tractogram: The streamlines.
-        region: A `Sphere`, or a 3D mask `Volume` on any grid.
+        region: A `Sphere`, a `Box`, or a 3D mask `Volume` on any grid.
         ends_only: Whether to test only the two endpoints. Defaults to False.
 
     Returns:
         np.ndarray: (S,) bool, True for the streamlines that pass through.
 
     Raises:
-        TypeError: If the region is neither a `Sphere` nor a `Volume`.
+        TypeError: If the region is not a `Sphere`, a `Box` or a `Volume`.
         ValueError: If the mask is neither 3D nor 4D with a single volume.
 
     References:
@@ -381,14 +384,14 @@ def stays_within(
 
     Args:
         tractogram: The streamlines.
-        region: A `Sphere`, or a 3D mask `Volume` on any grid.
+        region: A `Sphere`, a `Box`, or a 3D mask `Volume` on any grid.
         ends_only: Whether to test only the two endpoints. Defaults to False.
 
     Returns:
         np.ndarray: (S,) bool, True for the streamlines that stay within.
 
     Raises:
-        TypeError: If the region is neither a `Sphere` nor a `Volume`.
+        TypeError: If the region is not a `Sphere`, a `Box` or a `Volume`.
         ValueError: If the mask is neither 3D nor 4D with a single volume.
     """
     test = point_test(region)
@@ -429,7 +432,7 @@ def passes_in_order(
             regions in order.
 
     Raises:
-        TypeError: If a region is neither a `Sphere` nor a `Volume`.
+        TypeError: If a region is not a `Sphere`, a `Box` or a `Volume`.
         ValueError: If no region is given, more than two with `ends_only`, or a
             mask is neither 3D nor 4D with a single volume.
 
@@ -537,7 +540,7 @@ def crop(
         Tractogram: The pieces, with their data and the same reference.
 
     Raises:
-        TypeError: If a region is neither a `Sphere` nor a `Volume`.
+        TypeError: If a region is not a `Sphere`, a `Box` or a `Volume`.
         ValueError: If no region is given, or a mask is neither 3D nor 4D with a
             single volume.
 
@@ -629,9 +632,9 @@ class EditOptions:
 
     Every field defaults to "not given", which is None, False or no regions. The
     regions may be given as any sequence and are stored as tuples; each is a
-    `Sphere`, a mask `Volume`, or text that `load_region` reads (`x,y,z,r` or a mask
-    image's path), which only `edit_files` accepts. `edit` says in which order the
-    options apply.
+    `Sphere`, a `Box`, a mask `Volume`, or text that `load_region` reads (`x,y,z,r`
+    or a mask image's path), which only `edit_files` accepts. `edit` says in which
+    order the options apply.
 
     Args:
         min_length: The shortest length kept, in mm (inclusive).

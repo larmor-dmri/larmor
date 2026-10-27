@@ -256,7 +256,8 @@ class SurfaceAdapter(Adapter):
             indices=surface.faces,
         )
         self._indices[False] = geometry.indices
-        material = gfx.MeshPhongMaterial(side="both")
+        # Pickable, so a click in 3D finds the point on it.
+        material = gfx.MeshPhongMaterial(side="both", pick_write=True)
         self.mesh = gfx.Mesh(geometry, material)
         self.mesh.render_order = ORDER_SURFACE
         self.views[ViewKind.THREE_D].add(self.mesh)

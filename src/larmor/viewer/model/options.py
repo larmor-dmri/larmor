@@ -46,6 +46,7 @@ class OptionGroup(StrEnum):
     """The sections of the Options panel, in the order they are shown."""
 
     DISPLAY = "Display"
+    REGION = "Region"
     GLYPHS = "Glyphs"
     LINES = "Lines"
     COLOUR = "Colour"
@@ -112,13 +113,14 @@ class OptionName(StrEnum):
     VALUES_FILE = "values_file"
     VALUES_VOLUME = "values_volume"
     REGION_FILTER = "region_filter"
-    INCLUDE_MASKS = "include_masks"
-    EXCLUDE_MASKS = "exclude_masks"
-    INCLUDE_SPHERES = "include_spheres"
-    EXCLUDE_SPHERES = "exclude_spheres"
-    WITHIN_MASKS = "within_masks"
-    WITHIN_SPHERES = "within_spheres"
+    REGIONS = "regions"
     ENDS_ONLY = "ends_only"
+    SHAPE = "shape"
+    ROLE = "role"
+    CENTRE = "centre"
+    RADIUS = "radius"
+    SIZE = "size"
+    MASK = "mask"
 
 
 @dataclass(frozen=True)
@@ -149,8 +151,12 @@ class Colour(str):
     """A colour as "#rrggbb", edited with a colour chooser."""
 
 
-class Spheres(tuple[tuple[float, float, float, float], ...]):
-    """Spheres as (x, y, z, radius) in world coordinates, mm."""
+class Position(tuple[float, float, float]):
+    """A point (x, y, z) in world coordinates, mm."""
+
+
+class Lengths(tuple[float, float, float]):
+    """Three lengths along x, y and z, mm, each positive."""
 
 
 def check_colour(value: object) -> None:
@@ -262,11 +268,18 @@ def _as_kind(info: OptionInfo, kind: type, value: object) -> object:
         value = int(value)
     elif kind in (str, Colour) and not isinstance(value, str):
         raise OptionError(f"{info.label} must be text; got {value!r}.")
-    elif kind is tuple:
-        value = _whole_numbers(info, value)
-    elif kind is Spheres:
-        value = _spheres(info, value)
+    elif kind in (tuple, Position, Lengths):
+        value = _as_tuple(info, kind, value)
     return value
+
+
+def _as_tuple(info: OptionInfo, kind: type, value: object) -> object:
+    """Returns value as whole numbers, a Position or Lengths, as kind says."""
+    if kind is Position:
+        return Position(_three_numbers(info, value, positive=False))
+    if kind is Lengths:
+        return Lengths(_three_numbers(info, value, positive=True))
+    return _whole_numbers(info, value)
 
 
 def _check_range(info: OptionInfo, value: float) -> None:
@@ -289,29 +302,24 @@ def _whole_numbers(info: OptionInfo, value: object) -> tuple[int, ...]:
     return tuple(sorted({int(v) for v in values}))
 
 
-def _spheres(info: OptionInfo, value: object) -> Spheres:
-    """Returns a collection of (x, y, z, radius) as Spheres, in the order given."""
-    error = OptionError(
-        f"{info.label} must be spheres as (x, y, z, radius) in mm, each a finite "
-        f"number and the radius positive; got {value!r}."
-    )
+def _three_numbers(
+    info: OptionInfo, value: object, *, positive: bool
+) -> tuple[float, float, float]:
+    """Returns three finite numbers as floats; with positive, each above 0."""
+    need = "positive numbers" if positive else "finite numbers"
+    error = OptionError(f"{info.label} must be three {need} (mm); got {value!r}.")
     if isinstance(value, (str, bytes)) or not isinstance(value, Iterable):
         raise error
-    spheres: list[tuple[float, float, float, float]] = []
-    for sphere in value:
-        if isinstance(sphere, (str, bytes)) or not isinstance(sphere, Iterable):
-            raise error
-        numbers = list(sphere)
-        if len(numbers) != 4 or any(
-            isinstance(n, bool) or not isinstance(n, Real) or not math.isfinite(n)
-            for n in numbers
-        ):
-            raise error
-        x, y, z, radius = (float(n) for n in numbers)
-        if radius <= 0:
-            raise error
-        spheres.append((x, y, z, radius))
-    return Spheres(spheres)
+    numbers = list(value)
+    if len(numbers) != 3 or any(
+        isinstance(n, bool) or not isinstance(n, Real) or not math.isfinite(n)
+        for n in numbers
+    ):
+        raise error
+    x, y, z = (float(n) for n in numbers)
+    if positive and min(x, y, z) <= 0:
+        raise error
+    return (x, y, z)
 
 
 def _check_lookup_table(value: object) -> None:
@@ -504,6 +512,9 @@ class RegionRole(StrEnum):
     WITHIN = "within"  # streamlines stay inside it
 
 
+REGION_ROLES: tuple[RegionRole, ...] = tuple(RegionRole)
+
+
 # The defaults new tractograms start with; the Settings panel changes them.
 POINTS_PER_STREAMLINE: Final = 20
 SLAB_THICKNESS: Final = 5.0  # mm, centred on the slice
@@ -597,49 +608,13 @@ class TractogramOptions(ItemOptions):
         help="Tests only the first and last point of each streamline against the "
         "regions, to keep the streamlines that start or end in them.",
     )
-    include_masks: tuple[int, ...] = option(
+    # The region items this tractogram is filtered by; each item gives its role.
+    regions: tuple[int, ...] = option(
         (),
-        "Include masks",
+        "Regions",
         per_item=True,
         panel=False,
         item_ref=True,
-        group=OptionGroup.REGIONS,
-    )
-    exclude_masks: tuple[int, ...] = option(
-        (),
-        "Exclude masks",
-        per_item=True,
-        panel=False,
-        item_ref=True,
-        group=OptionGroup.REGIONS,
-    )
-    include_spheres: Spheres = option(
-        Spheres(),
-        "Include spheres",
-        per_item=True,
-        panel=False,
-        group=OptionGroup.REGIONS,
-    )
-    exclude_spheres: Spheres = option(
-        Spheres(),
-        "Exclude spheres",
-        per_item=True,
-        panel=False,
-        group=OptionGroup.REGIONS,
-    )
-    within_masks: tuple[int, ...] = option(
-        (),
-        "Within masks",
-        per_item=True,
-        panel=False,
-        item_ref=True,
-        group=OptionGroup.REGIONS,
-    )
-    within_spheres: Spheres = option(
-        Spheres(),
-        "Within spheres",
-        per_item=True,
-        panel=False,
         group=OptionGroup.REGIONS,
     )
     slab: bool = option(
@@ -694,6 +669,101 @@ class TractogramOptions(ItemOptions):
         help="Draws the streamlines as capsules of the tube radius, ray traced "
         "through a voxel grid on the GPU, with shadows; below full opacity, every "
         "layer shows in order.",
+    )
+
+
+class RegionShape(StrEnum):
+    """What a region item is: a sphere, a box, or a mask image."""
+
+    SPHERE = "sphere"
+    BOX = "box"
+    MASK = "mask"  # the non-zero voxels of an image item
+
+
+REGION_SHAPES: tuple[RegionShape, ...] = tuple(RegionShape)
+# The colour a region of each role starts with; they differ in lightness as well
+# as in hue, so they stay apart in grey.
+ROLE_COLOURS: Final = {
+    RegionRole.INCLUDE: Colour("#26b5a5"),
+    RegionRole.EXCLUDE: Colour("#ff9a3c"),
+    RegionRole.WITHIN: Colour("#8a5cd6"),
+}
+# The radius of the first sphere and the size of the first box, mm.
+SPHERE_RADIUS: Final = 5.0
+BOX_SIZE: Final = Lengths((10.0, 10.0, 10.0))
+
+
+@dataclass(frozen=True)
+class RegionOptions(ItemOptions):
+    """A region's options: its shape, role, place and size, and how it is drawn.
+
+    A sphere uses the centre and the radius, a box the centre and the size, and a
+    mask region names the image whose non-zero voxels it is.
+    """
+
+    opacity_3d: float = option(
+        0.25,
+        "Opacity (3D)",
+        minimum=0.0,
+        maximum=1.0,
+        step=0.01,
+        scope=Scope.THREE_D,
+        group=OptionGroup.DISPLAY,
+    )
+    shape: RegionShape = option(
+        RegionShape.SPHERE,
+        "Shape",
+        choices=REGION_SHAPES,
+        per_item=True,
+        panel=False,
+        group=OptionGroup.REGION,
+    )
+    role: RegionRole = option(
+        RegionRole.INCLUDE,
+        "Role",
+        choices=REGION_ROLES,
+        group=OptionGroup.REGION,
+        help="Include keeps the streamlines that pass through the region, exclude "
+        "drops them, and within keeps those that stay inside it.",
+    )
+    colour: Colour = option(
+        ROLE_COLOURS[RegionRole.INCLUDE],
+        "Colour",
+        check=check_colour,
+        group=OptionGroup.REGION,
+        help="Starts as the role's colour and follows the role until changed.",
+    )
+    centre: Position = option(
+        Position((0.0, 0.0, 0.0)),
+        "Centre (mm)",
+        per_item=True,
+        panel=False,
+        group=OptionGroup.REGION,
+    )
+    radius: float = option(
+        SPHERE_RADIUS,
+        "Radius (mm)",
+        minimum=0.1,
+        maximum=500.0,
+        step=0.5,
+        per_item=True,
+        group=OptionGroup.REGION,
+        help="The radius of a sphere region.",
+    )
+    size: Lengths = option(
+        BOX_SIZE,
+        "Size (mm)",
+        per_item=True,
+        panel=False,
+        group=OptionGroup.REGION,
+    )
+    mask: int | None = option(
+        None,
+        "Mask",
+        per_item=True,
+        panel=False,
+        item_ref=True,
+        group=OptionGroup.REGION,
     )
 
 

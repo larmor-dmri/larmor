@@ -72,14 +72,17 @@ into these groups:
 
 - **Items**: `load`, `load_matlab`, `remove`, `save_item`, `save_session`, `load_session`.
 - **Options**: `set`, `set_default`, `labels`, `item_choices`, `data_choices`.
-- **Tractogram regions**: `add_mask`, `add_sphere`, `clear_regions`, `kept_streamlines`.
+- **Regions**: `add_sphere`, `add_box`, `add_mask`, `apply_region`, `clear_regions`,
+  `kept_streamlines`, `save_kept`.
 - **Views**: `select`, `move_cursor`, `step_slice`, `select_view`, `step_volume`, `zoom`, `pan`,
   `reset_camera`, `rotate_camera`, `set_camera`, `set_convention`, `view_centre`, `readout`,
   `toggle_maximised`, `toggle_overlay`, `toggle_crosshair`, `set_tool`.
+- **Detail windows**: `open_detail`, `move_detail`, `close_detail`, `set_detail`, `save_detail`,
+  `save_detail_figure`.
 - **Phantoms**: `new_phantom`, `close_phantom`, `set_phantom_grid`, `set_tissue`, `set_compartments`,
   `remove_tissue`, `set_tissue_map`, `set_background_tissue`, `set_scan`, `start_bundle`, `add_bundle_point`,
-  `remove_bundle_point`, `set_bundle_points`, `finish_bundle`, `cancel_bundle`, `edit_bundle`, `use_as_bundle`,
-  `set_bundle`, `show_proxy`, `show_grid_box`, `check_phantom`, `set_run_folder`, `save_phantom`, `load_phantom`,
+  `add_bundle_stroke`, `remove_bundle_point`, `set_bundle_points`, `finish_bundle`, `cancel_bundle`,
+  `edit_bundle`, `use_as_bundle`, `set_bundle`, `show_proxy`, `show_grid_box`, `check_phantom`, `set_run_folder`, `save_phantom`, `load_phantom`,
   `run_phantom`, `open_simulation`.
 - **Images**: `screenshot`, `screenshot_views`, `record_rotation`. The agent sees the images it takes.
 - **Scene**: `scene` lists the items, with the ids the other tools name them by, and the state of the views.

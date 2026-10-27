@@ -22,6 +22,7 @@ from larmor.viewer.render.fod_adapter import FodAdapter
 from larmor.viewer.render.navigation import Navigation
 from larmor.viewer.render.peaks_adapter import PeaksAdapter
 from larmor.viewer.render.phantom_guides import PhantomGuides
+from larmor.viewer.render.regions_guides import DetailBoxes, RegionGuides
 from larmor.viewer.render.surface_adapter import SurfaceAdapter
 from larmor.viewer.render.tractogram_adapter import (
     SLAB_BUDGET,
@@ -67,6 +68,8 @@ class SceneRenderer:
         self.annotations = Annotations(viewer, views)
         self.view_labels = ViewLabels(viewer, views)
         self.phantom_guides = PhantomGuides(viewer, views)
+        self.region_guides = RegionGuides(viewer, views)
+        self.detail_boxes = DetailBoxes(viewer, views)
         for view in views.values():
             view.show_overlay(viewer.scene.view.overlay_visible)
         self._unsubscribe = viewer.scene.subscribe(self._on_event)
@@ -105,7 +108,7 @@ class SceneRenderer:
         self._noticed = notices
 
     def _tell(self, text: str) -> None:
-        """Logs and hands out a message for the user, such as streamlines kept."""
+        """Logs and hands out a message for the user, such as a filter that failed."""
         LarmorLogger.info(text)
         for callback in list(self._notice_subscribers):
             callback(text)
@@ -116,7 +119,7 @@ class SceneRenderer:
             rank = RANK[item.category]
             order = rank * 1_000_000 + float(item.id)
             if item.category == Category.TRACTOGRAMS:
-                # Told the number of streamlines its regions keep.
+                # Tells the user when its regions cannot be applied.
                 self.adapters[item.id] = TractogramAdapter(
                     item, self.views, self.viewer, order, self._tell
                 )
@@ -132,6 +135,8 @@ class SceneRenderer:
         self.annotations.on_event(event)
         self.view_labels.on_event(event)
         self.phantom_guides.on_event(event)
+        self.region_guides.on_event(event)
+        self.detail_boxes.on_event(event)
         if (
             isinstance(event, ViewStateChanged)
             and event.name == ViewField.OVERLAY_VISIBLE
@@ -166,7 +171,7 @@ class SceneRenderer:
             # The tractograms it is a mask of filter their streamlines again.
             for other in self.adapters.values():
                 if isinstance(other, TractogramAdapter) and event.item.id in (
-                    mask_ids(other.item)
+                    mask_ids(self.viewer.scene, other.item)
                 ):
                     other.refilter()
             self._give_notices()
@@ -197,3 +202,5 @@ class SceneRenderer:
         self.annotations.close()
         self.view_labels.close()
         self.phantom_guides.close()
+        self.region_guides.close()
+        self.detail_boxes.close()

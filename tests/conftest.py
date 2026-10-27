@@ -35,6 +35,7 @@ if any(
         "viewer/test_annotations.py",
         "viewer/test_keys.py",
         "viewer/test_view_input.py",
+        "viewer/test_view_tools.py",
         "viewer/test_settings_panel.py",
         "viewer/test_redraws.py",
         "viewer/test_style.py",
@@ -64,6 +65,8 @@ if importlib.util.find_spec("pygfx") is None:
         "viewer/test_screenshot.py",
         "viewer/test_worker.py",
         "viewer/test_view_labels.py",
+        "viewer/test_render_regions.py",
+        "viewer/test_detail_renderer.py",
     ]
 if importlib.util.find_spec("mcp") is None:
     collect_ignore += ["viewer/test_mcp_server.py"]
@@ -93,6 +96,7 @@ QT_WIDGET_TESTS = {
     "test_session_window.py",
     "test_settings_panel.py",
     "test_view_input.py",
+    "test_view_tools.py",
     "test_window.py",
 }
 

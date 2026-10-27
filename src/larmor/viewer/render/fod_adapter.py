@@ -30,7 +30,7 @@ from larmor.viewer.render.glyphs import (
     sphere,
 )
 from larmor.viewer.render.tractogram_adapter import QUEUE_2D
-from larmor.viewer.render.view import ViewRenderer
+from larmor.viewer.render.view import Vec3, ViewRenderer
 from larmor.viewer.render.volume_3d import PLANES
 from larmor.viewer.render.worker import Worker
 
@@ -46,9 +46,14 @@ REBUILDING = (
 # A thread per 2D view, so the three views' glyphs are made together.
 _POOL = ThreadPoolExecutor(max_workers=len(PLANES), thread_name_prefix="larmor-fod")
 
+# The voxels glyphs are built for along a slice's two other axes, lowest first,
+# as `slice_glyphs` takes them; None for the whole slice.
+type Crop = tuple[tuple[int, int], tuple[int, int]] | None
 # What a view's glyphs are made from, the slice (voxel axis and index, None outside
-# the grid) and the options.
-type Key = tuple[tuple[int, int] | None, float, GlyphScaling, float, float, str, int]
+# the grid), the options and the crop.
+type Key = tuple[
+    tuple[int, int] | None, float, GlyphScaling, float, float, str, int, Crop
+]
 
 
 class FodAdapter(Adapter):
@@ -65,10 +70,19 @@ class FodAdapter(Adapter):
         views: dict[ViewKind, ViewRenderer],
         viewer: Viewer,
         order: float,
+        box: tuple[Vec3, Vec3] | None = None,
+        detail: int | None = None,
     ) -> None:
-        """Adds an empty mesh to each 2D view and asks for its glyphs."""
+        """Adds an empty mesh to each 2D view and asks for its glyphs.
+
+        With box, a world box (lowest and highest corner, mm), only the glyphs in
+        it are built, as a detail window needs; detail replaces the item's
+        sphere detail.
+        """
         super().__init__(item, views, viewer, order)
         assert isinstance(item.data, Volume)
+        self.box = box
+        self.detail = detail
         self.meshes: dict[ViewKind, gfx.Mesh] = {}
         self._workers: dict[ViewKind, Worker] = {}
         self._asked: dict[ViewKind, Key | None] = {}  # the glyphs last asked for
@@ -110,6 +124,11 @@ class FodAdapter(Adapter):
                 self._request()  # only the views whose slice changed
             elif event.name == ViewField.CONVENTION:
                 self._place()
+
+    def set_box(self, box: tuple[Vec3, Vec3] | None, detail: int | None) -> None:
+        """Builds the glyphs in another world box, at another sphere detail."""
+        self.box, self.detail = box, detail
+        self._request()
 
     def close(self) -> None:
         """Removes the meshes and drops the work in progress."""
@@ -162,6 +181,9 @@ class FodAdapter(Adapter):
         cursor = self.viewer.scene.view.cursor
         where = slice_index(volume.affine, volume.grid.shape, PLANES[kind], cursor)
         o = self._options()
+        crop = None
+        if self.box is not None and where is not None:
+            crop = _crop(volume.affine, where[0], self.box)
         return (
             where,
             o.scale,
@@ -169,7 +191,8 @@ class FodAdapter(Adapter):
             o.threshold,
             o.anisotropy,
             o.basis,
-            o.detail,
+            o.detail if self.detail is None else self.detail,
+            crop,
         )
 
     def _request(self) -> None:
@@ -187,13 +210,13 @@ class FodAdapter(Adapter):
             plane = (axis, float(self.viewer.scene.view.cursor[axis]))
             worker.submit(
                 partial(self._build, key, plane),
-                partial(self._take, kind, key[-1]),
+                partial(self._take, kind, key[6]),
                 partial(self._failed, kind, key),
             )
 
     def _build(self, key: Key, plane: tuple[int, float]) -> Glyphs:
         """Makes a slice's glyphs; runs in the background."""
-        where, scale, scaling, threshold, anisotropy, basis, detail = key
+        where, scale, scaling, threshold, anisotropy, basis, detail, crop = key
         volume = self.item.data
         assert isinstance(volume, Volume)
         if where is None:
@@ -212,6 +235,7 @@ class FodAdapter(Adapter):
             image_amplitude=largest if scaling == GlyphScaling.IMAGE else None,
             anisotropy=anisotropy,
             cursor_plane=plane,
+            crop=crop,
         )
 
     def _image_amplitude(self, basis: str, detail: int) -> float:
@@ -261,6 +285,30 @@ class FodAdapter(Adapter):
         """Forgets a failed request, so the glyphs are asked for again."""
         if self._asked[kind] == key:
             self._asked[kind] = None  # asked again next time
+
+
+def _crop(affine: np.ndarray, axis: int, box: tuple[Vec3, Vec3]) -> Crop:
+    """Returns the voxels of a grid within a world box, along the two axes but axis.
+
+    A voxel counts when its centre is inside the box.
+    """
+    inverse = np.linalg.inv(affine)
+    corners = np.array(
+        [
+            [box[i][0], box[j][1], box[k][2]]
+            for i in (0, 1)
+            for j in (0, 1)
+            for k in (0, 1)
+        ]
+    )
+    voxels = corners @ inverse[:3, :3].T + inverse[:3, 3]
+    first, second = (a for a in range(3) if a != axis)
+    low = np.ceil(voxels.min(axis=0) - 1e-6).astype(int)
+    high = np.floor(voxels.max(axis=0) + 1e-6).astype(int) + 1
+    return (
+        (int(low[first]), int(high[first])),
+        (int(low[second]), int(high[second])),
+    )
 
 
 def empty_geometry() -> gfx.Geometry:

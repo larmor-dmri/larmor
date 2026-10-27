@@ -6,7 +6,7 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QObject, QPoint, QSignalBlocker, Qt, QTimer
+from PySide6.QtCore import QObject, QSignalBlocker, Qt, QTimer
 from PySide6.QtGui import QAction, QCloseEvent, QShowEvent
 from PySide6.QtWidgets import (
     QFileDialog,
@@ -28,7 +28,7 @@ from larmor.viewer.mcp_server import (
     PortInUseError,
 )
 from larmor.viewer.model.breakdown import title
-from larmor.viewer.model.item import Category, Item, ItemId
+from larmor.viewer.model.item import Category, Item, ItemId, ViewKind
 from larmor.viewer.model.matlab_import import (
     LoadAs,
     MatlabPreset,
@@ -80,6 +80,7 @@ from larmor.viewer.qt.registration_dialog import RegistrationDialog
 from larmor.viewer.qt.screenshot_panel import ScreenshotPanel
 from larmor.viewer.qt.settings_panel import McpSwitch, SettingsPanel
 from larmor.viewer.qt.shortcuts import ShortcutsDialog, shortcut_actions
+from larmor.viewer.qt.view_menu import build_view_menu, connect_views
 from larmor.viewer.qt.views import ViewGrid
 from larmor.viewer.render.scene_renderer import SceneRenderer
 
@@ -177,7 +178,9 @@ class MainWindow(QMainWindow):
             view_input.refused.connect(
                 lambda text: status_bar.showMessage(text, NOTICE_MS)
             )
-            view_input.menu_requested.connect(self._popup_view_menu)
+        connect_views(
+            self, self.viewer, self.views.inputs.values(), self.show_breakdown_at
+        )
         # The phantom's rebuilds wait for the next frame, so that several point
         # edits in one frame draw the bundle once. The viewer outlives the window.
         self.frames = FrameScheduler(self)
@@ -414,10 +417,14 @@ class MainWindow(QMainWindow):
         filters: dict[str, Category | None] = {
             f"{kind.label} ({kind.patterns()})": category
             for category, kind in REGISTRY.items()
+            if kind.from_files
         }
         filters[MATLAB_FILTER] = None
         current = _category_of(self.viewer, self.viewer.scene.view.selected)
-        chosen = next(f for f, c in filters.items() if c == current)
+        chosen = next(
+            (f for f, c in filters.items() if c == current), next(iter(filters))
+        )
+
         paths, chosen = QFileDialog.getOpenFileNames(
             self, "Open", "", ";;".join(filters), chosen
         )
@@ -620,19 +627,13 @@ class MainWindow(QMainWindow):
         except ValueError as e:
             self.statusBar().showMessage(str(e), NOTICE_MS)
 
-    def view_menu(self, position: tuple[float, float, float]) -> QMenu:
-        """Returns the context menu of a voxel of the phantom in a 2D view."""
-        menu = QMenu(self)
-        menu.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
-        here = menu.addAction("Signal breakdown here")
-        here.triggered.connect(lambda: self.show_breakdown_at(position))
-        return menu
-
-    def _popup_view_menu(
-        self, position: tuple[float, float, float], point: QPoint
-    ) -> None:
-        """Shows the context menu of a voxel at a point on the screen."""
-        self.view_menu(position).popup(point)
+    def view_menu(
+        self, position: tuple[float, float, float], kind: ViewKind = ViewKind.AXIAL
+    ) -> QMenu:
+        """Returns the right-click menu of a view at a world position."""
+        return build_view_menu(
+            self, self.viewer, kind, position, self.show_breakdown_at
+        )
 
     def new_phantom(self) -> None:
         """Starts a phantom on the views' grid, or the default box, and shows it."""
