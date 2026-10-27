@@ -7,6 +7,7 @@ from enum import StrEnum
 from larmor.viewer.model.camera import CameraPreset
 from larmor.viewer.model.item import VIEW_KINDS, ViewKind
 from larmor.viewer.model.phantom import drawable
+from larmor.viewer.model.view_state import Tool, Workspace
 from larmor.viewer.model.viewer import Viewer
 
 # The three 2D views.
@@ -38,12 +39,13 @@ class Command(StrEnum):
     OPEN = "open"
     OPEN_SESSION = "open_session"
     SAVE_SESSION = "save_session"
-    LAYERS = "layers"
-    OPTIONS = "options"
-    LABELS = "labels"
-    INSPECT_FOD = "inspect_fod"
-    SCREENSHOT = "screenshot"
-    PHANTOM = "phantom"
+    WORKSPACE_VIEW = "workspace_view"
+    WORKSPACE_SIMULATE = "workspace_simulate"
+    TOOL_CURSOR = "tool_cursor"
+    TOOL_SPHERE = "tool_sphere"
+    TOOL_BOX = "tool_box"
+    TOOL_ZOOM_BOX = "tool_zoom_box"
+    EXPORT = "export"
     NEW_BUNDLE = "new_bundle"
     FINISH_BUNDLE = "finish_bundle"
     REMOVE_POINT = "remove_point"
@@ -113,12 +115,30 @@ def _preset(preset: CameraPreset) -> Callable[[Viewer, ViewKind], None]:
     return lambda viewer, _: viewer.set_camera(ViewKind.THREE_D, preset)
 
 
-def _panel(
-    command: Command, keys: tuple[str, ...], name: str, what: str = ""
-) -> Shortcut:
-    """Returns a shortcut that shows or hides a panel of the window."""
-    text = f"Show or hide the {name} panel" + (f" ({what})" if what else "")
+def _window(command: Command, keys: tuple[str, ...], text: str) -> Shortcut:
+    """Returns a shortcut the window carries out, such as opening a sheet."""
     return Shortcut(command, keys, text, VIEW_KINDS, None, window=True)
+
+
+def _workspace(workspace: Workspace) -> Callable[[Viewer, ViewKind], None]:
+    """Returns an action that shows a workspace."""
+    return lambda viewer, _: viewer.set_workspace(workspace)
+
+
+def _tool(tool: Tool) -> Callable[[Viewer, ViewKind], None]:
+    """Returns an action that chooses a pointer tool."""
+    return lambda viewer, _: viewer.set_tool(tool)
+
+
+def _in_view(viewer: Viewer) -> bool:
+    """Tells whether the View workspace shows, whose tools the region keys choose."""
+    return viewer.scene.view.workspace == Workspace.VIEW
+
+
+def _new_bundle(viewer: Viewer, view: ViewKind) -> None:
+    """Starts drawing a bundle with the Draw bundle tool."""
+    viewer.start_bundle()
+    viewer.set_tool(Tool.DRAW_BUNDLE)
 
 
 def _drawing(viewer: Viewer) -> bool:
@@ -307,33 +327,62 @@ SHORTCUTS: dict[Command, Shortcut] = {
             None,
             window=True,
         ),
-        _panel(Command.LAYERS, ("Ctrl+1",), "Layers"),
-        _panel(Command.OPTIONS, ("Ctrl+2",), "Options"),
-        _panel(Command.LABELS, ("Ctrl+3",), "Labels", "the labels drawn in 3D"),
-        _panel(
-            Command.INSPECT_FOD,
-            ("Ctrl+4", "F"),
-            "Inspect FOD",
-            "the selected FOD at the crosshair, large",
+        Shortcut(
+            Command.WORKSPACE_VIEW,
+            ("Ctrl+1",),
+            "Show the View workspace: the scene tree and the inspector",
+            VIEW_KINDS,
+            _workspace(Workspace.VIEW),
         ),
-        _panel(
-            Command.SCREENSHOT,
+        Shortcut(
+            Command.WORKSPACE_SIMULATE,
+            ("Ctrl+2",),
+            "Show the Simulate workspace: the phantom editor's steps",
+            VIEW_KINDS,
+            _workspace(Workspace.SIMULATE),
+        ),
+        Shortcut(
+            Command.TOOL_CURSOR,
+            ("V",),
+            "Choose the Cursor tool: clicks and drags move the crosshair",
+            VIEW_KINDS,
+            _tool(Tool.CURSOR),
+        ),
+        Shortcut(
+            Command.TOOL_SPHERE,
+            ("O",),
+            "Choose the Sphere ROI tool (View workspace)",
+            VIEW_KINDS,
+            _tool(Tool.SPHERE),
+            enabled_when=_in_view,
+        ),
+        Shortcut(
+            Command.TOOL_BOX,
+            ("B",),
+            "Choose the Box ROI tool (View workspace)",
+            VIEW_KINDS,
+            _tool(Tool.BOX),
+            enabled_when=_in_view,
+        ),
+        Shortcut(
+            Command.TOOL_ZOOM_BOX,
+            ("Z",),
+            "Choose the Zoom box tool (View workspace)",
+            VIEW_KINDS,
+            _tool(Tool.ZOOM_BOX),
+            enabled_when=_in_view,
+        ),
+        _window(
+            Command.EXPORT,
             ("Ctrl+Shift+S",),
-            "Screenshots",
-            "views saved as images or a video",
-        ),
-        _panel(
-            Command.PHANTOM,
-            ("Ctrl+5",),
-            "Phantom",
-            "draw bundles, set tissues and the scan, run a simulation",
+            "Export the views as images or a video",
         ),
         Shortcut(
             Command.NEW_BUNDLE,
             ("N",),
             "Draw a new bundle: clicks in the 2D views add its points",
             VIEW_KINDS,
-            lambda viewer, _: viewer.start_bundle(),
+            _new_bundle,
         ),
         Shortcut(
             Command.FINISH_BUNDLE,
@@ -368,21 +417,17 @@ SHORTCUTS: dict[Command, Shortcut] = {
             None,
             window=True,
         ),
-        _panel(
+        _window(
             Command.SIGNAL_BREAKDOWN,
             ("Ctrl+6",),
-            "Signal breakdown",
-            "the signal of one voxel of the phantom, factor by factor",
+            "Show or hide the Signal breakdown of a voxel of the phantom",
         ),
-        _panel(Command.SETTINGS, ("Ctrl+,",), "Settings"),
-        _panel(Command.HELP, ("F1",), "Help", "the guides"),
-        Shortcut(
+        _window(Command.SETTINGS, ("Ctrl+,",), "Open the settings"),
+        _window(Command.HELP, ("F1",), "Open the help"),
+        _window(
             Command.HIDE_PANELS,
             ("Ctrl+0",),
-            "Hide all the panels, or show again the ones hidden",
-            VIEW_KINDS,
-            None,
-            window=True,
+            "Hide the panels either side of the views, or show them again",
         ),
         Shortcut(Command.QUIT, ("Ctrl+Q",), "Quit", VIEW_KINDS, None, window=True),
     )

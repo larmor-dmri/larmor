@@ -2,13 +2,14 @@
 
 import importlib.util
 import math
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import replace
 from enum import StrEnum
 from functools import partial
 from numbers import Real
 from pathlib import Path
-from typing import Any, Final
+from typing import TYPE_CHECKING, Any, Final
 
 import numpy as np
 
@@ -26,6 +27,11 @@ from larmor.viewer.model.camera import (
     Vec3,
     field_of_view,
     screen_axes,
+)
+from larmor.viewer.model.export import (
+    DEFAULT_SIZE,
+    ExportPreset,
+    find_preset,
 )
 from larmor.viewer.model.item import Category, Item, ItemId, ViewKind
 from larmor.viewer.model.labels import labels_in
@@ -104,8 +110,18 @@ from larmor.viewer.model.surface import (
     CURVATURES,
     SurfaceData,
 )
-from larmor.viewer.model.view_state import Tool, ViewField, ViewState
+from larmor.viewer.model.view_state import (
+    Layout,
+    Tool,
+    ViewField,
+    ViewState,
+    Workspace,
+)
 from larmor.viewer.system import INSTALL_HINT, ViewerUnavailableError
+
+if TYPE_CHECKING:
+    # Only for annotations: the model itself never loads pygfx.
+    from larmor.viewer.render.offscreen import OffscreenRenderer
 
 
 class _Mixed:
@@ -169,6 +185,12 @@ SAVABLE: Final = (
     Category.FODS,
     Category.PEAKS,
 )
+
+# The pointer tools each workspace offers.
+WORKSPACE_TOOLS: Final = {
+    Workspace.VIEW: (Tool.CURSOR, Tool.SPHERE, Tool.BOX, Tool.ZOOM_BOX),
+    Workspace.SIMULATE: (Tool.CURSOR, Tool.DRAW_BUNDLE),
+}
 
 # Set on the methods that agents may call; see `agent_action`.
 AGENT_ACTION = "agent_action"
@@ -2559,6 +2581,8 @@ class Viewer:
         self.scene.set_view(ViewField.MAXIMISED, state.maximised)
         self.scene.set_view(ViewField.OVERLAY_VISIBLE, state.overlay_visible)
         self.scene.set_view(ViewField.CROSSHAIR_VISIBLE, state.crosshair_visible)
+        self.scene.set_view(ViewField.WORKSPACE, state.workspace)
+        self.scene.set_view(ViewField.LAYOUT, state.layout)
         self.move_cursor(cursor)
 
     @agent_action
@@ -2580,6 +2604,39 @@ class Viewer:
                 default.
         """
         self.scene.set_view(ViewField.TOOL, Tool(tool))
+
+    @agent_action
+    def set_workspace(self, workspace: Workspace) -> None:
+        """Shows the window's View or Simulate workspace.
+
+        A pointer tool the new workspace does not offer goes back to the cursor.
+
+        Args:
+            workspace: `Workspace.VIEW` for the scene tree and the inspector, or
+                `Workspace.SIMULATE` for the phantom editor's steps.
+
+        Raises:
+            TypeError: If workspace is not a Workspace.
+        """
+        _require(workspace, Workspace)
+        if self.scene.view.tool not in WORKSPACE_TOOLS[workspace]:
+            self.scene.set_view(ViewField.TOOL, Tool.CURSOR)
+        self.scene.set_view(ViewField.WORKSPACE, workspace)
+
+    @agent_action
+    def set_layout(self, layout: Layout) -> None:
+        """Lays the four views out in a grid, as one large and three small, or alone.
+
+        Args:
+            layout: `Layout.GRID` (two by two), `Layout.ONE_PLUS_THREE` (the
+                selected view large on the left, the others stacked on the
+                right) or `Layout.ONE` (the selected view only).
+
+        Raises:
+            TypeError: If layout is not a Layout.
+        """
+        _require(layout, Layout)
+        self.scene.set_view(ViewField.LAYOUT, layout)
 
     @agent_action
     def toggle_crosshair(self) -> None:
@@ -2643,13 +2700,8 @@ class Viewer:
         if view is not None:
             _require(view, ViewKind)
         _check_screenshot(overlay, transparent)
-        # Imported here: the model itself never loads pygfx.
-        from larmor.viewer.render.offscreen import OffscreenRenderer, check_image
-
-        # Before the renderer, which starts the GPU and uploads the scene.
-        check_image(Path(path), transparent)
-        with OffscreenRenderer(self, size, scale) as renderer:
-            return renderer.save(view, path, overlay=overlay, transparent=transparent)
+        preset = ExportPreset("", size, scale, overlay=overlay, transparent=transparent)
+        return self.export_image(preset, path, view)
 
     @agent_action
     def screenshot_views(
@@ -2690,12 +2742,8 @@ class Viewer:
             >>> viewer.screenshot_views("fig.png", scale=2)
         """
         _check_screenshot(overlay, transparent)
-        from larmor.viewer.render.offscreen import OffscreenRenderer, check_image
-
-        # Before the renderer, which starts the GPU and uploads the scene.
-        check_image(Path(path), transparent)
-        with OffscreenRenderer(self, size, scale) as renderer:
-            return renderer.save_views(path, overlay=overlay, transparent=transparent)
+        preset = ExportPreset("", size, scale, overlay=overlay, transparent=transparent)
+        return self.export_view_images(preset, path)
 
     @agent_action
     def record_rotation(
@@ -2755,20 +2803,251 @@ class Viewer:
             >>> viewer.record_rotation("half.gif", speed=45, duration=4, fps=20)
         """
         _check_screenshot(overlay, transparent)
-        from larmor.viewer.render.offscreen import OffscreenRenderer, check_video
+        preset = ExportPreset("", size, scale, overlay=overlay, transparent=transparent)
+        return self.export_video(
+            preset,
+            path,
+            speed=speed,
+            duration=duration,
+            fps=fps,
+            on_progress=on_progress,
+        )
+
+    @agent_action
+    def export(
+        self, preset: str, path: str | Path, view: ViewKind | None = None
+    ) -> Path:
+        """Draws one view, or the window's layout, off screen with an export preset.
+
+        The preset sets the size, the scale, the background, the information
+        overlay, the transparency, the 3D camera and the options given to the
+        items while the image is drawn; the scene is as it was afterwards. The
+        shipped presets are "Screen", "Figure", "Talk" and "Website", and the
+        Export sheet saves others in the settings folder.
+
+        Args:
+            preset: The preset's name.
+            path: The image file to write; its extension sets the format (.png,
+                .jpg, .tif, ...). An existing file is replaced.
+            view: The view to draw, or None for the window's layout, as in
+                `screenshot`.
+
+        Returns:
+            The path written.
+
+        Raises:
+            ViewerUnavailableError: If the viewer's dependencies are not installed.
+            TypeError: If view is neither a ViewKind nor None.
+            ValueError: If there is no such preset, the image is larger than
+                the GPU draws, or the extension is not an image format (or is
+                JPEG with a transparent background).
+            OSError: If the file cannot be written.
+
+        Example:
+            >>> viewer.export("Website", "slide.png", ViewKind.THREE_D)
+        """
+        if view is not None:
+            _require(view, ViewKind)
+        _check_screenshot(None, False)
+        return self.export_image(find_preset(preset), path, view)
+
+    @agent_action
+    def export_views(self, preset: str, path: str | Path) -> tuple[Path, ...]:
+        """Draws the three 2D views off screen with an export preset, a file each.
+
+        Args:
+            preset: The preset's name, as for `export`.
+            path: The name the files are made from, as in `screenshot_views`.
+
+        Returns:
+            The paths written: axial, coronal, sagittal.
+
+        Raises:
+            ViewerUnavailableError: If the viewer's dependencies are not installed.
+            ValueError: As for `export`.
+            OSError: If a file cannot be written.
+        """
+        _check_screenshot(None, False)
+        return self.export_view_images(find_preset(preset), path)
+
+    @agent_action
+    def export_rotation(
+        self,
+        preset: str,
+        path: str | Path,
+        *,
+        speed: float = ROTATION_SPEED,
+        duration: float = ROTATION_DURATION,
+        fps: int = ROTATION_FPS,
+    ) -> Path | None:
+        """Records the 3D view turning, off screen, with an export preset.
+
+        The turn starts from the preset's 3D camera, or from the 3D view's if
+        the preset has none.
+
+        Args:
+            preset: The preset's name, as for `export`.
+            path: The file to write, .webp or .gif, as in `record_rotation`.
+            speed: Degrees the scene turns per second.
+            duration: Seconds of video.
+            fps: Frames per second, a whole number; a GIF takes at most 50.
+
+        Returns:
+            The path written.
+
+        Raises:
+            ViewerUnavailableError: If the viewer's dependencies are not installed.
+            TypeError: As for `record_rotation`.
+            ValueError: If there is no such preset, or as for `record_rotation`.
+            OSError: If the file cannot be written.
+        """
+        _check_screenshot(None, False)
+        return self.export_video(
+            find_preset(preset), path, speed=speed, duration=duration, fps=fps
+        )
+
+    def export_image(
+        self,
+        preset: ExportPreset,
+        path: str | Path,
+        view: ViewKind | None = None,
+        *,
+        size: tuple[int, int] | None = None,
+    ) -> Path:
+        """Draws one view, or the window's layout, off screen as a preset says.
+
+        Args:
+            preset: The preset.
+            path: The image file to write.
+            view: The view, or None for the window's layout.
+            size: Each view's size in logical pixels when the preset has none;
+                `DEFAULT_SIZE` if None.
+
+        Returns:
+            The path written.
+
+        Raises:
+            ValueError: As for `export`.
+            OSError: If the file cannot be written.
+        """
+        from larmor.viewer.render.offscreen import check_image
 
         # Before the renderer, which starts the GPU and uploads the scene.
-        check_video(Path(path), speed, duration, fps, transparent)
-        with OffscreenRenderer(self, size, scale) as renderer:
+        check_image(Path(path), preset.transparent)
+        with self._export_renderer(preset, size) as renderer:
+            return renderer.save(
+                view, path, overlay=preset.overlay, transparent=preset.transparent
+            )
+
+    def export_view_images(
+        self,
+        preset: ExportPreset,
+        path: str | Path,
+        *,
+        size: tuple[int, int] | None = None,
+    ) -> tuple[Path, ...]:
+        """Draws the three 2D views off screen as a preset says, each into a file.
+
+        Returns:
+            The paths written: axial, coronal, sagittal.
+
+        Raises:
+            ValueError: As for `export`.
+            OSError: If a file cannot be written.
+        """
+        from larmor.viewer.render.offscreen import check_image
+
+        check_image(Path(path), preset.transparent)
+        with self._export_renderer(preset, size) as renderer:
+            return renderer.save_views(
+                path, overlay=preset.overlay, transparent=preset.transparent
+            )
+
+    def export_video(
+        self,
+        preset: ExportPreset,
+        path: str | Path,
+        *,
+        size: tuple[int, int] | None = None,
+        speed: float = ROTATION_SPEED,
+        duration: float = ROTATION_DURATION,
+        fps: int = ROTATION_FPS,
+        on_progress: Progress | None = None,
+    ) -> Path | None:
+        """Records the 3D view turning, off screen, as a preset says.
+
+        Returns:
+            The path written, or None if on_progress cancelled the video.
+
+        Raises:
+            ValueError: As for `record_rotation`.
+            OSError: If the file cannot be written.
+        """
+        from larmor.viewer.render.offscreen import check_video
+
+        check_video(Path(path), speed, duration, fps, preset.transparent)
+        with self._export_renderer(preset, size) as renderer:
             return renderer.save_rotation(
                 path,
                 speed,
                 duration,
                 fps,
-                overlay=overlay,
-                transparent=transparent,
+                overlay=preset.overlay,
+                transparent=preset.transparent,
                 on_progress=on_progress,
             )
+
+    @contextmanager
+    def _export_renderer(
+        self, preset: ExportPreset, size: tuple[int, int] | None
+    ) -> Iterator[OffscreenRenderer]:
+        """Yields an off-screen renderer that draws as a preset says."""
+        # Imported here: the model itself never loads pygfx.
+        from larmor.viewer.render.annotations import CROSSHAIR_COLOUR
+        from larmor.viewer.render.offscreen import OffscreenRenderer
+
+        shape = preset.size or size or DEFAULT_SIZE
+        with self.preset_options(preset):
+            with OffscreenRenderer(self, shape, preset.scale) as renderer:
+                if preset.background is not None:
+                    renderer.set_colours(preset.background, CROSSHAIR_COLOUR)
+                yield renderer
+
+    @contextmanager
+    def preset_options(self, preset: ExportPreset) -> Iterator[None]:
+        """Gives the items a preset's options and the 3D view its camera, for a block.
+
+        Each item of a category the preset names takes the options it has of
+        the preset's overrides; an option an item refuses is left as it is.
+        Every option and the camera are set back at the end of the block.
+
+        Args:
+            preset: The preset.
+        """
+        saved: list[tuple[ItemId, OptionName, object]] = []
+        camera = self.scene.view.cameras.three_d
+        try:
+            for category, values in preset.overrides.items():
+                for item in self.scene.in_category(category):
+                    for name, value in values.items():
+                        old = getattr(item.options, name, None)
+                        if old is None or old == value:
+                            continue
+                        try:
+                            self.set(item.id, name, value)
+                        except OptionError:
+                            continue
+                        saved.append((item.id, name, old))
+            if preset.camera is not None:
+                self._set_camera(ViewKind.THREE_D, preset.camera)
+            yield
+        finally:
+            present = {i.id for i in self.scene.items}
+            for item_id, name, old in reversed(saved):
+                if item_id in present:
+                    self.set(item_id, name, old)
+            if preset.camera is not None:
+                self._set_camera(ViewKind.THREE_D, camera)
 
     def _reference_grid(self) -> Grid | None:
         """Returns the grid the 2D views slice along, whose voxel is a slice step.
@@ -3033,6 +3312,8 @@ def _check_view_types(state: ViewState) -> None:
     if state.maximised is not None:
         _require(state.maximised, ViewKind)
     _require(state.convention, Convention)
+    _require(state.workspace, Workspace)
+    _require(state.layout, Layout)
     for flag in (state.overlay_visible, state.crosshair_visible):
         if not isinstance(flag, bool):
             raise TypeError(f"A switch is True or False; got {flag!r}.")

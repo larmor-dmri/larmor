@@ -13,7 +13,13 @@ from larmor.viewer.model.item import Category, Item, ItemId, ViewKind
 from larmor.viewer.model.matlab_import import MatlabPart
 from larmor.viewer.model.registration import Registration
 from larmor.viewer.model.scene import Scene
-from larmor.viewer.model.view_state import Tool, ViewField, ViewState
+from larmor.viewer.model.view_state import (
+    Layout,
+    Tool,
+    ViewField,
+    ViewState,
+    Workspace,
+)
 
 # The format name a session file holds.
 FORMAT: Final = "larmor-viewer-session"
@@ -369,4 +375,6 @@ _VIEW_FIELDS: Final[
     ViewField.CAMERAS: _cameras,
     ViewField.FIELD_OF_VIEW: _field_of_view,
     ViewField.TOOL: lambda value, ids: Tool(_text(value)),
+    ViewField.WORKSPACE: lambda value, ids: Workspace(_text(value)),
+    ViewField.LAYOUT: lambda value, ids: Layout(_text(value)),
 }
