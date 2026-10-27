@@ -77,9 +77,9 @@ bundle gives them, while the dot, the ball, free water, the sphere and the powde
 
 To draw a bundle, choose **Draw bundle** in the toolbar, click **Draw (N)** on the Bundle step, or press **N**. There are then two ways
 to add control points in a 2D view, and you can mix them in one bundle. Freehand, the usual way, you press, drag
-along the path the bundle should take, and let go: the stroke is simplified to the points that keep its shape
-within about one voxel, at most 12 of them and always its first and last, and these are added after the points
-already there. Another stroke adds more points. To place control points one at a time, hold Ctrl (Cmd on macOS)
+along the path the bundle should take, and let go: the stroke becomes the fewest points spaced evenly along it
+whose bundle stays within about one voxel of the stroke, at most 12 of them and always its first and last, and
+these are added after the points already there. Another stroke adds more points. To place control points one at a time, hold Ctrl (Cmd on macOS)
 and click: each click adds a point at that place, while a Ctrl+drag still pans the view. Either way the points lie
 in the view's slice, and the crosshair moves to the last one, so the other views follow it. Points outside the
 grid box are left out, and the status bar says so when none is inside. A control point already placed can be

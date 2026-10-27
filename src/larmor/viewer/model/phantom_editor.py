@@ -841,63 +841,72 @@ class PhantomEditor:
 def simplify_stroke(
     points: Sequence[Vec3], tolerance: float, most: int = STROKE_POINTS
 ) -> list[Vec3]:
-    """Returns the points of a freehand stroke that keep its shape.
+    """Returns control points for a freehand stroke, evenly spaced along it.
 
-    The stroke is simplified by the Ramer-Douglas-Peucker method: a point is
-    kept when the stroke strays more than `tolerance` from the line between the
-    points kept around it. While more than `most` points are left, the
-    tolerance grows by half. The first and last points are always kept.
+    They are the fewest evenly spaced points, from 2 to `most` and always with
+    the stroke's first and last, whose bundle centreline (see
+    `centreline_spline`) stays within `tolerance` of the stroke; `most` points
+    when no fewer do.
 
     Args:
         points: The stroke, world mm, in order.
-        tolerance: How far the stroke may stray from the simplified line, mm.
+        tolerance: How far the centreline may stray from the stroke, mm.
         most: The most points returned, at least 2.
 
     Returns:
-        The points kept, in order; one point for a stroke that never moves.
-
-    References:
-        Douglas, D. H. and Peucker, T. K. Algorithms for the reduction of the
-        number of points required to represent a digitized line or its
-        caricature. Cartographica 10(2), 112-122 (1973).
-        doi:10.3138/FM57-6770-U75U-7727
+        The points, in order; one point for a stroke that never moves.
     """
     stroke = np.asarray(points, dtype=float).reshape(-1, 3)
     if len(stroke) == 0:
         return []
-    if np.all(np.linalg.norm(stroke - stroke[0], axis=1) == 0):
+    steps = np.linalg.norm(np.diff(stroke, axis=0), axis=1)
+    if not np.any(steps > 0):
         return [_vec3(stroke[0])]
+    stroke = np.vstack([stroke[:1], stroke[1:][steps > 0]])
+    arc = np.concatenate([[0.0], np.cumsum(steps[steps > 0])])
     limit = max(tolerance, 1e-9)
-    kept = _douglas_peucker(stroke, limit)
-    while len(kept) > max(most, 2):
-        limit *= 1.5
-        kept = _douglas_peucker(stroke, limit)
-    return [_vec3(stroke[i]) for i in kept]
+    # The stroke resampled finely enough that nearest samples measure distances.
+    count = int(min(np.ceil(arc[-1] / (limit / 4)), 4000)) + 1
+    dense = _along(stroke, arc, np.linspace(0.0, arc[-1], count))
+    chosen = stroke[[0, -1]]
+    for n in range(2, max(most, 2) + 1):
+        chosen = _along(stroke, arc, np.linspace(0.0, arc[-1], n))
+        chosen[0], chosen[-1] = stroke[0], stroke[-1]
+        if _follows(chosen, dense, limit):
+            break
+    return [_vec3(p) for p in chosen]
 
 
-def _douglas_peucker(stroke: np.ndarray, tolerance: float) -> list[int]:
-    """Returns the indices the Ramer-Douglas-Peucker method keeps, in order."""
-    keep = np.zeros(len(stroke), dtype=bool)
-    keep[0] = keep[-1] = True
-    spans = [(0, len(stroke) - 1)]
-    while spans:
-        first, last = spans.pop()
-        if last - first < 2:
-            continue
-        a, b = stroke[first], stroke[last]
-        inner = stroke[first + 1 : last]
-        line = b - a
-        length = float(np.linalg.norm(line))
-        if length == 0:
-            distances = np.linalg.norm(inner - a, axis=1)
-        else:
-            distances = np.linalg.norm(np.cross(inner - a, line / length), axis=1)
-        far = int(np.argmax(distances))
-        if distances[far] > tolerance:
-            middle = first + 1 + far
-            keep[middle] = True
-            spans += [(first, middle), (middle, last)]
-    return [int(i) for i in np.flatnonzero(keep)]
+def _along(stroke: np.ndarray, arc: np.ndarray, at: np.ndarray) -> np.ndarray:
+    """Returns the points of the stroke at the arc lengths `at`, (N, 3).
+
+    Args:
+        stroke: The stroke's points, (M, 3).
+        arc: The arc length at each of them, (M,), increasing.
+        at: The arc lengths wanted, (N,).
+    """
+    return np.column_stack([np.interp(at, arc, stroke[:, k]) for k in range(3)])
+
+
+def _follows(control: np.ndarray, dense: np.ndarray, tolerance: float) -> bool:
+    """Returns whether the centreline through `control` keeps close to a stroke.
+
+    Every point of the centreline must be within `tolerance` of the finely
+    resampled stroke `dense`, and every point of `dense` within `tolerance` of
+    the centreline.
+    """
+    from scipy.spatial import cKDTree
+
+    # Imported here, so that opening the viewer does not load the simulation.
+    from larmor.simulation.bundles import centreline_spline
+
+    if np.any(np.linalg.norm(np.diff(control, axis=0), axis=1) == 0):
+        return False
+    centreline, _ = centreline_spline(control)
+    curve = centreline(np.linspace(0.0, 1.0, len(dense)))
+    stray = cKDTree(dense).query(curve)[0].max()
+    missed = cKDTree(curve).query(dense)[0].max()
+    return bool(max(stray, missed) <= tolerance)
 
 
 def _vec3(point: np.ndarray) -> Vec3:

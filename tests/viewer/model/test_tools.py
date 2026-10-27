@@ -2,7 +2,9 @@ import math
 
 import numpy as np
 import pytest
+from scipy.spatial import cKDTree
 
+from larmor.simulation.bundles import centreline_spline
 from larmor.viewer import Tool, Viewer
 from larmor.viewer.model.phantom_editor import simplify_stroke
 from larmor.viewer.model.shortcuts import Command, run
@@ -18,11 +20,22 @@ def test_a_straight_stroke_keeps_its_two_ends() -> None:
     assert simplify_stroke(stroke, 1.0) == [(0.0, 0.0, 0.0), (29.0, 58.0, 0.0)]
 
 
-def test_a_corner_is_kept_and_wiggles_within_the_tolerance_are_not() -> None:
-    wiggle = [(float(x), 0.3 * (-1) ** x, 0.0) for x in range(11)]
-    up = [(10.0, float(y), 0.0) for y in range(1, 11)]
-    kept = simplify_stroke(wiggle + up, 1.0)
-    assert [tuple(np.round(p)) for p in kept] == [(0, 0, 0), (10, 0, 0), (10, 10, 0)]
+def test_an_arc_gives_evenly_spaced_points_whose_centreline_follows_it() -> None:
+    # A parabola, sampled densely near one end, so the samples are uneven.
+    x = 30.0 * np.linspace(0.0, 1.0, 300) ** 2
+    stroke = [(float(a), a * a / 20.0, 0.0) for a in x]
+    kept = np.array(simplify_stroke(stroke, 0.5))
+    assert 2 < len(kept) <= 12
+    fine = np.linspace(0.0, 30.0, 100001)
+    arc = np.concatenate(
+        [[0.0], np.cumsum(np.hypot(np.diff(fine), np.diff(fine**2 / 20.0)))]
+    )
+    gaps = np.diff(np.interp(kept[:, 0], fine, arc))
+    np.testing.assert_allclose(gaps, gaps.mean(), rtol=0.01)
+    centreline, _ = centreline_spline(kept)
+    curve = centreline(np.linspace(0.0, 1.0, 2000))
+    nearest = cKDTree(np.column_stack([fine, fine**2 / 20.0, 0 * fine]))
+    assert nearest.query(curve)[0].max() <= 0.5
 
 
 def test_a_long_curve_gives_at_most_twelve_points_with_both_ends() -> None:

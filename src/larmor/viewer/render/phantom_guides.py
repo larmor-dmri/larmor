@@ -4,8 +4,14 @@ import numpy as np
 import pygfx as gfx
 
 from larmor.types import Grid
-from larmor.viewer.model.events import BreakdownChanged, Event, PhantomChanged
+from larmor.viewer.model.events import (
+    BreakdownChanged,
+    Event,
+    PhantomChanged,
+    ViewStateChanged,
+)
 from larmor.viewer.model.item import ViewKind
+from larmor.viewer.model.view_state import ViewField, Workspace
 from larmor.viewer.model.viewer import Viewer
 from larmor.viewer.render.view import ViewRenderer
 
@@ -40,10 +46,15 @@ class PhantomGuides:
         self._draw()
 
     def on_event(self, event: Event) -> None:
-        """Draws the guides again when the phantom or the pinned voxel changes."""
-        if isinstance(event, PhantomChanged) or (
+        """Redraws when the phantom, the workspace or the pinned voxel changes."""
+        if (
+            isinstance(event, PhantomChanged)
+            or (
+                isinstance(event, ViewStateChanged)
+                and event.name == ViewField.WORKSPACE
+            )
             # Not for every voxel the pointer passes over.
-            isinstance(event, BreakdownChanged) and self._pinned() != self._marked
+            or (isinstance(event, BreakdownChanged) and self._pinned() != self._marked)
         ):
             self._draw()
 
@@ -65,7 +76,10 @@ class PhantomGuides:
     def _draw(self) -> None:
         """Draws the box, the bundle's points and the pinned voxel again."""
         state = self.viewer.scene.phantom
-        boxed = state is not None and (state.show_box or state.draft is not None)
+        drawing = state is not None and state.draft is not None
+        # Outside the Simulate workspace the box is outlined only while drawing.
+        simulating = self.viewer.scene.view.workspace == Workspace.SIMULATE
+        boxed = state is not None and (drawing or (simulating and state.show_box))
         corners = _corners(state.grid) if state is not None and boxed else None
         points = (
             np.zeros((0, 3), np.float32)

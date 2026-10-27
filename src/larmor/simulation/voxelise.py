@@ -340,11 +340,10 @@ def _sample_tube(
 
     # The same centreline as the streamlines', so they stay inside the tube.
     spline, _ = centreline_spline(control)
-    length = float(np.linalg.norm(np.diff(control, axis=0), axis=1).sum())
     voxel_sizes = np.linalg.norm(grid.affine[:3, :3], axis=0)
     fan_start, fan_end, sharpness = fan
     step = min(float(voxel_sizes.min()), radius) / 20
-    count = max(int(np.ceil(length * 1.5 / step)), 50)
+    count = max(int(np.ceil(spline.length / step)) + 1, 50)
     u = np.linspace(0.0, 1.0, count)
     centre = spline(u)
     tangent = spline.derivative()(u)

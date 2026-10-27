@@ -19,7 +19,7 @@ For a first run with no code, see the [quick start](../quick-start.md).
 ## Building a phantom
 
 The phantom below is one straight bundle on a grid of 24 x 24 x 24 voxels of 1 mm. The bundle's
-{py:class}`~larmor.simulation.BundleGeometry` is a spline through control points in world coordinates (mm), with
+{py:class}`~larmor.simulation.BundleGeometry` is a smooth curve through control points in world coordinates (mm), with
 `num_streamlines` streamlines spread over a disc of the given `radius` around it, and its seed makes the
 streamlines the same on every run. A phantom has the tissues WM, GM and CSF by default, and a bundle is filled
 with WM unless you name another tissue.
