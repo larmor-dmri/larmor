@@ -55,7 +55,7 @@ cache-keys = [
 
 [project]
 name = "larmor-dmri"
-version = "2.1.0"
+version = "2.2.0"
 authors = [{ name = "Antonio Di Meglio" }]
 maintainers = [{ name = "Antonio Di Meglio", email = "contact@larmor.org" }]
 description = "A Python library and viewer for diffusion MRI"
