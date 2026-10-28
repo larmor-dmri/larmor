@@ -5,7 +5,7 @@ from importlib.resources import files
 from pathlib import Path
 from string import Template
 
-from PySide6.QtCore import QStandardPaths, Qt
+from PySide6.QtCore import QSize, QStandardPaths, Qt
 from PySide6.QtGui import QColor, QFont, QGuiApplication, QPalette
 from PySide6.QtWidgets import QApplication, QFormLayout, QWidget
 
@@ -90,6 +90,19 @@ def icon_path(name: str) -> str:
     if _icons is None:
         return str(ICON_SOURCES / f"{ICONS[name][0]}.svg")
     return str(_icons / f"{name}.svg")
+
+
+def screen_room(widget: QWidget, margin: int = 40) -> QSize:
+    """Returns the room a window has on the screen widget is on, less a margin.
+
+    Args:
+        widget: A widget on the screen, or one about to be shown; the primary
+            screen is taken if it has none yet.
+        margin: The room left free on each side, px.
+    """
+    screen = widget.screen() or QGuiApplication.primaryScreen()
+    room = screen.availableGeometry().size() if screen is not None else QSize(1, 1)
+    return QSize(max(room.width() - 2 * margin, 1), max(room.height() - 2 * margin, 1))
 
 
 def form_layout(form: QWidget) -> QFormLayout:

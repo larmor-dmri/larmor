@@ -5,7 +5,14 @@ from typing import ClassVar
 from weakref import ref
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QAction, QCloseEvent, QKeySequence, QResizeEvent, QShortcut
+from PySide6.QtGui import (
+    QAction,
+    QCloseEvent,
+    QKeySequence,
+    QResizeEvent,
+    QShortcut,
+    QShowEvent,
+)
 from PySide6.QtWidgets import (
     QFileDialog,
     QLabel,
@@ -34,6 +41,7 @@ from larmor.viewer.model.events import (
 )
 from larmor.viewer.model.view_state import ViewField
 from larmor.viewer.model.viewer import GLYPH_DETAILS, Viewer
+from larmor.viewer.qt.style import screen_room
 from larmor.viewer.qt.views import stop_canvases
 from larmor.viewer.render.detail_renderer import DetailRenderer
 
@@ -41,6 +49,7 @@ from larmor.viewer.render.detail_renderer import DetailRenderer
 IMAGE_FILTER = "PNG image (*.png);;TIFF image (*.tif *.tiff)"
 MAX_FPS = 60.0
 MAX_SCALE = 8
+MIN_SIDE = 160  # px, the least the picture's longer side opens with
 
 
 class _AspectBox(QWidget):
@@ -78,11 +87,12 @@ class DetailWindow(QWidget):
     """Shows one detail window's picture, with a toolbar for its settings and exports.
 
     Closing the window, also with Ctrl+W or Escape, closes the detail. The window
-    remembers its height for the next detail opened.
+    opens with the picture's longer side as long as the last one's, within the
+    screen.
     """
 
-    # The canvas height the last detail window had, for the next one.
-    last_height: ClassVar[int] = DETAIL_SIZE
+    # The longer side of the last detail window's picture, for the next one.
+    last_side: ClassVar[int] = DETAIL_SIZE
 
     def __init__(
         self, viewer: Viewer, detail_id: DetailId, parent: QWidget | None = None
@@ -105,16 +115,29 @@ class DetailWindow(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         layout.addWidget(self.toolbar)
+        layout.addWidget(self.exports)
         layout.addWidget(self.box, stretch=1)
         layout.addWidget(self.message)
         self._unsubscribe = viewer.scene.subscribe(self._on_event)
         for keys in _close_keys():
             QShortcut(keys, self, self.close)
         self._show_detail()
+        # The toolbars stay whole, however narrow the picture.
+        bars = (self.toolbar, self.exports)
+        self.setMinimumWidth(max(bar.sizeHint().width() for bar in bars))
+        self.resize(self._first_size(parent))
+
+    def _first_size(self, parent: QWidget | None) -> QSize:
+        """Returns the window's size at first: the picture's, within the screen."""
         aspect = self.box.aspect
-        height = DetailWindow.last_height
-        self.resize(
-            QSize(round(height * aspect), height + self.toolbar.sizeHint().height())
+        side = DetailWindow.last_side
+        width, height = (side, side / aspect) if aspect >= 1 else (side * aspect, side)
+        bars = self.toolbar.sizeHint().height() + self.exports.sizeHint().height()
+        room = screen_room(parent if parent is not None else self)
+        scale = min(1.0, room.width() / width, (room.height() - bars) / height)
+        return QSize(
+            max(round(width * scale), self.minimumWidth()),
+            max(round(height * scale), MIN_SIDE) + bars,
         )
 
     def _create_toolbar(self) -> None:
@@ -138,14 +161,15 @@ class DetailWindow(QWidget):
             lambda value: self._set(DetailOption.GLYPH_DETAIL, int(value))
         )
         self.toolbar.addWidget(self.glyph_detail)
-        self.toolbar.addSeparator()
+        # The exports on a row of their own, so that neither row hides its end.
+        self.exports = QToolBar(self)
         self.scale = QSpinBox(self)
         self.scale.setRange(1, MAX_SCALE)
         self.scale.setValue(2)
         self.scale.setSuffix(" x")
         self.scale.setToolTip("The saved picture's size, times the window's")
-        self.toolbar.addWidget(self.scale)
-        self.save_action = self.toolbar.addAction("Save 2 x...")
+        self.exports.addWidget(self.scale)
+        self.save_action = self.exports.addAction("Save 2 x...")
         self.save_action.triggered.connect(self._ask_save)
         self.scale.valueChanged.connect(
             lambda value: self.save_action.setText(f"Save {value} x...")
@@ -159,13 +183,15 @@ class DetailWindow(QWidget):
             action = menu.addAction(f"On {background}...")
             action.triggered.connect(lambda _=False, b=background: self._ask_figure(b))
         figure.setMenu(menu)
-        self.toolbar.addWidget(figure)
+        self.exports.addWidget(figure)
 
     def _switch(self, text: str, name: DetailOption, tip: str) -> QAction:
         """Returns a checkable toolbar action that sets a detail's switch."""
         action = self.toolbar.addAction(text)
         action.setCheckable(True)
         action.setToolTip(tip)
+        # Styled as the main toolbar's buttons, which show when they are on.
+        self.toolbar.widgetForAction(action).setObjectName("toolButton")
         action.toggled.connect(lambda on: self._set(name, bool(on)))
         return action
 
@@ -208,11 +234,22 @@ class DetailWindow(QWidget):
     def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802
         """Remembers the picture's size, for the next window and the exports."""
         super().resizeEvent(event)
+        if self.isVisible():
+            self._keep_size()
+
+    def showEvent(self, event: QShowEvent) -> None:  # noqa: N802
+        """Records the picture's size the window opens with, for the exports."""
+        super().showEvent(event)
+        self._keep_size()
+
+    def _keep_size(self) -> None:
+        """Records the picture's size in the detail and for the next window."""
         size = self.canvas.size()
-        if size.width() > 0 and size.height() > 0 and self.isVisible():
-            DetailWindow.last_height = size.height()
-            if self.detail_id in self.viewer.scene.details:
-                self.viewer.resize_detail(self.detail_id, (size.width(), size.height()))
+        if size.width() <= 0 or size.height() <= 0:
+            return
+        DetailWindow.last_side = max(size.width(), size.height(), MIN_SIDE)
+        if self.detail_id in self.viewer.scene.details:
+            self.viewer.resize_detail(self.detail_id, (size.width(), size.height()))
 
     def _ask_save(self) -> None:
         """Asks for a file and saves the picture at the chosen scale."""

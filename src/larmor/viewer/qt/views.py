@@ -744,6 +744,8 @@ def stop_canvases(root: QWidget) -> None:
     """
     for canvas in root.findChildren(QRenderWidget):
         _drop_frame_copy(canvas)
+        # Closed but kept, so that it goes with root, not before.
+        canvas.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, False)
         canvas.close()
     finish_gpu_work()
 
