@@ -2,18 +2,19 @@
 
 Runs the gallery's examples that draw the simulated brain of the ISMRM 2015
 Tractography Challenge, and docs/carousel_simulation.py, which draws the phantom
-editor, the Signal breakdown panel and FODs of a simulated crossing, in a temporary
-folder. It saves the screenshots the slides use, each 900 x 600 (a larger image of
-that shape is scaled down), as WebP in docs/_static/carousel/, and the editor's step
-page and the panel at their size on screen in
-docs/_static/simulation/, for the Simulation page. The examples need the data, so
-LARMOR_DATA_DIR must name the folder it is (or will be) downloaded into:
+editor, the Signal breakdown panel and FODs of a phantom of the brain built from the
+challenge's ground-truth bundles, in a temporary folder. It saves the screenshots
+the slides use, each 900 x 600 (a larger image of that shape is scaled down), as
+WebP in docs/_static/carousel/, and the editor's step page and the panel at their
+size on screen in docs/_static/simulation/, for the Simulation page. LARMOR_DATA_DIR
+must name the folder the example data is (or will be) downloaded into, and the
+phantom needs the bundles' folder and the five-tissue-type image, which are not in
+the example data:
 
-    LARMOR_DATA_DIR=~/larmor-data uv run python docs/update_carousel.py
+    LARMOR_DATA_DIR=~/larmor-data LARMOR_ISMRM_BUNDLES=~/ismrm/bundles \
+        LARMOR_ISMRM_5TT=~/ismrm/5tt.nii.gz uv run python docs/update_carousel.py
 
-With --simulation, only the simulation slides are rendered, which needs no data:
-
-    uv run python docs/update_carousel.py --simulation
+With --simulation, only the simulation slides are rendered.
 """
 
 import os
@@ -58,6 +59,12 @@ SIMULATION_SLIDES = {
     "simulation_breakdown.png": "signal-breakdown.webp",
     "simulation_fods.png": "simulated-fods.webp",
 }
+# The environment variables the runs need, and what each names.
+NEEDED = {
+    "LARMOR_DATA_DIR": "the folder of the example data",
+    "LARMOR_ISMRM_BUNDLES": "the folder of the ISMRM 2015 ground-truth bundles",
+    "LARMOR_ISMRM_5TT": "the ISMRM 2015 five-tissue-type image",
+}
 # The editor and the panel at their size on screen, for the Simulation page.
 PAGE_IMAGES = Path(__file__).parent / "_static" / "simulation"
 SIMULATION_PAGE = {
@@ -69,8 +76,9 @@ SIMULATION_PAGE = {
 def main() -> None:
     """Runs the examples and writes the slides."""
     only_simulation = sys.argv[1:] == ["--simulation"]
-    if not only_simulation and not os.environ.get("LARMOR_DATA_DIR"):
-        sys.exit("Set LARMOR_DATA_DIR to the folder of the example data.")
+    for variable, what in NEEDED.items():
+        if not os.environ.get(variable):
+            sys.exit(f"Set {variable} to {what}.")
     scripts = [SIMULATION]
     slides = dict(SIMULATION_SLIDES)
     if not only_simulation:

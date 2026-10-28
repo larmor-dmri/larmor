@@ -82,7 +82,7 @@ Grid, Bundle, Tissue, Scan and Run. Each step has a short explanation, and gets 
 the run ends, the images, the masks and the true fibre directions open in the viewer.
 
 ```{image} _static/simulation/phantom-editor.webp
-:alt: The guided phantom editor on its Tissue step, with the five steps listed on the left with check marks, and the tissues WM and WM-sparse with the compartments of WM on the right
+:alt: The Tissue step of the guided Simulate workspace, with the tissues WM, WM-sparse, GM and CSF of a phantom of the brain and the compartments of WM
 :target: ../_static/simulation/phantom-editor.webp
 ```
 
@@ -90,7 +90,7 @@ The Signal breakdown panel, which you open with Ctrl+6, shows as three stacked b
 under the pointer comes about. It updates with every change you make in the editor, without a new run.
 
 ```{image} _static/simulation/signal-breakdown.webp
-:alt: The Signal breakdown panel for the voxel where the Left-right and Front-back bundles cross, with the share and fibre angle of each bundle, and stacked bars of the signal with no decay, after the T1 and T2 decay and after the diffusion weighting
+:alt: The Signal breakdown panel for a voxel of a phantom of the brain where the corpus callosum, the right corticospinal tract and the right SLF cross, with the share and fibre angle of each bundle, and stacked bars of the signal with no decay, after the T1 and T2 decay and after the diffusion weighting
 :target: ../_static/simulation/signal-breakdown.webp
 ```
 
