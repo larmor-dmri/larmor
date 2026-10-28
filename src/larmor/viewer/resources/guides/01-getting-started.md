@@ -129,7 +129,8 @@ them. Each row has an eye, which shows or hides the item, the item's name, with 
 note on its state: an overlay's colormap and threshold, an FOD's basis, or how many of a tractogram's streamlines
 its regions keep. A category's eye acts on all its items.
 
-The **Delete** key removes the selected item, or every item of the selected category after asking. An item's
+The **Delete** key removes the selected item, or every item of the selected category after asking. Shift-click or
+Ctrl-click (Cmd-click on macOS) selects several items, which Delete then removes together after asking. An item's
 right-click menu has **Remove**, **Save As...** and **Rename**. Below the tree, **Open files...** opens files and
 **Session** opens or saves a session (see [Sessions](11-sessions.md)).
 

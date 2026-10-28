@@ -15,7 +15,8 @@ blue check mark next to a step shows that it is done, and a short line under it 
 size of the grid, the number of points of the bundle being drawn, or the b-value and the number of directions of the
 scan. The default grid, tissues and scan already work, so those three steps are ticked from the start, and a new
 phantom needs only a bundle before it can run. Above the steps, **New** starts a phantom, **Open** reads a phantom
-file or a simulation folder, and **Save** writes the phantom to a file.
+file or a simulation folder, and **Save** writes the phantom to a file. New and Open ask before they discard a
+phantom that has bundles.
 
 ![The Simulate workspace while a bundle is drawn](images/phantom-guided.png)
 
@@ -30,7 +31,7 @@ A first simulation follows the steps in their order.
 2. On the Bundle step, choose **Draw bundle** in the toolbar or press **N**, place three or four points in a 2D view
    and press **Enter** to finish the bundle. The new bundle is filled with the WM tissue, a standard model of white
    matter. To fill it with another tissue, choose one in the bundle's row of the bundles table.
-3. The Tissue step edits the tissues themselves. You can keep them as they are.
+3. The Tissue step edits the tissues themselves, with their parameters under More. You can keep them as they are.
 4. On the Scan step, the default scan is a single-shell acquisition at b = 1000 s/mm^2 with 32 directions and no
    noise, which you can also keep. **Add shell** adds a shell to the table, and More holds the sequence, the timings
    and the gradient files.
@@ -45,7 +46,8 @@ The pages and the window show the same phantom, so a change made in one shows in
 ## Grid and tissues
 
 The Grid step sets the voxel grid of the phantom. Type the size of a box in millimetres and a voxel size, then
-click **Use this box**, or take the grid of an image you have loaded. A new phantom starts on the grid of the main
+click **Use this box** or go to another step, or take the grid of an image you have loaded. A size that is not a
+whole number of voxels is rounded, and the step says so. A new phantom starts on the grid of the main
 volume when there is one. The grid's box is outlined in every view while you draw; at other times, **Show the grid
 box** under the Grid step's More shows or hides the outline, and a session remembers your choice.
 
@@ -102,7 +104,9 @@ A finished bundle is an ordinary tractogram in the scene tree, so all the tracto
 the bundles table chooses the tissue that fills it. When you select a bundle, the editor shows its shape (the number
 of streamlines, the radius, the fanning, the dispersion and the seed) so that you can change it, and **Edit** brings
 its points back into draw mode. The bundle keeps its place in the scene tree and its options while you edit it. You
-can also make a loaded tractogram a bundle of the phantom with **Use a tractogram...**.
+can also make a loaded tractogram a bundle of the phantom with **Use a tractogram...**. To remove bundles, select
+their rows in the bundles table and click **Remove** or press **Delete**; several rows can be selected at once, as
+in the scene tree.
 
 ## Proxy maps
 
@@ -159,11 +163,14 @@ and bvecs files) and the noise. A bvecs file is read in the FSL frame, as `lar s
 the world frame next to the file. A phantom file that holds a gradient table keeps that table exactly, and the Scan
 step says that the directions come from the file; editing the shells replaces it with directions made from the
 shells. The SNR is that of a voxel full of WM at b = 0, or of the noise reference tissue chosen under More. A run of
-a phantom file gives the same images as `lar simulate` with the noise seed of the Scan step. **Run** (**Ctrl+R**), on the Run step or in the header, is greyed out until the
-phantom can run, with the first problem as its tooltip; a bundle that is being drawn or edited must be finished
-or cancelled first. It asks for an output folder if none is set, and asks before
-it replaces the outputs of an earlier run. The simulation then runs in the background, with its progress and a
-Cancel button in the status bar and on the Run step. A cancelled run opens nothing.
+a phantom file gives the same images as `lar simulate` with the noise seed of the Scan step.
+
+**Run** (**Ctrl+R**), on the Run step or in the header, is greyed out until the phantom can run, with the first
+problem as its tooltip; a bundle that is being drawn or edited must be finished or cancelled first. It asks for an
+output folder if none is set, and asks before it replaces the outputs of an earlier run or writes into a folder
+that holds other files. The simulation then runs in the background, with its progress and a Cancel button in the
+status bar and on the Run step. Once the files are being saved, the run can no longer be cancelled. A message
+says when the run has finished or failed; a cancelled run opens nothing.
 
 The output folder has the same contents as the one that `lar simulate` writes. When the run ends, the diffusion
 images open as the main volume, the tissue masks as overlays and the true fibre directions as peaks. The bundles

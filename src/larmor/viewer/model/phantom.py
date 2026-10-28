@@ -926,7 +926,11 @@ def _bundle_number(name: BundleField, number: float) -> float | int:
         return int(number)
     if name == BundleField.DENSEST_FILL and not 0 < number <= 1:
         raise ValueError("it must be in (0, 1]")
-    if name in (BundleField.STREAMLINE_AREA, BundleField.FAN_SHARPNESS):
+    if name in (
+        BundleField.STREAMLINE_AREA,
+        BundleField.FAN_SHARPNESS,
+        BundleField.RADIUS,
+    ):
         if number <= 0:
             raise ValueError("it must be positive")
     elif number < 0:
@@ -1133,6 +1137,7 @@ def run_problems(
             )
         )
     found += _bundle_item_problems(state, items)
+    found += _thin_bundle_problems(state)
     found += _tissue_problems(state, items)
     scan = _scan_problem(state.scan, state.grid)
     if scan is not None:
@@ -1179,6 +1184,26 @@ def _bundle_item_problems(
                     )
                 )
     return found
+
+
+def _thin_bundle_problems(state: PhantomState) -> list[Problem]:
+    """Returns a problem for each drawn bundle too thin to fill on the grid."""
+    from larmor.simulation.voxelise import MIN_TUBE_RADIUS
+
+    largest = float(np.linalg.norm(state.grid.affine[:3, :3], axis=0).max())
+    least = MIN_TUBE_RADIUS * largest
+    return [
+        Problem(
+            PhantomStep.BUNDLE,
+            "A bundle is too thin",
+            f"A bundle of radius {b.geometry.radius:g} mm is too thin for voxels of "
+            f"{largest:g} mm; give it a radius of at least {least:g} mm.",
+        )
+        for b in state.bundles
+        if b.geometry is not None
+        and b.streamline_area is None
+        and b.geometry.radius < least
+    ]
 
 
 def _tissue_problems(

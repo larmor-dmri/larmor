@@ -586,3 +586,16 @@ def test_a_grid_too_large_is_refused(viewer: Viewer) -> None:
         viewer.set_phantom_grid((1200.0, 1200.0, 1200.0), 1.0)
     with pytest.raises(ValueError, match="too large"):
         viewer.new_phantom((1200.0, 1200.0, 1200.0), 1.0)
+
+
+def test_a_radius_of_0_is_refused_and_a_tube_too_thin_stops_a_run(
+    viewer: Viewer,
+) -> None:
+    state = viewer.phantom
+    assert state is not None
+    bundle = state.bundles[0].item_id
+    with pytest.raises(ValueError, match="positive"):
+        viewer.set_bundle(bundle, BundleField.RADIUS, 0.0)
+    viewer.set_bundle(bundle, BundleField.RADIUS, 0.05)
+    [problem] = viewer.check_phantom()
+    assert "too thin" in problem

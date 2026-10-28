@@ -248,3 +248,10 @@ def test_without_a_voxel_only_the_hint_shows_and_the_chart_follows_the_theme(
     viewer.pin_breakdown((0.0, 1.0, 0.0))
     assert not panel.canvas.isHidden()
     assert to_hex(panel.figure.get_facecolor()) == "#202124"
+
+
+def test_an_empty_voxel_says_it_is_empty(panel: BreakdownPanel) -> None:
+    panel.viewer.set_background_tissue(None)
+    panel.viewer.pin_breakdown((-14.0, -14.0, -14.0))
+    assert "empty" in panel.hint.text() and panel.hint.isVisibleTo(panel)
+    assert panel.heading.isVisibleTo(panel) and not panel.canvas.isVisibleTo(panel)

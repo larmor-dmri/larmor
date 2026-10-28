@@ -179,6 +179,7 @@ class PhantomEditor:
                     f"The map of {tissue} is not on that grid; clear it first."
                 )
         self._set(replace(state, grid=grid), PhantomPart.GRID)
+        self.breakdown.move_to_grid(state.grid, grid)
         self.viewer._frame(grid)
         self._request(_Rebuild.PROXIES)
 

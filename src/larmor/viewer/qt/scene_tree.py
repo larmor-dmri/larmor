@@ -150,6 +150,7 @@ class SceneTree(QTreeWidget):
         self._drop_target: Category | None = None
         self.setExpandsOnDoubleClick(False)
         self.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.itemClicked.connect(self._on_clicked)
         self.itemDoubleClicked.connect(self._on_double_clicked)
         self.itemChanged.connect(self._on_renamed)
@@ -282,16 +283,30 @@ class SceneTree(QTreeWidget):
                 return
         self.viewer.remove(target)
 
+    def remove_selected(self) -> None:
+        """Removes the selected items, after asking if there are several.
+
+        With one row selected, its item or category is removed as `remove` does.
+        """
+        targets = [_target(row) for row in self.selectedItems()]
+        items = [t for t in targets if not isinstance(t, Category)]
+        if len(items) > 1:
+            if self._confirm_remove(f"Remove the {len(items)} selected items?"):
+                for item_id in items:
+                    self.viewer.remove(item_id)
+            return
+        current = self.currentItem()
+        if current is not None:
+            self.remove(_target(current))
+
     @override
     def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
-        """Removes the selected row's item or category with Delete or Backspace."""
-        current = self.currentItem()
+        """Removes the selected items or category with Delete or Backspace."""
         if (
             event.key() in REMOVE_KEYS
-            and current is not None
             and self.state() != QAbstractItemView.State.EditingState
         ):
-            self.remove(_target(current))
+            self.remove_selected()
             return
         super().keyPressEvent(event)
 

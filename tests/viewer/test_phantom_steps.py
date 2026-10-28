@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+from PySide6.QtWidgets import QApplication
 from pytestqt.qtbot import QtBot
 
 from larmor.viewer import Category, Viewer
@@ -10,6 +11,8 @@ from larmor.viewer.qt.docks import SIDE_WIDTHS, Panel
 from larmor.viewer.qt.help_panel import GUIDES
 from larmor.viewer.qt.main_window import MainWindow
 from larmor.viewer.qt.phantom_steps import (
+    AllSettingsWindow,
+    Extra,
     StepNavigator,
     StepPage,
     StepsPanel,
@@ -149,3 +152,45 @@ def test_every_step_page_fits_the_width_of_the_right_panel(qtbot: QtBot) -> None
     for step in PhantomStep:
         window.steps.go_to(step)
         assert content.minimumSizeHint().width() <= SIDE_WIDTHS[1], step
+
+
+def test_a_box_typed_on_the_grid_step_is_taken_on_next(qtbot: QtBot) -> None:
+    viewer = Viewer()
+    viewer.new_phantom()
+    steps = StepNavigator(viewer)
+    page = StepPage(viewer, steps)
+    qtbot.addWidget(page)
+    page.panel.size_boxes[0].setValue(61.0)
+    page.next_button.click()
+    state = viewer.phantom
+    assert state is not None and state.grid.shape == (30, 30, 30)
+    assert "rounded" in page.panel.box_note.text()
+
+
+def test_starting_a_bundle_shows_the_bundle_step(qtbot: QtBot) -> None:
+    viewer = Viewer()
+    viewer.new_phantom()
+    steps = StepNavigator(viewer)
+    steps.go_to(PhantomStep.SCAN)
+    viewer.start_bundle()
+    assert steps.page == PhantomStep.BUNDLE
+
+
+def test_the_grid_step_folds_what_the_maps_page_unfolded(qtbot: QtBot) -> None:
+    viewer = Viewer()
+    viewer.new_phantom()
+    steps = StepNavigator(viewer)
+    page = StepPage(viewer, steps)
+    qtbot.addWidget(page)
+    steps.go_to(Extra.TISSUE_MAPS)
+    steps.go_to(PhantomStep.GRID)
+    assert not page.panel.sections["Grid"].more_button.isChecked()
+
+
+def test_all_settings_opens_within_the_screen(qtbot: QtBot) -> None:
+    viewer = Viewer()
+    viewer.new_phantom()
+    window = AllSettingsWindow(viewer)
+    qtbot.addWidget(window)
+    screen = QApplication.primaryScreen().availableGeometry()
+    assert window.width() <= screen.width() and window.height() <= screen.height()

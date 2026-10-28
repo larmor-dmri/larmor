@@ -193,6 +193,19 @@ class BreakdownTool:
         pinned = replace(state, voxel=voxel, pinned=True)
         self.scene.set_breakdown(self._computed(pinned))
 
+    def move_to_grid(self, old: Grid, new: Grid) -> None:
+        """Keeps the voxel shown at its place in mm when the phantom's grid changes.
+
+        A voxel that falls outside the new grid is dropped, and so is its pin.
+        """
+        state = self.state
+        if state is None or state.voxel is None:
+            return
+        centre = old.affine[:3, :3] @ np.asarray(state.voxel, float) + old.affine[:3, 3]
+        voxel = voxel_at(new, (float(centre[0]), float(centre[1]), float(centre[2])))
+        moved = replace(state, voxel=voxel, pinned=state.pinned and voxel is not None)
+        self.scene.set_breakdown(self._computed(moved))
+
     def set_volume(self, volume: int) -> None:
         """Shows the voxel's signal in another volume of the scan."""
         state = self.state

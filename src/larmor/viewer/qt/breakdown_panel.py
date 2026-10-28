@@ -24,6 +24,8 @@ from larmor.viewer.model.events import BreakdownChanged, Event, PhantomChanged
 from larmor.viewer.model.viewer import Viewer
 from larmor.viewer.qt.style import form_layout
 
+# Shown for a voxel of the phantom that nothing fills.
+EMPTY = "This voxel is empty: no bundle, map or background fills it."
 # The narrowest the panel gets: the chart's two-column legend still fits.
 MIN_WIDTH = 340  # px
 # The b-values are listed rounded to the nearest 10 s/mm^2, so a shell is one entry.
@@ -160,16 +162,20 @@ class BreakdownPanel(QWidget):
     def redraw(self) -> None:
         """Shows the breakdown as the scene holds it: table, choices and chart.
 
-        With no voxel, only the hint and the empty choices show.
+        With no voxel, only the hint and the empty choices show; an empty voxel
+        shows its heading and says it is empty.
         """
         state = self.viewer.breakdown
         self.title_changed.emit(title(state))
         breakdown = state.breakdown if state is not None else None
         self.figure.clear()
-        if state is None or breakdown is None:
-            self.heading.hide()
+        rows = card_rows(breakdown) if breakdown is not None else []
+        if state is None or breakdown is None or not rows:
+            self.heading.setText(heading(state) if state is not None else "")
+            self.heading.setVisible(breakdown is not None)
             self.table.hide()
-            self.hint.setText("" if state is None else state.problem or "")
+            problem = "" if state is None else state.problem or ""
+            self.hint.setText(EMPTY if breakdown is not None else problem)
             self.hint.show()
             self._show_choices()
             self.canvas.hide()
@@ -178,7 +184,7 @@ class BreakdownPanel(QWidget):
         self.canvas.show()
         self.heading.setText(heading(state))
         self.heading.show()
-        self._show_rows(card_rows(breakdown))
+        self._show_rows(rows)
         self.table.show()
         self._show_choices()
         self._draw_chart()

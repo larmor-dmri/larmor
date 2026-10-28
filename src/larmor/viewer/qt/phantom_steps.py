@@ -5,7 +5,7 @@ from enum import StrEnum
 from typing import override
 
 from PySide6.QtCore import QObject, Qt, Signal
-from PySide6.QtGui import QIcon, QMouseEvent
+from PySide6.QtGui import QGuiApplication, QIcon, QMouseEvent
 from PySide6.QtWidgets import (
     QDialog,
     QFrame,
@@ -117,7 +117,9 @@ PAGES: dict[Page, PageInfo] = {
 }
 STEPS = tuple(PhantomStep)
 MARK_SIZE = 16  # px, the check mark or circle of a step
-ALL_SETTINGS_SIZE = (1420, 820)  # px, the All settings window when it opens
+ALL_SETTINGS_SIZE = (1420, 820)  # px, the All settings window at most
+# The share of the screen the All settings window takes at most when it opens.
+ALL_SETTINGS_SCREEN = 0.9
 NO_PHANTOM = (
     "No phantom is open. Click New to start one on the grid of the main volume, "
     "or Open to read a phantom file or a simulation folder."
@@ -132,7 +134,8 @@ def _mark(ready: bool) -> QIcon:
 class StepNavigator(QObject):
     """Holds the page of the steps shown, which the two panels of Simulate share.
 
-    A new phantom starts again at the first step.
+    A new phantom starts again at the first step, and starting a bundle shows
+    the Bundle step.
     """
 
     changed = Signal()
@@ -145,6 +148,7 @@ class StepNavigator(QObject):
         self.last_step = PhantomStep.GRID  # where Back goes from an extra page
         state = viewer.phantom
         self._serial = state.serial if state is not None else None
+        self._drawing = state is not None and state.draft is not None
         unsubscribe = viewer.scene.subscribe(self._on_event)
         self.destroyed.connect(lambda *_: unsubscribe())
 
@@ -168,13 +172,18 @@ class StepNavigator(QObject):
             self.go_to(STEPS[STEPS.index(self.page) - 1])
 
     def _on_event(self, event: Event) -> None:
-        """Goes back to the first step when a new phantom opens."""
+        """Goes to the first step when a new phantom opens, the Bundle step to draw."""
         if isinstance(event, PhantomChanged):
             state = self.viewer.phantom
             serial = state.serial if state is not None else None
+            drawing = state is not None and state.draft is not None
+            started = drawing and not self._drawing
+            self._drawing = drawing
             if serial != self._serial:
                 self._serial = serial
                 self.go_to(PhantomStep.GRID)
+            if started and self.page != PhantomStep.BUNDLE:
+                self.go_to(PhantomStep.BUNDLE)
 
 
 class StepRow(QFrame):
@@ -334,7 +343,8 @@ class StepsPanel(QWidget):
 class StepPage(QWidget):
     """Shows the page of the step open: a heading, its help, its fields, Back, Next.
 
-    The fields that matter show; the others are under a More fold.
+    The fields that matter show; the others are under a More fold. A box typed
+    on the Grid step is taken when the page is left.
     """
 
     def __init__(
@@ -344,6 +354,7 @@ class StepPage(QWidget):
         super().__init__(parent)
         self.viewer = viewer
         self.steps = steps
+        self._page: Page | None = None  # the page shown before
         self.panel = PhantomPanel(viewer, self, guided=True)
         self.area = QScrollArea(self)
         self.area.setWidgetResizable(True)
@@ -396,9 +407,17 @@ class StepPage(QWidget):
         page = self.steps.page
         info = PAGES[page]
         shown = self.viewer.phantom is not None
+        before, self._page = self._page, page
+        # Before the sections show again, which shows the grid's own box.
+        taken = True
+        if before == PhantomStep.GRID and page != PhantomStep.GRID:
+            taken = self.panel.apply_typed_box()
         self.panel.show_sections(info.sections)
+        self.panel.error.setVisible(not taken)
         if page == Extra.TISSUE_MAPS:
             self.panel.sections["Grid"].set_more_shown(True)
+        elif before == Extra.TISSUE_MAPS:
+            self.panel.sections["Grid"].set_more_shown(False)
         for widget in (self.heading, self.text, self.nav):
             widget.setVisible(shown)
         self.text.setText(info.text)
@@ -444,4 +463,11 @@ class AllSettingsWindow(QDialog):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(area)
-        self.resize(*ALL_SETTINGS_SIZE)
+        width, height = ALL_SETTINGS_SIZE
+        screen = parent.screen() if parent is not None else None
+        screen = screen or QGuiApplication.primaryScreen()
+        if screen is not None:
+            room = screen.availableGeometry()
+            width = min(width, int(room.width() * ALL_SETTINGS_SCREEN))
+            height = min(height, int(room.height() * ALL_SETTINGS_SCREEN))
+        self.resize(width, height)

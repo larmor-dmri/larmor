@@ -79,7 +79,7 @@ from larmor.viewer.qt.loading import (
     create_loader,
 )
 from larmor.viewer.qt.matlab_dialog import MatlabChoice, MatlabImportDialog
-from larmor.viewer.qt.phantom_panel import PhantomPanel
+from larmor.viewer.qt.phantom_panel import PhantomPanel, confirm_discard
 from larmor.viewer.qt.phantom_steps import (
     AllSettingsWindow,
     StepNavigator,
@@ -875,15 +875,24 @@ class MainWindow(QMainWindow):
         )
 
     def new_phantom(self) -> None:
-        """Starts a phantom on the views' grid, or the default box, and shows it."""
+        """Starts a phantom on the views' grid, or the default box, and shows it.
+
+        Asks first if the phantom open has bundles.
+        """
+        if not confirm_discard(self, self.viewer.phantom):
+            return
         grid_of = self.viewer.scene.view.main_volume
-        self.viewer.new_phantom(grid_of=grid_of)
+        try:
+            self.viewer.new_phantom(grid_of=grid_of)
+        except ValueError as e:
+            self._message("Cannot start a phantom", str(e))
+            return
         self.show_phantom()
 
     def ask_open_phantom(self) -> None:
-        """Asks for a phantom file and opens it."""
+        """Asks for a phantom file and opens it, after asking to discard bundles."""
         path, _ = QFileDialog.getOpenFileName(self, "Open Phantom", "", _PHANTOM_FILTER)
-        if path:
+        if path and confirm_discard(self, self.viewer.phantom):
             self.open_phantom(path)
 
     def open_phantom(self, path: str | Path) -> None:
@@ -894,9 +903,9 @@ class MainWindow(QMainWindow):
             self._message("Cannot open phantom", str(e))
 
     def _ask_open_simulation(self) -> None:
-        """Asks for a simulation folder and opens it."""
+        """Asks for a simulation folder and opens it, once bundles may be discarded."""
         folder = QFileDialog.getExistingDirectory(self, "Open Simulation")
-        if folder:
+        if folder and confirm_discard(self, self.viewer.phantom):
             self.open_simulation(folder)
 
     def open_simulation(self, folder: str | Path) -> None:
