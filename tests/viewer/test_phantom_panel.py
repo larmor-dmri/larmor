@@ -312,9 +312,12 @@ def test_a_compartment_cell_that_is_not_a_number_is_named_and_put_back(
     viewer, panel = _panel_with_bundles(qtbot, 0)
     viewer.set_tissue("CSF", TissuePreset.CUSTOM)
     panel.tissue_list.setCurrentRow(2)
-    panel.compartments.item(0, 1).setText("abc")
+    cell = panel.compartments.item(0, 1)
+    assert cell is not None
+    cell.setText("abc")
     assert panel.error.text().startswith("Compartment 1, Fraction")
-    assert panel.compartments.item(0, 1).text() == "1"
+    cell = panel.compartments.item(0, 1)
+    assert cell is not None and cell.text() == "1"
 
 
 def test_several_bundles_go_at_once_and_the_table_follows_the_selection(

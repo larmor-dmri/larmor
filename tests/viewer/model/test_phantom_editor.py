@@ -424,15 +424,21 @@ def test_editing_the_shells_replaces_the_table_of_a_phantom_file(
 ) -> None:
     viewer.save_phantom(tmp_path / "p.phantom.json")
     other = Viewer()
+
+    def table() -> object:
+        state = other.phantom
+        assert state is not None
+        return state.scan.table
+
     other.load_phantom(tmp_path / "p.phantom.json")
-    assert other.phantom is not None and other.phantom.scan.table is None
+    assert table() is None
     path = tmp_path / "file.phantom.json"
     phantom = sim.read_phantom(tmp_path / "p.phantom.json")
     sim.write_phantom(phantom.phantom, path, protocol=phantom.protocol)
     other.load_phantom(path)
-    assert other.phantom is not None and other.phantom.scan.table is not None
+    assert table() is not None
     other.set_scan(ScanField.SHELLS, [[2000, 6]])
-    assert other.phantom.scan.table is None
+    assert table() is None
 
 
 def test_bvecs_files_are_in_the_fsl_frame_unless_told(
@@ -502,11 +508,16 @@ def test_the_proxy_maps_follow_a_bundle_being_edited(viewer: Viewer) -> None:
     first = state.bundles[0].item_id
     proxy = viewer.show_proxy(ProxyMap.FILL)
     assert proxy is not None
-    before = np.asarray(viewer.scene.item(proxy.id).data.data)[..., 1].copy()
+
+    def fill() -> np.ndarray:
+        volume = viewer.scene.item(proxy.id).data
+        assert isinstance(volume, Volume)
+        return np.asarray(volume.data)[..., 1].copy()
+
+    before = fill()
     viewer.edit_bundle(first)
     viewer.set_bundle_points([(-12.0, 8.0, 0.0), (12.0, 8.0, 0.0)])
-    after = np.asarray(viewer.scene.item(proxy.id).data.data)[..., 1]
-    assert not np.array_equal(before, after)
+    assert not np.array_equal(before, fill())
 
 
 def test_a_folder_of_other_files_is_refused_before_the_run(

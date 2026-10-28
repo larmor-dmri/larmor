@@ -190,6 +190,7 @@ def _echo_names(te_ms: Sequence[float]) -> list[str]:
 
     Echo times that would give the same name get more digits.
     """
+    names: list[str] = []
     for digits in (6, 10, 17):
         names = [f"_te{te:.{digits}g}ms" for te in te_ms]
         if len(set(names)) == len(names):
