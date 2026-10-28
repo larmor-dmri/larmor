@@ -504,6 +504,14 @@ class MainWindow(QMainWindow):
             action.setText(name)
             action.setCheckable(True)
             workspaces.addAction(action)
+        view.addSeparator()
+        panels = self.shortcuts[Command.HIDE_PANELS]
+        panels.setText("Hide or show the side &panels")
+        view.addAction(panels)
+        reset_panels = QAction("Reset the panels' la&yout", self)
+        reset_panels.setToolTip("Put the panels back where they were at first start")
+        reset_panels.triggered.connect(self.docks.reset)
+        view.addAction(reset_panels)
         view.aboutToShow.connect(self._show_view_menu)
         self._show_view_menu()
 

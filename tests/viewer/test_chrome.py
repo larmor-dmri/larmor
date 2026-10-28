@@ -11,6 +11,7 @@ from viewer_helpers import zeros_volume
 
 from larmor.viewer import Category, Tool, ViewKind
 from larmor.viewer.model.view_state import Layout, Workspace
+from larmor.viewer.qt.docks import Panel
 from larmor.viewer.qt.header import NO_DATA
 from larmor.viewer.qt.main_window import MainWindow
 
@@ -176,3 +177,13 @@ def test_the_view_menu_sets_the_layout_and_the_workspace(window: MainWindow) -> 
     workspaces = _submenu(window, "Workspace")
     next(a for a in workspaces.actions() if a.text() == "&Simulate").trigger()
     assert window.viewer.scene.view.workspace == Workspace.SIMULATE
+
+
+def test_the_view_menu_hides_and_resets_the_side_panels(window: MainWindow) -> None:
+    view = next(a.menu() for a in window.menuBar().actions() if a.text() == "&View")
+    assert isinstance(view, QMenu)
+    actions = {a.text().replace("&", ""): a for a in view.actions()}
+    actions["Hide or show the side panels"].trigger()
+    assert not window.docks.is_open(Panel.LEFT)
+    actions["Reset the panels' layout"].trigger()
+    assert window.docks.is_open(Panel.LEFT) and window.docks.is_open(Panel.RIGHT)
