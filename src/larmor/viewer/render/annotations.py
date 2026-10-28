@@ -89,6 +89,9 @@ class Annotations:
             view.renderer.add_event_handler(self._fitters[kind], "before_render")
             self._placers[kind] = partial(place_backings, self.backings[kind])
             view.renderer.add_event_handler(self._placers[kind], "before_render")
+            width = float(view.renderer.logical_size[0])
+            if width > 0:  # known before the first draw, as off screen
+                self._widths[kind] = width
         self._move_crosshairs()
         self._write_labels()
         self._write_readout()
