@@ -54,3 +54,17 @@ def _labels(summaries: list[str]) -> list[str]:
             summary += f" (GPU {summaries[: i + 1].count(summary)})"
         labels.append(summary)
     return labels
+
+
+def finish_gpu_work() -> None:
+    """Waits until the GPU has done all the work sent to it, such as the last frames.
+
+    A view copies each frame back from the GPU in the background; a copy still
+    running when its window goes would arrive after its canvas is deleted.
+    """
+    device = gfx.renderers.wgpu.get_shared().device
+    # Reading a buffer back waits for its copy, and so for the work sent before it.
+    marker = device.create_buffer(
+        size=4, usage=wgpu.BufferUsage.COPY_SRC | wgpu.BufferUsage.COPY_DST
+    )
+    device.queue.read_buffer(marker)

@@ -93,6 +93,7 @@ from larmor.viewer.qt.settings_panel import McpSwitch, SettingsSheet
 from larmor.viewer.qt.shortcuts import ShortcutsDialog, shortcut_actions
 from larmor.viewer.qt.view_grid import ViewGrid
 from larmor.viewer.qt.view_menu import build_view_menu, connect_views
+from larmor.viewer.qt.views import stop_canvases
 from larmor.viewer.render.scene_renderer import SceneRenderer
 
 if TYPE_CHECKING:
@@ -1005,7 +1006,7 @@ class MainWindow(QMainWindow):
             self.workspaces.show()
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
-        """Saves the panels' layout, stops the MCP server and the item panels."""
+        """Saves the panels' layout; stops the MCP server, the panels and the views."""
         if self.layout_path is not None:
             self.docks.save(self.layout_path)
         self.mcp.stop()
@@ -1014,6 +1015,7 @@ class MainWindow(QMainWindow):
             panel.drop()
         for sheet in self._sheets.values():
             sheet.close()
+        stop_canvases(self)
         super().closeEvent(event)
 
     def start_mcp(self, port: int | None = None) -> None:

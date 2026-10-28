@@ -36,6 +36,7 @@ from larmor.viewer.model.regions import (
 )
 from larmor.viewer.model.view_state import Tool
 from larmor.viewer.model.viewer import Viewer
+from larmor.viewer.render.gpu import finish_gpu_work
 from larmor.viewer.render.phantom_guides import POINT_COLOUR
 from larmor.viewer.render.regions_guides import DETAIL_COLOUR, Sketch
 from larmor.viewer.render.view import ViewRenderer
@@ -734,3 +735,13 @@ def _at_least(size: Sequence[float], low: float) -> Vec3:
     """Returns three lengths, none below low."""
     a, b, c = (max(float(s), low) for s in size)
     return (a, b, c)
+
+
+def stop_canvases(root: QWidget) -> None:
+    """Stops the canvases in root drawing, and waits for their last frames.
+
+    Call it before root's widgets are deleted, as when its window closes.
+    """
+    for canvas in root.findChildren(QRenderWidget):
+        canvas.close()
+    finish_gpu_work()

@@ -34,6 +34,7 @@ from larmor.viewer.model.events import (
 )
 from larmor.viewer.model.view_state import ViewField
 from larmor.viewer.model.viewer import GLYPH_DETAILS, Viewer
+from larmor.viewer.qt.views import stop_canvases
 from larmor.viewer.render.detail_renderer import DetailRenderer
 
 # The file types a detail's picture and figure are saved as.
@@ -254,6 +255,7 @@ class DetailWindow(QWidget):
         self._unsubscribe()
         self._unsubscribe = lambda: None
         self.renderer.close()
+        stop_canvases(self)
         if not self._closing and self.detail_id in self.viewer.scene.details:
             self._closing = True
             self.viewer.close_detail(self.detail_id)

@@ -339,3 +339,16 @@ def test_a_deleted_window_closes_its_renderer_and_is_freed(
     # The closed renderer follows the scene no more.
     viewer.add(zeros_volume(), Category.OVERLAYS)
     assert renderer.adapters == {}
+
+
+def test_closing_the_window_stops_its_canvases_and_waits_for_their_frames(
+    shown: MainWindow, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    waited: list[bool] = []
+    monkeypatch.setattr(views, "finish_gpu_work", lambda: waited.append(True))
+    shown.viewer.add(zeros_volume(), Category.VOLUMES)
+    qtbot.wait(50)
+    shown.close()
+    canvases = shown.findChildren(QRenderWidget)
+    assert canvases and all(c.get_closed() for c in canvases)
+    assert waited == [True]
