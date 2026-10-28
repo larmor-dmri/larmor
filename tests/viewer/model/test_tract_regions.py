@@ -204,6 +204,21 @@ def test_a_colour_follows_the_role_until_it_is_changed() -> None:
     assert _region(viewer, sphere).colour == Colour("#123456")
 
 
+def test_a_role_given_wins_over_the_default_and_the_colour_follows_the_role() -> None:
+    viewer = Viewer()
+    viewer.set_default(Category.REGIONS, OptionName.ROLE, RegionRole.EXCLUDE)
+    given = _region(viewer, viewer.add_sphere(BIG, RADIUS, RegionRole.INCLUDE))
+    default = _region(viewer, viewer.add_sphere(BIG, RADIUS))
+    assert (given.role, given.colour) == (
+        RegionRole.INCLUDE,
+        ROLE_COLOURS[RegionRole.INCLUDE],
+    )
+    assert (default.role, default.colour) == (
+        RegionRole.EXCLUDE,
+        ROLE_COLOURS[RegionRole.EXCLUDE],
+    )
+
+
 def test_moving_a_sphere_moves_its_data() -> None:
     viewer = Viewer()
     sphere = viewer.add_sphere(BIG, RADIUS)

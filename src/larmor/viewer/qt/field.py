@@ -4,7 +4,7 @@ from dataclasses import Field
 from typing import Any, override
 
 from PySide6.QtCore import QEvent, QSignalBlocker, QSize, Qt, Signal
-from PySide6.QtGui import QColor, QIcon
+from PySide6.QtGui import QColor, QIcon, QResizeEvent
 from PySide6.QtWidgets import (
     QCheckBox,
     QColorDialog,
@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QSizePolicy,
     QSlider,
     QWidget,
 )
@@ -24,8 +25,11 @@ from larmor.viewer.model.options import Colour, Lengths, OptionInfo
 from larmor.viewer.model.viewer import MIXED
 from larmor.viewer.qt.style import icon_path
 
-SLIDER_MIN_WIDTH = 80  # px
+SLIDER_MIN_WIDTH = 64  # px
 LENGTH_RANGE = (0.1, 500.0)  # mm, what a lengths field takes
+LENGTH_MIN_WIDTH = 56  # px, each of a lengths field's three boxes
+# The longest number a slider's text field shows whole, as a sample for its width.
+SLIDER_TEXT_SAMPLE = "-0.0012345"
 
 
 class SliderField(QWidget):
@@ -49,7 +53,8 @@ class SliderField(QWidget):
         # Narrower, a form puts the field below its label rather than squeeze it.
         self.slider.setMinimumWidth(SLIDER_MIN_WIDTH)
         self.text = QLineEdit(self)
-        self.text.setFixedWidth(60)
+        sample = self.text.fontMetrics().horizontalAdvance(SLIDER_TEXT_SAMPLE)
+        self.text.setFixedWidth(sample + 18)  # and the frame and its padding
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -81,9 +86,12 @@ class SliderField(QWidget):
         return self.field_type(round(self.minimum + i * self.step, 10))
 
     def _parse(self, text: str) -> object:
-        """Returns the text as a number, or the text itself if it is not one."""
+        """Returns the text as a number, or the text itself if it is not one.
+
+        A comma counts as the decimal point.
+        """
         try:
-            return self.field_type(text)
+            return self.field_type(text.strip().replace(",", "."))
         except ValueError:
             return text
 
@@ -96,7 +104,57 @@ class SliderField(QWidget):
             else:
                 assert isinstance(value, (int, float))
                 self.slider.setValue(round((value - self.minimum) / self.step))
-                self.text.setText(f"{value:g}")
+                self.text.setText(number_text(value))
+                self.text.setCursorPosition(0)  # a number too long shows its start
+
+
+def number_text(value: float) -> str:
+    """Returns a number as a field shows it: whole numbers in full, else 5 digits.
+
+    The decimal point is always a point.
+    """
+    if float(value).is_integer() and abs(value) < 1e15:
+        return str(int(value))
+    return f"{value:.5g}"
+
+
+class ElidedLabel(QLabel):
+    """Shows one line of text cut short with "..." when it does not fit.
+
+    The whole text is its tooltip.
+    """
+
+    def __init__(self, text: str, parent: QWidget | None = None) -> None:
+        """Creates the label with its text."""
+        super().__init__(parent)
+        self.full = text
+        self.setToolTip(text)
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self._elide()
+
+    def set_full_text(self, text: str) -> None:
+        """Shows another text, cut short if need be."""
+        self.full = text
+        self.setToolTip(text)
+        self._elide()
+
+    @override
+    def minimumSizeHint(self) -> QSize:
+        """Returns a narrow size: the text is cut short rather than widen its parent."""
+        hint = super().minimumSizeHint()
+        return QSize(0, hint.height())
+
+    @override
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802
+        """Cuts the text to the new width."""
+        super().resizeEvent(event)
+        self._elide()
+
+    def _elide(self) -> None:
+        """Shows as much of the text as the width takes."""
+        metrics = self.fontMetrics()
+        room = self.contentsRect().width()
+        self.setText(metrics.elidedText(self.full, Qt.TextElideMode.ElideRight, room))
 
 
 class LengthsField(QWidget):
@@ -117,6 +175,8 @@ class LengthsField(QWidget):
             box.setSingleStep(0.5)
             box.setToolTip(f"{info.label} along {axis}")
             box.setKeyboardTracking(False)  # sends the value once typed, not per key
+            # Narrower than the widest value, so that the three fit a narrow panel.
+            box.setMinimumWidth(LENGTH_MIN_WIDTH)
             box.valueChanged.connect(lambda _: self._send())
             layout.addWidget(box)
             self.boxes.append(box)

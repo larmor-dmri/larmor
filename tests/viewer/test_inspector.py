@@ -57,6 +57,20 @@ def test_the_cursor_tab_follows_the_cursor(
     assert "(2.0, 2.0, 2.0)" in inspector.cursor_tab.position.text()
 
 
+def test_a_long_name_in_the_readout_leaves_its_value_whole(
+    viewer: Viewer, inspector: Inspector
+) -> None:
+    item = viewer.scene.items[0]
+    viewer.rename(item.id, "sub-01_ses-baseline_acq-mprage_run-1_T1w.nii.gz")
+    inspector.resize(320, 700)
+    inspector.show_tab(InspectorTab.CURSOR)
+    rows = inspector.cursor_tab.readout
+    first = rows.topLevelItem(0)
+    assert first is not None
+    room = rows.viewport().width() - rows.columnWidth(0)
+    assert rows.fontMetrics().horizontalAdvance(first.text(1)) < room
+
+
 def test_the_labels_list_shows_while_the_overlay_shows_labels(
     viewer: Viewer, inspector: Inspector
 ) -> None:

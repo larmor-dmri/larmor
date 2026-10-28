@@ -7,7 +7,7 @@ from importlib.resources import files
 from pathlib import Path
 
 import shiboken6
-from PySide6.QtCore import QEvent, QEventLoop, QObject, Qt, QTimer
+from PySide6.QtCore import QEvent, QEventLoop, QLocale, QObject, Qt, QTimer
 from PySide6.QtGui import QFileOpenEvent, QGuiApplication, QIcon
 from PySide6.QtWidgets import QApplication
 
@@ -130,12 +130,27 @@ def application() -> QApplication:
         _FILE_OPENER = _FileOpener()
         app.installEventFilter(_FILE_OPENER)
 
+    _use_decimal_points()
     app.setApplicationName(APP_NAME)
     app.setDesktopFileName(APP_ID)
     app.setWindowIcon(QIcon(str(ICON)))
     values = settings().values
     apply_style(values.theme, values.accent)
     return app
+
+
+def _use_decimal_points() -> None:
+    """Makes the number boxes write and read a point as the decimal separator.
+
+    The text fields of the sliders do so whatever the system's language, so the
+    boxes follow them; a comma is refused rather than read as thousands.
+    """
+    locale = QLocale.c()
+    locale.setNumberOptions(
+        QLocale.NumberOption.OmitGroupSeparator
+        | QLocale.NumberOption.RejectGroupSeparator
+    )
+    QLocale.setDefault(locale)
 
 
 def settings() -> Settings:

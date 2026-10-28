@@ -213,7 +213,6 @@ class ExportSheet(QDialog):
         header = self.preset_table.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        self.preset_table.setMaximumHeight(170)
         rows.addRow(self.preset_table)
         self.edit_preset = QPushButton("Edit preset...", form)
         self.edit_preset.clicked.connect(self.ask_edit_preset)
@@ -286,11 +285,12 @@ class ExportSheet(QDialog):
             if self.kind is ExportKind.IMAGE:
                 size = view_size(size, self.shown_views())
             return size, self.preset.scale
-        maximised = self.viewer.scene.view.maximised
-        kind = self.shown_views()[0][0]
-        if not self.grid.panels[kind].isVisible() and maximised is not None:
-            kind = maximised  # a hidden view would fill the window if shown
-        canvas = self.grid.panels[kind].canvas
+        panel = self.grid.panels[self.shown_views()[0][0]]
+        shown = [p for p in self.grid.panels.values() if p.isVisible()]
+        if not panel.isVisible() and shown:
+            # A hidden view would take the place of the largest one shown.
+            panel = max(shown, key=lambda p: p.width() * p.height())
+        canvas = panel.canvas
         size = (max(1, canvas.width()), max(1, canvas.height()))
         return size, canvas.devicePixelRatioF() * self.preset.scale
 
@@ -354,6 +354,9 @@ class ExportSheet(QDialog):
         """Starts following the scene, and draws the preview."""
         super().showEvent(event)
         if self.renderer is None:
+            if self.view is not None:  # one view: the one selected now
+                self.view = self.viewer.scene.view.selected_view
+                self._show_choices()
             size, ratio = self.base()
             # Its slow work runs in the background, as the views' does; Save
             # waits for it.
@@ -365,10 +368,11 @@ class ExportSheet(QDialog):
     def hideEvent(self, event: QHideEvent) -> None:  # noqa: N802
         """Stops following the scene: a hidden sheet draws nothing."""
         super().hideEvent(event)
+        # Taken first, so that what closing it draws asks for no preview.
+        renderer, self.renderer = self.renderer, None
+        if renderer is not None:
+            renderer.close()
         self.refresh_timer.stop()
-        if self.renderer is not None:
-            self.renderer.close()
-            self.renderer = None
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
         """Draws the preview again once the views have been resized."""
@@ -574,6 +578,11 @@ class ExportSheet(QDialog):
         for row, (key, value) in enumerate(rows):
             self.preset_table.setItem(row, 0, QTableWidgetItem(key))
             self.preset_table.setItem(row, 1, QTableWidgetItem(value))
+        # As tall as its rows, so that none is half hidden.
+        table = self.preset_table
+        table.resizeRowsToContents()
+        frame = 2 * table.frameWidth()
+        table.setFixedHeight(table.verticalHeader().length() + frame)
         self.camera_box.clear()
         if self.preset.camera is not None:
             self.camera_box.addItem(PRESET_CAMERA)

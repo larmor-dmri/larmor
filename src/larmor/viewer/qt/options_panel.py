@@ -18,6 +18,7 @@ from larmor.viewer.model.events import (
     Event,
     ItemAdded,
     ItemRemoved,
+    ItemRenamed,
     OptionChanged,
     ViewStateChanged,
 )
@@ -35,6 +36,7 @@ from larmor.viewer.model.surface import SurfaceData
 from larmor.viewer.model.view_state import ViewField
 from larmor.viewer.model.viewer import Viewer
 from larmor.viewer.qt.field import (
+    ElidedLabel,
     ItemField,
     OptionField,
     SliderField,
@@ -80,6 +82,7 @@ class OptionsPanel(QScrollArea):
         self._infos: dict[OptionName, OptionInfo] = {}
         self._layout: QFormLayout | None = None
         self._extra: tuple[OptionGroup, QWidget] | None = None
+        self._title_label: ElidedLabel | None = None
         # The groups folded away, per category, while the program runs.
         self._folded: set[tuple[Category, OptionGroup]] = set()
         # The viewer can outlive the window: stop listening when the widget goes.
@@ -108,6 +111,15 @@ class OptionsPanel(QScrollArea):
                 # The sliders span the new data's range.
                 self._rebound([n for n, f in self._fields.items() if _slider(f)])
             self._refresh_items()  # the new data can fit other options, or not
+        else:
+            self._follow_name_or_main(event, target)
+
+    def _follow_name_or_main(self, event: Event, target: ItemId | Category) -> None:
+        """Shows an item's new name, and the main volume's Visible for the category."""
+        if isinstance(event, ItemRenamed):
+            if target == event.item.id and self._title_label is not None:
+                self._title_label.set_full_text(event.item.name)
+            self._refresh_items()  # the items an option can name, by name
         elif (
             isinstance(event, ViewStateChanged)
             and event.name == ViewField.MAIN_VOLUME
@@ -136,6 +148,7 @@ class OptionsPanel(QScrollArea):
         self._infos = {}
         self._layout = layout
         self._extra = None
+        self._title_label = None
         target = self.viewer.scene.view.selected
         if target is None:
             layout.addRow(QLabel("Select an item or a category in the scene tree."))
@@ -151,9 +164,10 @@ class OptionsPanel(QScrollArea):
         self, layout: QFormLayout, form: QWidget, target: ItemId | Category
     ) -> None:
         """Adds the title and the target's options, by group, to the form."""
-        title = QLabel(self._title(target))
+        title = ElidedLabel(self._title(target), form)
         title.setObjectName("formTitle")
         layout.addRow(title)
+        self._title_label = title
         category = self._category(target)
         shown = [
             (name, f, info)
@@ -294,7 +308,11 @@ class OptionsPanel(QScrollArea):
             self._show_group(self._layout, group, header.isChecked())
         for name, field in self._fields.items():
             rule = self._infos[name].enabled_when
-            field.setEnabled(rule is None or any(rule(o) for o in options))
+            enabled = rule is None or any(rule(o) for o in options)
+            field.setEnabled(enabled)
+            label = self._layout.labelForField(field)
+            if label is not None:
+                label.setEnabled(enabled)
 
     def _bounds(
         self, target: ItemId | Category, name: OptionName

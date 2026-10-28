@@ -16,13 +16,14 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from larmor.viewer.qt.style import RESOURCES
+from larmor.viewer.qt.style import RESOURCES, screen_room
 
 GUIDES = RESOURCES / "guides"
 # A guide is a Markdown file whose name starts with its place in the list.
 GUIDE_NAME = re.compile(r"\d{2}-.+\.md")  # two digits, so the names sort in order
 MAX_IMAGE_WIDTH = 640  # wider images, such as the whole window, fit the guide
-WINDOW_SIZE = (980, 720)  # px, the Help window when it first opens
+# px, the Help window when it first opens, if the screen has room
+WINDOW_SIZE = (980, 720)
 LIST_WIDTH = 220  # px, the list of guides
 
 
@@ -127,4 +128,7 @@ class HelpWindow(QDialog):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.panel)
-        self.resize(*WINDOW_SIZE)
+        room = screen_room(self)
+        self.resize(
+            min(WINDOW_SIZE[0], room.width()), min(WINDOW_SIZE[1], room.height())
+        )

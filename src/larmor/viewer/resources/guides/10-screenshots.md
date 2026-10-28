@@ -6,9 +6,10 @@ window of its own: a preview of the export is on its left and the choices are on
 the views while the sheet is open.
 
 **What** chooses what to save: **One image**, **2D views as separate images** or **3D rotation video**. For one
-image, **View** chooses one of the four views, or **All views** as the window lays them out (only the enlarged view,
-if one is enlarged); it starts on the view last clicked. **Image size** says how large the image or each frame will
-be.
+image, **View** chooses one of the four views, or **All views** as the window lays them out: only the enlarged view
+if one is enlarged, the view shown in the **1** layout, and otherwise the four views in a 2 x 2 grid, also for the
+**1 + 3** layout. It starts on the view last clicked each time the sheet opens. **Image size** says how large the
+image or each frame will be.
 
 ## Presets
 

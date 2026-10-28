@@ -5,6 +5,7 @@ from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Any
 
+from larmor._log import LarmorLogger
 from larmor.viewer.model.breakdown import BreakdownState
 from larmor.viewer.model.detail import Detail, DetailId
 from larmor.viewer.model.events import (
@@ -25,7 +26,7 @@ from larmor.viewer.model.events import (
 )
 from larmor.viewer.model.item import Category, Item, ItemId
 from larmor.viewer.model.matlab_import import MatlabPart
-from larmor.viewer.model.options import ItemOptions, OptionName
+from larmor.viewer.model.options import ItemOptions, OptionName, option_fields
 from larmor.viewer.model.phantom import PhantomPart, PhantomState
 from larmor.viewer.model.registration import Registration
 from larmor.viewer.model.view_state import ViewField, ViewState
@@ -54,10 +55,14 @@ class Scene:
         return lambda: self._subscribers.remove(callback)
 
     def _emit(self, event: Event) -> None:
-        """Calls every subscriber with the event."""
+        """Calls every subscriber with the event; one that fails is logged."""
         # A copy, as a callback may unsubscribe while the loop runs.
         for callback in list(self._subscribers):
-            callback(event)
+            try:
+                callback(event)
+            except Exception:
+                # The others still follow the change, which has happened.
+                LarmorLogger.exception("Following %s failed.", type(event).__name__)
 
     @property
     def items(self) -> list[Item]:
@@ -69,6 +74,22 @@ class Scene:
         if item_id not in self._items:
             raise ValueError(f"There is no item {item_id}.")
         return self._items[item_id]
+
+    def naming(self, item_id: ItemId) -> list[Item]:
+        """Returns the other items with an option naming this one, such as MODULATE.
+
+        Tractograms naming it among their regions are left out.
+        """
+        return [
+            other
+            for other in self._items.values()
+            if any(
+                info.item_ref
+                and name != OptionName.REGIONS
+                and getattr(other.options, name) == item_id
+                for name, (_, info) in option_fields(other.options).items()
+            )
+        ]
 
     def in_category(self, category: Category) -> list[Item]:
         """Returns the items of a category, in scene tree order."""

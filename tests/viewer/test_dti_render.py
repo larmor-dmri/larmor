@@ -57,6 +57,13 @@ def test_the_modulating_image_scales_the_colours_clipped_to_0_and_1() -> None:
     np.testing.assert_allclose(_rgb(colours), expected, atol=1e-7)
 
 
+def test_a_4d_modulating_image_of_one_volume_weighs_as_its_volume() -> None:
+    vectors = _vectors([[1.0, 1.0, 1.0]] * 2)
+    weights = Volume(np.array([0.5, 1.0], np.float32).reshape(2, 1, 1, 1), np.eye(4))
+    colours = dti_colours(vectors, weights)
+    np.testing.assert_allclose(_rgb(colours), [[0.5] * 3, [1.0] * 3])
+
+
 def test_an_overlay_is_transparent_where_it_has_no_colour() -> None:
     colours = dti_colours(_vectors([[0.0, 0.0, 0.0], [0.0, 0.2, 0.0]]), None, True)
     np.testing.assert_array_equal(colours[0, 0, :, 3], [0, 1])

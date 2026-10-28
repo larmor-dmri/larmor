@@ -52,6 +52,11 @@ def test_label_0_is_transparent_and_the_others_opaque() -> None:
     assert list(colours[:, 3]) == [0.0, 1.0, 1.0, 1.0]
 
 
+def test_nan_is_transparent_like_label_0() -> None:
+    colours = _table(_label_colours(np.array([np.nan, 2.0]), {}))
+    assert list(colours[:, 3]) == [0.0, 1.0]
+
+
 def test_label_0_is_transparent_even_with_a_colour_in_the_table() -> None:
     table = {0: Label("Unknown", (255, 255, 255)), 5: Label("Five", (255, 0, 51))}
     colours = _table(_label_colours(np.array([0.0, 5.0]), table))

@@ -117,8 +117,9 @@ and Draw bundle (N). Next to them are the three layouts of the views: **2 x 2**,
 selected view large with the other three stacked beside it, and **1**, which shows the selected view alone. The
 Crosshair (X) and Overlay (I) switches on the right show or hide the crosshair and the text over the views.
 
-**Ctrl+0** hides the panels either side of the views and brings them back. You can drag the edge between a panel
-and the views to make it wider, and the viewer remembers the widths.
+**Ctrl+0**, or **Hide or show the side panels** in the View menu, hides the panels either side of the views and
+brings them back. You can drag the edge between a panel and the views to make it wider, and the viewer remembers
+the widths; **Reset the panels' layout** in the View menu puts the panels back as they were at first start.
 
 ## The scene tree
 

@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QPushButton,
     QScrollArea,
@@ -48,6 +49,8 @@ from larmor.viewer.qt.options_panel import Extra, OptionsPanel
 from larmor.viewer.qt.settings_panel import SCENE_SETTINGS, SettingsPanel
 
 FOD_HEIGHT = 240  # px, the canvas of the FOD glyph at the cursor
+LABELS_HEIGHT = 200  # px, the least the labels list gets
+READOUT_ROWS = 5  # the rows, header included, the readout shows at least
 # The layouts as the Scene tab and the toolbar name them.
 LAYOUT_NAMES = {
     Layout.GRID: "2 x 2",
@@ -116,31 +119,41 @@ def layer_readout(viewer: Viewer) -> list[tuple[str, str]]:
     return rows
 
 
-class CursorTab(QWidget):
+class CursorTab(QScrollArea):
     """Shows what every visible item holds at the cursor, an FOD and labels.
 
     The FOD glyph is the selected FOD's, or the first one's, and the labels are
     those of the selected overlay, or the first one, while it is shown as a
-    parcellation.
+    parcellation. A tab too short for all three scrolls.
     """
 
     def __init__(self, viewer: Viewer, parent: QWidget | None = None) -> None:
         """Builds the readout, the FOD glyph and the labels list."""
         super().__init__(parent)
         self.viewer = viewer
-        self.readout = QTreeWidget(self)
+        self.setWidgetResizable(True)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        content = QWidget(self)
+        self.readout = QTreeWidget(content)
         self.readout.setObjectName("cursorReadout")
         self.readout.setColumnCount(2)
         self.readout.setHeaderLabels(["Item", "At the cursor"])
         self.readout.setRootIsDecorated(False)
-        self.position = QLabel(self)
+        # The values stay whole; a long name is cut short instead.
+        header = self.readout.header()
+        header.setStretchLastSection(False)
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        rows = self.readout.fontMetrics().height() + 8
+        self.readout.setMinimumHeight(READOUT_ROWS * rows)
+        self.position = QLabel(content)
         self.position.setObjectName("panelHint")
         self.fod = ItemPanel(
             viewer,
             Category.FODS,
             lambda item_id, panel: FodInspectorView(viewer, item_id, panel),
             "",
-            self,
+            content,
         )
         self.fod.setFixedHeight(FOD_HEIGHT)
         self.labels = ItemPanel(
@@ -148,14 +161,16 @@ class CursorTab(QWidget):
             Category.OVERLAYS,
             lambda item_id, panel: LabelsList(viewer, item_id, panel),
             "",
-            self,
+            content,
         )
-        layout = QVBoxLayout(self)
+        self.labels.setMinimumHeight(LABELS_HEIGHT)
+        layout = QVBoxLayout(content)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.position)
         layout.addWidget(self.readout, 1)
         layout.addWidget(self.fod)
         layout.addWidget(self.labels, 2)
+        self.setWidget(content)
         # The viewer can outlive the tab: stop listening when it goes.
         unsubscribe = viewer.scene.subscribe(self._on_event)
         self.destroyed.connect(lambda *_: unsubscribe())
@@ -167,8 +182,8 @@ class CursorTab(QWidget):
         self.position.setText(f"Cursor at ({x:.1f}, {y:.1f}, {z:.1f}) mm")
         self.readout.clear()
         for name, text in layer_readout(self.viewer):
-            QTreeWidgetItem(self.readout, [name, text])
-        self.readout.resizeColumnToContents(0)
+            row = QTreeWidgetItem(self.readout, [name, text])
+            row.setToolTip(0, name)
         scene = self.viewer.scene
         self.fod.setVisible(bool(scene.in_category(Category.FODS)))
         shown = self.labels.item_id

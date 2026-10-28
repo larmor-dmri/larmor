@@ -48,8 +48,10 @@ A detail window shows a rectangle of a 2D view on its own, large enough to see e
 the Zoom box tool (**Z**) and drag a rectangle in a 2D view, or right-click and choose **Zoom box from here** for a
 12 x 12 voxel box around the point. The rectangle snaps to the voxels of the main volume, or of the FOD when no
 volume is loaded, and opens in a floating window, whose title names the FOD, the view, the slice and the size, such
-as "Detail - wmfod.mif - coronal y 60 - 12 x 12 voxels". Several detail windows can be open at once. Each one's
-rectangle stays outlined in its view, and dragging the outline's edge moves the detail.
+as "Detail - wmfod.mif - coronal y 60 - 12 x 12 voxels". The keys stay with the main window, so you can go on
+working in the views. Several detail windows can be open at once. Each one's rectangle stays outlined in its view,
+and dragging the outline's edge moves the detail. Ctrl+W or Escape in a detail window closes it. When the main
+volume changes, each detail keeps showing the same place, snapped to the new volume's voxels.
 
 The detail draws the slices without smoothing, so each voxel shows as a square, and builds the FOD glyphs for the
 rectangle alone, at a sphere detail of its own (12 at first, set with **Glyph detail** in its toolbar). Its

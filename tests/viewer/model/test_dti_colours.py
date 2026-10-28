@@ -47,13 +47,13 @@ def test_dti_colours_can_be_turned_on_and_off_for_3_volumes(
     assert _option(viewer, item.id, OptionName.DTI) is False
 
 
-def test_item_choices_are_the_other_3d_images_on_the_same_grid(
+def test_item_choices_are_the_other_images_of_one_volume_on_the_same_grid(
     viewer: Viewer, dti: Item
 ) -> None:
     shifted = np.eye(4)
     shifted[0, 3] = 1.0
     fa = viewer.add(_image(), Category.OVERLAYS, name="fa")
-    md = viewer.add(_image(), Category.VOLUMES, name="md")
+    md = viewer.add(_image(1), Category.VOLUMES, name="md")
     viewer.add(_image(shape=(2, 3, 5)), Category.OVERLAYS, name="other shape")
     viewer.add(_image(affine=shifted), Category.OVERLAYS, name="other affine")
     viewer.add(_image(3), Category.OVERLAYS, name="4d")

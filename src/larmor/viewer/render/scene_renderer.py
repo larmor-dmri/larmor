@@ -168,6 +168,12 @@ class SceneRenderer:
         self._noticed.pop(event.item.id, None)
         if isinstance(event, DataChanged):  # drawn again, in the same place
             self._add(event.item)
+            # The items drawn with its data, as modulated or coloured by it, too.
+            for named_by in self.viewer.scene.naming(event.item.id):
+                dependent = self.adapters.pop(named_by.id, None)
+                if dependent is not None:
+                    dependent.close()
+                    self._add(named_by)
             # The tractograms it is a mask of filter their streamlines again.
             for other in self.adapters.values():
                 if isinstance(other, TractogramAdapter) and event.item.id in (

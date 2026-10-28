@@ -352,7 +352,9 @@ def test_a_surface_of_an_old_level_stays_hidden_until_its_replacement_is_ready(
 
 
 def test_a_failed_surface_is_computed_again_when_next_asked_for(
-    views: dict[ViewKind, ViewRenderer], monkeypatch: pytest.MonkeyPatch
+    views: dict[ViewKind, ViewRenderer],
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     computed: list[float] = []
 
@@ -367,9 +369,9 @@ def test_a_failed_surface_is_computed_again_when_next_asked_for(
     item = viewer.add(_volume(), Category.OVERLAYS)
     viewer.set(item.id, OptionName.SURFACE_3D, False)
     three_d = _3d(_adapter(viewer, views, item))
-    # Off screen the work runs at once, and its error reaches the caller.
-    with pytest.raises(RuntimeError, match="no surface"):
-        viewer.set(item.id, OptionName.SURFACE_3D, True)
+    # Off screen the work runs at once; the scene logs its error.
+    viewer.set(item.id, OptionName.SURFACE_3D, True)
+    assert "no surface" in caplog.text
     assert three_d.surface is None
     viewer.set(item.id, OptionName.OPACITY_3D, 0.5)
     assert computed == [2.5, 2.5]
@@ -782,7 +784,9 @@ def test_a_gradient_of_a_volume_no_longer_shown_is_ignored(
 
 
 def test_a_failed_gradient_is_asked_for_again_when_next_shown(
-    views: dict[ViewKind, ViewRenderer], monkeypatch: pytest.MonkeyPatch
+    views: dict[ViewKind, ViewRenderer],
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     asked: list[int] = []
 
@@ -797,9 +801,9 @@ def test_a_failed_gradient_is_asked_for_again_when_next_shown(
     item = viewer.add(_volume(), Category.VOLUMES)
     viewer.set(item.id, OptionName.OPACITY_3D, 0.0)
     adapter = _adapter(viewer, views, item)
-    # Off screen the work runs at once, and its error reaches the caller.
-    with pytest.raises(RuntimeError, match="no gradient"):
-        viewer.set(item.id, OptionName.OPACITY_3D, 0.5)
+    # Off screen the work runs at once; the scene logs its error.
+    viewer.set(item.id, OptionName.OPACITY_3D, 0.5)
+    assert "no gradient" in caplog.text
     assert _material(adapter).gradient is None
     viewer.set(item.id, OptionName.OPACITY_3D, 0.7)
     assert len(asked) == 2
