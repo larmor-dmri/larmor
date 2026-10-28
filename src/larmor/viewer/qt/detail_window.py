@@ -5,7 +5,7 @@ from typing import ClassVar
 from weakref import ref
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QAction, QCloseEvent, QResizeEvent
+from PySide6.QtGui import QAction, QCloseEvent, QKeySequence, QResizeEvent, QShortcut
 from PySide6.QtWidgets import (
     QFileDialog,
     QLabel,
@@ -77,8 +77,8 @@ class _AspectBox(QWidget):
 class DetailWindow(QWidget):
     """Shows one detail window's picture, with a toolbar for its settings and exports.
 
-    Closing the window closes the detail. The window remembers its height for
-    the next detail opened.
+    Closing the window, also with Ctrl+W or Escape, closes the detail. The window
+    remembers its height for the next detail opened.
     """
 
     # The canvas height the last detail window had, for the next one.
@@ -108,6 +108,8 @@ class DetailWindow(QWidget):
         layout.addWidget(self.box, stretch=1)
         layout.addWidget(self.message)
         self._unsubscribe = viewer.scene.subscribe(self._on_event)
+        for keys in _close_keys():
+            QShortcut(keys, self, self.close)
         self._show_detail()
         aspect = self.box.aspect
         height = DetailWindow.last_height
@@ -262,6 +264,15 @@ class DetailWindow(QWidget):
         super().closeEvent(event)
 
 
+def _close_keys() -> list[QKeySequence]:
+    """Returns the keys that close a detail window, Ctrl+W and Escape among them."""
+    keys = QKeySequence.keyBindings(QKeySequence.StandardKey.Close)
+    for extra in (QKeySequence("Ctrl+W"), QKeySequence(Qt.Key.Key_Escape)):
+        if extra not in keys:
+            keys.append(extra)
+    return keys
+
+
 def follow_details(parent: QWidget, viewer: Viewer) -> None:
     """Opens a DetailWindow for each detail the viewer opens from now on.
 
@@ -279,7 +290,11 @@ def follow_details(parent: QWidget, viewer: Viewer) -> None:
         if isinstance(event, DetailOpened) and window_parent is not None:
             window = DetailWindow(viewer, event.detail.id, window_parent)
             windows[event.detail.id] = window
+            # The keys stay with the main window, as after a zoom box drag.
+            window.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
             window.show()
+            window.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating, False)
+            window_parent.activateWindow()
         elif isinstance(event, DetailClosed):
             windows.pop(event.detail.id, None)
 

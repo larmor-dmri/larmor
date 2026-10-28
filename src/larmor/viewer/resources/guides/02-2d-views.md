@@ -30,7 +30,7 @@ the edge of a detail window's box, takes that instead of the tool.
 | O | Sphere | Places a sphere region at the click; a drag from the centre sets its radius |
 | B | Box | Draws a box region over the rectangle dragged, as deep as a tractogram's slab |
 | Z | Zoom box | Drags a rectangle that opens in a detail window |
-| N | Draw bundle | Draws a phantom bundle (see [Phantoms](15-phantoms.md)) |
+| N | Draw bundle | Draws a phantom bundle, in the Simulate workspace (see [Phantoms](15-phantoms.md)) |
 
 Escape returns to the Cursor tool once it has done its other jobs, such as stopping a bundle being drawn. Regions
 and their handles are explained in [Tractograms](05-tractograms.md). The zoom box snaps to the voxels of the main

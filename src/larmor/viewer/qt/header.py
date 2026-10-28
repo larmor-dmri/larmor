@@ -3,7 +3,7 @@
 from typing import override
 
 from PySide6.QtCore import QEvent, QSize, Qt, Signal
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QKeySequence
 from PySide6.QtWidgets import (
     QButtonGroup,
     QHBoxLayout,
@@ -24,6 +24,7 @@ from larmor.viewer.model.events import (
 )
 from larmor.viewer.model.phantom import run_problems
 from larmor.viewer.model.phantom_editor import item_sources
+from larmor.viewer.model.shortcuts import SHORTCUTS, Command
 from larmor.viewer.model.view_state import Layout, Tool, ViewField, Workspace
 from larmor.viewer.model.viewer import WORKSPACE_TOOLS, Viewer
 from larmor.viewer.qt.style import icon_path
@@ -86,7 +87,9 @@ class Header(QWidget):
         self.export_button = QPushButton("Export...", self)
         self.export_button.setToolTip("Save the views as images or a video")
         self.export_button.clicked.connect(self.export_requested)
-        self.settings_button = _icon_button("settings", "Settings (Ctrl+,)", self)
+        self.settings_button = _icon_button(
+            "settings", f"Settings ({key_text(Command.SETTINGS)})", self
+        )
         self.settings_button.clicked.connect(self.settings_requested)
         self.help_button = _icon_button("help", "Help (F1)", self)
         self.help_button.clicked.connect(self.help_requested)
@@ -154,7 +157,9 @@ class Header(QWidget):
         if self.running:
             self.run_button.setToolTip("A simulation is running")
         else:
-            self.run_button.setToolTip(problem or "Simulate the phantom (Ctrl+R)")
+            self.run_button.setToolTip(
+                problem or f"Simulate the phantom ({key_text(Command.RUN_PHANTOM)})"
+            )
 
     def dataset_name(self) -> str:
         """Returns the name the header shows: the session's, or the main volume's."""
@@ -174,7 +179,12 @@ class Header(QWidget):
         return found[0].text if found else None
 
     def _on_event(self, event: Event) -> None:
-        """Shows the header again after a change it shows."""
+        """Shows the header again after a change it shows.
+
+        The session's name goes once every item has gone.
+        """
+        if isinstance(event, ItemRemoved) and not self.viewer.scene.items:
+            self.session = None
         if isinstance(event, ViewStateChanged) and event.name not in (
             ViewField.WORKSPACE,
             ViewField.MAIN_VOLUME,
@@ -203,10 +213,13 @@ class ViewToolbar(QWidget):
         row = QHBoxLayout(self)
         row.setContentsMargins(10, 2, 10, 2)
         row.setSpacing(2)
+        # One tool and one layout at a time: a click on the checked one keeps it.
+        tools, layouts = QButtonGroup(self), QButtonGroup(self)
         self.tools: dict[Tool, QToolButton] = {}
         for tool, (name, key) in TOOL_NAMES.items():
             button = _toggle(f"{name}  {key}", f"{name} ({key})", self)
             button.clicked.connect(lambda _, t=tool: self.choose(t))
+            tools.addButton(button)
             row.addWidget(button)
             self.tools[tool] = button
         row.addSpacing(16)
@@ -214,6 +227,7 @@ class ViewToolbar(QWidget):
         for layout, (name, tip) in LAYOUT_BUTTONS.items():
             button = _toggle(name, tip, self)
             button.clicked.connect(lambda _, lay=layout: viewer.set_layout(lay))
+            layouts.addButton(button)
             row.addWidget(button)
             self.layouts[layout] = button
         row.addStretch(1)
@@ -273,6 +287,12 @@ def _toggle(text: str, tip: str, parent: QWidget) -> QToolButton:
     button.setCheckable(True)
     button.setAutoRaise(True)
     return button
+
+
+def key_text(command: Command) -> str:
+    """Returns a shortcut's first keys as this platform writes them, as Cmd+R."""
+    keys = QKeySequence(SHORTCUTS[command].keys[0])
+    return keys.toString(QKeySequence.SequenceFormat.NativeText)
 
 
 def _icon_button(icon: str, tip: str, parent: QWidget) -> QToolButton:

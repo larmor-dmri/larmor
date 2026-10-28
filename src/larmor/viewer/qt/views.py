@@ -743,5 +743,20 @@ def stop_canvases(root: QWidget) -> None:
     Call it before root's widgets are deleted, as when its window closes.
     """
     for canvas in root.findChildren(QRenderWidget):
+        _drop_frame_copy(canvas)
         canvas.close()
     finish_gpu_work()
+
+
+def _drop_frame_copy(canvas: QRenderWidget) -> None:
+    """Waits for the frame a canvas is copying back from the GPU, and drops it.
+
+    Otherwise the copy shows the frame once it arrives, after the canvas may have
+    been deleted. rendercanvas offers no public way to do this; without its
+    downloader nothing is dropped.
+    """
+    context = getattr(canvas, "_canvas_context", None)
+    downloader = getattr(context, "_downloader", None)
+    clear = getattr(downloader, "_clear_pending_download", None)
+    if callable(clear):
+        clear()
