@@ -117,8 +117,9 @@ and Draw bundle (N). Next to them are the three layouts of the views: **2 x 2**,
 selected view large with the other three stacked beside it, and **1**, which shows the selected view alone. The
 Crosshair (X) and Overlay (I) switches on the right show or hide the crosshair and the text over the views.
 
-**Ctrl+0** hides the panels either side of the views and brings them back. You can drag the edge between a panel
-and the views to make it wider, and the viewer remembers the widths.
+**Ctrl+0**, or **Hide or show the side panels** in the View menu, hides the panels either side of the views and
+brings them back. You can drag the edge between a panel and the views to make it wider, and the viewer remembers
+the widths; **Reset the panels' layout** in the View menu puts the panels back as they were at first start.
 
 ## The scene tree
 
@@ -129,7 +130,8 @@ them. Each row has an eye, which shows or hides the item, the item's name, with 
 note on its state: an overlay's colormap and threshold, an FOD's basis, or how many of a tractogram's streamlines
 its regions keep. A category's eye acts on all its items.
 
-The **Delete** key removes the selected item, or every item of the selected category after asking. An item's
+The **Delete** key removes the selected item, or every item of the selected category after asking. Shift-click or
+Ctrl-click (Cmd-click on macOS) selects several items, which Delete then removes together after asking. An item's
 right-click menu has **Remove**, **Save As...** and **Rename**. Below the tree, **Open files...** opens files and
 **Session** opens or saves a session (see [Sessions](11-sessions.md)).
 

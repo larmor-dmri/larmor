@@ -138,6 +138,11 @@ def _in_view(viewer: Viewer) -> bool:
     return viewer.scene.view.workspace == Workspace.VIEW
 
 
+def _in_simulate(viewer: Viewer) -> bool:
+    """Tells whether the Simulate workspace shows, where bundles are drawn."""
+    return viewer.scene.view.workspace == Workspace.SIMULATE
+
+
 def _new_bundle(viewer: Viewer, view: ViewKind) -> None:
     """Starts drawing a bundle with the Draw bundle tool."""
     viewer.start_bundle()
@@ -442,6 +447,7 @@ SHORTCUTS: dict[Command, Shortcut] = {
             "Draw a new bundle: strokes or Ctrl+clicks in the 2D views add points",
             VIEW_KINDS,
             _new_bundle,
+            enabled_when=_in_simulate,
         ),
         Shortcut(
             Command.FINISH_BUNDLE,

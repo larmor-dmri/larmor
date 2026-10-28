@@ -41,15 +41,16 @@ def start_run(
     """Simulates the phantom in the background, then opens what it wrote.
 
     The phantom is checked and taken as it is now; later edits do not change
-    the run. Once it ends, the outputs open through open_files. A cancelled
-    run opens nothing.
+    the run. Once it ends, the outputs open through open_files, unless another
+    phantom was opened during the run. A cancelled run opens nothing.
 
     Args:
         viewer: The viewer whose phantom runs.
         jobs: The job runner.
         folder: The output folder.
         open_files: Opens files as items of a category.
-        overwrite: Replace outputs already in the folder.
+        overwrite: Replace outputs already in the folder, and write into a
+            folder that holds other files.
         on_done: Told the files written, after they are opened.
         on_failed: Told why the run failed; the runner's error box if None.
 
@@ -63,12 +64,14 @@ def start_run(
 
     def done(outputs: RunOutputs) -> None:
         """Opens the run's outputs and records the run in the viewer."""
-        open_outputs(outputs.files, open_files)
+        if viewer.is_current_run(outputs):
+            open_outputs(outputs.files, open_files)
         viewer.finish_run(outputs)
         if on_done is not None:
             on_done(outputs)
 
-    jobs.start("Simulation", partial(run_simulation, inputs, path), done, on_failed)
+    work = partial(run_simulation, inputs, path, force=overwrite)
+    jobs.start("Simulation", work, done, on_failed)
 
 
 def start_open(

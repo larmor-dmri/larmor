@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 from PySide6.QtCore import QEvent, QPoint, QPointF, Qt
-from PySide6.QtGui import QMouseEvent
+from PySide6.QtGui import QMouseEvent, QShortcut
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 from pytestqt.qtbot import QtBot
@@ -281,7 +281,10 @@ def test_tab_cycles_the_role_and_delete_removes_the_selected_region(
     viewer = window.viewer
     sphere = viewer.add_sphere()
     viewer.select(sphere)
-    QTest.keyClick(window, Qt.Key.Key_Tab)
+    # As after a click in the view; a panel's widget would keep Tab.
+    canvas = _panel(window, ViewKind.AXIAL).canvas
+    canvas.setFocus()
+    QTest.keyClick(canvas, Qt.Key.Key_Tab)
     assert _regions(viewer)[0].role == RegionRole.EXCLUDE
     QTest.keyClick(window, Qt.Key.Key_Delete)
     assert viewer.scene.in_category(Category.REGIONS) == []
@@ -327,6 +330,39 @@ def test_a_closed_detail_window_is_deleted(window: MainWindow, qtbot: QtBot) -> 
     detail_window.close()
     qtbot.waitUntil(lambda: not _detail_windows(window, detail_id))
     assert detail_id not in window.viewer.scene.details
+
+
+def test_a_new_detail_window_leaves_the_keys_with_the_main_window(
+    window: MainWindow, qtbot: QtBot
+) -> None:
+    window.viewer.set_tool(Tool.ZOOM_BOX)
+    detail_id = window.viewer.open_detail(ViewKind.AXIAL, (2, 2, 8, 4))
+    qtbot.wait(20)
+    assert QApplication.activeWindow() is window
+    QTest.keyClick(window, Qt.Key.Key_Escape)
+    assert window.viewer.scene.view.tool == Tool.CURSOR
+    (detail_window,) = _detail_windows(window, detail_id)
+    keys = {s.key().toString(): s for s in detail_window.findChildren(QShortcut)}
+    assert "Ctrl+W" in keys
+    keys["Esc"].activated.emit()
+    assert detail_id not in window.viewer.scene.details
+
+
+def test_a_wide_detail_window_fits_the_screen_and_records_its_size(
+    window: MainWindow, qtbot: QtBot
+) -> None:
+    detail_id = window.viewer.open_detail(ViewKind.AXIAL, (0, 10, 32, 4))
+    (detail_window,) = _detail_windows(window, detail_id)
+    qtbot.waitExposed(detail_window)
+    room = detail_window.screen().availableGeometry()
+    assert detail_window.width() <= room.width()
+    canvas = detail_window.canvas.size()
+    assert window.viewer.scene.details[detail_id].size == (
+        canvas.width(),
+        canvas.height(),
+    )
+    for bar in (detail_window.toolbar, detail_window.exports):
+        assert bar.sizeHint().width() <= detail_window.width()
 
 
 def test_the_detail_window_s_toolbar_sets_the_detail_and_saves_it(

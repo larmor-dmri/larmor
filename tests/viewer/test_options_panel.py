@@ -540,7 +540,9 @@ def test_slider_field_with_an_offset_minimum(qtbot: QtBot) -> None:
     assert sent == [2.5]
 
 
-@pytest.mark.parametrize(("text", "value"), [("0.25", 0.25), ("1", 1.0), ("2", 2.0)])
+@pytest.mark.parametrize(
+    ("text", "value"), [("0.25", 0.25), ("1", 1.0), ("2", 2.0), ("0,5", 0.5)]
+)
 def test_typed_number_is_sent_once_as_float(
     text: str, value: float, slider: SliderField
 ) -> None:
@@ -551,7 +553,7 @@ def test_typed_number_is_sent_once_as_float(
     assert type(sent[0]) is float
 
 
-@pytest.mark.parametrize("text", ["abc", "0,5", ""])
+@pytest.mark.parametrize("text", ["abc", "0,5,1", ""])
 def test_typed_non_number_is_sent_as_the_raw_text(
     text: str, slider: SliderField
 ) -> None:
@@ -560,6 +562,20 @@ def test_typed_non_number_is_sent_as_the_raw_text(
     slider.text.setText(text)
     slider.text.editingFinished.emit()
     assert sent == [text]
+
+
+@pytest.mark.parametrize(
+    ("value", "text"), [(0.000267724, "0.00026772"), (1e6, "1000000"), (-2.5, "-2.5")]
+)
+def test_slider_text_shows_small_and_large_numbers_whole(
+    value: float, text: str, qtbot: QtBot
+) -> None:
+    field = SliderField(OptionInfo("Level"), bounds=(-1e6, 1e6))
+    qtbot.addWidget(field)
+    field.show_value(value)
+    assert field.text.text() == text
+    metrics = field.text.fontMetrics()
+    assert metrics.horizontalAdvance(text) < field.text.contentsRect().width()
 
 
 def test_slider_field_shows_mixed_as_empty_text(slider: SliderField) -> None:
@@ -2400,3 +2416,27 @@ def test_a_region_shows_the_radius_of_a_sphere_and_the_size_of_a_box(
     assert [b.value() for b in field.boxes] == [6.0, 8.0, 10.0]
     field.boxes[2].setValue(12.0)
     assert getattr(viewer.scene.item(box).options, OptionName.SIZE) == (6.0, 8.0, 12.0)
+
+
+def test_the_title_follows_a_rename_and_a_long_name_is_cut_short(
+    viewer: Viewer, panel: OptionsPanel, qtbot: QtBot
+) -> None:
+    item = viewer.add(_volume(), Category.VOLUMES, name="t1")
+    viewer.select(item.id)
+    long_name = "sub-01_ses-baseline_acq-mprage_run-1_desc-preproc_T1w.nii.gz"
+    viewer.rename(item.id, long_name)
+    title = panel._title_label
+    assert title is not None
+    assert title.toolTip() == long_name
+    panel.resize(300, 600)
+    panel.show()
+    qtbot.waitExposed(panel)
+    assert title.text() != long_name
+    assert not panel.horizontalScrollBar().isVisible()
+
+
+def test_a_boxs_page_fits_a_narrow_panel(viewer: Viewer, panel: OptionsPanel) -> None:
+    viewer.select(viewer.add_box((0.0, 0.0, 0.0), (6.0, 8.0, 10.0)))
+    form = panel.widget()
+    assert form is not None
+    assert form.minimumSizeHint().width() <= 300

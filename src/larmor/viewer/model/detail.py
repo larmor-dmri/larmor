@@ -222,6 +222,37 @@ def clipped_box(grid: Grid, view: ViewKind, box: VoxelBox) -> VoxelBox | None:
     return (i0, j0, i1 - i0, j1 - j0)
 
 
+def regrid_box(
+    old: Grid, new: Grid, view: ViewKind, box: VoxelBox, position: Vec3
+) -> VoxelBox | None:
+    """Returns a rectangle of one grid's voxels as the nearest of another's.
+
+    The rectangle keeps its place in the world, its sides on the new grid's
+    nearest voxel edges, clipped to the new grid.
+
+    Args:
+        old: The grid the rectangle is in.
+        new: The grid to give it in.
+        view: The 2D view it is a rectangle of.
+        box: The rectangle, in voxels of old.
+        position: A point of the slice shown, mm.
+
+    Returns:
+        The rectangle in voxels of new, or None if it lies outside new.
+    """
+    _, first, second = plane_axes(new, view)
+    inverse = np.linalg.inv(new.affine)
+    corners = np.array(detail_field(old, view, box, position))
+    voxels = corners @ inverse[:3, :3].T + inverse[:3, 3]
+    low = voxels.min(axis=0)[[first, second]]
+    high = voxels.max(axis=0)[[first, second]]
+    # Voxel k spans k - 0.5 to k + 0.5: the nearest edge, halves up.
+    lo_edge = np.floor(low + 1.0).astype(int)
+    size = np.maximum(np.floor(high + 1.0).astype(int) - lo_edge, 1)
+    moved = (int(lo_edge[0]), int(lo_edge[1]), int(size[0]), int(size[1]))
+    return clipped_box(new, view, moved)
+
+
 def detail_title(
     name: str | None, view: ViewKind, slice_text: str, box: VoxelBox
 ) -> str:

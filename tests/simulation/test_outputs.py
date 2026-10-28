@@ -498,3 +498,36 @@ def test_bundle_names_must_name_every_bundle(tmp_path: Path) -> None:
     result = simulate(example.phantom, example.protocol, seed=1)
     with pytest.raises(ValueError, match="must name 2 bundles"):
         save_simulation(result, tmp_path / "out", bundle_names=["only one"])
+
+
+def test_a_bundle_of_csf_gives_no_peaks_and_the_bundle_mask_skips_the_background(
+    tmp_path: Path,
+) -> None:
+    centre = (AFFINE @ np.array([7.0, 7.0, 3.0, 1.0]))[:3]
+    line = np.array([centre - 12 * X, centre + 12 * X])
+    bundle = Bundle(BundleGeometry(line, num_streamlines=60, seed=0), tissue="CSF")
+    phantom = Phantom(GRID, bundles=(bundle,), background="CSF")
+    result = simulate(phantom, PROTOCOL, seed=1)
+    save_simulation(result, tmp_path / "out")
+    assert np.isnan(_load(tmp_path / "out" / "peaks.nii.gz")).all()
+    mask = _load(tmp_path / "out" / "mask_bundles.nii.gz").astype(bool)
+    np.testing.assert_array_equal(
+        mask, result.partition.bundle_fractions.sum(axis=-1) >= 0.5
+    )
+
+
+def test_echo_times_that_round_alike_get_files_of_their_own() -> None:
+    protocol = Protocol(PROTOCOL.gradients, 15.0, 30.0, [80.0, 80.0000001], 3000.0)
+    names = [
+        p.name for p in simulation_files(crossing(), protocol, "x", noise=False).dwi
+    ]
+    assert len(set(names)) == 2
+
+
+def test_saving_reports_its_progress_to_the_end(
+    simulated: SimulatedDWI, tmp_path: Path
+) -> None:
+    seen: list[tuple[int, int, str]] = []
+    save_simulation(simulated, tmp_path / "out", progress=lambda *a: seen.append(a))
+    assert [done for done, _, _ in seen] == list(range(1, seen[-1][1] + 1))
+    assert seen[-1][0] == seen[-1][1] and seen[-1][2] == "save"

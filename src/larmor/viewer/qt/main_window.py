@@ -39,6 +39,7 @@ from larmor.viewer.model.matlab_import import (
     values_spec,
 )
 from larmor.viewer.model.options import OptionGroup, OptionName
+from larmor.viewer.model.phantom import RunOutputs
 from larmor.viewer.model.registry import REGISTRY, SUBSETS
 from larmor.viewer.model.session import SUFFIX, SessionReport, read_session
 from larmor.viewer.model.settings import (
@@ -79,7 +80,7 @@ from larmor.viewer.qt.loading import (
     create_loader,
 )
 from larmor.viewer.qt.matlab_dialog import MatlabChoice, MatlabImportDialog
-from larmor.viewer.qt.phantom_panel import PhantomPanel
+from larmor.viewer.qt.phantom_panel import PhantomPanel, confirm_discard
 from larmor.viewer.qt.phantom_steps import (
     AllSettingsWindow,
     StepNavigator,
@@ -93,6 +94,7 @@ from larmor.viewer.qt.settings_panel import McpSwitch, SettingsSheet
 from larmor.viewer.qt.shortcuts import ShortcutsDialog, shortcut_actions
 from larmor.viewer.qt.view_grid import ViewGrid
 from larmor.viewer.qt.view_menu import build_view_menu, connect_views
+from larmor.viewer.qt.views import stop_canvases
 from larmor.viewer.render.scene_renderer import SceneRenderer
 
 if TYPE_CHECKING:
@@ -503,6 +505,14 @@ class MainWindow(QMainWindow):
             action.setText(name)
             action.setCheckable(True)
             workspaces.addAction(action)
+        view.addSeparator()
+        panels = self.shortcuts[Command.HIDE_PANELS]
+        panels.setText("Hide or show the side &panels")
+        view.addAction(panels)
+        reset_panels = QAction("Reset the panels' la&yout", self)
+        reset_panels.setToolTip("Put the panels back where they were at first start")
+        reset_panels.triggered.connect(self.docks.reset)
+        view.addAction(reset_panels)
         view.aboutToShow.connect(self._show_view_menu)
         self._show_view_menu()
 
@@ -875,15 +885,24 @@ class MainWindow(QMainWindow):
         )
 
     def new_phantom(self) -> None:
-        """Starts a phantom on the views' grid, or the default box, and shows it."""
+        """Starts a phantom on the views' grid, or the default box, and shows it.
+
+        Asks first if the phantom open has bundles.
+        """
+        if not confirm_discard(self, self.viewer.phantom):
+            return
         grid_of = self.viewer.scene.view.main_volume
-        self.viewer.new_phantom(grid_of=grid_of)
+        try:
+            self.viewer.new_phantom(grid_of=grid_of)
+        except ValueError as e:
+            self._message("Cannot start a phantom", str(e))
+            return
         self.show_phantom()
 
     def ask_open_phantom(self) -> None:
-        """Asks for a phantom file and opens it."""
+        """Asks for a phantom file and opens it, after asking to discard bundles."""
         path, _ = QFileDialog.getOpenFileName(self, "Open Phantom", "", _PHANTOM_FILTER)
-        if path:
+        if path and confirm_discard(self, self.viewer.phantom):
             self.open_phantom(path)
 
     def open_phantom(self, path: str | Path) -> None:
@@ -894,9 +913,9 @@ class MainWindow(QMainWindow):
             self._message("Cannot open phantom", str(e))
 
     def _ask_open_simulation(self) -> None:
-        """Asks for a simulation folder and opens it."""
+        """Asks for a simulation folder and opens it, once bundles may be discarded."""
         folder = QFileDialog.getExistingDirectory(self, "Open Simulation")
-        if folder:
+        if folder and confirm_discard(self, self.viewer.phantom):
             self.open_simulation(folder)
 
     def open_simulation(self, folder: str | Path) -> None:
@@ -974,12 +993,31 @@ class MainWindow(QMainWindow):
                 folder,
                 self.loader.open,
                 overwrite=overwrite,
-                on_done=lambda outputs: self.statusBar().showMessage(
-                    f"Simulation saved to {outputs.files.folder}", NOTICE_MS
-                ),
+                on_done=self._run_finished,
+                on_failed=lambda message: self._message("Simulation failed", message),
             )
         except (JobBusyError, ValueError) as e:
             self._message("Cannot run the phantom", str(e))
+
+    def _run_finished(self, outputs: RunOutputs) -> None:
+        """Says that a run finished, where it saved its files and what opened."""
+        folder = outputs.files.folder
+        self.statusBar().showMessage(f"Simulation saved to {folder}", NOTICE_MS)
+        opened = (
+            "Its images, tissue masks and fibre directions are open."
+            if self.viewer.is_current_run(outputs)
+            else "Its files are not opened, as another phantom was opened meanwhile."
+        )
+        box = QMessageBox(
+            QMessageBox.Icon.Information,
+            "Simulation finished",
+            f"The simulation is saved in {folder}. {opened}",
+            QMessageBox.StandardButton.Ok,
+            self,
+        )
+        box.setWindowModality(Qt.WindowModality.NonModal)
+        box.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        box.show()
 
     def _message(self, title: str, text: str) -> None:
         """Shows a warning without blocking the window."""
@@ -1005,7 +1043,7 @@ class MainWindow(QMainWindow):
             self.workspaces.show()
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
-        """Saves the panels' layout, stops the MCP server and the item panels."""
+        """Saves the panels' layout; stops the MCP server, the panels and the views."""
         if self.layout_path is not None:
             self.docks.save(self.layout_path)
         self.mcp.stop()
@@ -1014,6 +1052,7 @@ class MainWindow(QMainWindow):
             panel.drop()
         for sheet in self._sheets.values():
             sheet.close()
+        stop_canvases(self)
         super().closeEvent(event)
 
     def start_mcp(self, port: int | None = None) -> None:

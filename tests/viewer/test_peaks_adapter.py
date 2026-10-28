@@ -198,3 +198,13 @@ def test_switching_asymmetric_peaks_off_restores_the_full_lines(
     restored = adapter.lines[ViewKind.AXIAL].geometry.positions.data
     assert not np.array_equal(halves, full)
     np.testing.assert_array_equal(restored, full)
+
+
+def test_a_stale_request_failing_does_not_forget_the_current_one(
+    viewer: Viewer, views: dict[ViewKind, ViewRenderer], item: Item
+) -> None:
+    adapter = _adapter(viewer, views, item)
+    current = adapter._asked[ViewKind.AXIAL]
+    assert current is not None
+    adapter._failed(ViewKind.AXIAL, (None, 0.0, False, 0.0, False))
+    assert adapter._asked[ViewKind.AXIAL] == current

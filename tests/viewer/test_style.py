@@ -3,9 +3,9 @@ import re
 from pathlib import Path
 
 import pytest
-from PySide6.QtCore import QObject, Qt, Signal
+from PySide6.QtCore import QLocale, QObject, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QPalette
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QDoubleSpinBox
 
 from larmor.viewer import app as app_module
 from larmor.viewer.model import settings as settings_module
@@ -74,6 +74,20 @@ def test_a_theme_or_accent_setting_change_restyles(
     assert before != ""
     app_module.settings().set(name, value)
     assert qapp.styleSheet() != before
+
+
+def test_number_boxes_use_a_decimal_point_whatever_the_system_language(
+    qapp: QApplication, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    path = tmp_path / settings_module.SETTINGS_FILE
+    monkeypatch.setattr(settings_module, "settings_path", lambda: path)
+    monkeypatch.setattr(app_module, "_SETTINGS", None)
+    QLocale.setDefault(QLocale(QLocale.Language.Italian, QLocale.Country.Italy))
+    app_module.application()
+    box = QDoubleSpinBox()
+    box.setDecimals(1)
+    box.setValue(19.8)
+    assert box.text() == "19.8"
 
 
 class _Hints(QObject):

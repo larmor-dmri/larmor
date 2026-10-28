@@ -18,6 +18,7 @@ from larmor.viewer import (
     Viewer,
     ViewKind,
 )
+from larmor.viewer.model.options import TractogramOptions
 
 
 def _volume() -> Volume:
@@ -133,6 +134,27 @@ def test_a_moved_project_folder_opens_through_the_relative_paths(
     assert {i.source for i in viewer.scene.items} == set(
         _files(tmp_path / "b").values()
     )
+
+
+def test_a_moved_project_keeps_the_files_its_options_name(tmp_path: Path) -> None:
+    data = Path(__file__).parents[2] / "data" / "tsf"
+    project = tmp_path / "a"
+    project.mkdir()
+    for name in ("edges.tck", "edges.tsf"):
+        shutil.copy(data / name, project / name)
+    saved = Viewer()
+    tract = saved.load(project / "edges.tck", Category.TRACTOGRAMS)
+    saved.set(tract.id, OptionName.VALUES_FILE, str(project / "edges.tsf"))
+    saved.save_session(project / "s.lar.json")
+    shutil.move(project, tmp_path / "b")
+
+    viewer = Viewer()
+    report = viewer.load_session(tmp_path / "b" / "s.lar.json")
+
+    assert report.problems == ()
+    (item,) = viewer.scene.items
+    assert isinstance(item.options, TractogramOptions)
+    assert item.options.values_file == str(tmp_path / "b" / "edges.tsf")
 
 
 def test_a_file_loaded_by_a_relative_path_reopens_from_another_folder(

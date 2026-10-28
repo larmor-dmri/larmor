@@ -14,7 +14,7 @@ import numpy as np
 
 from larmor.io import read_bvals_bvecs
 from larmor.types import GradientTable, Grid, Tractogram, Volume
-from larmor.viewer.jobs import SAVING
+from larmor.viewer.jobs import SAVING, JobCancelledError
 from larmor.viewer.model.item import ItemId
 
 if TYPE_CHECKING:
@@ -37,6 +37,8 @@ type Report = Callable[[int, int, str], None]
 # The size of a new phantom's box and its voxels, in mm.
 DEFAULT_BOX_MM: Final = (60.0, 60.0, 60.0)
 DEFAULT_VOXEL_MM: Final = 2.0
+# The most voxels a phantom's grid may have.
+MAX_GRID_VOXELS: Final = 256**3
 # The upper bound of the bundle seeds the editor draws.
 SEED_LIMIT: Final = 2**31
 # The name of a simulation folder's description file, and its format name.
@@ -70,6 +72,13 @@ class CompartmentKind(StrEnum):
     CYLINDER = "cylinder"
     DOT = "dot"
     FREE_WATER = "free_water"
+
+
+class BvecFrame(StrEnum):
+    """The frame of a bvecs file, as `larmor.io.read_bvals_bvecs` names it."""
+
+    FSL = "fsl"  # along the grid's axes, x flipped for a positive determinant
+    WORLD = "world"
 
 
 class EchoKind(StrEnum):
@@ -128,12 +137,14 @@ class ScanField(StrEnum):
     NUM_B0 = "num_b0"
     GRADIENT_SEED = "gradient_seed"
     GRADIENT_FILES = "gradient_files"
+    BVEC_FRAME = "bvec_frame"
     SMALL_DELTA_MS = "small_delta_ms"
     BIG_DELTA_MS = "big_delta_ms"
     TE_MS = "te_ms"
     TR_MS = "tr_ms"
     SEQUENCE = "sequence"
     SNR = "snr"
+    NOISE_REFERENCE = "noise_reference"
     SEED = "seed"
 
 
@@ -326,20 +337,95 @@ class BundleSettings:
 
 
 @dataclass(frozen=True)
+class GradientRows:
+    """A gradient table kept exactly as it was read, such as a phantom file's.
+
+    Attributes:
+        bvals: The b-value of each volume, s/mm^2.
+        bvecs: The direction of each volume, in world coordinates.
+        b0_threshold: The b-value at or below which a volume counts as b = 0.
+        shell_epsilon: The gap between b-values that starts a new shell.
+    """
+
+    bvals: tuple[float, ...]
+    bvecs: tuple[Vec3, ...]
+    b0_threshold: float = 50.0
+    shell_epsilon: float = 80.0
+
+    @classmethod
+    def of(cls, table: GradientTable) -> GradientRows:
+        """Returns the rows of a gradient table."""
+        return cls(
+            tuple(float(b) for b in table.bvals),
+            tuple(_vec3([float(x) for x in v]) for v in table.bvecs),
+            float(table.b0_threshold),
+            float(table.shell_epsilon),
+        )
+
+    def table(self) -> GradientTable:
+        """Returns the rows as a gradient table."""
+        return GradientTable(
+            np.array(self.bvals, dtype=float),
+            np.array(self.bvecs, dtype=float).reshape(-1, 3),
+            b0_threshold=self.b0_threshold,
+            shell_epsilon=self.shell_epsilon,
+        )
+
+    def to_json(self) -> dict[str, object]:
+        """Returns the rows as JSON values."""
+        return {
+            "bvals": list(self.bvals),
+            "bvecs": [list(v) for v in self.bvecs],
+            "b0_threshold": self.b0_threshold,
+            "shell_epsilon": self.shell_epsilon,
+        }
+
+    @classmethod
+    def from_json(cls, data: object) -> GradientRows:
+        """Reads rows from `to_json`'s values.
+
+        Returns:
+            The rows.
+
+        Raises:
+            KeyError: If a value is missing.
+            TypeError: If a value is of the wrong type.
+            ValueError: If a value is invalid.
+        """
+        if not isinstance(data, dict):
+            raise TypeError("a gradient table must be a JSON object")
+        rows = cls(
+            tuple(_number(b) for b in data["bvals"]),
+            tuple(_vec3(v) for v in data["bvecs"]),
+            _number(data.get("b0_threshold", 50.0)),
+            _number(data.get("shell_epsilon", 80.0)),
+        )
+        rows.table()  # refused here if the rows do not make a table
+        return rows
+
+
+@dataclass(frozen=True)
 class ScanSettings:
-    """The scan, with its shells or gradient files, its timings and its noise."""
+    """The scan, with its gradients, its timings and its noise.
+
+    The gradients come from the gradient files if there are any, else from the
+    table read with a phantom file, else from the shells.
+    """
 
     shells: tuple[tuple[float, int], ...] = ((1000.0, 32),)  # (b s/mm^2, directions)
     num_b0: int = 1
     gradient_seed: int = 0  # of the shells' directions
-    gradient_files: tuple[Path, Path] | None = None  # bvals, bvecs (world frame)
+    gradient_files: tuple[Path, Path] | None = None  # bvals, bvecs
+    bvec_frame: BvecFrame = BvecFrame.FSL  # of the bvecs file
     small_delta_ms: float = 15.0
     big_delta_ms: float = 30.0
     te_ms: tuple[float, ...] = (80.0,)
     tr_ms: float = 3000.0
     sequence: EchoKind = EchoKind.SPIN_ECHO
     snr: float | None = None  # None for no noise
+    noise_reference: str = "WM"  # the tissue whose b = 0 signal the SNR is of
     seed: int = 0  # of the noise
+    table: GradientRows | None = None  # a phantom file's gradients, as read
 
     def to_json(self) -> dict[str, object]:
         """Returns the scan as JSON values."""
@@ -349,18 +435,23 @@ class ScanSettings:
             "num_b0": self.num_b0,
             "gradient_seed": self.gradient_seed,
             "gradient_files": None if files is None else [str(p) for p in files],
+            "bvec_frame": self.bvec_frame.value,
             "small_delta_ms": self.small_delta_ms,
             "big_delta_ms": self.big_delta_ms,
             "te_ms": list(self.te_ms),
             "tr_ms": self.tr_ms,
             "sequence": self.sequence.value,
             "snr": self.snr,
+            "noise_reference": self.noise_reference,
             "seed": self.seed,
+            "table": None if self.table is None else self.table.to_json(),
         }
 
     @classmethod
     def from_json(cls, data: Mapping[str, Any]) -> ScanSettings:
         """Reads a scan from `to_json`'s values.
+
+        Gradient files saved without a frame are taken in the world frame.
 
         Returns:
             ScanSettings: The scan.
@@ -372,6 +463,13 @@ class ScanSettings:
         for name in ScanField:
             if name in data:
                 values[name.value] = scan_value(name, data[name])
+        if data.get("gradient_files") is not None and "bvec_frame" not in data:
+            values["bvec_frame"] = BvecFrame.WORLD
+        if data.get("table") is not None:
+            try:
+                values["table"] = GradientRows.from_json(data["table"])
+            except (KeyError, TypeError, ValueError) as e:
+                raise ValueError(f"Scan table: {e}") from e
         return replace(cls(), **values)
 
 
@@ -479,6 +577,18 @@ def box_grid(size_mm: Sequence[float], voxel_mm: float) -> Grid:
     affine = np.diag([voxel_mm, voxel_mm, voxel_mm, 1.0])
     affine[:3, 3] = [-(n - 1) * voxel_mm / 2 for n in shape]
     return Grid((shape[0], shape[1], shape[2]), affine)
+
+
+def check_grid_size(grid: Grid) -> None:
+    """Raises ValueError if the grid has more than MAX_GRID_VOXELS voxels."""
+    count = math.prod(grid.shape[:3])
+    if count > MAX_GRID_VOXELS:
+        x, y, z = grid.shape[:3]
+        raise ValueError(
+            f"A grid of {x} x {y} x {z} voxels is too large for a phantom; it may "
+            f"have at most {MAX_GRID_VOXELS:,} voxels. Use larger voxels or a "
+            "smaller box."
+        )
 
 
 def default_tissues() -> tuple[TissueSettings, ...]:
@@ -611,8 +721,12 @@ def drawable(points: Sequence[Vec3]) -> bool:
     return bool(np.all(np.linalg.norm(steps, axis=1) > 0))
 
 
-def build_gradients(scan: ScanSettings) -> GradientTable:
-    """Builds the scan's gradient table, from its files or else from its shells.
+def build_gradients(scan: ScanSettings, grid: Grid) -> GradientTable:
+    """Builds the scan's gradient table, from its files, its table or its shells.
+
+    Args:
+        scan: The scan.
+        grid: The phantom's grid, which bvecs files in the FSL frame refer to.
 
     Returns:
         The gradient table, directions in world coordinates.
@@ -622,7 +736,9 @@ def build_gradients(scan: ScanSettings) -> GradientTable:
     """
     if scan.gradient_files is not None:
         bvals, bvecs = scan.gradient_files
-        return read_bvals_bvecs(bvals, bvecs, frame="world")
+        return read_bvals_bvecs(bvals, bvecs, frame=scan.bvec_frame.value, grid=grid)
+    if scan.table is not None:
+        return scan.table.table()
     import larmor.simulation as sim
 
     return sim.create_gradient_table(
@@ -630,8 +746,8 @@ def build_gradients(scan: ScanSettings) -> GradientTable:
     )
 
 
-def build_protocol(scan: ScanSettings) -> Protocol:
-    """Builds the simulation's protocol for the scan.
+def build_protocol(scan: ScanSettings, grid: Grid) -> Protocol:
+    """Builds the simulation's protocol for the scan on the phantom's grid.
 
     Returns:
         The protocol.
@@ -642,7 +758,7 @@ def build_protocol(scan: ScanSettings) -> Protocol:
     import larmor.simulation as sim
 
     return sim.Protocol(
-        build_gradients(scan),
+        build_gradients(scan, grid),
         scan.small_delta_ms,
         scan.big_delta_ms,
         list(scan.te_ms),
@@ -652,10 +768,10 @@ def build_protocol(scan: ScanSettings) -> Protocol:
 
 
 def scan_settings(protocol: Protocol) -> ScanSettings:
-    """Returns a protocol's timings as scan settings; its gradients become shells.
+    """Returns a protocol as scan settings, with its gradient table kept as it is.
 
-    Directions are made again from the shells, so a table read from files keeps
-    its b-values and counts but not its exact directions.
+    The shells, which describe the table, are its b-values rounded to 10 s/mm^2
+    with their counts.
 
     Returns:
         The scan settings.
@@ -672,6 +788,7 @@ def scan_settings(protocol: Protocol) -> ScanSettings:
         te_ms=tuple(protocol.te_ms),
         tr_ms=protocol.tr_ms,
         sequence=EchoKind(protocol.sequence.value),
+        table=GradientRows.of(protocol.gradients),
     )
 
 
@@ -728,6 +845,13 @@ def _echo_times(value: object) -> tuple[float, ...]:
     return times
 
 
+def _tissue_name(value: object) -> str:
+    """Returns value as a tissue's name."""
+    if not isinstance(value, str) or not value:
+        raise ValueError("it must be a tissue's name")
+    return value
+
+
 def _snr(value: object) -> float | None:
     """Returns the SNR as a positive number, or None for no noise."""
     if value is None:
@@ -753,10 +877,19 @@ _SCAN_CONVERTERS: dict[ScanField, Callable[[object], object]] = {
     ScanField.GRADIENT_SEED: _count_value,
     ScanField.SEED: _count_value,
     ScanField.GRADIENT_FILES: _gradient_files,
+    ScanField.BVEC_FRAME: lambda value: BvecFrame(str(value)),
     ScanField.TE_MS: _echo_times,
     ScanField.SEQUENCE: lambda value: EchoKind(str(value)),
     ScanField.SNR: _snr,
+    ScanField.NOISE_REFERENCE: _tissue_name,
 }
+# The scan settings that make the gradients again, so a phantom file's table goes.
+GRADIENT_FIELDS: Final = (
+    ScanField.SHELLS,
+    ScanField.NUM_B0,
+    ScanField.GRADIENT_SEED,
+    ScanField.GRADIENT_FILES,
+)
 
 
 def bundle_value(name: BundleField, value: object) -> object:
@@ -793,7 +926,11 @@ def _bundle_number(name: BundleField, number: float) -> float | int:
         return int(number)
     if name == BundleField.DENSEST_FILL and not 0 < number <= 1:
         raise ValueError("it must be in (0, 1]")
-    if name in (BundleField.STREAMLINE_AREA, BundleField.FAN_SHARPNESS):
+    if name in (
+        BundleField.STREAMLINE_AREA,
+        BundleField.FAN_SHARPNESS,
+        BundleField.RADIUS,
+    ):
         if number <= 0:
             raise ValueError("it must be positive")
     elif number < 0:
@@ -989,6 +1126,8 @@ def run_problems(
         The problems, in the order of the steps; empty if it can run.
     """
     found: list[Problem] = []
+    if state.draft is not None:
+        found.append(Problem(PhantomStep.BUNDLE, "", DRAFT_PROBLEM))
     if not state.bundles and not state.tissue_maps:
         found.append(
             Problem(
@@ -998,11 +1137,26 @@ def run_problems(
             )
         )
     found += _bundle_item_problems(state, items)
+    found += _thin_bundle_problems(state)
     found += _tissue_problems(state, items)
-    scan = _scan_problem(state.scan)
+    scan = _scan_problem(state.scan, state.grid)
     if scan is not None:
         found.append(Problem(PhantomStep.SCAN, *scan))
+    reference = state.scan.noise_reference
+    if state.scan.snr is not None and reference not in {t.name for t in state.tissues}:
+        found.append(
+            Problem(
+                PhantomStep.SCAN,
+                "The noise reference is gone",
+                f"The SNR is that of tissue {reference!r}, which is gone; choose "
+                "another noise reference.",
+            )
+        )
     return found
+
+
+# The problem of a phantom while a bundle is drawn or edited.
+DRAFT_PROBLEM: Final = "A bundle is being drawn; finish or cancel it first."
 
 
 def _bundle_item_problems(
@@ -1030,6 +1184,26 @@ def _bundle_item_problems(
                     )
                 )
     return found
+
+
+def _thin_bundle_problems(state: PhantomState) -> list[Problem]:
+    """Returns a problem for each drawn bundle too thin to fill on the grid."""
+    from larmor.simulation.voxelise import MIN_TUBE_RADIUS
+
+    largest = float(np.linalg.norm(state.grid.affine[:3, :3], axis=0).max())
+    least = MIN_TUBE_RADIUS * largest
+    return [
+        Problem(
+            PhantomStep.BUNDLE,
+            "A bundle is too thin",
+            f"A bundle of radius {b.geometry.radius:g} mm is too thin for voxels of "
+            f"{largest:g} mm; give it a radius of at least {least:g} mm.",
+        )
+        for b in state.bundles
+        if b.geometry is not None
+        and b.streamline_area is None
+        and b.geometry.radius < least
+    ]
 
 
 def _tissue_problems(
@@ -1104,7 +1278,7 @@ def _tissue_map_problems(
     return found
 
 
-def _scan_problem(scan: ScanSettings) -> tuple[str, str] | None:
+def _scan_problem(scan: ScanSettings, grid: Grid) -> tuple[str, str] | None:
     """Checks the scan's files and timings; returns (short, text), None if valid."""
     import larmor.simulation as sim
 
@@ -1114,7 +1288,7 @@ def _scan_problem(scan: ScanSettings) -> tuple[str, str] | None:
             missing = next(path for path in files if not path.is_file())
             return "A gradient file is missing", f"The scan's {missing} is missing."
         try:
-            read_bvals_bvecs(files[0], files[1], frame="world")
+            read_bvals_bvecs(files[0], files[1], frame=scan.bvec_frame.value, grid=grid)
         except (OSError, ValueError) as e:
             return "The gradient files are not valid", f"The scan is not valid: {e}"
     # A table of one b = 0 volume checks the timings without making directions.
@@ -1198,16 +1372,15 @@ def step_status(
         return StepStatus(step, not own, text)
 
     waiting = found[0].step if found else None
+    run_text = "Ready" if waiting is None else NEEDS[waiting]
+    if found and found[0].text == DRAFT_PROBLEM:
+        run_text = "Finish the bundle first"
     return (
         status(PhantomStep.GRID, _grid_text(state.grid)),
         status(PhantomStep.BUNDLE, _bundle_text(state)),
         status(PhantomStep.TISSUE, _tissue_text(state)),
         status(PhantomStep.SCAN, _scan_text(state.scan)),
-        StepStatus(
-            PhantomStep.RUN,
-            waiting is None,
-            "Ready" if waiting is None else NEEDS[waiting],
-        ),
+        StepStatus(PhantomStep.RUN, waiting is None, run_text),
     )
 
 
@@ -1260,6 +1433,8 @@ def _scan_text(scan: ScanSettings) -> str:
     files = scan.gradient_files
     if files is not None:
         return f"From {files[0].name}"
+    if scan.table is not None:
+        return f"From the phantom file: {_count(len(scan.table.bvals), 'volume')}"
     values = ", ".join(f"{b:g}" for b, _ in scan.shells)
     directions = _count(sum(n for _, n in scan.shells), "direction")
     joint = ", " if len(scan.shells) == 1 else "; "
@@ -1348,6 +1523,17 @@ class RunOutputs:
     state: PhantomState
 
 
+def holds_other_files(folder: Path) -> bool:
+    """Tells whether a folder holds files but no earlier simulation."""
+    if not folder.is_dir() or not any(folder.iterdir()):
+        return False
+    try:
+        info = json.loads((folder / SIMULATION_INFO).read_text(encoding="utf-8"))
+    except OSError, ValueError:
+        return True
+    return not (isinstance(info, dict) and info.get("format") == SIMULATION_FORMAT)
+
+
 def existing_outputs(inputs: RunInputs, folder: Path) -> list[Path]:
     """Returns the files a run would write in folder that exist already."""
     import larmor.simulation as sim
@@ -1358,11 +1544,19 @@ def existing_outputs(inputs: RunInputs, folder: Path) -> list[Path]:
     return [p for p in planned.all_paths() if p.exists()]
 
 
-def run_simulation(inputs: RunInputs, folder: Path, report: Report) -> RunOutputs:
+def run_simulation(
+    inputs: RunInputs, folder: Path, report: Report, *, force: bool = False
+) -> RunOutputs:
     """Simulates the phantom and saves the simulation folder; runs on any thread.
 
     The phantom file also gets the viewer's block, so opening it again restores
     the editor's settings.
+
+    Args:
+        inputs: What the run simulates.
+        folder: The output folder.
+        report: Told the progress.
+        force: Write into a folder that holds other files, keeping them.
 
     Returns:
         The files written.
@@ -1374,12 +1568,21 @@ def run_simulation(inputs: RunInputs, folder: Path, report: Report) -> RunOutput
         inputs.phantom,
         inputs.protocol,
         snr=scan.snr,
+        noise_reference=scan.noise_reference,
         seed=scan.seed,
         progress=report,
     )
     # The last chance to cancel, as saving runs to the end once it starts.
-    report(1, 1, SAVING)
-    written = sim.save_simulation(simulated, folder)
+    report(0, 1, SAVING)
+
+    def saving(done: int, total: int, stage: str) -> None:
+        """Reports how far the saving is; a cancel no longer stops it."""
+        try:
+            report(done, total, SAVING)
+        except JobCancelledError:
+            pass
+
+    written = sim.save_simulation(simulated, folder, force=force, progress=saving)
     data = json.loads(written.phantom.read_text(encoding="utf-8"))
     data["viewer"] = dict(inputs.viewer_block)
     written.phantom.write_text(
@@ -1420,7 +1623,7 @@ def viewer_block(
     """Returns the viewer's block of a phantom file.
 
     It holds the tissue presets, the scan, each bundle's name and options, the
-    proxy maps shown and the output folder.
+    proxy maps shown, the output folder and whether the grid's box shows.
     """
     return {
         "tissues": [t.to_json() for t in state.tissues],
@@ -1435,6 +1638,7 @@ def viewer_block(
         ],
         "proxies": [k.value for k, _ in state.proxies],
         "output": None if state.output is None else str(state.output),
+        "show_box": state.show_box,
     }
 
 
@@ -1443,7 +1647,10 @@ def read_phantom_file(path: Path, report: Report | None = None) -> LoadedPhantom
 
     Runs on any thread. The tissue presets, scan settings, bundle names and
     options and the proxy maps come from the file's viewer block when it has
-    one; otherwise tissues are custom and the scan comes from the protocol.
+    one; otherwise tissues are custom and the scan comes from the protocol. A
+    geometry without a seed gets the one `lar simulate` draws for it from the
+    scan's noise seed, so a run gives the same images as `lar simulate` with
+    that seed.
 
     Returns:
         The phantom, its bundles built.
@@ -1453,6 +1660,7 @@ def read_phantom_file(path: Path, report: Report | None = None) -> LoadedPhantom
         FileNotFoundError: If a tractogram or a tissue map cannot be found.
     """
     import larmor.simulation as sim
+    from larmor.simulation.phantom import resolve_bundle_seeds
 
     read = sim.read_phantom(path)
     phantom = read.phantom
@@ -1478,6 +1686,7 @@ def read_phantom_file(path: Path, report: Report | None = None) -> LoadedPhantom
         scan = ScanSettings.from_json(block["scan"])
     elif read.protocol is not None:
         scan = scan_settings(read.protocol)
+    phantom = replace(phantom, bundles=resolve_bundle_seeds(phantom, scan.seed))
     saved_bundles = [b for b in _list(block.get("bundles")) if isinstance(b, dict)]
     bundles = []
     count = len(phantom.bundles)
@@ -1523,6 +1732,7 @@ def read_phantom_file(path: Path, report: Report | None = None) -> LoadedPhantom
         background=phantom.background,
         scan=scan,
         output=Path(output) if isinstance(output, str) else None,
+        show_box=bool(block.get("show_box", True)),
     )
     return LoadedPhantom(state, tuple(bundles), maps, proxies)
 

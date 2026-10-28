@@ -19,6 +19,7 @@ from rendercanvas.offscreen import RenderCanvas
 
 from larmor._log import LarmorLogger
 from larmor.viewer.model.item import VIEW_GAP, VIEW_GRID, VIEW_KINDS, ViewKind
+from larmor.viewer.model.view_state import Layout
 from larmor.viewer.model.viewer import (
     ROTATION_DURATION,
     ROTATION_FPS,
@@ -640,15 +641,19 @@ def layout(viewer: Viewer, view: ViewKind | None) -> tuple[tuple[ViewKind, ...],
     """Returns the views an image shows, row by row: one, or the window's layout.
 
     Args:
-        viewer: The viewer, whose maximised view the window's layout follows.
-        view: The view to draw, or None for the window's layout: the maximised
-            view if there is one, else the four views in a grid.
+        viewer: The viewer, whose maximised view and layout the window follows.
+        view: The view to draw, or None for the window's views: the maximised
+            view if there is one, the selected view in the One layout, else the
+            four views in a grid, also for the 1 + 3 layout.
 
     Returns:
         The rows of views, top to bottom, each left to right.
     """
     if view is None:
-        view = viewer.scene.view.maximised
+        state = viewer.scene.view
+        view = state.maximised
+        if view is None and state.layout == Layout.ONE:
+            view = state.selected_view
         if view is None:
             return VIEW_GRID
     return ((view,),)

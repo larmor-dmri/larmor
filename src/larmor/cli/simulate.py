@@ -195,10 +195,12 @@ def _replace_gradients(
 ) -> Protocol:
     """Returns the protocol with the gradients of --shell or --bvals and --bvecs.
 
-    The protocol is returned unchanged when neither is given.
+    The protocol is returned unchanged when neither is given. The new gradients
+    keep the b = 0 threshold and shell tolerance of the protocol's.
     """
     from larmor import simulation
     from larmor.io import read_bvals_bvecs
+    from larmor.types import GradientTable
 
     gradients = None
     if shells:
@@ -213,8 +215,14 @@ def _replace_gradients(
         )
     if gradients is None:
         return protocol
+    old = protocol.gradients
     return simulation.Protocol(
-        gradients,
+        GradientTable(
+            gradients.bvals,
+            gradients.bvecs,
+            b0_threshold=old.b0_threshold,
+            shell_epsilon=old.shell_epsilon,
+        ),
         protocol.small_delta_ms,
         protocol.big_delta_ms,
         protocol.te_ms,

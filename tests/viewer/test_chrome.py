@@ -4,12 +4,14 @@ from pathlib import Path
 
 import pytest
 from PySide6.QtCore import QPoint
+from PySide6.QtGui import QKeySequence
 from PySide6.QtWidgets import QMenu
 from pytestqt.qtbot import QtBot
 from viewer_helpers import zeros_volume
 
 from larmor.viewer import Category, Tool, ViewKind
 from larmor.viewer.model.view_state import Layout, Workspace
+from larmor.viewer.qt.docks import Panel
 from larmor.viewer.qt.header import NO_DATA
 from larmor.viewer.qt.main_window import MainWindow
 
@@ -54,6 +56,22 @@ def test_the_header_names_the_session_or_else_the_main_volume(
     assert window.header.title.text() == "study"
 
 
+def test_the_session_name_goes_once_the_viewer_is_cleared(
+    window: MainWindow, tmp_path: Path
+) -> None:
+    window.viewer.add(zeros_volume(), Category.VOLUMES, name="t1.nii.gz")
+    window.save_session(tmp_path / "study")
+    window.viewer.clear()
+    assert window.header.title.text() == NO_DATA
+
+
+def test_the_header_tooltips_write_the_keys_as_the_platform_does(
+    window: MainWindow,
+) -> None:
+    native = QKeySequence("Ctrl+,").toString(QKeySequence.SequenceFormat.NativeText)
+    assert window.header.settings_button.toolTip() == f"Settings ({native})"
+
+
 def test_header_run_waits_for_a_phantom_that_can_run(window: MainWindow) -> None:
     viewer = window.viewer
     viewer.set_workspace(Workspace.SIMULATE)
@@ -84,6 +102,16 @@ def test_the_toolbar_offers_each_workspaces_tools_and_sets_them(
     shown = {t for t, b in tools.items() if b.isVisible()}
     assert shown == {Tool.CURSOR, Tool.DRAW_BUNDLE}
     assert tools[Tool.CURSOR].isChecked()
+
+
+def test_a_click_on_the_checked_tool_or_layout_keeps_it_checked(
+    window: MainWindow,
+) -> None:
+    toolbar = window.toolbar
+    toolbar.tools[Tool.CURSOR].click()
+    toolbar.layouts[Layout.GRID].click()
+    assert toolbar.tools[Tool.CURSOR].isChecked()
+    assert toolbar.layouts[Layout.GRID].isChecked()
 
 
 def test_draw_bundle_chooses_the_tool_and_starts_a_bundle(window: MainWindow) -> None:
@@ -149,3 +177,13 @@ def test_the_view_menu_sets_the_layout_and_the_workspace(window: MainWindow) -> 
     workspaces = _submenu(window, "Workspace")
     next(a for a in workspaces.actions() if a.text() == "&Simulate").trigger()
     assert window.viewer.scene.view.workspace == Workspace.SIMULATE
+
+
+def test_the_view_menu_hides_and_resets_the_side_panels(window: MainWindow) -> None:
+    view = next(a.menu() for a in window.menuBar().actions() if a.text() == "&View")
+    assert isinstance(view, QMenu)
+    actions = {a.text().replace("&", ""): a for a in view.actions()}
+    actions["Hide or show the side panels"].trigger()
+    assert not window.docks.is_open(Panel.LEFT)
+    actions["Reset the panels' layout"].trigger()
+    assert window.docks.is_open(Panel.LEFT) and window.docks.is_open(Panel.RIGHT)

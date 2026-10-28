@@ -50,7 +50,16 @@ def read_volume(
 
 def closest_axis(grid: Grid, axis: int) -> int:
     """Returns the grid's voxel axis closest to a world axis (0, 1 or 2)."""
-    return int(np.argmax(np.abs(grid.affine[axis, :3])))
+    return voxel_axis(grid.affine, axis)
+
+
+def voxel_axis(affine: np.ndarray, axis: int) -> int:
+    """Returns the voxel axis that points most along a world axis (0, 1 or 2).
+
+    The axes are compared by direction, whatever their voxel sizes.
+    """
+    m = np.asarray(affine, np.float64)[:3, :3]
+    return int(np.argmax(np.abs(m[axis, :]) / np.linalg.norm(m, axis=0)))
 
 
 def slice_index(grid: Grid, position: Vec3, axis: int) -> tuple[int, int]:

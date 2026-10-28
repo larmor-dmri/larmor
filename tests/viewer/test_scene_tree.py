@@ -179,3 +179,17 @@ def test_the_footer_asks_to_open_files_and_sessions(
     assert texts == ["Open Session...", "Save Session..."]
     with qtbot.waitSignal(panel.save_session_requested):
         menu.actions()[1].trigger()
+
+
+def test_delete_removes_every_selected_item_after_asking(
+    viewer: Viewer, tree: SceneTree, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    kept = viewer.add(zeros_volume(), Category.VOLUMES, name="kept")
+    gone = [viewer.add(zeros_volume(), Category.OVERLAYS) for _ in range(2)]
+    monkeypatch.setattr(
+        QMessageBox, "question", lambda *a: QMessageBox.StandardButton.Yes
+    )
+    for item in gone:
+        tree.row(item.id).setSelected(True)
+    QTest.keyClick(tree, Qt.Key.Key_Delete)
+    assert [i.id for i in viewer.scene.items] == [kept.id]

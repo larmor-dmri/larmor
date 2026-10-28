@@ -10,9 +10,11 @@ import numpy as np
 import pytest
 
 import larmor.simulation as sim
-from larmor.types import Tractogram, Volume
+from larmor.io import load_volume, save_tractogram
+from larmor.types import Grid, Tractogram, Volume
 from larmor.viewer import (
     BundleField,
+    BvecFrame,
     Category,
     Colouring,
     OptionName,
@@ -255,7 +257,7 @@ def test_cancel_stops_the_run_and_opens_nothing(
     jobs = JobRunner(posted.append)
     started, cancelled, ended = threading.Event(), threading.Event(), threading.Event()
 
-    def slow(inputs: object, folder: Path, report: Report) -> object:
+    def slow(inputs: object, folder: Path, report: Report, force: bool) -> object:
         started.set()
         cancelled.wait(10)
         try:
@@ -296,7 +298,7 @@ def test_a_run_that_is_saving_finishes_despite_a_cancel(
     jobs = JobRunner(posted.append)
     saving, go = threading.Event(), threading.Event()
 
-    def slow(inputs: object, folder: Path, report: Report) -> object:
+    def slow(inputs: object, folder: Path, report: Report, force: bool) -> object:
         def held(done: int, total: int, stage: str) -> None:
             report(done, total, stage)
             if stage == SAVING:
@@ -390,3 +392,221 @@ def test_a_simulation_folder_opens_with_its_phantom(tmp_path: Path) -> None:
     assert "mask_bundles.nii.gz" in names
     state = viewer.phantom
     assert state is not None and len(state.bundles) == 2
+
+
+def test_a_run_of_a_phantom_file_gives_the_images_of_lar_simulate(
+    tmp_path: Path,
+) -> None:
+    grid = Grid((10, 10, 10), np.diag([2.0, 2.0, 2.0, 1.0]))
+    line = sim.BundleGeometry(np.array([[1.0, 9, 9], [17.0, 9, 9]]), num_streamlines=50)
+    table = sim.create_gradient_table([(1000, 7), (2000, 5)], num_b0=2, seed=5)
+    protocol = sim.Protocol(table, 15.0, 30.0, 80.0, 3000.0)
+    path = tmp_path / "p.phantom.json"
+    sim.write_phantom(
+        sim.Phantom(grid, bundles=(sim.Bundle(line),)), path, protocol=protocol
+    )
+    viewer = Viewer()
+    viewer.load_phantom(path)
+    viewer.set_scan(ScanField.SNR, 20.0)
+    viewer.run_phantom(tmp_path / "viewer")
+    read = sim.read_phantom(path)
+    assert read.protocol is not None
+    expected = sim.simulate(read.phantom, read.protocol, snr=20.0, seed=0)
+    images = sim.read_phantom(tmp_path / "viewer" / "phantom.json")
+    assert images.protocol is not None
+    np.testing.assert_array_equal(images.protocol.gradients.bvecs, table.bvecs)
+    run = load_volume(tmp_path / "viewer" / "dwi.nii.gz")
+    np.testing.assert_allclose(run.data, expected.echoes[0].data, atol=1e-6)
+
+
+def test_editing_the_shells_replaces_the_table_of_a_phantom_file(
+    viewer: Viewer, tmp_path: Path
+) -> None:
+    viewer.save_phantom(tmp_path / "p.phantom.json")
+    other = Viewer()
+
+    def table() -> object:
+        state = other.phantom
+        assert state is not None
+        return state.scan.table
+
+    other.load_phantom(tmp_path / "p.phantom.json")
+    assert table() is None
+    path = tmp_path / "file.phantom.json"
+    phantom = sim.read_phantom(tmp_path / "p.phantom.json")
+    sim.write_phantom(phantom.phantom, path, protocol=phantom.protocol)
+    other.load_phantom(path)
+    assert table() is not None
+    other.set_scan(ScanField.SHELLS, [[2000, 6]])
+    assert table() is None
+
+
+def test_bvecs_files_are_in_the_fsl_frame_unless_told(
+    viewer: Viewer, tmp_path: Path
+) -> None:
+    (tmp_path / "b.bval").write_text("0 1000\n")
+    (tmp_path / "b.bvec").write_text("0 1\n0 0\n0 0\n")
+    viewer.set_scan(
+        ScanField.GRADIENT_FILES, [tmp_path / "b.bval", tmp_path / "b.bvec"]
+    )
+    fsl = viewer.prepare_run(tmp_path / "a").protocol.gradients.bvecs[1]
+    viewer.set_scan(ScanField.BVEC_FRAME, BvecFrame.WORLD)
+    world = viewer.prepare_run(tmp_path / "a").protocol.gradients.bvecs[1]
+    assert world.tolist() == [1.0, 0.0, 0.0]
+    assert fsl.tolist() == [-1.0, 0.0, 0.0]
+
+
+def test_noise_needs_a_reference_tissue_of_the_phantom(viewer: Viewer) -> None:
+    viewer.set_tissue("Axons", TissuePreset.STANDARD_MODEL)
+    state = viewer.phantom
+    assert state is not None
+    for bundle in state.bundles:
+        viewer.set_bundle(bundle.item_id, BundleField.TISSUE, "Axons")
+    viewer.remove_tissue("WM")
+    viewer.set_scan(ScanField.SNR, 30.0)
+    [problem] = viewer.check_phantom()
+    assert "noise reference" in problem
+    viewer.set_scan(ScanField.NOISE_REFERENCE, "Axons")
+    assert viewer.check_phantom() == []
+
+
+def test_a_phantom_file_keeps_the_grid_box_hidden(
+    viewer: Viewer, tmp_path: Path
+) -> None:
+    viewer.show_grid_box(False)
+    viewer.save_phantom(tmp_path / "p.phantom.json")
+    other = Viewer()
+    other.load_phantom(tmp_path / "p.phantom.json")
+    assert other.phantom is not None and not other.phantom.show_box
+
+
+def test_a_registered_tractogram_is_saved_where_it_is_shown(tmp_path: Path) -> None:
+    points = np.array([[x, 0.0, 0.0] for x in np.linspace(-8, 8, 20)], np.float32)
+    save_tractogram(Tractogram(points, np.array([0, 20])), tmp_path / "t.tck")
+    (tmp_path / "shift.txt").write_text("1 0 0 0\n0 1 0 6\n0 0 1 0\n0 0 0 1\n")
+    viewer = Viewer()
+    viewer.new_phantom((30.0, 30.0, 30.0), 2.0)
+    item = viewer.load(
+        tmp_path / "t.tck",
+        Category.TRACTOGRAMS,
+        transforms=[str(tmp_path / "shift.txt")],
+        format="mrtrix",
+    )
+    viewer.use_as_bundle(item.id, "WM")
+    viewer.save_phantom(tmp_path / "p.phantom.json")
+    other = Viewer()
+    other.load_phantom(tmp_path / "p.phantom.json")
+    assert other.phantom is not None
+    shown = other.scene.item(other.phantom.bundles[0].item_id).data
+    assert isinstance(shown, Tractogram) and isinstance(item.data, Tractogram)
+    np.testing.assert_allclose(shown.points, item.data.points, atol=1e-5)
+
+
+def test_the_proxy_maps_follow_a_bundle_being_edited(viewer: Viewer) -> None:
+    state = viewer.phantom
+    assert state is not None
+    first = state.bundles[0].item_id
+    proxy = viewer.show_proxy(ProxyMap.FILL)
+    assert proxy is not None
+
+    def fill() -> np.ndarray:
+        volume = viewer.scene.item(proxy.id).data
+        assert isinstance(volume, Volume)
+        return np.asarray(volume.data)[..., 1].copy()
+
+    before = fill()
+    viewer.edit_bundle(first)
+    viewer.set_bundle_points([(-12.0, 8.0, 0.0), (12.0, 8.0, 0.0)])
+    assert not np.array_equal(before, fill())
+
+
+def test_a_folder_of_other_files_is_refused_before_the_run(
+    viewer: Viewer, tmp_path: Path
+) -> None:
+    (tmp_path / "notes.txt").write_text("mine")
+    with pytest.raises(FileExistsError, match="other files"):
+        viewer.prepare_run(tmp_path)
+    viewer.run_phantom(tmp_path, overwrite=True)
+    assert (tmp_path / "notes.txt").read_text() == "mine"
+    assert (tmp_path / "dwi.nii.gz").is_file()
+
+
+def test_a_point_repeated_by_a_click_or_a_stroke_is_dropped(viewer: Viewer) -> None:
+    viewer.start_bundle()
+    viewer.add_bundle_point((-10.0, 0.0, 0.0))
+    viewer.add_bundle_point((-10.0, 0.0, 0.0))
+    viewer.add_bundle_stroke([(-10.0, 0.0, 0.0), (0.0, 2.0, 0.0), (10.0, 0.0, 0.0)])
+    item = viewer.finish_bundle()
+    state = viewer.phantom
+    assert state is not None
+    geometry = state.bundle(item.id).geometry
+    assert geometry is not None and geometry.control_points[0] == (-10.0, 0.0, 0.0)
+    assert len(set(geometry.control_points)) == len(geometry.control_points)
+
+
+def test_cancelling_an_edit_draws_the_bundle_as_it_was(viewer: Viewer) -> None:
+    state = viewer.phantom
+    assert state is not None
+    second = state.bundles[1].item_id
+    data = viewer.scene.item(second).data
+    assert isinstance(data, Tractogram)
+    before = data.points.copy()
+    viewer.edit_bundle(second)
+    viewer.set_bundle(None, BundleField.RADIUS, 4.0)
+    viewer.cancel_bundle()
+    after = viewer.scene.item(second).data
+    assert isinstance(after, Tractogram)
+    np.testing.assert_array_equal(after.points, before)
+    assert set(after.streamline_data["bundle"].tolist()) == {1}
+
+
+def test_a_run_does_not_open_its_outputs_over_another_phantom(
+    viewer: Viewer, tmp_path: Path
+) -> None:
+    posted: list[Callable[[], None]] = []
+    jobs = JobRunner(posted.append)
+    opened: list[Path] = []
+    start_run(viewer, jobs, tmp_path / "sim", lambda paths, _: opened.extend(paths))
+    viewer.new_phantom()
+    for _ in range(3000):
+        while posted:
+            posted.pop(0)()
+        if not jobs.busy:
+            break
+        threading.Event().wait(0.01)
+    assert (tmp_path / "sim" / "dwi.nii.gz").is_file()
+    assert opened == []
+
+
+def test_removing_the_background_tissue_names_the_background(viewer: Viewer) -> None:
+    viewer.set_background_tissue("CSF")
+    with pytest.raises(ValueError, match="is the background"):
+        viewer.remove_tissue("CSF")
+
+
+def test_a_bundle_being_drawn_stops_a_run(viewer: Viewer) -> None:
+    state = viewer.phantom
+    assert state is not None
+    viewer.edit_bundle(state.bundles[0].item_id)
+    [problem] = viewer.check_phantom()
+    assert "finish or cancel" in problem
+
+
+def test_a_grid_too_large_is_refused(viewer: Viewer) -> None:
+    with pytest.raises(ValueError, match="too large"):
+        viewer.set_phantom_grid((1200.0, 1200.0, 1200.0), 1.0)
+    with pytest.raises(ValueError, match="too large"):
+        viewer.new_phantom((1200.0, 1200.0, 1200.0), 1.0)
+
+
+def test_a_radius_of_0_is_refused_and_a_tube_too_thin_stops_a_run(
+    viewer: Viewer,
+) -> None:
+    state = viewer.phantom
+    assert state is not None
+    bundle = state.bundles[0].item_id
+    with pytest.raises(ValueError, match="positive"):
+        viewer.set_bundle(bundle, BundleField.RADIUS, 0.0)
+    viewer.set_bundle(bundle, BundleField.RADIUS, 0.05)
+    [problem] = viewer.check_phantom()
+    assert "too thin" in problem

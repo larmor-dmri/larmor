@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from rendercanvas.qt import QRenderWidget
 
 from larmor.viewer.model.shortcuts import (
     MOUSE_CONTROLS,
@@ -32,6 +33,8 @@ from larmor.viewer.model.viewer import Viewer
 # Widgets that take typed text: while one has the focus, it keeps the keys it types
 # with, and the shortcuts do not fire.
 TEXT_WIDGETS = (QLineEdit, QAbstractSpinBox, QTextEdit, QPlainTextEdit)
+# The keys that move the focus from one widget to the next.
+FOCUS_KEYS = {Qt.Key.Key_Tab, Qt.Key.Key_Backtab}
 COMMAND_MODIFIERS = (
     Qt.KeyboardModifier.ControlModifier
     | Qt.KeyboardModifier.MetaModifier
@@ -76,10 +79,10 @@ def shortcut_actions(window: QWidget, viewer: Viewer) -> dict[Command, QAction]:
 
 
 class KeyGuard(QObject):
-    """Leaves the keys a text field types with to it, not to the shortcuts."""
+    """Leaves the keys a text field types with, and Tab, to the panels' widgets."""
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
-        """Accepts a ShortcutOverride for a key the focused text field types with."""
+        """Accepts a ShortcutOverride for a key the focused widget uses."""
         if event.type() == QEvent.Type.ShortcutOverride:
             assert isinstance(event, QKeyEvent)
             if _widget_keeps(QApplication.focusWidget(), event):
@@ -89,10 +92,16 @@ class KeyGuard(QObject):
 
 
 def _widget_keeps(widget: QWidget | None, event: QKeyEvent) -> bool:
-    """Returns whether a text field has the focus and the key has no Ctrl or Cmd."""
+    """Returns whether the focused widget keeps a key that has no Ctrl or Cmd.
+
+    A text field keeps every such key. Any other widget of a panel keeps Tab,
+    which moves the focus on; a view keeps none, so that Tab acts on it.
+    """
     if widget is None or event.modifiers() & COMMAND_MODIFIERS:
         return False
-    return isinstance(widget, TEXT_WIDGETS)
+    if isinstance(widget, TEXT_WIDGETS):
+        return True
+    return event.key() in FOCUS_KEYS and not isinstance(widget, QRenderWidget)
 
 
 class ShortcutsDialog(QDialog):

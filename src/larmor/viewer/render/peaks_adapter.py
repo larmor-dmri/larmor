@@ -117,7 +117,7 @@ class PeaksAdapter(Adapter):
             self._workers[kind].submit(
                 partial(self._segments, key),
                 partial(self._take, kind),
-                partial(self._failed, kind),
+                partial(self._failed, kind, key),
             )
 
     def _segments(self, key: Key) -> tuple[np.ndarray, np.ndarray] | None:
@@ -156,9 +156,10 @@ class PeaksAdapter(Adapter):
         self.lines[kind].geometry = _geometry(segments)
         self.views[kind].request_draw()
 
-    def _failed(self, kind: ViewKind) -> None:
+    def _failed(self, kind: ViewKind, key: Key) -> None:
         """Forgets a failed request, so the segments are asked for again."""
-        self._asked[kind] = None  # asked again next time
+        if self._asked[kind] == key:
+            self._asked[kind] = None  # asked again next time
 
 
 def _geometry(segments: tuple[np.ndarray, np.ndarray] | None) -> gfx.Geometry:

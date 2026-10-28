@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from larmor.types import Grid, Volume
-from larmor.viewer import Category, DetailOption, Viewer, ViewKind
+from larmor.viewer import Category, DetailOption, OptionName, Viewer, ViewKind
 from larmor.viewer.model.detail import (
     centred_box,
     scale_bar_length,
@@ -115,3 +115,17 @@ def test_without_a_volume_a_detail_counts_the_voxels_of_the_fod() -> None:
     viewer.add(fod, Category.FODS)
     detail_id = viewer.open_detail(ViewKind.AXIAL, (5, 5, 12, 12))
     assert viewer.scene.detail(detail_id).box == (5, 5, 12, 12)
+
+
+def test_a_new_main_volume_keeps_each_details_place_in_the_world() -> None:
+    viewer = Viewer()
+    fine = viewer.add(Volume(np.zeros((40, 40, 40)), np.eye(4)), Category.VOLUMES)
+    coarse = viewer.add(Volume(np.zeros(GRID.shape), GRID.affine), Category.VOLUMES)
+    viewer.set(fine.id, OptionName.VISIBLE, True)
+    detail_id = viewer.open_detail(ViewKind.AXIAL, (10, 10, 12, 12))
+    viewer.set(coarse.id, OptionName.VISIBLE, True)
+    # 1 mm voxels 10 to 21 span 9.5 to 21.5 mm; the nearest 2 mm voxel edges are
+    # 9 and 21 mm.
+    assert viewer.scene.detail(detail_id).box == (5, 5, 6, 6)
+    viewer.set(fine.id, OptionName.VISIBLE, True)
+    assert viewer.scene.detail(detail_id).box == (10, 10, 12, 12)

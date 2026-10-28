@@ -136,7 +136,8 @@ class BreakdownTool:
         self.scene = editor.viewer.scene
         # (key, the data it names, partition)
         self._partition: tuple[object, object, VoxelPartition] | None = None
-        self._protocol: tuple[ScanSettings, Protocol] | None = None
+        # (scan, grid shape, grid affine, protocol)
+        self._protocol: tuple[ScanSettings, object, bytes, Protocol] | None = None
         # (phantom state, data ids, data, phantom, bundle names)
         self._phantom: (
             tuple[PhantomState, tuple[int, ...], object, Phantom, list[str]] | None
@@ -192,6 +193,19 @@ class BreakdownTool:
         pinned = replace(state, voxel=voxel, pinned=True)
         self.scene.set_breakdown(self._computed(pinned))
 
+    def move_to_grid(self, old: Grid, new: Grid) -> None:
+        """Keeps the voxel shown at its place in mm when the phantom's grid changes.
+
+        A voxel that falls outside the new grid is dropped, and so is its pin.
+        """
+        state = self.state
+        if state is None or state.voxel is None:
+            return
+        centre = old.affine[:3, :3] @ np.asarray(state.voxel, float) + old.affine[:3, 3]
+        voxel = voxel_at(new, (float(centre[0]), float(centre[1]), float(centre[2])))
+        moved = replace(state, voxel=voxel, pinned=state.pinned and voxel is not None)
+        self.scene.set_breakdown(self._computed(moved))
+
     def set_volume(self, volume: int) -> None:
         """Shows the voxel's signal in another volume of the scan."""
         state = self.state
@@ -220,7 +234,7 @@ class BreakdownTool:
         if phantom is None:
             return None
         try:
-            return self._protocol_of(phantom.scan).gradients
+            return self._protocol_of(phantom.scan, phantom.grid).gradients
         except OSError, ValueError:
             return None
 
@@ -238,12 +252,12 @@ class BreakdownTool:
         import larmor.simulation as sim
 
         try:
-            protocol = self._protocol_of(phantom_state.scan)
+            protocol = self._protocol_of(phantom_state.scan, phantom_state.grid)
             phantom, partition, names = self._phantom_of(phantom_state)
             volume = state.volume
             if volume is None or volume >= len(protocol.gradients.bvals):
                 volume = first_weighted(protocol.gradients)
-            # The same noise as a run, given as the SNR of a WM voxel at b = 0.
+            # The same noise as a run.
             breakdown = sim.signal_breakdown(
                 phantom,
                 protocol,
@@ -251,17 +265,21 @@ class BreakdownTool:
                 state.voxel,
                 volume,
                 snr=phantom_state.scan.snr,
+                noise_reference=phantom_state.scan.noise_reference,
                 bundle_names=names,
             )
         except (OSError, TypeError, ValueError) as e:
             return replace(state, breakdown=None, problem=str(e))
         return replace(state, breakdown=breakdown, problem=None)
 
-    def _protocol_of(self, scan: ScanSettings) -> Protocol:
-        """Returns the scan's protocol, built again only when the scan changes."""
-        if self._protocol is None or self._protocol[0] != scan:
-            self._protocol = (scan, build_protocol(scan))
-        return self._protocol[1]
+    def _protocol_of(self, scan: ScanSettings, grid: Grid) -> Protocol:
+        """Returns the scan's protocol, built again when the scan or the grid change."""
+        affine = grid.affine.tobytes()
+        cached = self._protocol
+        if cached is None or cached[:3] != (scan, grid.shape, affine):
+            cached = (scan, grid.shape, affine, build_protocol(scan, grid))
+            self._protocol = cached
+        return cached[3]
 
     def _phantom_of(
         self, state: PhantomState

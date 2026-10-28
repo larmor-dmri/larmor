@@ -237,7 +237,9 @@ def test_other_regions_keeping_as_many_streamlines_still_change_the_lines(
 
 
 def test_regions_that_fail_tell_the_user(
-    scene_renderer: tuple[Viewer, SceneRenderer], monkeypatch: pytest.MonkeyPatch
+    scene_renderer: tuple[Viewer, SceneRenderer],
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     viewer, renderer = scene_renderer
     told: list[str] = []
@@ -249,9 +251,9 @@ def test_regions_that_fail_tell_the_user(
         raise RuntimeError("broken filter")
 
     monkeypatch.setattr(viewer_module, "passes_regions", broken)
-    # Off screen the error is raised again once the user is told.
-    with pytest.raises(RuntimeError, match="broken filter"):
-        viewer.add_sphere((0.0, 0.0, 0.0), 15.0, apply=True)
+    # Off screen the work runs at once; the scene logs its error.
+    viewer.add_sphere((0.0, 0.0, 0.0), 15.0, apply=True)
+    assert "broken filter" in caplog.text
     assert told == ["Tractogram 1: the regions could not be applied; see the log."]
     assert _starts(adapter) == every
 

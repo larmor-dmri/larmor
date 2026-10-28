@@ -151,3 +151,11 @@ def test_a_new_tissue_map_refills_the_voxel(viewer: Viewer) -> None:
         state = viewer.breakdown
         assert state is not None and state.breakdown is not None
         assert dict(state.breakdown.tissue_fractions)["GM"] == pytest.approx(fraction)
+
+
+def test_a_pinned_voxel_keeps_its_place_when_the_grid_changes(viewer: Viewer) -> None:
+    viewer.pin_breakdown(ALONG_A)
+    viewer.set_phantom_grid((30.0, 30.0, 30.0), 1.0)
+    state, grid = viewer.breakdown, viewer.phantom.grid  # type: ignore[union-attr]
+    assert state is not None and state.pinned
+    assert state.voxel == voxel_at(grid, ALONG_A)

@@ -616,3 +616,13 @@ def test_every_settings_row_has_its_help_on_its_label_and_field(
         assert isinstance(label, QLabel)
         assert helps[text]
         assert (label.toolTip(), field.toolTip()) == (helps[text], helps[text])
+
+
+def test_the_mcp_url_shows_whole_in_the_sheet(mcp: McpServer, qtbot: QtBot) -> None:
+    sheet = SettingsSheet(Settings(), None, McpSwitch(mcp, lambda: None))
+    qtbot.addWidget(sheet)
+    sheet.show()
+    qtbot.waitExposed(sheet)
+    assert sheet.panel.mcp is not None
+    url = sheet.panel.mcp.url
+    assert url.fontMetrics().horizontalAdvance(url.text()) < url.contentsRect().width()

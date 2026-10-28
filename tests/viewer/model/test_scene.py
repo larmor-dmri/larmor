@@ -93,6 +93,21 @@ def test_unsubscribing_during_an_event_still_reaches_the_others() -> None:
     assert len(second) == 2
 
 
+def test_a_failing_subscriber_is_logged_and_the_others_still_get_the_event(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    scene = Scene()
+
+    def fail(event: Event) -> None:
+        raise RuntimeError("cannot draw")
+
+    scene.subscribe(fail)
+    later = _recorded(scene)
+    scene.set_view(ViewField.SELECTED_VIEW, ViewKind.THREE_D)
+    assert len(later) == 1
+    assert "cannot draw" in caplog.text
+
+
 def test_an_unknown_item_is_a_value_error() -> None:
     with pytest.raises(ValueError, match="There is no item 7"):
         Scene().item(7)

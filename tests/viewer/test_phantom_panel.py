@@ -4,12 +4,13 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from PySide6.QtCore import QPoint, Qt
+from PySide6.QtCore import QItemSelectionModel, QPoint, Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QCheckBox, QFormLayout, QLabel
+from PySide6.QtWidgets import QCheckBox, QFormLayout, QLabel, QMessageBox
 from pytestqt.qtbot import QtBot
 
-from larmor.viewer import TissuePreset, Viewer, ViewKind
+from larmor.types import Volume
+from larmor.viewer import Category, TissuePreset, Viewer, ViewKind
 from larmor.viewer.model.shortcuts import Command
 from larmor.viewer.model.view_state import Workspace
 from larmor.viewer.qt.field import FieldLabel
@@ -276,3 +277,122 @@ def test_each_fraction_names_its_compartment(qtbot: QtBot) -> None:
     noddi = labels()
     assert noddi["intra_fraction"][0].startswith("Neurites")
     assert "not free water" in noddi["intra_fraction"][1]
+
+
+def _panel_with_bundles(qtbot: QtBot, count: int) -> tuple[Viewer, PhantomPanel]:
+    viewer = Viewer()
+    viewer.new_phantom()
+    for y in range(count):
+        viewer.start_bundle()
+        for point in [(-10.0, 2.0 * y, 0.0), (10.0, 2.0 * y, 0.0)]:
+            viewer.add_bundle_point(point)
+        viewer.finish_bundle()
+    panel = PhantomPanel(viewer)
+    qtbot.addWidget(panel)
+    return viewer, panel
+
+
+def test_a_refused_edit_puts_its_field_back_and_says_why(qtbot: QtBot) -> None:
+    viewer, panel = _panel_with_bundles(qtbot, 1)
+    panel.show()
+    panel.te.setText("-5")
+    panel.te.editingFinished.emit()
+    assert panel.te.text() == "80" and "te_ms" in panel.error.text()
+    viewer.set_background_tissue("CSF")
+    panel.tissue_list.setCurrentRow(2)  # CSF, which an oriented preset cannot be
+    panel.preset.setCurrentIndex(panel.preset.findText("Standard model (WM)"))
+    panel.preset.activated.emit(panel.preset.currentIndex())
+    assert panel.preset.value() == TissuePreset.FREE_WATER
+    assert panel.error.isVisible()
+
+
+def test_a_compartment_cell_that_is_not_a_number_is_named_and_put_back(
+    qtbot: QtBot,
+) -> None:
+    viewer, panel = _panel_with_bundles(qtbot, 0)
+    viewer.set_tissue("CSF", TissuePreset.CUSTOM)
+    panel.tissue_list.setCurrentRow(2)
+    cell = panel.compartments.item(0, 1)
+    assert cell is not None
+    cell.setText("abc")
+    assert panel.error.text().startswith("Compartment 1, Fraction")
+    cell = panel.compartments.item(0, 1)
+    assert cell is not None and cell.text() == "1"
+
+
+def test_several_bundles_go_at_once_and_the_table_follows_the_selection(
+    qtbot: QtBot,
+) -> None:
+    viewer, panel = _panel_with_bundles(qtbot, 3)
+    state = viewer.phantom
+    assert state is not None
+    viewer.select(state.bundles[2].item_id)
+    selected = panel.bundle_table.selectionModel().selectedRows()
+    assert [index.row() for index in selected] == [2]
+    panel.bundle_table.clearSelection()
+    panel.bundle_table.selectRow(0)
+    panel.bundle_table.selectionModel().select(
+        panel.bundle_table.model().index(1, 0),
+        QItemSelectionModel.SelectionFlag.Select
+        | QItemSelectionModel.SelectionFlag.Rows,
+    )
+    QTest.keyClick(panel.bundle_table, Qt.Key.Key_Delete)
+    state = viewer.phantom
+    assert state is not None and len(state.bundles) == 1
+    assert viewer.scene.item(state.bundles[0].item_id).name == "Bundle 3"
+
+
+def test_the_grid_shows_the_voxel_sizes_of_a_rotated_grid(qtbot: QtBot) -> None:
+    viewer = Viewer()
+    affine = np.array(
+        [
+            [0.0, -1.0, 0.0, 0.0],
+            [2.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0, 0, 0, 1],
+        ]
+    )
+    image = viewer.add(
+        Volume(np.zeros((10, 20, 30), np.float32), affine), Category.VOLUMES
+    )
+    viewer.new_phantom(grid_of=image.id)
+    panel = PhantomPanel(viewer)
+    qtbot.addWidget(panel)
+    assert panel.grid_label.text() == "Grid: 10 x 20 x 30 voxels of 2 x 1 x 1 mm"
+    assert [b.value() for b in panel.size_boxes] == [20.0, 20.0, 30.0]
+
+
+@pytest.mark.parametrize("answer", ["Yes", "No"])
+def test_new_and_close_ask_before_dropping_bundles(
+    answer: str, window: MainWindow, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    viewer = window.viewer
+    viewer.new_phantom()
+    viewer.start_bundle()
+    for point in [(-10.0, 0.0, 0.0), (10.0, 0.0, 0.0)]:
+        viewer.add_bundle_point(point)
+    viewer.finish_bundle()
+    button = getattr(QMessageBox.StandardButton, answer)
+    monkeypatch.setattr(QMessageBox, "question", lambda *a: button)
+    window.new_phantom()
+    state = viewer.phantom
+    assert state is not None and len(state.bundles) == (0 if answer == "Yes" else 1)
+    viewer.start_bundle()
+    viewer.add_bundle_point((0.0, 0.0, 0.0))
+    window.show_all_settings().close_button.click()
+    assert (viewer.phantom is None) == (answer == "Yes")
+
+
+def test_a_guided_tissue_page_keeps_the_parameters_under_more(qtbot: QtBot) -> None:
+    viewer = Viewer()
+    viewer.new_phantom()
+    panel = PhantomPanel(viewer, guided=True)
+    qtbot.addWidget(panel)
+    panel.show_sections(("Tissues",))
+    panel.show()
+    assert panel.preset.isVisible() and not panel.parameters.isVisible()
+    viewer.set_tissue("CSF", TissuePreset.CUSTOM)
+    panel.tissue_list.setCurrentRow(2)
+    assert not panel.sections["Tissues"].more_button.isChecked()
+    panel.sections["Tissues"].more_button.click()
+    assert panel.compartments.isVisible()

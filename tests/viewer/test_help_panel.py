@@ -2,7 +2,7 @@ import re
 from pathlib import Path
 
 import pytest
-from PySide6.QtCore import QObject, Qt, QUrl, Slot
+from PySide6.QtCore import QObject, QSize, Qt, QUrl, Slot
 from PySide6.QtGui import QColor, QDesktopServices, QImage, QTextCursor, QTextDocument
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QMenu
@@ -206,3 +206,12 @@ def test_the_help_action_opens_one_help_window(qtbot: QtBot) -> None:
     window.close()
     action.trigger()
     assert main.findChildren(HelpWindow) == [window] and window.isVisible()
+
+
+def test_the_help_window_fits_a_small_screen(
+    qtbot: QtBot, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(help_panel, "screen_room", lambda _: QSize(900, 620))
+    window = HelpWindow()
+    qtbot.addWidget(window)
+    assert (window.width(), window.height()) == (900, 620)

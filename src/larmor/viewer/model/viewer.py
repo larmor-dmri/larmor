@@ -37,6 +37,15 @@ from larmor.viewer.model.detail import (
     clipped_box,
     detail_title,
     picture_size,
+    regrid_box,
+)
+from larmor.viewer.model.events import (
+    DataChanged,
+    Event,
+    ItemAdded,
+    ItemRemoved,
+    OptionChanged,
+    ViewStateChanged,
 )
 from larmor.viewer.model.export import (
     DEFAULT_SIZE,
@@ -94,6 +103,7 @@ from larmor.viewer.model.phantom import (
     box_grid,
     drawable,
     existing_outputs,
+    holds_other_files,
     read_phantom_file,
     run_simulation,
     simulation_outputs,
@@ -190,6 +200,14 @@ _REGION_GEOMETRY: Final = (
     OptionName.SIZE,
     OptionName.MASK,
 )
+# The events that can change the grid of the detail windows' rectangles.
+_GRID_EVENTS: Final = (
+    ViewStateChanged,
+    ItemAdded,
+    ItemRemoved,
+    DataChanged,
+    OptionChanged,
+)
 # The name a new region of each shape gets, a number after it.
 _REGION_NAMES: Final = {
     RegionShape.SPHERE: "Sphere",
@@ -277,6 +295,9 @@ class Viewer:
         self._versions: dict[ItemId, int] = {}
         # Carries out the phantom actions; the phantom itself is `scene.phantom`.
         self._phantom = PhantomEditor(self)
+        # The grid the detail windows' rectangles are in; they follow it.
+        self._boxes_grid: Grid | None = None
+        self.scene.subscribe(self._follow_detail_grid)
         # How many control points each click or stroke added to the bundle being
         # drawn, so that Backspace takes back a whole stroke.
         self._point_groups: list[int] = []
@@ -762,7 +783,9 @@ class Viewer:
         volume index past the new volumes becomes the last; overlay labels the new
         data lacks are dropped; a tractogram's TSF values, one per old point, are
         dropped; a surface's values to colour by that the new data lacks are
-        cleared.
+        cleared; DTI colours are turned off unless the new image has 3 volumes.
+        Options that name an item and no longer fit, such as an image to
+        modulate by on another grid, are cleared, on this item and the others.
 
         Args:
             item_id: The item.
@@ -788,6 +811,8 @@ class Viewer:
         changes, ranged = _changes_for_data(item, data, new_range)
         for name, value in changes.items():
             self.scene.set_option(item_id, name, value)
+        for other, name in self._references_lost(item, data):
+            self._apply_option(other, name, None)
         self._forget_data(item_id)
         self.scene.replace_data(item_id, data, new_range)
         # The maximum first when the window moves up, so that min <= max throughout.
@@ -796,6 +821,37 @@ class Viewer:
             names.reverse()
         for name in names:
             self.scene.set_option(item_id, name, ranged[name])
+
+    def _references_lost(
+        self, item: Item, data: object
+    ) -> list[tuple[Item, OptionName]]:
+        """Returns the options naming an item that cannot keep it with new data.
+
+        These are item's own image to modulate by, when it is off the new grid,
+        and the other items' options naming item, when data no longer fits them.
+        Each is returned as the item whose option it is, and the option.
+        """
+        lost: list[tuple[Item, OptionName]] = []
+        o = item.options
+        if isinstance(o, VolumeOptions) and o.modulate is not None:
+            weights = self.scene.item(o.modulate).data
+            assert isinstance(weights, Volume) and isinstance(data, Volume)
+            if not _can_modulate(weights, data):
+                lost.append((item, OptionName.MODULATE))
+        for other in self.scene.items:
+            if other.id == item.id:
+                continue
+            for name, (_, info) in option_fields(other.options).items():
+                if not info.item_ref or getattr(other.options, name) != item.id:
+                    continue
+                if name == OptionName.MODULATE:
+                    assert isinstance(other.data, Volume)
+                    fits = isinstance(data, Volume) and _can_modulate(data, other.data)
+                else:  # a sampled volume or a mask, of one volume on any grid
+                    fits = isinstance(data, Volume) and _volumes(data) == 1
+                if not fits:
+                    lost.append((other, name))
+        return lost
 
     def _forget_data(self, item_id: ItemId) -> None:
         """Drops what was derived from an item's old data and bumps its version."""
@@ -1251,11 +1307,14 @@ class Viewer:
         Args:
             name: `ScanField.SHELLS` ((b-value s/mm^2, directions) pairs),
                 `NUM_B0`, `GRADIENT_SEED` (of the directions), `GRADIENT_FILES`
-                (bvals and bvecs paths, directions in world coordinates, used
-                instead of the shells; None for the shells), `SMALL_DELTA_MS`,
-                `BIG_DELTA_MS`, `TE_MS` (one or several echo times), `TR_MS`,
-                `SEQUENCE` (`EchoKind`), `SNR` (None for no noise) or `SEED` (of
-                the noise).
+                (bvals and bvecs paths, used instead of the shells; None for the
+                shells), `BVEC_FRAME` (`BvecFrame` of the bvecs file, FSL by
+                default), `SMALL_DELTA_MS`, `BIG_DELTA_MS`, `TE_MS` (one or
+                several echo times), `TR_MS`, `SEQUENCE` (`EchoKind`), `SNR`
+                (None for no noise), `NOISE_REFERENCE` (the tissue whose b = 0
+                signal the SNR is of) or `SEED` (of the noise). The four
+                gradient settings replace a gradient table read from a phantom
+                file.
             value: The new value.
 
         Raises:
@@ -1285,6 +1344,8 @@ class Viewer:
         Args:
             position: The point (x, y, z), world mm.
 
+        A point at the place of the last one is not added again.
+
         Raises:
             ValueError: If no bundle is being drawn, or position is not three
                 finite numbers inside the phantom's grid box.
@@ -1296,6 +1357,8 @@ class Viewer:
                 "The point ({:.1f}, {:.1f}, {:.1f}) mm is outside the phantom's "
                 "grid; draw inside the box.".format(*point)
             )
+        if draft.points and draft.points[-1] == point:
+            return
         self._phantom.set_points((*draft.points, point))
         self._point_groups = [*self._current_groups(draft.points), 1]
 
@@ -1327,6 +1390,11 @@ class Viewer:
             raise ValueError(
                 "The stroke is outside the phantom's grid; draw inside the box."
             )
+        # A stroke that starts where the bundle ends does not repeat that point.
+        if draft.points and kept[0] == draft.points[-1]:
+            kept = kept[1:]
+        if not kept:
+            return 0
         self._phantom.set_points((*draft.points, *kept))
         self._point_groups = [*self._current_groups(draft.points), len(kept)]
         return len(kept)
@@ -1639,7 +1707,9 @@ class Viewer:
             FileExistsError: If outputs exist and overwrite is False.
         """
         inputs = self.prepare_run(folder, overwrite=overwrite)
-        outputs = run_simulation(inputs, Path(folder).absolute(), lambda *_: None)
+        outputs = run_simulation(
+            inputs, Path(folder).absolute(), lambda *_: None, force=overwrite
+        )
         items = self._open_outputs(outputs.files)
         self.finish_run(outputs)
         return items
@@ -1700,21 +1770,40 @@ class Viewer:
 
         Args:
             folder: The output folder.
-            overwrite: Replace outputs already in the folder.
+            overwrite: Replace outputs already in the folder, and write into a
+                folder that holds other files, which are kept.
 
         Returns:
             The run's inputs, which can be simulated on any thread.
 
         Raises:
             ValueError: If no phantom is open or it cannot run.
-            FileExistsError: If outputs exist and overwrite is False.
+            FileExistsError: If outputs exist, or the folder holds other files
+                and no simulation, and overwrite is False.
         """
         inputs = self._phantom.run_inputs()
-        existing = existing_outputs(inputs, Path(folder).absolute())
+        path = Path(folder).absolute()
+        if not overwrite and holds_other_files(path):
+            raise FileExistsError(
+                f"{folder} holds other files and no simulation; a run writes "
+                "into it and replaces those that have the name of an output."
+            )
+        existing = existing_outputs(inputs, path)
         if existing and not overwrite:
             names = ", ".join(p.name for p in existing)
             raise FileExistsError(f"{folder} holds outputs already: {names}.")
         return inputs
+
+    def is_current_run(self, outputs: RunOutputs) -> bool:
+        """Tells whether a run was made from the phantom open, not one opened since.
+
+        Args:
+            outputs: The files a run started with `prepare_run` wrote.
+
+        Returns:
+            Whether the phantom is the one the run simulated, edited or not.
+        """
+        return self._phantom.is_current(outputs)
 
     def finish_run(self, outputs: RunOutputs) -> None:
         """Points the bundles at the files a run wrote, and keeps its folder.
@@ -1969,11 +2058,13 @@ class Viewer:
         name: str | None,
         apply: bool,
         defaults: bool = True,
+        role_given: bool = False,
     ) -> ItemId:
         """Adds a region item with these options, applied to every tractogram if asked.
 
         With defaults, the values set by `set_default` for regions replace those
-        of the options.
+        of the options, but for the role when role_given; the region then starts
+        in its role's colour unless a colour is set by default.
 
         Returns:
             The new region's id.
@@ -1989,8 +2080,12 @@ class Viewer:
             name = f"{label} {count + 1}"
         if defaults:
             changes: dict[str, Any] = {
-                str(n): v for n, v in self._defaults.get(Category.REGIONS, {}).items()
+                str(n): v
+                for n, v in self._defaults.get(Category.REGIONS, {}).items()
+                if not (role_given and n == OptionName.ROLE)
             }
+            role = changes.get(OptionName.ROLE, options.role)
+            changes.setdefault(OptionName.COLOUR, ROLE_COLOURS[role])
             options = replace(options, **changes)
         item = self.scene.add(
             Category.REGIONS, name, None, region_data(options), options
@@ -2005,7 +2100,7 @@ class Viewer:
         self,
         centre: tuple[float, float, float] | None = None,
         radius: float | None = None,
-        role: RegionRole = RegionRole.INCLUDE,
+        role: RegionRole | None = None,
         name: str | None = None,
         *,
         apply: bool = False,
@@ -2021,7 +2116,8 @@ class Viewer:
             radius: Its radius in mm, at least 0.1; the last sphere's radius
                 (5 mm at first) if None.
             role: `RegionRole.INCLUDE` keeps the streamlines that pass through
-                it, `EXCLUDE` drops them, `WITHIN` keeps those that stay inside.
+                it, `EXCLUDE` drops them, `WITHIN` keeps those that stay inside;
+                None takes the regions' default (`set_default`), else INCLUDE.
             name: Its name in the scene tree; "Sphere 1" and so on if None.
             apply: Apply it to every tractogram in the scene.
 
@@ -2029,31 +2125,31 @@ class Viewer:
             The region's id.
 
         Raises:
-            TypeError: If role is not a RegionRole.
+            TypeError: If role is not a RegionRole or None.
             ValueError: If centre is not three finite numbers.
             OptionError: If the radius is not a number of at least 0.1.
         """
-        _require(role, RegionRole)
+        if role is not None:
+            _require(role, RegionRole)
         where = _position(self.scene.view.cursor if centre is None else centre)
         size = self.region_radius if radius is None else radius
         checked = validate(RegionOptions, OptionName.RADIUS, size)
         assert isinstance(checked, float)
         options = RegionOptions(
             shape=RegionShape.SPHERE,
-            role=role,
-            colour=ROLE_COLOURS[role],
+            role=role or RegionRole.INCLUDE,
             centre=Position(where),
             radius=checked,
         )
         self.region_radius = checked
-        return self._add_region(options, name, apply)
+        return self._add_region(options, name, apply, role_given=role is not None)
 
     @agent_action
     def add_box(
         self,
         centre: tuple[float, float, float] | None = None,
         size: tuple[float, float, float] | None = None,
-        role: RegionRole = RegionRole.INCLUDE,
+        role: RegionRole | None = None,
         name: str | None = None,
         *,
         apply: bool = False,
@@ -2067,7 +2163,8 @@ class Viewer:
             centre: Its centre (x, y, z), world mm; the cursor if None.
             size: Its edges' lengths along x, y and z, mm, each positive; the
                 last box's size (10 mm a side at first) if None.
-            role: `RegionRole.INCLUDE`, `EXCLUDE` or `WITHIN`, as for a sphere.
+            role: `RegionRole.INCLUDE`, `EXCLUDE`, `WITHIN` or None, as for a
+                sphere.
             name: Its name in the scene tree; "Box 1" and so on if None.
             apply: Apply it to every tractogram in the scene.
 
@@ -2075,11 +2172,12 @@ class Viewer:
             The region's id.
 
         Raises:
-            TypeError: If role is not a RegionRole.
+            TypeError: If role is not a RegionRole or None.
             ValueError: If centre is not three finite numbers.
             OptionError: If size is not three positive numbers.
         """
-        _require(role, RegionRole)
+        if role is not None:
+            _require(role, RegionRole)
         where = _position(self.scene.view.cursor if centre is None else centre)
         lengths = validate(
             RegionOptions, OptionName.SIZE, self.box_size if size is None else size
@@ -2087,19 +2185,18 @@ class Viewer:
         assert isinstance(lengths, Lengths)
         options = RegionOptions(
             shape=RegionShape.BOX,
-            role=role,
-            colour=ROLE_COLOURS[role],
+            role=role or RegionRole.INCLUDE,
             centre=Position(where),
             size=lengths,
         )
         self.box_size = lengths
-        return self._add_region(options, name, apply)
+        return self._add_region(options, name, apply, role_given=role is not None)
 
     @agent_action
     def add_mask(
         self,
         mask_id: ItemId,
-        role: RegionRole = RegionRole.INCLUDE,
+        role: RegionRole | None = None,
         name: str | None = None,
         *,
         apply: bool = False,
@@ -2111,7 +2208,8 @@ class Viewer:
 
         Args:
             mask_id: The image: a volume or an overlay of one volume, on any grid.
-            role: `RegionRole.INCLUDE`, `EXCLUDE` or `WITHIN`, as for a sphere.
+            role: `RegionRole.INCLUDE`, `EXCLUDE`, `WITHIN` or None, as for a
+                sphere.
             name: Its name in the scene tree; the image's name and "(mask)" if None.
             apply: Apply it to every tractogram in the scene.
 
@@ -2119,18 +2217,21 @@ class Viewer:
             The region's id.
 
         Raises:
-            TypeError: If role is not a RegionRole.
+            TypeError: If role is not a RegionRole or None.
             ValueError: If there is no item with that id.
             OptionError: If the item is not an image of one volume.
         """
-        _require(role, RegionRole)
+        if role is not None:
+            _require(role, RegionRole)
         mask = self.scene.item(mask_id)
         if mask not in self._images_of_one_volume():
             raise OptionError(f"{mask.name} is not a volume or overlay of one volume.")
         options = RegionOptions(
-            shape=RegionShape.MASK, role=role, colour=ROLE_COLOURS[role], mask=mask_id
+            shape=RegionShape.MASK, role=role or RegionRole.INCLUDE, mask=mask_id
         )
-        return self._add_region(options, name or f"{mask.name} (mask)", apply)
+        return self._add_region(
+            options, name or f"{mask.name} (mask)", apply, role_given=role is not None
+        )
 
     @agent_action
     def apply_region(
@@ -2455,8 +2556,8 @@ class Viewer:
     def item_choices(self, item_id: ItemId, name: OptionName) -> list[Item]:
         """Returns the items an option that names an item can name, for one item.
 
-        For `OptionName.MODULATE`: the other volumes and overlays that are 3D
-        and on the same grid (shape and affine) as the item. For
+        For `OptionName.MODULATE`: the other volumes and overlays with one
+        volume, on the same grid (shape and affine) as the item. For
         `OptionName.VALUES_VOLUME` and a region's `MASK`: the volumes and
         overlays with one volume (3D, or 4D with a single volume), on any grid.
         For a tractogram's `REGIONS`: the region items.
@@ -2483,16 +2584,13 @@ class Viewer:
         if isinstance(item.data, Tractogram) or item.category == Category.REGIONS:
             return self._images_of_one_volume()
         assert isinstance(item.data, Volume)
-        grid = item.data.grid
         return [
             other
             for other in self.scene.items
             if other.id != item.id
             and other.category in (Category.VOLUMES, Category.OVERLAYS)
             and isinstance(other.data, Volume)
-            and other.data.data.ndim == 3
-            and other.data.grid.shape[:3] == grid.shape[:3]
-            and np.allclose(other.data.affine, grid.affine)
+            and _can_modulate(other.data, item.data)
         ]
 
     def _images_of_one_volume(self) -> list[Item]:
@@ -3222,6 +3320,30 @@ class Viewer:
 
         return save_figure(self, detail, Path(path), float(scale), background)
 
+    def _follow_detail_grid(self, event: Event) -> None:
+        """Moves the detail windows' rectangles onto a new detail grid.
+
+        Each keeps its place in the world; one that lies outside the new grid
+        is closed.
+        """
+        if not self.scene.details or not isinstance(event, _GRID_EVENTS):
+            return
+        if isinstance(event, ViewStateChanged) and event.name != ViewField.MAIN_VOLUME:
+            return
+        if isinstance(event, OptionChanged) and event.name != OptionName.VISIBLE:
+            return
+        old, new = self._boxes_grid, self._detail_grid()
+        if old is None or new is None or _same_grid(old, new):
+            return
+        self._boxes_grid = new
+        for detail in list(self.scene.details.values()):
+            position = self.detail_position(detail.id)
+            box = regrid_box(old, new, detail.view, detail.box, position)
+            if box is None:
+                self.scene.remove_detail(detail.id)
+            else:
+                self.scene.set_detail(replace(detail, box=box))
+
     def _detail_box(
         self, view: ViewKind, box: object
     ) -> tuple[Grid, tuple[int, int, int, int]]:
@@ -3246,6 +3368,7 @@ class Viewer:
         clipped = clipped_box(grid, view, (i, j, size_i, size_j))
         if clipped is None:
             raise ValueError(f"The box {box!r} lies outside the grid.")
+        self._boxes_grid = grid
         return grid, clipped
 
     @agent_action
@@ -3964,9 +4087,11 @@ def _changes_for_data(
     ranged: dict[OptionName, float] = {}
     if isinstance(o, VolumeOptions):
         assert isinstance(data, Volume)
-        count = data.data.shape[3] if data.data.ndim == 4 else 1
+        count = _volumes(data)
         index = min(o.volume_index, count - 1)
         changes[OptionName.VOLUME_INDEX] = index
+        if o.dti and data.data.shape[3:] != (3,):
+            changes[OptionName.DTI] = False
         old = item.value_range
         ranged[OptionName.MINIMUM] = _follow(o.minimum, old, new_range, 0)
         ranged[OptionName.MAXIMUM] = _follow(o.maximum, old, new_range, 1)
@@ -3986,6 +4111,26 @@ def _changes_for_data(
         if o.colour_by not in data.values():
             changes[OptionName.COLOUR_BY] = None
     return changes, ranged
+
+
+def _same_grid(a: Grid, b: Grid) -> bool:
+    """Tells whether two grids have the same shape and affine."""
+    return a.shape[:3] == b.shape[:3] and bool(np.allclose(a.affine, b.affine))
+
+
+def _volumes(volume: Volume) -> int:
+    """Returns the number of volumes of an image, 1 for a 3D one."""
+    return int(volume.data.shape[3]) if volume.data.ndim == 4 else 1
+
+
+def _can_modulate(weights: Volume, image: Volume) -> bool:
+    """Tells whether weights can modulate an image: one volume on its grid."""
+    return (
+        _volumes(weights) == 1
+        and weights.data.ndim in (3, 4)
+        and weights.grid.shape[:3] == image.grid.shape[:3]
+        and bool(np.allclose(weights.affine, image.affine))
+    )
 
 
 def _check_volume_index(item: Item, value: object) -> None:
@@ -4070,8 +4215,8 @@ def _item_ref_error(scene: Scene, item: Item, name: OptionName, value: int) -> s
     if isinstance(item.data, Tractogram) or item.category == Category.REGIONS:
         return f"{info.label}: {other.name} is not a volume or overlay of one volume."
     return (
-        f"{info.label}: {other.name} is not a 3D volume or overlay on the grid of "
-        f"{item.name}."
+        f"{info.label}: {other.name} is not a volume or overlay of one volume on "
+        f"the grid of {item.name}."
     )
 
 

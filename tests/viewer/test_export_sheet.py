@@ -12,6 +12,7 @@ from larmor.types import Tractogram, Volume
 from larmor.viewer import Category, OptionName, TractStyle, Viewer, ViewKind
 from larmor.viewer.model.export import ExportKind, ExportPreset, load_presets
 from larmor.viewer.model.options import Colour
+from larmor.viewer.model.view_state import Layout
 from larmor.viewer.qt.export_sheet import ExportSheet, PresetDialog
 from larmor.viewer.qt.main_window import MainWindow
 
@@ -66,6 +67,37 @@ def test_file_export_opens_one_sheet_on_the_selected_view(
     sheet.close()
     window.header.export_button.click()
     assert window.findChildren(ExportSheet) == [sheet] and sheet.isVisible()
+
+
+def test_a_reopened_sheet_takes_the_view_selected_now(
+    window: MainWindow, sheet: ExportSheet, qtbot: QtBot
+) -> None:
+    sheet.close()
+    window.viewer.select_view(ViewKind.SAGITTAL)
+    window.show_export()
+    qtbot.waitUntil(sheet.isVisible)
+    assert sheet.view_box.currentData() == ViewKind.SAGITTAL
+
+
+def test_all_views_in_the_one_layout_is_the_view_shown_at_its_size(
+    window: MainWindow, sheet: ExportSheet, qtbot: QtBot
+) -> None:
+    window.viewer.set_layout(Layout.ONE)
+    qtbot.wait(20)
+    sheet.view_box.setCurrentIndex(sheet.view_box.findData(None))
+    sheet.view_box.activated.emit(sheet.view_box.currentIndex())
+    assert sheet.shown_views() == ((ViewKind.CORONAL,),)
+    canvas = window.views.panels[ViewKind.CORONAL].canvas
+    assert sheet.base()[0] == (canvas.width(), canvas.height())
+    # A hidden view drawn alone takes the shown view's size, not its old one.
+    sheet.view_box.setCurrentIndex(sheet.view_box.findData(ViewKind.AXIAL))
+    sheet.view_box.activated.emit(sheet.view_box.currentIndex())
+    assert sheet.base()[0] == (canvas.width(), canvas.height())
+
+
+def test_the_preset_table_shows_every_row_whole(sheet: ExportSheet) -> None:
+    table = sheet.preset_table
+    assert table.verticalHeader().length() <= table.viewport().height()
 
 
 @pytest.mark.parametrize("view", [ViewKind.CORONAL, None], ids=["one view", "all"])

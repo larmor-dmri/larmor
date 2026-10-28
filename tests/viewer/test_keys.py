@@ -9,7 +9,15 @@ from PySide6.QtWidgets import QApplication, QFileDialog, QMenu, QWidget
 from pytestqt.qtbot import QtBot
 
 from larmor.types import Volume
-from larmor.viewer import CameraPreset, Category, Item, OptionName, ViewKind
+from larmor.viewer import (
+    CameraPreset,
+    Category,
+    Item,
+    OptionName,
+    RegionRole,
+    Tool,
+    ViewKind,
+)
 from larmor.viewer.model.camera import PRESETS, Camera2D, Camera3D
 from larmor.viewer.model.shortcuts import (
     MOUSE_CONTROLS,
@@ -18,6 +26,7 @@ from larmor.viewer.model.shortcuts import (
     Command,
     views_text,
 )
+from larmor.viewer.model.view_state import Workspace
 from larmor.viewer.qt.field import ChoiceField, SliderField
 from larmor.viewer.qt.main_window import MainWindow
 from larmor.viewer.qt.shortcuts import ShortcutsDialog
@@ -244,6 +253,26 @@ def test_the_arrows_still_step_after_the_focus_moves_to_a_panel(
     assert window.viewer.scene.view.cursor[2] == z + 2.0
     QTest.keyClick(widget, Key.Key_Right)
     assert _index(window, item) == 1
+
+
+def test_tab_in_an_inspector_field_moves_the_focus_not_the_regions_role(
+    window: MainWindow, qtbot: QtBot
+) -> None:
+    sphere = window.viewer.add_sphere(role=RegionRole.INCLUDE)
+    window.viewer.select(sphere)
+    combo = window.options._fields[OptionName.ROLE]
+    _focus(combo, qtbot)
+    QTest.keyClick(combo, Key.Key_Tab)
+    options = window.viewer.scene.item(sphere).options
+    assert getattr(options, OptionName.ROLE) == RegionRole.INCLUDE
+    assert QApplication.focusWidget() is not combo
+
+
+def test_n_starts_no_bundle_in_the_view_workspace(window: MainWindow) -> None:
+    window.viewer.set_workspace(Workspace.VIEW)
+    QTest.keyClick(window, Key.Key_N)
+    assert not window.viewer.drawing
+    assert window.viewer.scene.view.tool == Tool.CURSOR
 
 
 # The actions behind the keys

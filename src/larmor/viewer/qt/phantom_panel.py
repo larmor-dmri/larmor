@@ -4,8 +4,17 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any, cast, override
 
+import numpy as np
 from PySide6.QtCore import QEvent, QObject, QRectF, QSignalBlocker, QSize, Qt, Signal
-from PySide6.QtGui import QColor, QIcon, QPainter, QPaintEvent, QResizeEvent, QShowEvent
+from PySide6.QtGui import (
+    QColor,
+    QIcon,
+    QKeyEvent,
+    QPainter,
+    QPaintEvent,
+    QResizeEvent,
+    QShowEvent,
+)
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
@@ -20,6 +29,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QListWidget,
+    QMessageBox,
     QPushButton,
     QScrollArea,
     QSizePolicy,
@@ -46,6 +56,7 @@ from larmor.viewer.model.options import OptionError
 from larmor.viewer.model.phantom import (
     PROXY_NAMES,
     BundleField,
+    BvecFrame,
     CompartmentKind,
     CompartmentSettings,
     EchoKind,
@@ -62,6 +73,7 @@ from larmor.viewer.model.phantom_editor import item_sources
 from larmor.viewer.model.view_state import Tool, ViewField
 from larmor.viewer.model.viewer import Viewer
 from larmor.viewer.qt.field import FieldLabel, ItemField, add_field_row
+from larmor.viewer.qt.scene_tree import REMOVE_KEYS
 from larmor.viewer.qt.style import icon_path
 
 # Shown above an empty phantom.
@@ -95,10 +107,10 @@ SECTION_HELP = {
 BOX_FIELD_WIDTH = 64  # px, the least width of each of the box's three sizes
 # What each section's More fold holds, as its button names it.
 MORE = {
-    "Grid": "More: grid box, background, tissue maps",
-    "Tissues": "More: custom compartments",
-    "Bundles": "More: shape, seed, editing, a loaded tractogram",
-    "Scan": "More: sequence, timings, seeds, gradient files",
+    "Grid": "More: outline, background, maps",
+    "Tissues": "More: parameters",
+    "Bundles": "More: shape, points, a tractogram",
+    "Scan": "More: timings, seeds, files, noise",
 }
 # The help of each field, shown by the info icon after its label.
 HELP = {
@@ -146,11 +158,16 @@ HELP = {
     "Directions seed": "The seed of the gradient directions of the shells. The same "
     "seed gives the same directions.",
     "Noise seed": "The seed of the noise. The same seed gives the same images.",
+    "Noise reference": "The tissue whose signal at b = 0 sets the noise: the noise "
+    "level is the signal of a voxel full of it, divided by the SNR.",
+    "bvecs frame": "The frame of the bvecs file. FSL, as FSL and dcm2niix write "
+    "them, is along the axes of the phantom's grid with x flipped; world is RAS "
+    "coordinates.",
 }
 # The help of the fields that have no label of their own.
 NOISE_HELP = (
-    "Adds Rician noise. The SNR is the signal of a voxel full of white matter at "
-    "b = 0, divided by the noise level."
+    "Adds Rician noise. The SNR is the signal at b = 0 of a voxel full of the noise "
+    "reference tissue, WM unless chosen under More, divided by the noise level."
 )
 SHOW_BOX_HELP = (
     "Outlines the grid in the views. It is always outlined while you draw a bundle."
@@ -301,7 +318,7 @@ FRACTION_COLOURS = ("#4c8bf5", "#f5a742", "#5cc46a", "#c45cc4", "#e05555", "#55c
 # The geometry fields of the bundle form: label, minimum, maximum, decimals.
 GEOMETRY_FORM: tuple[tuple[BundleField, str, float, float, int], ...] = (
     (BundleField.NUM_STREAMLINES, "Streamlines", 1, 100_000, 0),
-    (BundleField.RADIUS, "Radius (mm)", 0, 100, 2),
+    (BundleField.RADIUS, "Radius (mm)", 0.01, 100, 2),
     (BundleField.NUM_POINTS, "Points per streamline", 2, 10_000, 0),
     (BundleField.FAN_START, "Fan at start", 0, 20, 2),
     (BundleField.FAN_END, "Fan at end", 0, 20, 2),
@@ -319,6 +336,17 @@ def _label(key: str) -> str:
     unit = unit or (" (ms)" if key.endswith("_ms") else "")
     unit = unit or (" (um)" if key.endswith("_um") else "")
     return words[:1].upper() + words[1:] + unit
+
+
+def _parameter_range(key: str) -> tuple[float, float]:
+    """Returns the range a preset parameter's field takes, diffusivities in um^2/ms."""
+    if "fraction" in key or key == "proton_density":
+        return 0.0, 1.0
+    if "diffusivity" in key:
+        return 0.0, 10.0
+    if key.endswith("_ms"):
+        return 0.01, 100_000.0
+    return 0.0, 10_000.0
 
 
 def _spin(low: float, high: float, decimals: int = 2) -> QDoubleSpinBox:
@@ -498,9 +526,10 @@ class FoldButton(QToolButton):
     NARROWEST = 80  # px, the least room it asks for
 
     def __init__(self, text: str, parent: QWidget | None = None) -> None:
-        """Creates the button with its full text."""
+        """Creates the button with its full text, also its tooltip."""
         super().__init__(parent)
         self.setText(text)
+        self.setToolTip(text)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
     @override
@@ -570,6 +599,20 @@ class FractionBar(QWidget):
         painter.end()
 
 
+class BundleTable(QTableWidget):
+    """The table of the phantom's bundles, whose selected rows Delete removes."""
+
+    remove_requested = Signal()
+
+    @override
+    def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
+        """Asks to remove the selected bundles with Delete or Backspace."""
+        if event.key() in REMOVE_KEYS:
+            self.remove_requested.emit()
+            return
+        super().keyPressEvent(event)
+
+
 class PhantomPanel(QWidget):
     """Edits the phantom through the viewer's actions; shows `viewer.phantom`.
 
@@ -598,6 +641,9 @@ class PhantomPanel(QWidget):
         self.viewer = viewer
         self.guided = guided
         self.running = False  # a simulation runs
+        # Whether the fields show the model's values even where they have focus.
+        self._reverting = False
+        self._draft_row = -1  # the bundles' table row of a new bundle being drawn
         self.setObjectName("phantomPanel")
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -634,8 +680,7 @@ class PhantomPanel(QWidget):
         self.new_button.clicked.connect(self.new_requested)
         self.open_button.clicked.connect(self.open_requested)
         self.save_button.clicked.connect(self.save_requested)
-        viewer = self.viewer
-        self.close_button.clicked.connect(lambda: self._act(viewer.close_phantom))
+        self.close_button.clicked.connect(self._close)
 
     def _build_hints(self, layout: QVBoxLayout) -> None:
         """Adds the hint shown with no phantom, the error line and the start hint."""
@@ -781,6 +826,11 @@ class PhantomPanel(QWidget):
         self.apply_box = QPushButton("Use this box", self)
         self.apply_box.clicked.connect(self._apply_box)
         form.addRow(self.apply_box)
+        self.box_note = QLabel(self)
+        self.box_note.setObjectName("panelHint")
+        self.box_note.setWordWrap(True)
+        self.box_note.hide()
+        form.addRow(self.box_note)
         self.show_box = QCheckBox("Show the grid box", self)
         self.show_box.setToolTip(SHOW_BOX_HELP)
         self.show_box.clicked.connect(
@@ -803,7 +853,7 @@ class PhantomPanel(QWidget):
         add_field_row(more, "Background", HELP["Background"], self.background, self)
 
     def _build_tissues(self, form: QFormLayout, more: QFormLayout) -> None:
-        """Builds the Tissues section; the custom compartments go in More."""
+        """Builds the Tissues section; the parameters and compartments go in More."""
         self.tissue_list = QListWidget(self)
         self.tissue_list.setMinimumHeight(110)
         self.tissue_list.currentRowChanged.connect(lambda _: self._show_tissue())
@@ -823,7 +873,7 @@ class PhantomPanel(QWidget):
         self.parameters = QWidget(self)
         self.parameter_form = _form(self.parameters)
         self.parameter_form.setContentsMargins(0, 0, 0, 0)
-        form.addRow(self.parameters)
+        more.addRow(self.parameters)
         self.parameter_boxes: dict[str, QDoubleSpinBox] = {}
         self._parameter_preset: TissuePreset | None = None
         self._build_compartments()
@@ -855,15 +905,16 @@ class PhantomPanel(QWidget):
 
     def _build_bundles(self, form: QFormLayout, more: QFormLayout) -> None:
         """Builds the Bundles section; the shape's finer fields go in More."""
-        self.bundle_table = QTableWidget(0, 3, self)
+        self.bundle_table = BundleTable(0, 3, self)
         self.bundle_table.setHorizontalHeaderLabels(["Bundle", "Tissue", "Points"])
         self.bundle_table.verticalHeader().setVisible(False)
         self.bundle_table.setSelectionBehavior(
             QAbstractItemView.SelectionBehavior.SelectRows
         )
         self.bundle_table.setSelectionMode(
-            QAbstractItemView.SelectionMode.SingleSelection
+            QAbstractItemView.SelectionMode.ExtendedSelection
         )
+        self.bundle_table.remove_requested.connect(self._remove_bundles)
         self.bundle_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         header = self.bundle_table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
@@ -886,7 +937,13 @@ class PhantomPanel(QWidget):
         """Adds Draw, the card of the bundle being drawn, and Edit, Save and Use."""
         self.draw_button = QPushButton("Draw (N)", self)
         self.draw_button.clicked.connect(self._draw)
-        form.addRow(self.draw_button)
+        self.remove_bundle = QPushButton("Remove", self)
+        self.remove_bundle.setToolTip("Removes the bundles selected in the table")
+        self.remove_bundle.clicked.connect(self._remove_bundles)
+        buttons = QHBoxLayout()
+        buttons.addWidget(self.draw_button, 1)
+        buttons.addWidget(self.remove_bundle)
+        form.addRow(buttons)
         self.draw_card = QFrame(self)
         self.draw_card.setObjectName("drawCard")
         card = QHBoxLayout(self.draw_card)
@@ -1015,7 +1072,7 @@ class PhantomPanel(QWidget):
             box.valueChanged.connect(lambda value, n=name: self._scan(n, value))
             add_field_row(more, labels[name], HELP[labels[name]], box, self)
         self._build_gradients(form, more)
-        self._build_noise(form)
+        self._build_noise(form, more)
 
     def _build_gradients(self, form: QFormLayout, more: QFormLayout) -> None:
         """Adds the shells' table, and the choice of bvals and bvecs files to more."""
@@ -1048,10 +1105,18 @@ class PhantomPanel(QWidget):
         files.addWidget(self.gradient_files)
         files.addWidget(self.clear_gradients)
         more.addRow(files)
+        self.bvec_frame = ChoiceBox(self)
+        self.bvec_frame.set_choices(
+            [(BvecFrame.FSL, "FSL (grid axes)"), (BvecFrame.WORLD, "World (RAS)")]
+        )
+        self.bvec_frame.chosen.connect(
+            lambda frame: self._scan(ScanField.BVEC_FRAME, frame)
+        )
+        add_field_row(more, "bvecs frame", HELP["bvecs frame"], self.bvec_frame, self)
         more.addRow(self.gradient_label)
 
-    def _build_noise(self, form: QFormLayout) -> None:
-        """Adds the noise switch and its SNR."""
+    def _build_noise(self, form: QFormLayout, more: QFormLayout) -> None:
+        """Adds the noise switch and its SNR, and its reference tissue to more."""
         noise = QHBoxLayout()
         self.noise = QCheckBox("Noise, SNR", self)
         self.noise.setToolTip(NOISE_HELP)
@@ -1062,6 +1127,17 @@ class PhantomPanel(QWidget):
         noise.addWidget(self.noise)
         noise.addWidget(self.snr)
         form.addRow(noise)
+        self.noise_reference = ChoiceBox(self)
+        self.noise_reference.chosen.connect(
+            lambda tissue: self._scan(ScanField.NOISE_REFERENCE, tissue)
+        )
+        add_field_row(
+            more,
+            "Noise reference",
+            HELP["Noise reference"],
+            self.noise_reference,
+            self,
+        )
 
     def _build_proxies(self, form: QFormLayout) -> None:
         """Builds the Proxy maps section."""
@@ -1163,14 +1239,15 @@ class PhantomPanel(QWidget):
     def _refresh_grid(self, state: PhantomState) -> None:
         """Shows the grid, the tissue maps and the background."""
         grid = state.grid
-        sizes = [float(abs(grid.affine[i, i])) for i in range(3)]
+        sizes = [float(s) for s in np.linalg.norm(grid.affine[:3, :3], axis=0)]
         x, y, z = grid.shape
         self.grid_label.setText(
             f"Grid: {x} x {y} x {z} voxels of "
             + " x ".join(f"{s:g}" for s in sizes)
             + " mm"
         )
-        if not any(b.hasFocus() for b in (*self.size_boxes, self.voxel_box)):
+        typing = any(b.hasFocus() for b in (*self.size_boxes, self.voxel_box))
+        if self._reverting or not typing:
             for box, count, size in zip(
                 self.size_boxes, grid.shape, sizes, strict=True
             ):
@@ -1230,8 +1307,6 @@ class PhantomPanel(QWidget):
         custom = tissue.preset == TissuePreset.CUSTOM
         self.parameters.setVisible(not custom)
         self.custom.setVisible(custom)
-        if custom:
-            self.sections["Tissues"].set_more_shown(True)  # the table is under More
         if not custom:
             keys = list(preset_defaults(tissue.preset))
             if (
@@ -1243,7 +1318,7 @@ class PhantomPanel(QWidget):
                     self.parameter_form.removeRow(0)
                 self.parameter_boxes = {}
                 for key in keys:
-                    box = _spin(0, 100_000, 4)
+                    box = _spin(*_parameter_range(key), 4)
                     box.valueChanged.connect(
                         lambda value, k=key: self._edit_parameter(k, value)
                     )
@@ -1284,6 +1359,8 @@ class PhantomPanel(QWidget):
         scene = self.viewer.scene
         draft = state.draft
         rows: list[tuple[ItemId | None, str, str, str]] = []
+        # The row of a new bundle being drawn, which comes last; -1 for none.
+        self._draft_row = -1
         for bundle in state.bundles:
             name = scene.item(bundle.item_id).name
             points = (
@@ -1295,6 +1372,7 @@ class PhantomPanel(QWidget):
                 points = f"{len(draft.points)} (editing)"
             rows.append((bundle.item_id, name, bundle.tissue, points))
         if draft is not None and draft.editing is None:
+            self._draft_row = len(rows)
             rows.append(
                 (draft.item_id, "(drawing)", draft.tissue, str(len(draft.points)))
             )
@@ -1315,6 +1393,14 @@ class PhantomPanel(QWidget):
                 )
                 self.bundle_table.setCellWidget(row, 1, combo)
                 self.bundle_table.setItem(row, 2, QTableWidgetItem(points))
+        self._refresh_draft(state)
+        self.draft_tissue.set_choices([(name, name) for name in names])
+        self._refresh_bundle(state)
+        self.remove_bundle.setEnabled(bool(rows))
+
+    def _refresh_draft(self, state: PhantomState) -> None:
+        """Shows the card and the points of the bundle being drawn, if any."""
+        draft = state.draft
         drawing = draft is not None
         self.draw_card.setVisible(drawing)
         if draft is not None:
@@ -1331,8 +1417,6 @@ class PhantomPanel(QWidget):
             for row, point in enumerate(points_shown):
                 for column, value in enumerate(point):
                     self.points.setItem(row, column, QTableWidgetItem(f"{value:.2f}"))
-        self.draft_tissue.set_choices([(name, name) for name in names])
-        self._refresh_bundle(state)
 
     def _bundle_target(self, state: PhantomState | None) -> ItemId | None:
         """Returns the bundle the form edits, the one being drawn or else selected."""
@@ -1387,6 +1471,23 @@ class PhantomPanel(QWidget):
             draft is None and bundle is not None and bundle.geometry is not None
         )
         self.save_bundle.setEnabled(draft is None and bundle is not None)
+        self._select_row_of(target)
+
+    def _select_row_of(self, target: ItemId | None) -> None:
+        """Selects the table row of the bundle the form edits, if not selected yet."""
+        table = self.bundle_table
+        rows = [
+            r
+            for r in range(table.rowCount())
+            if _row_item(table, r) == target and target is not None
+        ]
+        selected = {index.row() for index in table.selectionModel().selectedRows()}
+        if rows and rows[0] in selected:
+            return
+        with QSignalBlocker(table):
+            table.clearSelection()
+            if rows:
+                table.selectRow(rows[0])
 
     def _set_row_visible(self, row: QWidget | QHBoxLayout, shown: bool) -> None:
         """Shows or hides a row of the Bundles section, in its form or under More."""
@@ -1410,7 +1511,7 @@ class PhantomPanel(QWidget):
         """Shows the scan."""
         scan = state.scan
         self.sequence.show_value(scan.sequence)
-        if not self.te.hasFocus():
+        if self._reverting or not self.te.hasFocus():
             self.te.setText(", ".join(f"{t:g}" for t in scan.te_ms))
         values = {
             ScanField.TR_MS: scan.tr_ms,
@@ -1433,11 +1534,19 @@ class PhantomPanel(QWidget):
             widget.setEnabled(shells)
         self.scan_boxes[ScanField.NUM_B0].setEnabled(shells)
         self.scan_boxes[ScanField.GRADIENT_SEED].setEnabled(shells)
-        self.gradient_label.setText(
-            "Directions from the shells"
-            if files is None
-            else f"{files[0].name} and {files[1].name} (world frame)"
-        )
+        self.bvec_frame.show_value(scan.bvec_frame)
+        if files is not None:
+            text = f"{files[0].name} and {files[1].name}"
+        elif scan.table is not None:
+            text = (
+                f"The phantom file's {len(scan.table.bvals)} volumes, as the file "
+                "has them. Editing the shells replaces them."
+            )
+        else:
+            text = "Directions from the shells"
+        self.gradient_label.setText(text)
+        self.noise_reference.set_choices([(t.name, t.name) for t in state.tissues])
+        self.noise_reference.show_value(scan.noise_reference)
         self.noise.setChecked(scan.snr is not None)
         self.snr.setEnabled(scan.snr is not None)
         if scan.snr is not None:
@@ -1465,32 +1574,86 @@ class PhantomPanel(QWidget):
         self.adopt.setItemText(0, "Use a tractogram...")
         self.adopt.show_value(None)
 
-    # Edits: each through an action; a refusal is shown, and the field keeps the
-    # value typed until it is fixed.
+    # Edits: each through an action; a refusal is shown, and every field goes back
+    # to the model's value.
 
     def _act(self, action: Callable[..., object], *args: object) -> bool:
         """Calls a viewer action and shows its error; returns whether it succeeded."""
         try:
             action(*args)
         except (OptionError, OSError, TypeError, ValueError) as e:
-            self.error.setText(str(e))
-            self.error.show()
+            self._refuse(str(e))
             return False
         self.error.hide()
         return True
 
-    def _apply_box(self) -> None:
-        """Starts a phantom on the box typed, or moves the open one to it."""
+    def _refuse(self, message: str) -> None:
+        """Shows why an edit was refused, with every field back at the model's value."""
+        self._reverting = True
+        try:
+            self.refresh()
+        finally:
+            self._reverting = False
+        self.error.setText(message)
+        self.error.show()
+        area = self._scroll_area()
+        if area is not None:
+            area.ensureWidgetVisible(self.error)
+
+    def _close(self) -> None:
+        """Closes the phantom, after asking if it has bundles."""
+        if confirm_discard(self, self.viewer.phantom):
+            self._act(self.viewer.close_phantom)
+
+    def apply_typed_box(self) -> bool:
+        """Moves the phantom to the box typed, if it differs from its grid.
+
+        Returns:
+            False if the box was refused; True otherwise.
+        """
+        state = self.viewer.phantom
+        if state is None:
+            return True
+        sizes = np.linalg.norm(state.grid.affine[:3, :3], axis=0)
+        shown = [n * s for n, s in zip(state.grid.shape, sizes, strict=True)]
+        typed = [b.value() for b in self.size_boxes]
+        if np.allclose(typed, shown, atol=0.05) and np.isclose(
+            self.voxel_box.value(), sizes[0], atol=0.005
+        ):
+            return True
+        return self._apply_box()
+
+    def _apply_box(self) -> bool:
+        """Starts a phantom on the box typed, or moves the open one to it.
+
+        A note says when the box is rounded to whole voxels.
+
+        Returns:
+            Whether the box was taken.
+        """
         sizes = tuple(b.value() for b in self.size_boxes)
         voxel = self.voxel_box.value()
         if self.viewer.phantom is None:
-            self._act(self.viewer.new_phantom, sizes, voxel)
+            done = self._act(self.viewer.new_phantom, sizes, voxel)
         else:
-            self._act(self.viewer.set_phantom_grid, sizes, voxel)
+            done = self._act(self.viewer.set_phantom_grid, sizes, voxel)
+        state = self.viewer.phantom
+        made = [n * voxel for n in state.grid.shape] if state is not None else []
+        rounded = done and not np.allclose(made, sizes)
+        self.box_note.setText(
+            "The box is rounded to whole voxels: "
+            + " x ".join(f"{m:g}" for m in made)
+            + " mm."
+            if rounded
+            else ""
+        )
+        self.box_note.setVisible(rounded)
+        return done
 
     def _apply_grid_of(self, item_id: object) -> None:
         """Moves the phantom to the grid of a loaded image."""
         if isinstance(item_id, int):
+            self.box_note.hide()
             self._act(lambda: self.viewer.set_phantom_grid(grid_of=item_id))
 
     def _ask_tissue(self) -> None:
@@ -1525,20 +1688,26 @@ class PhantomPanel(QWidget):
         """Reads the compartments' table.
 
         Returns:
-            The values of each row, with text that is not a number as NaN, and the
-            diffusivities, typed in um^2/ms, converted to mm^2/s.
+            The values of each row, with the diffusivities, typed in um^2/ms,
+            converted to mm^2/s.
+
+        Raises:
+            ValueError: If a cell does not hold a number, naming the cell.
         """
         rows = []
         for row in range(self.compartments.rowCount()):
             widget = self.compartments.cellWidget(row, 0)
             assert isinstance(widget, ChoiceBox)
             values: dict[str, Any] = {"kind": widget.value()}
-            for column, (key, _) in enumerate(COMPARTMENT_COLUMNS, 1):
+            for column, (key, label) in enumerate(COMPARTMENT_COLUMNS, 1):
                 cell = self.compartments.item(row, column)
+                text = cell.text() if cell is not None else "0"
                 try:
-                    number = float(cell.text()) if cell is not None else 0.0
+                    number = float(text)
                 except ValueError:
-                    number = float("nan")
+                    raise ValueError(
+                        f"Compartment {row + 1}, {label}: {text!r} is not a number."
+                    ) from None
                 if "diffusivity" in key:
                     number /= DIFFUSIVITY_SCALE
                 values[key] = number
@@ -1550,7 +1719,11 @@ class PhantomPanel(QWidget):
         name = self._tissue_name()
         if name is None:
             return
-        rows = self._compartment_values()
+        try:
+            rows = self._compartment_values()
+        except ValueError as e:
+            self._refuse(str(e))
+            return
         self.fraction_bar.set_fractions([r["fraction"] for r in rows])
         self._act(self.viewer.set_compartments, name, rows)
 
@@ -1573,14 +1746,31 @@ class PhantomPanel(QWidget):
             self._edit_compartments()
 
     def _select_bundle(self) -> None:
-        """Selects the bundle chosen in the table."""
-        rows = self.bundle_table.selectionModel().selectedRows()
-        if not rows:
-            return
-        cell = self.bundle_table.item(rows[0].row(), 0)
-        item_id = cell.data(Qt.ItemDataRole.UserRole) if cell is not None else None
+        """Selects the bundle of the table's current row, if that row is selected."""
+        table = self.bundle_table
+        rows = {index.row() for index in table.selectionModel().selectedRows()}
+        current = table.currentRow()
+        row = current if current in rows else min(rows, default=-1)
+        item_id = _row_item(table, row) if row >= 0 else None
         if isinstance(item_id, int):
             self._act(self.viewer.select, item_id)
+
+    def _remove_bundles(self) -> None:
+        """Removes the bundles selected in the table; a new bundle is cancelled."""
+        table = self.bundle_table
+        rows = sorted(index.row() for index in table.selectionModel().selectedRows())
+        if not rows:
+            return
+        drawing = self._draft_row in rows
+        ids = [_row_item(table, r) for r in rows if r != self._draft_row]
+        self._act(self._remove_items, [i for i in ids if isinstance(i, int)], drawing)
+
+    def _remove_items(self, ids: list[ItemId], drawing: bool) -> None:
+        """Removes these bundles' items, and cancels the bundle drawn if drawing."""
+        if drawing:
+            self.viewer.cancel_bundle()
+        for item_id in ids:
+            self.viewer.remove(item_id)
 
     def _edit_bundle(self) -> None:
         """Starts editing the points of the bundle the form shows."""
@@ -1616,8 +1806,7 @@ class PhantomPanel(QWidget):
             try:
                 x, y, z = (float(_cell(self.points, row, c)) for c in range(3))
             except AttributeError, ValueError:
-                self.error.setText(f"Point {row + 1} needs three numbers.")
-                self.error.show()
+                self._refuse(f"Point {row + 1} needs three numbers.")
                 return
             points.append((x, y, z))
         self._act(self.viewer.set_bundle_points, points)
@@ -1635,8 +1824,7 @@ class PhantomPanel(QWidget):
                 if t.strip()
             ]
         except ValueError:
-            self.error.setText("TE: echo times are numbers in ms, separated by commas.")
-            self.error.show()
+            self._refuse("TE: echo times are numbers in ms, separated by commas.")
             return
         self._scan(ScanField.TE_MS, times)
 
@@ -1648,8 +1836,7 @@ class PhantomPanel(QWidget):
                 b = float(_cell(self.shells, row, 0))
                 n = int(_cell(self.shells, row, 1))
             except AttributeError, ValueError:
-                self.error.setText(f"Shell {row + 1} needs a b-value and a count.")
-                self.error.show()
+                self._refuse(f"Shell {row + 1} needs a b-value and a count.")
                 return
             shells.append((b, n))
         self._scan(ScanField.SHELLS, shells)
@@ -1682,7 +1869,7 @@ class PhantomPanel(QWidget):
             return
         bvecs, _ = QFileDialog.getOpenFileName(
             self,
-            "bvecs file (world frame)",
+            "bvecs file",
             str(Path(bvals).parent),
             "bvecs (*.bvec *.bvecs);;All files (*)",
         )
@@ -1698,6 +1885,33 @@ class PhantomPanel(QWidget):
         folder = QFileDialog.getExistingDirectory(self, "Output folder")
         if folder:
             self._act(self.viewer.set_run_folder, folder)
+
+
+def _row_item(table: QTableWidget, row: int) -> object:
+    """Returns the item id a row of the bundles' table stands for; None for none."""
+    cell = table.item(row, 0)
+    return cell.data(Qt.ItemDataRole.UserRole) if cell is not None else None
+
+
+def confirm_discard(parent: QWidget, state: PhantomState | None) -> bool:
+    """Asks whether to discard a phantom that has bundles or a bundle being drawn.
+
+    Returns:
+        True if there is nothing to lose or the answer is yes.
+    """
+    if state is None:
+        return True
+    drawing = state.draft is not None and bool(state.draft.points)
+    if not state.bundles and not drawing:
+        return True
+    answer = QMessageBox.question(
+        parent,
+        "Discard phantom",
+        "Discard the current phantom?",
+        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        QMessageBox.StandardButton.No,
+    )
+    return answer == QMessageBox.StandardButton.Yes
 
 
 def _cell(table: QTableWidget, row: int, column: int) -> str:

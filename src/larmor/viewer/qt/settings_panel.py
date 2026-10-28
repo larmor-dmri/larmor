@@ -62,6 +62,8 @@ DEFAULT_GPU = "Default"  # the GPU choice that leaves it to wgpu, saved as ""
 SERVE_HELP = "Lets agents on this computer drive the viewer through MCP."
 URL_HELP = "The address an agent connects to."
 TOKEN_HELP = "The key an agent must send; a new token refuses agents with the old one."
+# The longest URL, for the least width of the URL and token fields.
+URL_SAMPLE = "http://127.0.0.1:65535/mcp"
 
 
 class SettingsPanel(QWidget):
@@ -142,6 +144,9 @@ class SettingsPanel(QWidget):
             if name == SettingName.MCP_PORT:
                 assert isinstance(field, SliderField)
                 field.slider.hide()  # a port is typed; a drag would try every one
+                row = field.layout()
+                assert isinstance(row, QHBoxLayout)
+                row.addStretch(1)  # the text where the other fields start
                 if mcp is not None:
                     self.mcp = McpSection(mcp, self.settings, layout, form)
         return form
@@ -236,9 +241,13 @@ class McpSection:
         self.error.hide()
         add_field_row(layout, "Serve agents", SERVE_HELP, self.serve, form)
         url = _with_buttons(form, self.url, _copy_button(form, self.url))
-        add_field_row(layout, "URL", URL_HELP, url, form)
         copy = _copy_button(form, self.token)
         token = _with_buttons(form, self.token, copy, self.new_token)
+        # As wide as the URL, so the form puts them below their labels rather than
+        # cut the URL short.
+        for line in (self.url, self.token):
+            line.setMinimumWidth(line.fontMetrics().horizontalAdvance(URL_SAMPLE) + 16)
+        add_field_row(layout, "URL", URL_HELP, url, form)
         add_field_row(layout, "Token", TOKEN_HELP, token, form)
         layout.addRow(self.error)
         self.serve.toggled.connect(self._toggle)
@@ -253,6 +262,8 @@ class McpSection:
         port = server.port if server.running else self.settings.values.mcp_port
         self.url.setText(server.url(port))
         self.token.setText(server.token)
+        for line in (self.url, self.token):
+            line.setCursorPosition(0)  # the start shows if it is cut short
 
     def moved(self) -> None:
         """Shows the server after a new port, and why it stayed if it could not move."""

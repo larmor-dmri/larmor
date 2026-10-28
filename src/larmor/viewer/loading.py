@@ -142,15 +142,39 @@ class Loader:
         max_streamlines: int | None | Default = DEFAULT,
         *,
         then: Then,
+        transforms: list[str] | None = None,
+        reference: str | Path | None = None,
+        inverse: bool = False,
+        interpolation: str | None = None,
+        format: str | None = None,
+        warp_type: str | None = None,
+        fsl_input_path: str | Path | None = None,
+        fsl_reference_path: str | Path | None = None,
     ) -> None:
         """Queues one file, as `open` does; then is told the item, or why it failed.
 
         A cancel, or the window closing, comes to then as a failure. The read
-        limit defaults to the loader's.
+        limit defaults to the loader's. The registration arguments are those of
+        `Viewer.load`.
+
+        Raises:
+            ValueError: If the registration cannot be read.
         """
         _check_category(category)
         limit = self.max_streamlines if max_streamlines is DEFAULT else max_streamlines
         assert not isinstance(limit, Default)
+        registration = None
+        if transforms:
+            registration = Registration.from_files(
+                list(transforms),
+                reference,
+                inverse,
+                format,
+                interpolation,
+                warp_type,
+                fsl_input_path,
+                fsl_reference_path,
+            )
         was_busy = self.busy
         self._total += 1
         job = _Job(
@@ -160,6 +184,7 @@ class Loader:
             self._total,
             limit,
             then=then,
+            registration=registration,
         )
         self._waiting[id(job)] = job
         self._queue([job], was_busy)
