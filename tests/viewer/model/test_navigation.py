@@ -645,3 +645,22 @@ def test_without_a_volume_the_readout_is_the_position_only(content: str) -> None
         )
     viewer.move_cursor((1.0, 2.0, 3.0))
     assert viewer.readout() == Readout((1.0, 2.0, 3.0))
+
+
+def test_a_slice_step_on_an_oblique_anisotropic_grid_moves_one_drawn_slice() -> None:
+    from larmor.viewer.render.geometry import slice_index
+
+    # The third voxel axis is 5 mm long and tilted 20 degrees towards y.
+    a = np.radians(20)
+    affine = np.eye(4)
+    affine[:3, :3] = np.column_stack(
+        [[1, 0, 0], [0, np.cos(a), np.sin(a)], [0, -5 * np.sin(a), 5 * np.cos(a)]]
+    )
+    volume = Volume(np.zeros((20, 20, 10), np.float32), affine)
+    viewer = Viewer()
+    viewer.add(volume, Category.VOLUMES)
+    before = slice_index(affine, volume.data.shape, 1, viewer.scene.view.cursor)
+    viewer.step_slice(ViewKind.CORONAL, 1)
+    after = slice_index(affine, volume.data.shape, 1, viewer.scene.view.cursor)
+    assert before is not None and after is not None
+    assert (after[0], after[1] - before[1]) == (before[0], 1)

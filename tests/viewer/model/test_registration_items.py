@@ -94,6 +94,25 @@ def test_background_loader_brings_files_through_the_registration() -> None:
     assert item.registration == registration
 
 
+def test_an_agents_load_in_the_window_takes_the_registration() -> None:
+    posted: queue.Queue[Callable[[], None]] = queue.Queue()
+    viewer = Viewer()
+    loader = Loader(viewer, posted.put)
+    told: list[tuple[object, str | None]] = []
+    loader.load(
+        DATA / "moving.nii.gz",
+        Category.VOLUMES,
+        then=lambda item, error: told.append((item, error)),
+        transforms=[str(DATA / "mrtrix_affine.txt")],
+        reference=DATA / "fixed.nii.gz",
+    )
+    while loader.busy:
+        posted.get(timeout=WAIT)()
+    item = viewer.scene.items[0]
+    assert told == [(item, None)]
+    assert item.registration is not None
+
+
 def test_fods_are_refused() -> None:
     with pytest.raises(ValueError, match="FODs"):
         Viewer().load(

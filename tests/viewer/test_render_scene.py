@@ -319,3 +319,15 @@ def test_replacing_a_mask_refilters_the_tractograms_using_it(
         monkeypatch.setattr(adapter, "refilter", partial(refiltered.append, item.id))
     viewer.replace_data(mask.id, _volume())
     assert refiltered == [used.id]
+
+
+def test_replacing_a_values_volume_redraws_the_tractogram_coloured_by_it(
+    scene_renderer: tuple[Viewer, SceneRenderer],
+) -> None:
+    viewer, renderer = scene_renderer
+    values = viewer.add(_volume(), Category.VOLUMES)
+    tract = viewer.add(_tractogram(), Category.TRACTOGRAMS)
+    viewer.set(tract.id, OptionName.VALUES_VOLUME, values.id)
+    before = renderer.adapters[tract.id]
+    viewer.replace_data(values.id, _volume())
+    assert renderer.adapters[tract.id] is not before

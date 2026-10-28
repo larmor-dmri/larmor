@@ -4,6 +4,7 @@ from dataclasses import dataclass, replace
 
 import numpy as np
 
+from larmor.viewer.model.readout import voxel_axis
 from larmor.viewer.render.colour_space import physical_colours
 
 # Where the slab's bands of segments split, as quantiles of their extent.
@@ -371,8 +372,7 @@ def slice_index(
         grid.
     """
     m = np.asarray(affine, np.float64)[:3, :3]
-    along = np.abs(m[world_axis, :]) / np.linalg.norm(m, axis=0)
-    axis = int(np.argmax(along))
+    axis = voxel_axis(affine, world_axis)
     voxel = np.linalg.solve(m, np.asarray(position, np.float64) - affine[:3, 3])
     index = int(np.floor(voxel[axis] + 0.5))
     return (axis, index) if 0 <= index < shape[axis] else None

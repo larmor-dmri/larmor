@@ -18,6 +18,7 @@ from larmor.viewer import Category, Colouring, OptionName, Viewer
 from larmor.viewer.model.events import DataChanged, Event, OptionChanged, SourceChanged
 from larmor.viewer.model.options import (
     OverlayOptions,
+    RegionOptions,
     SurfaceOptions,
     TractogramOptions,
     VolumeOptions,
@@ -296,3 +297,42 @@ def test_data_of_another_type_is_refused_and_changes_nothing() -> None:
     with pytest.raises(ValueError):
         viewer.replace_data(item.id, _volume())
     assert item.data is data
+
+
+def _dti_modulated() -> tuple[Viewer, int, int]:
+    """A DTI image modulated by a 3D image on its grid."""
+    viewer = Viewer()
+    vectors = viewer.add(
+        Volume(np.zeros((2, 2, 2, 3), np.float32), np.eye(4)), Category.VOLUMES
+    )
+    weights = viewer.add(
+        Volume(np.zeros((2, 2, 2), np.float32), np.eye(4)), Category.OVERLAYS
+    )
+    viewer.set(vectors.id, OptionName.DTI, True)
+    viewer.set(vectors.id, OptionName.MODULATE, weights.id)
+    return viewer, vectors.id, weights.id
+
+
+def test_a_modulating_image_replaced_off_the_grid_modulates_no_more() -> None:
+    viewer, vectors, weights = _dti_modulated()
+    viewer.replace_data(weights, Volume(np.zeros((3, 3, 3), np.float32), np.eye(4)))
+    o = viewer.scene.item(vectors).options
+    assert isinstance(o, VolumeOptions)
+    assert o.modulate is None
+
+
+def test_a_dti_image_replaced_by_a_3d_one_turns_dti_and_modulate_off() -> None:
+    viewer, vectors, _ = _dti_modulated()
+    viewer.replace_data(vectors, Volume(np.zeros((3, 3, 3), np.float32), np.eye(4)))
+    o = viewer.scene.item(vectors).options
+    assert isinstance(o, VolumeOptions)
+    assert (o.dti, o.modulate) == (False, None)
+
+
+def test_a_mask_replaced_by_several_volumes_is_no_longer_the_regions_mask() -> None:
+    viewer, tract, overlay = _masked()
+    viewer.replace_data(overlay, Volume(np.zeros((4, 2, 1, 3), np.float32), np.eye(4)))
+    region = viewer.scene.in_category(Category.REGIONS)[0]
+    assert isinstance(region.options, RegionOptions)
+    assert region.options.mask is None
+    assert viewer.kept_streamlines(tract) == 2

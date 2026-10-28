@@ -301,11 +301,11 @@ def _volume_at(data: np.ndarray, idx: int) -> np.ndarray:
 def _label_colours(values: np.ndarray, table: dict[int, Label]) -> gfx.TextureMap:
     """Returns a colour per value, from the table or built-in colours.
 
-    The value 0 is transparent.
+    The value 0 is transparent, as is NaN.
     """
     colours = np.empty((len(values), 4), np.float32)
     for k, value in enumerate(values):
-        label = round(float(value))
+        label = round(float(value)) if np.isfinite(value) else 0
         colours[k] = (*label_rgb(label, table), 0.0 if label == 0 else 1.0)
     return gfx.cm.create_colormap(colours, n=len(colours))
 
@@ -332,7 +332,9 @@ def dti_colours(
     np.nan_to_num(rgb, copy=False, nan=0.0)
     np.minimum(rgb, 1.0, out=rgb)
     if weights is not None:
-        w = np.asarray(weights.data.T, dtype=np.float32) * weights.slope
+        # A 4D image of one volume weighs as its 3D volume.
+        three_d = weights.data.reshape(weights.data.shape[:3])
+        w = np.asarray(three_d.T, dtype=np.float32) * weights.slope
         w += weights.intercept
         np.nan_to_num(w, copy=False, nan=0.0)
         rgb *= np.clip(w, 0.0, 1.0)[..., None]

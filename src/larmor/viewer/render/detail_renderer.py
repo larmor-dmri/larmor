@@ -213,6 +213,13 @@ class DetailRenderer:
                 adapter.close()
         if not isinstance(event, ItemRemoved):
             self._add(event.item)
+        if isinstance(event, DataChanged):
+            # The items drawn with its data, as modulated by it, too.
+            for other in self.viewer.scene.naming(event.item.id):
+                dependent = self.adapters.pop(other.id, None)
+                if dependent is not None:
+                    dependent.close()
+                    self._add(other)
 
     def _move_to(self, position: Vec3) -> None:
         """Shows the slice through position, telling the adapters the cursor moved."""

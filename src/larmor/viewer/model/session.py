@@ -10,7 +10,8 @@ from typing import Any, Final
 
 from larmor.viewer.model.camera import Camera2D, Camera3D, Cameras, Convention
 from larmor.viewer.model.item import Category, Item, ItemId, ViewKind
-from larmor.viewer.model.matlab_import import MatlabPart
+from larmor.viewer.model.matlab_import import MatlabPart, split_values_spec
+from larmor.viewer.model.options import option_fields
 from larmor.viewer.model.registration import Registration
 from larmor.viewer.model.scene import Scene
 from larmor.viewer.model.view_state import (
@@ -147,6 +148,9 @@ def session_data(
         if registration is not None:
             located = Registration.from_json(registration)
             entry["registration"] = located.to_json(folder)
+        files = _relative_options(scene.item(raw["id"]), folder)
+        if files:
+            entry["relative_options"] = files
         items.append(entry)
     data = {"format": FORMAT, "version": VERSION, "items": items, "view": plain["view"]}
     if phantom is not None:
@@ -252,6 +256,9 @@ def _item(raw: object, folder: Path) -> SessionItem:
     registration = None
     if raw.get("registration") is not None:
         registration = Registration.from_json(raw["registration"], folder)
+    moved_files = raw.get("relative_options", {})
+    if isinstance(moved_files, dict):
+        options = options | _located_options(options, moved_files, folder)
     return SessionItem(
         id=item_id,
         category=Category(raw["category"]),
@@ -266,6 +273,40 @@ def _item(raw: object, folder: Path) -> SessionItem:
         part=part,
         registration=registration,
     )
+
+
+def _relative_options(item: Item, folder: Path) -> dict[str, str]:
+    """Returns an item's options that name files, as paths from folder."""
+    relative: dict[str, str] = {}
+    for name, (_, info) in option_fields(item.options).items():
+        value = getattr(item.options, name)
+        if not info.path or not isinstance(value, str) or not value:
+            continue
+        spec = split_values_spec(value)
+        file = spec[0] if spec is not None else Path(value)
+        moved = _relative(file.absolute(), folder)
+        if moved is not None:
+            relative[name] = moved if spec is None else f"{moved}:{spec[1]}"
+    return relative
+
+
+def _located_options(
+    options: Mapping[str, object], relative: Mapping[str, object], folder: Path
+) -> dict[str, str]:
+    """Returns the file options found at their paths from folder.
+
+    An option keeps its absolute path when no file is at the relative one.
+    """
+    located: dict[str, str] = {}
+    for name, moved in relative.items():
+        if not isinstance(moved, str):
+            continue
+        spec = split_values_spec(moved)
+        file = spec[0] if spec is not None else Path(moved)
+        candidate = Path(os.path.normpath(folder / file))
+        if candidate.is_file() or not isinstance(options.get(name), str):
+            located[name] = str(candidate) if spec is None else f"{candidate}:{spec[1]}"
+    return located
 
 
 def _relative(source: Path, folder: Path) -> str | None:
