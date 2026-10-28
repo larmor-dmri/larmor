@@ -37,6 +37,8 @@ type Report = Callable[[int, int, str], None]
 # The size of a new phantom's box and its voxels, in mm.
 DEFAULT_BOX_MM: Final = (60.0, 60.0, 60.0)
 DEFAULT_VOXEL_MM: Final = 2.0
+# The most voxels a phantom's grid may have.
+MAX_GRID_VOXELS: Final = 256**3
 # The upper bound of the bundle seeds the editor draws.
 SEED_LIMIT: Final = 2**31
 # The name of a simulation folder's description file, and its format name.
@@ -577,6 +579,18 @@ def box_grid(size_mm: Sequence[float], voxel_mm: float) -> Grid:
     return Grid((shape[0], shape[1], shape[2]), affine)
 
 
+def check_grid_size(grid: Grid) -> None:
+    """Raises ValueError if the grid has more than MAX_GRID_VOXELS voxels."""
+    count = math.prod(grid.shape[:3])
+    if count > MAX_GRID_VOXELS:
+        x, y, z = grid.shape[:3]
+        raise ValueError(
+            f"A grid of {x} x {y} x {z} voxels is too large for a phantom; it may "
+            f"have at most {MAX_GRID_VOXELS:,} voxels. Use larger voxels or a "
+            "smaller box."
+        )
+
+
 def default_tissues() -> tuple[TissueSettings, ...]:
     """Returns WM (standard model), GM (SANDI) and CSF (free water) at defaults."""
     return (
@@ -1108,6 +1122,8 @@ def run_problems(
         The problems, in the order of the steps; empty if it can run.
     """
     found: list[Problem] = []
+    if state.draft is not None:
+        found.append(Problem(PhantomStep.BUNDLE, "", DRAFT_PROBLEM))
     if not state.bundles and not state.tissue_maps:
         found.append(
             Problem(
@@ -1132,6 +1148,10 @@ def run_problems(
             )
         )
     return found
+
+
+# The problem of a phantom while a bundle is drawn or edited.
+DRAFT_PROBLEM: Final = "A bundle is being drawn; finish or cancel it first."
 
 
 def _bundle_item_problems(
@@ -1327,16 +1347,15 @@ def step_status(
         return StepStatus(step, not own, text)
 
     waiting = found[0].step if found else None
+    run_text = "Ready" if waiting is None else NEEDS[waiting]
+    if found and found[0].text == DRAFT_PROBLEM:
+        run_text = "Finish the bundle first"
     return (
         status(PhantomStep.GRID, _grid_text(state.grid)),
         status(PhantomStep.BUNDLE, _bundle_text(state)),
         status(PhantomStep.TISSUE, _tissue_text(state)),
         status(PhantomStep.SCAN, _scan_text(state.scan)),
-        StepStatus(
-            PhantomStep.RUN,
-            waiting is None,
-            "Ready" if waiting is None else NEEDS[waiting],
-        ),
+        StepStatus(PhantomStep.RUN, waiting is None, run_text),
     )
 
 
@@ -1479,6 +1498,17 @@ class RunOutputs:
     state: PhantomState
 
 
+def holds_other_files(folder: Path) -> bool:
+    """Tells whether a folder holds files but no earlier simulation."""
+    if not folder.is_dir() or not any(folder.iterdir()):
+        return False
+    try:
+        info = json.loads((folder / SIMULATION_INFO).read_text(encoding="utf-8"))
+    except OSError, ValueError:
+        return True
+    return not (isinstance(info, dict) and info.get("format") == SIMULATION_FORMAT)
+
+
 def existing_outputs(inputs: RunInputs, folder: Path) -> list[Path]:
     """Returns the files a run would write in folder that exist already."""
     import larmor.simulation as sim
@@ -1489,11 +1519,19 @@ def existing_outputs(inputs: RunInputs, folder: Path) -> list[Path]:
     return [p for p in planned.all_paths() if p.exists()]
 
 
-def run_simulation(inputs: RunInputs, folder: Path, report: Report) -> RunOutputs:
+def run_simulation(
+    inputs: RunInputs, folder: Path, report: Report, *, force: bool = False
+) -> RunOutputs:
     """Simulates the phantom and saves the simulation folder; runs on any thread.
 
     The phantom file also gets the viewer's block, so opening it again restores
     the editor's settings.
+
+    Args:
+        inputs: What the run simulates.
+        folder: The output folder.
+        report: Told the progress.
+        force: Write into a folder that holds other files, keeping them.
 
     Returns:
         The files written.
@@ -1511,7 +1549,7 @@ def run_simulation(inputs: RunInputs, folder: Path, report: Report) -> RunOutput
     )
     # The last chance to cancel, as saving runs to the end once it starts.
     report(1, 1, SAVING)
-    written = sim.save_simulation(simulated, folder)
+    written = sim.save_simulation(simulated, folder, force=force)
     data = json.loads(written.phantom.read_text(encoding="utf-8"))
     data["viewer"] = dict(inputs.viewer_block)
     written.phantom.write_text(

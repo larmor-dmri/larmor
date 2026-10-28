@@ -160,7 +160,8 @@ the world frame next to the file. A phantom file that holds a gradient table kee
 step says that the directions come from the file; editing the shells replaces it with directions made from the
 shells. The SNR is that of a voxel full of WM at b = 0, or of the noise reference tissue chosen under More. A run of
 a phantom file gives the same images as `lar simulate` with the noise seed of the Scan step. **Run** (**Ctrl+R**), on the Run step or in the header, is greyed out until the
-phantom can run, with the first problem as its tooltip. It asks for an output folder if none is set, and asks before
+phantom can run, with the first problem as its tooltip; a bundle that is being drawn or edited must be finished
+or cancelled first. It asks for an output folder if none is set, and asks before
 it replaces the outputs of an earlier run. The simulation then runs in the background, with its progress and a
 Cancel button in the status bar and on the Run step. A cancelled run opens nothing.
 
@@ -168,7 +169,9 @@ The output folder has the same contents as the one that `lar simulate` writes. W
 images open as the main volume, the tissue masks as overlays and the true fibre directions as peaks. The bundles
 then refer to the streamline files in the folder, so a session saved afterwards keeps everything.
 
-**Save** above the steps writes the phantom to a phantom file, and **Open** reads it back. From the command line,
+**Save** above the steps writes the phantom to a phantom file, and **Open** reads it back. A loaded tractogram or
+tissue map that was registered when it was opened, or read as a subset of its streamlines, is written next to the
+phantom file as the viewer shows it, so the file reopens it in the same place. From the command line,
 `lar bv --phantom scene.phantom.json` opens a phantom file, and `lar bv --simulation folder` opens a simulation
 folder with its phantom in the editor. A saved session also keeps the phantom, and opening the session restores
 the editor. A bundle that you are still drawing is not saved with the session, so finish it first.

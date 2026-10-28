@@ -94,6 +94,7 @@ from larmor.viewer.model.phantom import (
     box_grid,
     drawable,
     existing_outputs,
+    holds_other_files,
     read_phantom_file,
     run_simulation,
     simulation_outputs,
@@ -1288,6 +1289,8 @@ class Viewer:
         Args:
             position: The point (x, y, z), world mm.
 
+        A point at the place of the last one is not added again.
+
         Raises:
             ValueError: If no bundle is being drawn, or position is not three
                 finite numbers inside the phantom's grid box.
@@ -1299,6 +1302,8 @@ class Viewer:
                 "The point ({:.1f}, {:.1f}, {:.1f}) mm is outside the phantom's "
                 "grid; draw inside the box.".format(*point)
             )
+        if draft.points and draft.points[-1] == point:
+            return
         self._phantom.set_points((*draft.points, point))
         self._point_groups = [*self._current_groups(draft.points), 1]
 
@@ -1330,6 +1335,11 @@ class Viewer:
             raise ValueError(
                 "The stroke is outside the phantom's grid; draw inside the box."
             )
+        # A stroke that starts where the bundle ends does not repeat that point.
+        if draft.points and kept[0] == draft.points[-1]:
+            kept = kept[1:]
+        if not kept:
+            return 0
         self._phantom.set_points((*draft.points, *kept))
         self._point_groups = [*self._current_groups(draft.points), len(kept)]
         return len(kept)
@@ -1642,7 +1652,9 @@ class Viewer:
             FileExistsError: If outputs exist and overwrite is False.
         """
         inputs = self.prepare_run(folder, overwrite=overwrite)
-        outputs = run_simulation(inputs, Path(folder).absolute(), lambda *_: None)
+        outputs = run_simulation(
+            inputs, Path(folder).absolute(), lambda *_: None, force=overwrite
+        )
         items = self._open_outputs(outputs.files)
         self.finish_run(outputs)
         return items
@@ -1703,21 +1715,40 @@ class Viewer:
 
         Args:
             folder: The output folder.
-            overwrite: Replace outputs already in the folder.
+            overwrite: Replace outputs already in the folder, and write into a
+                folder that holds other files, which are kept.
 
         Returns:
             The run's inputs, which can be simulated on any thread.
 
         Raises:
             ValueError: If no phantom is open or it cannot run.
-            FileExistsError: If outputs exist and overwrite is False.
+            FileExistsError: If outputs exist, or the folder holds other files
+                and no simulation, and overwrite is False.
         """
         inputs = self._phantom.run_inputs()
-        existing = existing_outputs(inputs, Path(folder).absolute())
+        path = Path(folder).absolute()
+        if not overwrite and holds_other_files(path):
+            raise FileExistsError(
+                f"{folder} holds other files and no simulation; a run writes "
+                "into it and replaces those that have the name of an output."
+            )
+        existing = existing_outputs(inputs, path)
         if existing and not overwrite:
             names = ", ".join(p.name for p in existing)
             raise FileExistsError(f"{folder} holds outputs already: {names}.")
         return inputs
+
+    def is_current_run(self, outputs: RunOutputs) -> bool:
+        """Tells whether a run was made from the phantom open, not one opened since.
+
+        Args:
+            outputs: The files a run started with `prepare_run` wrote.
+
+        Returns:
+            Whether the phantom is the one the run simulated, edited or not.
+        """
+        return self._phantom.is_current(outputs)
 
     def finish_run(self, outputs: RunOutputs) -> None:
         """Points the bundles at the files a run wrote, and keeps its folder.

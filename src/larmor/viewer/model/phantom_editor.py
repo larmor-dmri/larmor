@@ -1,6 +1,7 @@
 """Carries out the Viewer's phantom actions on its scene."""
 
 import random
+import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import replace
 from enum import Enum, auto
@@ -10,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 from larmor._log import LarmorLogger
+from larmor.io import save_tractogram, save_volume
 from larmor.types import Grid, Tractogram, Volume
 from larmor.viewer.model.breakdown import BreakdownTool
 from larmor.viewer.model.item import Category, Item, ItemId
@@ -47,6 +49,7 @@ from larmor.viewer.model.phantom import (
     build_streamlines,
     build_tissue,
     bundle_value,
+    check_grid_size,
     custom_settings,
     default_tissues,
     drawable,
@@ -60,6 +63,7 @@ from larmor.viewer.model.phantom import (
     viewer_block,
     with_bundle_value,
 )
+from larmor.viewer.model.registry import SUBSETS
 from larmor.viewer.model.view_state import Tool, ViewField
 
 if TYPE_CHECKING:
@@ -145,6 +149,7 @@ class PhantomEditor:
 
     def new(self, grid: Grid) -> None:
         """Starts a phantom on grid, with the default tissues and scan."""
+        check_grid_size(grid)
         self.close()
         self._set(PhantomState(grid, default_tissues()), PhantomPart.ALL)
         self.viewer._frame(grid)
@@ -165,6 +170,7 @@ class PhantomEditor:
     def set_grid(self, grid: Grid) -> None:
         """Moves the phantom onto another grid; bundles keep their world position."""
         state = self.require()
+        check_grid_size(grid)
         for tissue, item_id in state.tissue_maps:
             data = self.viewer.scene.item(item_id).data
             assert isinstance(data, Volume)
@@ -250,11 +256,14 @@ class PhantomEditor:
         """Removes a tissue that nothing uses."""
         state = self.require()
         state.tissue(name)
-        users = [b for b in state.bundles if b.tissue == name]
-        if users or self._unoriented_use(state, name):
+        if any(b.tissue == name for b in state.bundles):
             raise ValueError(
                 f"{name} is in use; give its bundles another tissue first."
             )
+        if state.background == name:
+            raise ValueError(f"{name} is the background; choose another one first.")
+        if any(t == name for t, _ in state.tissue_maps):
+            raise ValueError(f"{name} has a tissue map; clear it first.")
         if state.draft is not None and state.draft.tissue == name:
             raise ValueError(f"The bundle being drawn uses {name}.")
         tissues = tuple(t for t in state.tissues if t.name != name)
@@ -353,9 +362,13 @@ class PhantomEditor:
         return state, state.draft
 
     def set_points(self, points: Sequence[Vec3]) -> None:
-        """Replaces the control points of the bundle being drawn."""
+        """Replaces the control points of the bundle being drawn.
+
+        A point that repeats the one before it is dropped, as a bundle cannot
+        pass through the same point twice in a row.
+        """
         state, draft = self.draft()
-        draft = replace(draft, points=tuple(points))
+        draft = replace(draft, points=distinct_points(points))
         self._set(replace(state, draft=draft), PhantomPart.DRAFT)
         self._request(_Rebuild.PREVIEW)
 
@@ -395,7 +408,8 @@ class PhantomEditor:
             if draft.item_id is not None:
                 self.viewer.remove(draft.item_id)
         elif self._edited and draft.editing.geometry is not None:
-            streamlines = build_streamlines(draft.editing.geometry)
+            index = state.bundles.index(state.bundle(draft.editing.item_id))
+            streamlines = build_streamlines(draft.editing.geometry, index)
             self.viewer.replace_data(draft.editing.item_id, streamlines)
         self._edited = False
         self._request(_Rebuild.PROXIES)
@@ -512,7 +526,7 @@ class PhantomEditor:
         for bundle in state.bundles:
             if draft is not None and draft.editing is not None:
                 if draft.item_id == bundle.item_id:
-                    bundle = replace(bundle, tissue=draft.tissue)
+                    bundle = _edited_bundle(draft)
             item = scene.item(bundle.item_id)
             assert isinstance(item.data, Tractogram)
             bundles.append((bundle, item.data, item.source))
@@ -579,8 +593,11 @@ class PhantomEditor:
                 self.viewer.remove(draft.item_id)  # forgets it in the draft
             return
         geometry = replace(draft.geometry, control_points=draft.points)
+        index = len(state.bundles)
+        if draft.editing is not None:
+            index = state.bundles.index(state.bundle(draft.editing.item_id))
         try:
-            streamlines = build_streamlines(geometry, len(state.bundles))
+            streamlines = build_streamlines(geometry, index)
         except ValueError as e:
             LarmorLogger.warning(f"The bundle cannot be drawn: {e}")
             return
@@ -647,22 +664,33 @@ class PhantomEditor:
 
         state = self.require()
         scene = self.viewer.scene
+        stem = path.name.split(".")[0] or "phantom"
         bundles = []
-        for bundle in state.bundles:
+        for index, bundle in enumerate(state.bundles, 1):
             item = scene.item(bundle.item_id)
             assert isinstance(item.data, Tractogram)
             if bundle.geometry is None and item.source is None:
                 raise ValueError(
                     f"{item.name} has no file; save it (File > Save As) first."
                 )
-            bundles.append((bundle, item.data, item.source))
+            source = item.source
+            if bundle.geometry is None and not _as_read(item):
+                source = path.parent / f"{stem}_bundle_{index}.tck"
+                data = item.data
+                save_tractogram(Tractogram(data.points, data.offsets), source)
+            bundles.append((bundle, item.data, source))
         maps = []
         for tissue, item_id in state.tissue_maps:
             item = scene.item(item_id)
             assert isinstance(item.data, Volume)
             if item.source is None:
                 raise ValueError(f"The map of {tissue} has no file; save it first.")
-            maps.append((tissue, item.data, item.source))
+            source = item.source
+            if not _as_read(item):
+                name = re.sub(r"[^A-Za-z0-9_-]", "_", tissue)
+                source = path.parent / f"{stem}_map_{name}.nii.gz"
+                save_volume(item.data, source)
+            maps.append((tissue, item.data, source))
         phantom = build_phantom(state, bundles, maps)
         try:
             protocol = build_protocol(state.scan, state.grid)
@@ -821,10 +849,15 @@ class PhantomEditor:
             self._block(state),
         )
 
+    def is_current(self, outputs: RunOutputs) -> bool:
+        """Tells whether a run was made from the phantom open, not from another."""
+        state = self.state
+        return state is not None and state.serial == outputs.state.serial
+
     def finish_run(self, outputs: RunOutputs) -> None:
         """Points the bundles a run wrote at their files, if unchanged since."""
         state = self.state
-        if state is None or state.serial != outputs.state.serial:
+        if state is None or not self.is_current(outputs):
             return  # another phantom was opened during the run
         files = outputs.files
         scene = self.viewer.scene
@@ -841,6 +874,30 @@ class PhantomEditor:
             if bundle.geometry is not None and path.is_file():
                 scene.set_source(bundle.item_id, path)
         self.set_output(files.folder)
+
+
+def _edited_bundle(draft: Draft) -> BundleSettings:
+    """Returns the bundle being edited as its draft shows it now."""
+    assert draft.editing is not None
+    bundle = replace(draft.editing, tissue=draft.tissue)
+    if drawable(draft.points) and bundle.geometry is not None:
+        geometry = replace(draft.geometry, control_points=draft.points)
+        bundle = replace(bundle, geometry=geometry)
+    return bundle
+
+
+def _as_read(item: Item) -> bool:
+    """Tells whether an item shows its file as it is: not registered, not a part."""
+    return item.registration is None and item.part is None and item.data not in SUBSETS
+
+
+def distinct_points(points: Sequence[Vec3]) -> tuple[Vec3, ...]:
+    """Returns the points without those that repeat the point before them."""
+    kept: list[Vec3] = []
+    for point in points:
+        if not kept or tuple(point) != tuple(kept[-1]):
+            kept.append(point)
+    return tuple(kept)
 
 
 def simplify_stroke(
