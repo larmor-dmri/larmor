@@ -709,7 +709,7 @@ Larmor, such as <code class="docutils literal notranslate"><span class="pre">cro
 <td><p>One mask per tissue: the voxels the tissue fills by at least half, background included</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mask_bundles.nii.gz</span></code></p></td>
-<td><p>The voxels that the tissues of the bundles fill by at least half together, so that a crossing of bundles of different tissues is not left out</p></td>
+<td><p>The voxels that the bundles fill by at least half together, so that a crossing of bundles of different tissues is not left out</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bundle_&lt;n&gt;.tck</span></code></p></td>
 <td><p>The streamlines of each bundle</p></td>
@@ -742,7 +742,8 @@ of the images that were fitted.</p>
 followed by <code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">peaks</span></code>. They are built from the streamlines, not fitted to the images. In each voxel, the
 streamline directions are grouped, from the largest down, into peaks: each joins the first peak within 20 degrees
 of it, or else starts a new one. A peak’s direction is the weighted mean of its fibres, and its amplitude is the
-share of the voxel they fill. Peaks below a tenth of the voxel’s largest are dropped. <code class="docutils literal notranslate"><span class="pre">peaks.nii.gz</span></code> has 3 volumes
+share of the voxel they fill. Peaks below a tenth of the voxel’s largest are dropped, and a bundle whose tissue has
+no fibre direction, such as one filled with CSF, gives none. <code class="docutils literal notranslate"><span class="pre">peaks.nii.gz</span></code> has 3 volumes
 per peak, largest peak first, which hold the x, y and z of the direction scaled by the amplitude, in world
 coordinates, and are NaN where a voxel has fewer peaks.</p>
 <p>Running <code class="docutils literal notranslate"><span class="pre">phantom.json</span></code> again with the same seed gives the same images. Without <code class="docutils literal notranslate"><span class="pre">--seed</span></code>, a seed is drawn and
