@@ -21,6 +21,7 @@ from larmor.viewer.model.options import (
 )
 from larmor.viewer.model.phantom import (
     GEOMETRY_FIELDS,
+    GRADIENT_FIELDS,
     PROXY_NAMES,
     SEED_LIMIT,
     BundleField,
@@ -299,9 +300,11 @@ class PhantomEditor:
     # Scan
 
     def set_scan(self, name: ScanField, value: object) -> None:
-        """Changes one setting of the scan."""
+        """Changes one setting of the scan; a gradient setting drops a file's table."""
         state = self.require()
         change: dict[str, Any] = {name.value: scan_value(name, value)}
+        if name in GRADIENT_FIELDS:
+            change["table"] = None
         scan = replace(state.scan, **change)
         self._set(replace(state, scan=scan), PhantomPart.SCAN)
         if ProxyMap.EXPECTED_B0 in (k for k, _ in state.proxies):
@@ -662,7 +665,7 @@ class PhantomEditor:
             maps.append((tissue, item.data, item.source))
         phantom = build_phantom(state, bundles, maps)
         try:
-            protocol = build_protocol(state.scan)
+            protocol = build_protocol(state.scan, state.grid)
         except OSError, ValueError:
             protocol = None  # the viewer block keeps the scan's settings
         sim.write_phantom(phantom, path, protocol=protocol, viewer=self._block(state))
@@ -812,7 +815,7 @@ class PhantomEditor:
             maps.append((tissue, item.data, item.source))
         return RunInputs(
             build_phantom(state, bundles, maps),
-            build_protocol(state.scan),
+            build_protocol(state.scan, state.grid),
             state.scan,
             state,
             self._block(state),

@@ -155,7 +155,11 @@ models. From Python, `larmor.simulation.signal_breakdown` computes the breakdown
 ## Running and saving
 
 The Scan step sets the sequence, the echo and repetition times, the gradient timing, the shells (or a pair of bvals
-and bvecs files) and the noise. **Run** (**Ctrl+R**), on the Run step or in the header, is greyed out until the
+and bvecs files) and the noise. A bvecs file is read in the FSL frame, as `lar simulate` reads it, unless you choose
+the world frame next to the file. A phantom file that holds a gradient table keeps that table exactly, and the Scan
+step says that the directions come from the file; editing the shells replaces it with directions made from the
+shells. The SNR is that of a voxel full of WM at b = 0, or of the noise reference tissue chosen under More. A run of
+a phantom file gives the same images as `lar simulate` with the noise seed of the Scan step. **Run** (**Ctrl+R**), on the Run step or in the header, is greyed out until the
 phantom can run, with the first problem as its tooltip. It asks for an output folder if none is set, and asks before
 it replaces the outputs of an earlier run. The simulation then runs in the background, with its progress and a
 Cancel button in the status bar and on the Run step. A cancelled run opens nothing.

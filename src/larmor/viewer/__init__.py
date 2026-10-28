@@ -24,6 +24,7 @@ from larmor.viewer.model.options import (
 )
 from larmor.viewer.model.phantom import (
     BundleField,
+    BvecFrame,
     EchoKind,
     ProxyMap,
     ScanField,
@@ -64,6 +65,7 @@ __all__ = [
     "MAX_STREAMLINES",
     "Basis",
     "BundleField",
+    "BvecFrame",
     "CameraPreset",
     "Category",
     "Colormap",

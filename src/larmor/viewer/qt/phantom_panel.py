@@ -46,6 +46,7 @@ from larmor.viewer.model.options import OptionError
 from larmor.viewer.model.phantom import (
     PROXY_NAMES,
     BundleField,
+    BvecFrame,
     CompartmentKind,
     CompartmentSettings,
     EchoKind,
@@ -146,11 +147,16 @@ HELP = {
     "Directions seed": "The seed of the gradient directions of the shells. The same "
     "seed gives the same directions.",
     "Noise seed": "The seed of the noise. The same seed gives the same images.",
+    "Noise reference": "The tissue whose signal at b = 0 sets the noise: the noise "
+    "level is the signal of a voxel full of it, divided by the SNR.",
+    "bvecs frame": "The frame of the bvecs file. FSL, as FSL and dcm2niix write "
+    "them, is along the axes of the phantom's grid with x flipped; world is RAS "
+    "coordinates.",
 }
 # The help of the fields that have no label of their own.
 NOISE_HELP = (
-    "Adds Rician noise. The SNR is the signal of a voxel full of white matter at "
-    "b = 0, divided by the noise level."
+    "Adds Rician noise. The SNR is the signal at b = 0 of a voxel full of the noise "
+    "reference tissue, WM unless chosen under More, divided by the noise level."
 )
 SHOW_BOX_HELP = (
     "Outlines the grid in the views. It is always outlined while you draw a bundle."
@@ -1015,7 +1021,7 @@ class PhantomPanel(QWidget):
             box.valueChanged.connect(lambda value, n=name: self._scan(n, value))
             add_field_row(more, labels[name], HELP[labels[name]], box, self)
         self._build_gradients(form, more)
-        self._build_noise(form)
+        self._build_noise(form, more)
 
     def _build_gradients(self, form: QFormLayout, more: QFormLayout) -> None:
         """Adds the shells' table, and the choice of bvals and bvecs files to more."""
@@ -1048,10 +1054,18 @@ class PhantomPanel(QWidget):
         files.addWidget(self.gradient_files)
         files.addWidget(self.clear_gradients)
         more.addRow(files)
+        self.bvec_frame = ChoiceBox(self)
+        self.bvec_frame.set_choices(
+            [(BvecFrame.FSL, "FSL (grid axes)"), (BvecFrame.WORLD, "World (RAS)")]
+        )
+        self.bvec_frame.chosen.connect(
+            lambda frame: self._scan(ScanField.BVEC_FRAME, frame)
+        )
+        add_field_row(more, "bvecs frame", HELP["bvecs frame"], self.bvec_frame, self)
         more.addRow(self.gradient_label)
 
-    def _build_noise(self, form: QFormLayout) -> None:
-        """Adds the noise switch and its SNR."""
+    def _build_noise(self, form: QFormLayout, more: QFormLayout) -> None:
+        """Adds the noise switch and its SNR, and its reference tissue to more."""
         noise = QHBoxLayout()
         self.noise = QCheckBox("Noise, SNR", self)
         self.noise.setToolTip(NOISE_HELP)
@@ -1062,6 +1076,17 @@ class PhantomPanel(QWidget):
         noise.addWidget(self.noise)
         noise.addWidget(self.snr)
         form.addRow(noise)
+        self.noise_reference = ChoiceBox(self)
+        self.noise_reference.chosen.connect(
+            lambda tissue: self._scan(ScanField.NOISE_REFERENCE, tissue)
+        )
+        add_field_row(
+            more,
+            "Noise reference",
+            HELP["Noise reference"],
+            self.noise_reference,
+            self,
+        )
 
     def _build_proxies(self, form: QFormLayout) -> None:
         """Builds the Proxy maps section."""
@@ -1433,11 +1458,19 @@ class PhantomPanel(QWidget):
             widget.setEnabled(shells)
         self.scan_boxes[ScanField.NUM_B0].setEnabled(shells)
         self.scan_boxes[ScanField.GRADIENT_SEED].setEnabled(shells)
-        self.gradient_label.setText(
-            "Directions from the shells"
-            if files is None
-            else f"{files[0].name} and {files[1].name} (world frame)"
-        )
+        self.bvec_frame.show_value(scan.bvec_frame)
+        if files is not None:
+            text = f"{files[0].name} and {files[1].name}"
+        elif scan.table is not None:
+            text = (
+                f"The phantom file's {len(scan.table.bvals)} volumes, as the file "
+                "has them. Editing the shells replaces them."
+            )
+        else:
+            text = "Directions from the shells"
+        self.gradient_label.setText(text)
+        self.noise_reference.set_choices([(t.name, t.name) for t in state.tissues])
+        self.noise_reference.show_value(scan.noise_reference)
         self.noise.setChecked(scan.snr is not None)
         self.snr.setEnabled(scan.snr is not None)
         if scan.snr is not None:
@@ -1682,7 +1715,7 @@ class PhantomPanel(QWidget):
             return
         bvecs, _ = QFileDialog.getOpenFileName(
             self,
-            "bvecs file (world frame)",
+            "bvecs file",
             str(Path(bvals).parent),
             "bvecs (*.bvec *.bvecs);;All files (*)",
         )

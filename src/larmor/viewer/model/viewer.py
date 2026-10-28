@@ -1251,11 +1251,14 @@ class Viewer:
         Args:
             name: `ScanField.SHELLS` ((b-value s/mm^2, directions) pairs),
                 `NUM_B0`, `GRADIENT_SEED` (of the directions), `GRADIENT_FILES`
-                (bvals and bvecs paths, directions in world coordinates, used
-                instead of the shells; None for the shells), `SMALL_DELTA_MS`,
-                `BIG_DELTA_MS`, `TE_MS` (one or several echo times), `TR_MS`,
-                `SEQUENCE` (`EchoKind`), `SNR` (None for no noise) or `SEED` (of
-                the noise).
+                (bvals and bvecs paths, used instead of the shells; None for the
+                shells), `BVEC_FRAME` (`BvecFrame` of the bvecs file, FSL by
+                default), `SMALL_DELTA_MS`, `BIG_DELTA_MS`, `TE_MS` (one or
+                several echo times), `TR_MS`, `SEQUENCE` (`EchoKind`), `SNR`
+                (None for no noise), `NOISE_REFERENCE` (the tissue whose b = 0
+                signal the SNR is of) or `SEED` (of the noise). The four
+                gradient settings replace a gradient table read from a phantom
+                file.
             value: The new value.
 
         Raises:

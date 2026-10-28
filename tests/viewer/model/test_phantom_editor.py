@@ -10,9 +10,11 @@ import numpy as np
 import pytest
 
 import larmor.simulation as sim
-from larmor.types import Tractogram, Volume
+from larmor.io import load_volume
+from larmor.types import Grid, Tractogram, Volume
 from larmor.viewer import (
     BundleField,
+    BvecFrame,
     Category,
     Colouring,
     OptionName,
@@ -390,3 +392,83 @@ def test_a_simulation_folder_opens_with_its_phantom(tmp_path: Path) -> None:
     assert "mask_bundles.nii.gz" in names
     state = viewer.phantom
     assert state is not None and len(state.bundles) == 2
+
+
+def test_a_run_of_a_phantom_file_gives_the_images_of_lar_simulate(
+    tmp_path: Path,
+) -> None:
+    grid = Grid((10, 10, 10), np.diag([2.0, 2.0, 2.0, 1.0]))
+    line = sim.BundleGeometry(np.array([[1.0, 9, 9], [17.0, 9, 9]]), num_streamlines=50)
+    table = sim.create_gradient_table([(1000, 7), (2000, 5)], num_b0=2, seed=5)
+    protocol = sim.Protocol(table, 15.0, 30.0, 80.0, 3000.0)
+    path = tmp_path / "p.phantom.json"
+    sim.write_phantom(
+        sim.Phantom(grid, bundles=(sim.Bundle(line),)), path, protocol=protocol
+    )
+    viewer = Viewer()
+    viewer.load_phantom(path)
+    viewer.set_scan(ScanField.SNR, 20.0)
+    viewer.run_phantom(tmp_path / "viewer")
+    read = sim.read_phantom(path)
+    assert read.protocol is not None
+    expected = sim.simulate(read.phantom, read.protocol, snr=20.0, seed=0)
+    images = sim.read_phantom(tmp_path / "viewer" / "phantom.json")
+    assert images.protocol is not None
+    np.testing.assert_array_equal(images.protocol.gradients.bvecs, table.bvecs)
+    run = load_volume(tmp_path / "viewer" / "dwi.nii.gz")
+    np.testing.assert_allclose(run.data, expected.echoes[0].data, atol=1e-6)
+
+
+def test_editing_the_shells_replaces_the_table_of_a_phantom_file(
+    viewer: Viewer, tmp_path: Path
+) -> None:
+    viewer.save_phantom(tmp_path / "p.phantom.json")
+    other = Viewer()
+    other.load_phantom(tmp_path / "p.phantom.json")
+    assert other.phantom is not None and other.phantom.scan.table is None
+    path = tmp_path / "file.phantom.json"
+    phantom = sim.read_phantom(tmp_path / "p.phantom.json")
+    sim.write_phantom(phantom.phantom, path, protocol=phantom.protocol)
+    other.load_phantom(path)
+    assert other.phantom is not None and other.phantom.scan.table is not None
+    other.set_scan(ScanField.SHELLS, [[2000, 6]])
+    assert other.phantom.scan.table is None
+
+
+def test_bvecs_files_are_in_the_fsl_frame_unless_told(
+    viewer: Viewer, tmp_path: Path
+) -> None:
+    (tmp_path / "b.bval").write_text("0 1000\n")
+    (tmp_path / "b.bvec").write_text("0 1\n0 0\n0 0\n")
+    viewer.set_scan(
+        ScanField.GRADIENT_FILES, [tmp_path / "b.bval", tmp_path / "b.bvec"]
+    )
+    fsl = viewer.prepare_run(tmp_path / "a").protocol.gradients.bvecs[1]
+    viewer.set_scan(ScanField.BVEC_FRAME, BvecFrame.WORLD)
+    world = viewer.prepare_run(tmp_path / "a").protocol.gradients.bvecs[1]
+    assert world.tolist() == [1.0, 0.0, 0.0]
+    assert fsl.tolist() == [-1.0, 0.0, 0.0]
+
+
+def test_noise_needs_a_reference_tissue_of_the_phantom(viewer: Viewer) -> None:
+    viewer.set_tissue("Axons", TissuePreset.STANDARD_MODEL)
+    state = viewer.phantom
+    assert state is not None
+    for bundle in state.bundles:
+        viewer.set_bundle(bundle.item_id, BundleField.TISSUE, "Axons")
+    viewer.remove_tissue("WM")
+    viewer.set_scan(ScanField.SNR, 30.0)
+    [problem] = viewer.check_phantom()
+    assert "noise reference" in problem
+    viewer.set_scan(ScanField.NOISE_REFERENCE, "Axons")
+    assert viewer.check_phantom() == []
+
+
+def test_a_phantom_file_keeps_the_grid_box_hidden(
+    viewer: Viewer, tmp_path: Path
+) -> None:
+    viewer.show_grid_box(False)
+    viewer.save_phantom(tmp_path / "p.phantom.json")
+    other = Viewer()
+    other.load_phantom(tmp_path / "p.phantom.json")
+    assert other.phantom is not None and not other.phantom.show_box
