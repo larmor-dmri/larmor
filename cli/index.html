@@ -55,7 +55,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=b21b538c"></script>
+    <script src="../_static/documentation_options.js?v=a25e6b42"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -67,7 +67,7 @@
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://larmor.org/versions.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.0.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.1.0';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -81,7 +81,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="2.0" />
+  <meta name="docsearch:version" content="2.1" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -1117,8 +1117,8 @@ surface are moved into the same space.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">--surfaces</span> <span class="pre">&lt;path&gt;</span></code>: Surface files, GIfTI (.gii) or FreeSurfer. A FreeSurfer surface such as lh.white is read together with its lh.curv and ../label/lh.cortex.label when they exist. Repeat the option for several files.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--max-streamlines</span> <span class="pre">&lt;int</span> <span class="pre">range&gt;</span></code>: A tractogram with more streamlines is reduced to a random subset of this size when read, the same subset every time. Defaults to the read limit in the viewer’s Settings (1,000,000 unless changed).  [x&gt;=0]</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">-s,</span> <span class="pre">--session</span> <span class="pre">&lt;path&gt;</span></code>: Session saved from the viewer (File &gt; Save Session). It is opened first, and the files of the other options are added to it.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">--phantom</span> <span class="pre">&lt;path&gt;</span></code>: Phantom file (.phantom.json) to open in the Phantom panel, to edit and simulate.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">--simulation</span> <span class="pre">&lt;path&gt;</span></code>: Simulation folder written by lar simulate. The viewer opens its DWI, tissue masks, ground-truth peaks and bundles, and shows its phantom in the Phantom panel.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--phantom</span> <span class="pre">&lt;path&gt;</span></code>: Phantom file (.phantom.json) to open in the Simulate workspace, to edit and simulate.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--simulation</span> <span class="pre">&lt;path&gt;</span></code>: Simulation folder written by lar simulate. The viewer opens its DWI, tissue masks, ground-truth peaks and bundles, and shows its phantom in the Simulate workspace.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--mcp</span></code>: Let AI agents control the viewer through the Model Context Protocol (MCP), served at http://127.0.0.1:&lt;port&gt;/mcp. The URL and the access token are printed.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--mcp-port</span> <span class="pre">&lt;int</span> <span class="pre">range&gt;</span></code>: Port for –mcp; giving it also turns on –mcp. Defaults to the port in the viewer’s Settings (8765 unless changed).  [1024&lt;=x&lt;=65535]</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--install-launcher</span></code>: Add a launcher for the viewer of this Larmor installation to the desktop (the application menu on Linux, ~/Applications on macOS, the Start menu on Windows), then exit.</p></li>

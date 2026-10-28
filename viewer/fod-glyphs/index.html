@@ -55,7 +55,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=b21b538c"></script>
+    <script src="../../_static/documentation_options.js?v=a25e6b42"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -67,7 +67,7 @@
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://larmor.org/versions.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.0.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.1.0';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -81,7 +81,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="2.0" />
+  <meta name="docsearch:version" content="2.1" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -486,7 +486,7 @@
 <li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">FOD glyphs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../peaks/">Peaks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../settings/">Settings</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../screenshots/">Screenshots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../screenshots/">Exporting images and videos</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../sessions/">Sessions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../surfaces/">Surfaces</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../matlab-files/">MATLAB files</a></li>
@@ -587,13 +587,33 @@ for a sharp one, so raising the minimum hides the round FODs of grey matter and 
 </section>
 <section id="one-fod-large">
 <h2>One FOD, large<a class="headerlink" href="#one-fod-large" title="Link to this heading">#</a></h2>
-<p>To look at one voxel’s FOD closely, select the FOD in Layers and press <strong>Inspect FOD</strong> in its options; <strong>F</strong>,
-Ctrl+4 and the Inspect FOD icon on the right do the same. The Inspect FOD panel shows the FOD at the crosshair as
-one large, smooth glyph, with the R/L, A/P and S/I axes, and follows the crosshair as you click around. Drag to
-turn it, use the wheel to zoom, and press <strong>Reset view</strong> to start again.</p>
-<p>The panel uses the FOD’s basis and colouring, but not the threshold, the minimum anisotropy or the scale, so it
-always shows the whole FOD. Outside the FOD’s grid it says that there is no FOD there. The panel follows the FOD
-selected in Layers, and keeps showing it while another kind of item is selected.</p>
+<p>To look at one voxel’s FOD closely, select the FOD in the scene tree and press <strong>Show at the cursor</strong> in its
+options, or open the inspector’s Cursor tab. The tab shows the FOD at the crosshair as one large, smooth glyph,
+with the R/L, A/P and S/I axes, and follows the crosshair as you click around. Drag to turn it, use the wheel to
+zoom, and press <strong>Reset view</strong> to start again.</p>
+<p>The glyph uses the FOD’s basis and colouring, but not the threshold, the minimum anisotropy or the scale, so it
+always shows the whole FOD. Outside the FOD’s grid it says that there is no FOD there. The tab follows the FOD
+selected in the scene tree, and keeps showing it while another kind of item is selected.</p>
+</section>
+<section id="looking-closely">
+<h2>Looking closely<a class="headerlink" href="#looking-closely" title="Link to this heading">#</a></h2>
+<p>A detail window shows a rectangle of a 2D view on its own, large enough to see each voxel’s glyph clearly. Choose
+the Zoom box tool (<strong>Z</strong>) and drag a rectangle in a 2D view, or right-click and choose <strong>Zoom box from here</strong> for a
+12 x 12 voxel box around the point. The rectangle snaps to the voxels of the main volume, or of the FOD when no
+volume is loaded, and opens in a floating window, whose title names the FOD, the view, the slice and the size, such
+as “Detail - wmfod.mif - coronal y 60 - 12 x 12 voxels”. Several detail windows can be open at once. Each one’s
+rectangle stays outlined in its view, and dragging the outline’s edge moves the detail.</p>
+<p>The detail draws the slices without smoothing, so each voxel shows as a square, and builds the FOD glyphs for the
+rectangle alone, at a sphere detail of its own (12 at first, set with <strong>Glyph detail</strong> in its toolbar). Its
+glyphs keep the FOD’s basis, colouring, scale, scaling, threshold and minimum anisotropy, unlike the glyph in
+the Cursor tab. <strong>Voxel grid</strong> draws the voxels’ edges and <strong>Scale bar</strong> draws a bar of a round length in mm. While
+<strong>Linked</strong> is on, the detail follows the crosshair’s slice; when you turn it off, the detail keeps the slice it
+shows.</p>
+<p><strong>Save N x…</strong> writes the detail’s picture at 1 to 8 times the window’s size, as a PNG or TIFF image. <strong>Figure
+with inset…</strong> writes a figure for a paper: the whole view with the rectangle outlined, and the detail beside it,
+with two lines joining the rectangle to the detail, on a white or a black background. From Python,
+<code class="docutils literal notranslate"><span class="pre">viewer.open_detail(ViewKind.CORONAL,</span> <span class="pre">(i,</span> <span class="pre">j,</span> <span class="pre">12,</span> <span class="pre">12))</span></code> opens a detail of the 12 x 12 voxels from (i, j) in the
+view’s plane, and <code class="docutils literal notranslate"><span class="pre">viewer.save_detail</span></code> and <code class="docutils literal notranslate"><span class="pre">viewer.save_detail_figure</span></code> write the picture and the figure.</p>
 </section>
 </section>
 
@@ -623,6 +643,7 @@ selected in Layers, and keeps showing it while another kind of item is selected.
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#symmetric-and-asymmetric">Symmetric and asymmetric</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#their-options">Their options</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#one-fod-large">One FOD, large</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#looking-closely">Looking closely</a></li>
 </ul>
   </nav></div>
 

@@ -55,7 +55,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=b21b538c"></script>
+    <script src="../../_static/documentation_options.js?v=a25e6b42"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -67,7 +67,7 @@
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://larmor.org/versions.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.0.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.1.0';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -75,13 +75,13 @@
     <link rel="canonical" href="https://larmor.org/viewer/settings/" />
     <link rel="icon" href="../../_static/larmor-symbol.svg"/>
     <link rel="search" title="Search" href="../../search/" />
-    <link rel="next" title="Screenshots" href="../screenshots/" />
+    <link rel="next" title="Exporting images and videos" href="../screenshots/" />
     <link rel="prev" title="Peaks" href="../peaks/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="2.0" />
+  <meta name="docsearch:version" content="2.1" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -486,7 +486,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../fod-glyphs/">FOD glyphs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../peaks/">Peaks</a></li>
 <li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">Settings</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../screenshots/">Screenshots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../screenshots/">Exporting images and videos</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../sessions/">Sessions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../surfaces/">Surfaces</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../matlab-files/">MATLAB files</a></li>
@@ -554,25 +554,23 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="settings">
 <h1>Settings<a class="headerlink" href="#settings" title="Link to this heading">#</a></h1>
-<p>The Settings panel holds the viewer’s preferences, such as its colours, how many streamlines it reads and draws,
-and whether it serves agents. Open it with Settings &gt; Settings, with the gear icon on the right, or with Ctrl+,
-(Cmd+, on macOS). A change applies at once and is saved, so the viewer starts with it next time.</p>
-<p><img alt="The Settings panel" src="../../_images/settings.png" /></p>
+<p>The Settings sheet holds the viewer’s preferences: its theme, how many streamlines it reads and draws, its graphics
+and whether it serves agents. Open it with the gear at the right of the header or with Ctrl+, (Cmd+, on macOS). It
+is a window of its own, so it can stay open beside the views. A change applies at once and is saved, so the viewer
+starts with it next time.</p>
+<p><img alt="The Settings sheet" src="../../_images/settings.png" /></p>
+<p>How the views show the scene is set in the Scene tab of the inspector instead: the display convention (RAS, which
+puts the subject’s right on the right of the screen, or LAS, which puts it on the left; see
+<a class="reference internal" href="../2d-views/"><span class="std std-doc">The 2D views</span></a>), the background and crosshair colours, and <strong>Interpolate new images</strong>, which
+chooses whether images opened from now on start smooth (trilinear) or blocky (nearest voxel). These are saved with
+the other settings too.</p>
 <section id="appearance">
 <h2>Appearance<a class="headerlink" href="#appearance" title="Link to this heading">#</a></h2>
 <ul class="simple">
 <li><p><strong>Theme</strong> is system, light or dark. System follows the computer’s light or dark mode, also when it changes.</p></li>
 <li><p><strong>Accent colour</strong> is the one colour in the panels. It marks the selected item, the focused field, the selected
 view, checked boxes and sliders.</p></li>
-<li><p><strong>Display convention</strong> is RAS, which puts the subject’s right on the right of the screen, or LAS, which puts it
-on the left (see <a class="reference internal" href="../2d-views/"><span class="std std-doc">The 2D views</span></a>).</p></li>
-<li><p><strong>Background</strong> and <strong>Crosshair</strong> set the colour behind the images in the views and the crosshair’s colour.</p></li>
 </ul>
-</section>
-<section id="images">
-<h2>Images<a class="headerlink" href="#images" title="Link to this heading">#</a></h2>
-<p><strong>Interpolate new images</strong> chooses whether images opened from now on start smooth (trilinear) or blocky (nearest
-voxel).</p>
 </section>
 <section id="tractograms">
 <h2>Tractograms<a class="headerlink" href="#tractograms" title="Link to this heading">#</a></h2>
@@ -590,19 +588,6 @@ within this slab around the slice.</p></li>
 <li><p><strong>Slab memory (GB)</strong> is the memory that the 2D views’ slabs may take. Past it, the slabs are cut in a slower
 way.</p></li>
 </ul>
-</section>
-<section id="screenshots">
-<h2>Screenshots<a class="headerlink" href="#screenshots" title="Link to this heading">#</a></h2>
-<p><strong>Screenshot scale</strong>, <strong>Information overlay in screenshots</strong> and <strong>Transparent screenshots</strong> set the values that
-the Screenshots panel starts with: how many image pixels each screen pixel becomes, whether the views’ labels and
-colour bars are included, and whether the background is transparent instead of the views’ colour (see
-<a class="reference internal" href="../screenshots/"><span class="std std-doc">Screenshots</span></a>).</p>
-</section>
-<section id="phantom-editor">
-<h2>Phantom editor<a class="headerlink" href="#phantom-editor" title="Link to this heading">#</a></h2>
-<p><strong>Phantom editor layout</strong> is either guided, which shows the steps to a first simulation one at a time, or all,
-which shows every section of the editor at once (see <a class="reference internal" href="../phantoms/"><span class="std std-doc">Phantoms</span></a>). The switch at the top right of
-the editor changes it too.</p>
 </section>
 <section id="graphics">
 <h2>Graphics<a class="headerlink" href="#graphics" title="Link to this heading">#</a></h2>
@@ -654,10 +639,7 @@ settings, and only you can read it.</p></li>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#appearance">Appearance</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#images">Images</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tractograms">Tractograms</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#screenshots">Screenshots</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#phantom-editor">Phantom editor</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#graphics">Graphics</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#agents-mcp">Agents (MCP)</a></li>
 </ul>

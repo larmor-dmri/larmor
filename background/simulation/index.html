@@ -55,7 +55,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=b21b538c"></script>
+    <script src="../../_static/documentation_options.js?v=a25e6b42"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -67,7 +67,7 @@
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://larmor.org/versions.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.0.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.1.0';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -81,7 +81,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="2.0" />
+  <meta name="docsearch:version" content="2.1" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -663,6 +663,15 @@ constraints listed by Novikov et al. (2019, Sec. 3.4.2), which are 1.7e-3 mm^2/s
 tortuosity <code class="docutils literal notranslate"><span class="pre">(1</span> <span class="pre">-</span> <span class="pre">f)</span> <span class="pre">1.7e-3</span></code>, about 0.5e-3 mm^2/s, across it at the intra-axonal fraction f = 0.7. A few defaults
 are choices without a source, namely the intra-axonal fraction and the SANDI fractions and radius.</p>
 </section>
+<section id="bundles">
+<h2>Bundles<a class="headerlink" href="#bundles" title="Link to this heading">#</a></h2>
+<p>A synthetic bundle is built around its centreline, a centripetal Catmull-Rom spline through the control points
+(Yuksel et al. 2011). This curve passes through every point and does not loop or form a cusp between two of them,
+even when the points are unevenly spaced, as they are when a bundle is drawn freehand. Each streamline keeps a fixed
+offset from the centreline, drawn at random in a disc of the bundle’s radius and carried along without twisting, so
+the bundle keeps its width round a bend as long as the bend is not tighter than the radius. Fanning widens the disc
+towards the ends, and dispersion adds a smooth random wander that is zero at both ends.</p>
+</section>
 <section id="tissues-in-a-voxel">
 <h2>Tissues in a voxel<a class="headerlink" href="#tissues-in-a-voxel" title="Link to this heading">#</a></h2>
 <p>A voxel is shared between tissues in three steps, and a fraction is never scaled up.</p>
@@ -761,6 +770,8 @@ signal in brain white matter: A taxonomy and comparison. NeuroImage 59 (2012) 22
 and parameter estimation. NMR Biomed 32 (2019) e3998.</p></li>
 <li><p>Pasternak O, Sochen N, Gur Y, Intrator N, Assaf Y. Free water elimination and mapping from diffusion MRI. Magn
 Reson Med 62 (2009) 717-730.</p></li>
+<li><p>Yuksel C, Schaefer S, Keyser J. Parameterization and applications of Catmull-Rom curves. Comput Aided Des 43
+(2011) 747-755.</p></li>
 <li><p>Wansapura JP, Holland SK, Dunn RS, Ball WS. NMR relaxation times in the human brain at 3.0 tesla. J Magn Reson
 Imaging 9 (1999) 531-538.</p></li>
 <li><p>Veraart J, Novikov DS, Fieremans E. TE dependent Diffusion Imaging (TEdDI) distinguishes between compartmental
@@ -800,6 +811,7 @@ magnetic resonance imaging. Magn Reson Med 42 (1999) 515-525.</p></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-signal">The signal</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#compartments">Compartments</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tissues">Tissues</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bundles">Bundles</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tissues-in-a-voxel">Tissues in a voxel</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#relaxation">Relaxation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-scan">The scan</a></li>

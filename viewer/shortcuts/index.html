@@ -55,7 +55,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=b21b538c"></script>
+    <script src="../../_static/documentation_options.js?v=a25e6b42"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -67,7 +67,7 @@
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://larmor.org/versions.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.0.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.1.0';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -81,7 +81,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="2.0" />
+  <meta name="docsearch:version" content="2.1" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -482,7 +482,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../fod-glyphs/">FOD glyphs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../peaks/">Peaks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../settings/">Settings</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../screenshots/">Screenshots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../screenshots/">Exporting images and videos</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../sessions/">Sessions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../surfaces/">Surfaces</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../matlab-files/">MATLAB files</a></li>
@@ -643,66 +643,78 @@ that view is one of those listed for the key.</p>
 <td><p>any</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+1</span></code></p></td>
-<td><p>Show or hide the Layers panel</p></td>
+<td><p>Show the View workspace: the scene tree and the inspector</p></td>
 <td><p>any</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+2</span></code></p></td>
-<td><p>Show or hide the Options panel</p></td>
+<td><p>Show the Simulate workspace: the steps of a phantom</p></td>
 <td><p>any</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+3</span></code></p></td>
-<td><p>Show or hide the Labels panel (the labels drawn in 3D)</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">V</span></code></p></td>
+<td><p>Cursor tool: a click moves the crosshair</p></td>
 <td><p>any</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+4</span></code>, <code class="docutils literal notranslate"><span class="pre">F</span></code></p></td>
-<td><p>Show or hide the Inspect FOD panel (the selected FOD at the crosshair, large)</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">O</span></code></p></td>
+<td><p>Sphere tool: a click places a sphere region, a drag sets its radius</p></td>
+<td><p>any</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">B</span></code></p></td>
+<td><p>Box tool: a drag in a 2D view draws a box region</p></td>
+<td><p>any</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Z</span></code></p></td>
+<td><p>Zoom box tool: a drag in a 2D view opens a detail window</p></td>
 <td><p>any</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+Shift+S</span></code></p></td>
-<td><p>Show or hide the Screenshots panel (views saved as images or a video)</p></td>
+<td><p>Export the views as images or a video</p></td>
 <td><p>any</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+5</span></code></p></td>
-<td><p>Show or hide the Phantom panel (draw bundles, set tissues and the scan, run a simulation)</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Delete</span></code>, <code class="docutils literal notranslate"><span class="pre">Ctrl+Backspace</span></code></p></td>
+<td><p>Remove the selected item (not while drawing a bundle)</p></td>
 <td><p>any</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">N</span></code></p></td>
-<td><p>Draw a new bundle: clicks in the 2D views add its points</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tab</span></code></p></td>
+<td><p>Give the selected region the next role: include, exclude, within</p></td>
 <td><p>any</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Return</span></code>, <code class="docutils literal notranslate"><span class="pre">Enter</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">N</span></code></p></td>
+<td><p>Draw a new bundle: strokes or Ctrl+clicks in the 2D views add points</p></td>
+<td><p>any</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Return</span></code>, <code class="docutils literal notranslate"><span class="pre">Enter</span></code></p></td>
 <td><p>Finish the bundle being drawn (only while drawing)</p></td>
 <td><p>any</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Backspace</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Backspace</span></code></p></td>
 <td><p>Remove the last point of the bundle being drawn (only while drawing)</p></td>
 <td><p>any</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Escape</span></code></p></td>
-<td><p>Stop drawing: drop the new bundle, or keep an edited one as it was; else unpin the voxel of the Signal breakdown</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Escape</span></code></p></td>
+<td><p>Stop drawing: drop the new bundle, or keep an edited one as it was; else unpin the voxel of the Signal breakdown; else the Cursor tool</p></td>
 <td><p>any</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+R</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+R</span></code></p></td>
 <td><p>Simulate the phantom and open the outputs</p></td>
 <td><p>any</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+6</span></code></p></td>
-<td><p>Show or hide the Signal breakdown panel (the signal of one voxel of the phantom, factor by factor)</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+6</span></code></p></td>
+<td><p>Show or hide the Signal breakdown of a voxel of the phantom</p></td>
 <td><p>any</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+,</span></code></p></td>
-<td><p>Show or hide the Settings panel</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+,</span></code></p></td>
+<td><p>Open the settings</p></td>
 <td><p>any</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">F1</span></code></p></td>
-<td><p>Show or hide the Help panel (the guides)</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">F1</span></code></p></td>
+<td><p>Open the help</p></td>
 <td><p>any</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+0</span></code></p></td>
-<td><p>Hide all the panels, or show again the ones hidden</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+0</span></code></p></td>
+<td><p>Hide the panels either side of the views, or show them again</p></td>
 <td><p>any</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+Q</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+Q</span></code></p></td>
 <td><p>Quit</p></td>
 <td><p>any</p></td>
 </tr>
@@ -735,19 +747,59 @@ that view is one of those listed for the key.</p>
 <td><p>2D views</p></td>
 </tr>
 <tr class="row-even"><td><p>Ctrl + drag</p></td>
-<td><p>Pan</p></td>
+<td><p>Pan, with any tool</p></td>
 <td><p>2D views</p></td>
 </tr>
-<tr class="row-odd"><td><p>Click, while drawing a bundle</p></td>
-<td><p>Add a point to the bundle and move the crosshair there</p></td>
+<tr class="row-odd"><td><p>Click or drag on a region</p></td>
+<td><p>Select it; drag its centre to move it, its ring or corner to resize it</p></td>
 <td><p>2D views</p></td>
 </tr>
-<tr class="row-even"><td><p>Drag</p></td>
+<tr class="row-even"><td><p>Click, Sphere tool</p></td>
+<td><p>Place a sphere of the last radius; drag from the centre to set it</p></td>
+<td><p>2D views</p></td>
+</tr>
+<tr class="row-odd"><td><p>Drag, Box tool</p></td>
+<td><p>Draw a box region, a slab deep</p></td>
+<td><p>2D views</p></td>
+</tr>
+<tr class="row-even"><td><p>Drag, Zoom box tool</p></td>
+<td><p>Open the rectangle in a detail window; Shift: square, Alt: from the centre</p></td>
+<td><p>2D views</p></td>
+</tr>
+<tr class="row-odd"><td><p>Drag, while drawing a bundle</p></td>
+<td><p>Draw a stroke; its control points are added when you let go</p></td>
+<td><p>2D views</p></td>
+</tr>
+<tr class="row-even"><td><p>Ctrl + click, while drawing a bundle</p></td>
+<td><p>Add one control point and move the crosshair there</p></td>
+<td><p>2D views</p></td>
+</tr>
+<tr class="row-odd"><td><p>Drag a control point, while drawing</p></td>
+<td><p>Move it in the view’s plane</p></td>
+<td><p>2D views</p></td>
+</tr>
+<tr class="row-even"><td><p>Right click</p></td>
+<td><p>Add a region or open a zoom box here</p></td>
+<td><p>any</p></td>
+</tr>
+<tr class="row-odd"><td><p>Drag</p></td>
 <td><p>Turn the scene</p></td>
 <td><p>3D</p></td>
 </tr>
-<tr class="row-odd"><td><p>Scroll, or pinch</p></td>
+<tr class="row-even"><td><p>Scroll, or pinch</p></td>
 <td><p>Zoom</p></td>
+<td><p>3D</p></td>
+</tr>
+<tr class="row-odd"><td><p>Click, Sphere or Box tool</p></td>
+<td><p>Place the region on the streamline, slice or surface under the pointer</p></td>
+<td><p>3D</p></td>
+</tr>
+<tr class="row-even"><td><p>Click a region, Cursor tool</p></td>
+<td><p>Select the region</p></td>
+<td><p>3D</p></td>
+</tr>
+<tr class="row-odd"><td><p>Scroll over the selected region</p></td>
+<td><p>Resize it</p></td>
 <td><p>3D</p></td>
 </tr>
 </tbody>

@@ -55,7 +55,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=b21b538c"></script>
+    <script src="../../_static/documentation_options.js?v=a25e6b42"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -67,7 +67,7 @@
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://larmor.org/versions.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.0.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.1.0';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -81,7 +81,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="2.0" />
+  <meta name="docsearch:version" content="2.1" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -486,7 +486,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../fod-glyphs/">FOD glyphs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../peaks/">Peaks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../settings/">Settings</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../screenshots/">Screenshots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../screenshots/">Exporting images and videos</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../sessions/">Sessions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../surfaces/">Surfaces</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../matlab-files/">MATLAB files</a></li>
@@ -573,13 +573,14 @@ instead, and a warning is written to the log.</p>
 <section id="labels-in-3d">
 <h2>Labels in 3D<a class="headerlink" href="#labels-in-3d" title="Link to this heading">#</a></h2>
 <p>In the 3D view, the labels you choose are drawn as surfaces in their colours. To choose them, press <strong>Choose
-labels</strong> in the overlay’s options. The Labels panel then opens on the left and lists the labels in the image
-with their numbers, names and colours; tick the ones to show. To find labels, type a number or part of a name in
+labels</strong> in the overlay’s options. The inspector’s Cursor tab then lists the labels in the image with their
+numbers, names and colours; tick the ones to show. To find labels, type a number or part of a name in
 the search field, then use <strong>All</strong> or <strong>None</strong> to tick or untick every label it finds.</p>
 <p>No labels are shown at first, so a parcellation takes no time to draw in 3D until you choose some. Each label’s
 surface is computed in the background the first time it is shown.</p>
-<p>The Labels panel (Ctrl+3) shows the overlay selected in Layers, and keeps showing it while another kind of item is
-selected. When it is closed or auto-hidden, it keeps its search and scroll position. In the overlay’s options,
+<p>The list shows the overlay selected in the scene tree while it is shown as labels, and keeps showing it while
+another kind of item is selected. It keeps its search and scroll position while you look at another tab. In the
+overlay’s options,
 <strong>Surface</strong> (under 3D) turns all the label surfaces off and on again, and <strong>Opacity (3D)</strong> makes them see-through.
 Neither affects the slices.</p>
 </section>

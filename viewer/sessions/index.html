@@ -55,7 +55,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=b21b538c"></script>
+    <script src="../../_static/documentation_options.js?v=a25e6b42"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -67,7 +67,7 @@
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://larmor.org/versions.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.0.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.1.0';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -76,12 +76,12 @@
     <link rel="icon" href="../../_static/larmor-symbol.svg"/>
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Surfaces" href="../surfaces/" />
-    <link rel="prev" title="Screenshots" href="../screenshots/" />
+    <link rel="prev" title="Exporting images and videos" href="../screenshots/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="2.0" />
+  <meta name="docsearch:version" content="2.1" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -482,7 +482,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../fod-glyphs/">FOD glyphs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../peaks/">Peaks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../settings/">Settings</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../screenshots/">Screenshots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../screenshots/">Exporting images and videos</a></li>
 <li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">Sessions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../surfaces/">Surfaces</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../matlab-files/">MATLAB files</a></li>
@@ -553,13 +553,14 @@
 <p>A session is a file that records what the viewer shows, so that you can open the same view again later or on
 another computer. It keeps the files loaded and each item’s options. It also keeps the state of the views: the
 crosshair, the zoom and pan of each view, the 3D camera, the main volume, the selection, the enlarged view, RAS or
-LAS, and the overlay and crosshair switches. The settings of the Settings panel are not part of a session.</p>
+LAS, the overlay and crosshair switches, the workspace and the layout of the views. The application’s settings
+are not part of a session.</p>
 <ul class="simple">
 <li><p><strong>File &gt; Save Session…</strong> (<strong>Ctrl+S</strong>) writes a session file, <code class="docutils literal notranslate"><span class="pre">name.lar.json</span></code>. Items added from Python without
 a file cannot be saved, and a message names them.</p></li>
-<li><p><strong>File &gt; Save As…</strong>, or <strong>Save As…</strong> in an item’s right-click menu in Layers, writes the selected item to a
-file. A tractogram is saved as <code class="docutils literal notranslate"><span class="pre">.tck</span></code>, <code class="docutils literal notranslate"><span class="pre">.trk</span></code>, <code class="docutils literal notranslate"><span class="pre">.vtk</span></code> or <code class="docutils literal notranslate"><span class="pre">.fib</span></code>, and a volume, overlay, FOD or peaks image as
-NIfTI or MIF. The item then refers to the new file, so a session saved afterwards keeps it.</p></li>
+<li><p><strong>File &gt; Save As…</strong>, or <strong>Save As…</strong> in an item’s right-click menu in the scene tree, writes the selected
+item to a file. A tractogram is saved as <code class="docutils literal notranslate"><span class="pre">.tck</span></code>, <code class="docutils literal notranslate"><span class="pre">.trk</span></code>, <code class="docutils literal notranslate"><span class="pre">.vtk</span></code> or <code class="docutils literal notranslate"><span class="pre">.fib</span></code>, and a volume, overlay, FOD or peaks
+image as NIfTI or MIF. The item then refers to the new file, so a session saved afterwards keeps it.</p></li>
 <li><p><strong>File &gt; Open Session…</strong> (<strong>Ctrl+Shift+O</strong>) replaces what is shown with the session. The files are read in the
 background, with the progress bar and Cancel, and the options and views are restored once all are read.</p></li>
 </ul>
