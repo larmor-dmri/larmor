@@ -96,12 +96,10 @@ def screen_room(widget: QWidget, margin: int = 40) -> QSize:
     """Returns the room a window has on the screen widget is on, less a margin.
 
     Args:
-        widget: A widget on the screen, or one about to be shown; the primary
-            screen is taken if it has none yet.
+        widget: A widget on the screen, or one about to be shown.
         margin: The room left free on each side, px.
     """
-    screen = widget.screen() or QGuiApplication.primaryScreen()
-    room = screen.availableGeometry().size() if screen is not None else QSize(1, 1)
+    room = widget.screen().availableGeometry().size()
     return QSize(max(room.width() - 2 * margin, 1), max(room.height() - 2 * margin, 1))
 
 

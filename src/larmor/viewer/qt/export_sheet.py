@@ -368,10 +368,11 @@ class ExportSheet(QDialog):
     def hideEvent(self, event: QHideEvent) -> None:  # noqa: N802
         """Stops following the scene: a hidden sheet draws nothing."""
         super().hideEvent(event)
+        # Taken first, so that what closing it draws asks for no preview.
+        renderer, self.renderer = self.renderer, None
+        if renderer is not None:
+            renderer.close()
         self.refresh_timer.stop()
-        if self.renderer is not None:
-            self.renderer.close()
-            self.renderer = None
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
         """Draws the preview again once the views have been resized."""
