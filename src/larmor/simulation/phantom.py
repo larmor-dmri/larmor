@@ -54,8 +54,9 @@ class Bundle:
             at 1. Not used for a geometry. Defaults to 0.7.
 
     Raises:
-        ValueError: If streamline_area is not positive or densest_fill is not in
-            (0, 1].
+        ValueError: If streamline_area is not positive, densest_fill is not in
+            (0, 1], or a geometry of radius 0 has no streamline_area, so it would
+            fill nothing.
     """
 
     source: BundleGeometry | Tractogram
@@ -75,6 +76,16 @@ class Bundle:
         ):
             raise ValueError(
                 f"streamline_area must be positive, got {self.streamline_area}."
+            )
+        source = self.source
+        if (
+            isinstance(source, BundleGeometry)
+            and source.radius == 0
+            and self.streamline_area is None
+        ):
+            raise ValueError(
+                "A geometry of radius 0 fills no tube; give it a radius or a "
+                "streamline_area."
             )
 
     def streamlines(self, index: int = 0) -> Tractogram:
@@ -135,7 +146,7 @@ class Phantom:
         ValueError: If tissue names repeat, a bundle, map or the background names
             an unknown tissue, a map or the background uses a tissue that needs a
             fibre direction, two maps share a tissue, or a map is not a 3D volume
-            on the grid with values in [0, 1].
+            on the grid with finite values in [0, 1].
     """
 
     grid: Grid
@@ -199,6 +210,8 @@ class Phantom:
                 f"phantom's grid {self.grid.shape}."
             )
         values = volume.as_float(dtype=np.float64)
+        if not np.all(np.isfinite(values)):
+            raise ValueError(f"The map of {tissue_map.tissue!r} holds NaN or infinity.")
         if values.min() < -_MAP_TOLERANCE or values.max() > 1 + _MAP_TOLERANCE:
             raise ValueError(
                 f"The map of {tissue_map.tissue!r} must hold fractions in [0, 1]."

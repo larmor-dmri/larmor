@@ -58,7 +58,8 @@ class SimulationFiles:
         peaks: The ground-truth fibre directions, in the layout `lar peaks`
             writes. Each peak takes 3 volumes, its direction scaled by its
             amplitude, the share of the voxel its fibres fill. The peaks are
-            sorted largest first, with NaN where a voxel has fewer peaks.
+            sorted largest first, with NaN where a voxel has fewer peaks. A
+            bundle whose tissue has no fibre direction gives no peaks.
         compartment_fractions: 4D, the volume fraction of each voxel that each
             compartment fills, the background counted in its tissue. The volumes
             are in the order of the tissues and, within a tissue, of its
@@ -71,8 +72,8 @@ class SimulationFiles:
         free_water_signal_fraction: One 3D file per echo time, with the share of
             the voxel's signal at b = 0 that comes from free water.
         masks: One 3D mask per tissue, by tissue name.
-        bundle_mask: One 3D mask of the voxels the tissues of the bundles fill
-            together; None if the phantom has no bundle.
+        bundle_mask: One 3D mask of the voxels the bundles fill together; None
+            if the phantom has no bundle.
         bundles: One .tck per bundle, in the order of the phantom's bundles.
         tissue_maps: A copy of each tissue map of the phantom, by tissue name.
         phantom: The phantom file, with the scan, which `lar simulate` can run
@@ -144,9 +145,7 @@ def simulation_files(
             f"Tissue names {[t.name for t in phantom.tissues]} give the same file "
             "names; rename a tissue."
         )
-    echoes = (
-        [""] if protocol.num_echoes == 1 else [f"_te{te:g}ms" for te in protocol.te_ms]
-    )
+    echoes = [""] if protocol.num_echoes == 1 else _echo_names(protocol.te_ms)
     stems = [f"dwi{e}" for e in echoes]
     return SimulationFiles(
         folder=folder,
@@ -183,6 +182,18 @@ def simulation_files(
         phantom=folder / "phantom.json",
         info=folder / "simulation.json",
     )
+
+
+def _echo_names(te_ms: Sequence[float]) -> list[str]:
+    """Returns the part of each echo's file names, such as "_te80ms", one per TE.
+
+    Echo times that would give the same name get more digits.
+    """
+    for digits in (6, 10, 17):
+        names = [f"_te{te:.{digits}g}ms" for te in te_ms]
+        if len(set(names)) == len(names):
+            break
+    return names
 
 
 def save_simulation(
@@ -271,13 +282,14 @@ def save_simulation(
         save_volume(
             _float_volume(partition.bundle_fractions, affine), files.bundle_fractions
         )
-    save_volume(_float_volume(_peaks(partition), affine), files.peaks)
+    oriented = np.array([t.is_oriented for t in phantom.tissues], dtype=bool)
+    save_volume(_float_volume(_peaks(partition, oriented), affine), files.peaks)
 
     fractions = partition.tissue_fractions.copy()
     if phantom.background is not None:
         column = partition.tissue_names.index(phantom.background)
         fractions[..., column] += partition.background
-    _write_masks(phantom, partition, fractions, files)
+    _write_masks(partition, fractions, files)
     _write_compartment_fractions(phantom, protocol, fractions, affine, files)
 
     for streamlines, path in zip(partition.streamlines, files.bundles, strict=True):
@@ -296,12 +308,11 @@ def _float_volume(data: np.ndarray, affine: np.ndarray) -> Volume:
 
 
 def _write_masks(
-    phantom: Phantom,
     partition: VoxelPartition,
     fractions: np.ndarray,
     files: SimulationFiles,
 ) -> None:
-    """Writes the mask of each tissue and the mask of the bundles' tissues.
+    """Writes the mask of each tissue and the mask of the bundles.
 
     `fractions` holds each tissue's fraction with the background added to its
     tissue.
@@ -311,8 +322,7 @@ def _write_masks(
         mask = fractions[..., index] >= MASK_FRACTION
         save_volume(Volume(mask.astype(np.uint8), affine.copy()), files.masks[name])
     if files.bundle_mask is not None:
-        used = sorted({partition.tissue_names.index(b.tissue) for b in phantom.bundles})
-        union = fractions[..., used].sum(axis=-1) >= MASK_FRACTION
+        union = partition.bundle_fractions.sum(axis=-1) >= MASK_FRACTION
         save_volume(Volume(union.astype(np.uint8), affine.copy()), files.bundle_mask)
 
 
@@ -510,14 +520,24 @@ def _write_info(
     )
 
 
-def _peaks(partition: VoxelPartition) -> np.ndarray:
-    """Returns the peak directions scaled by amplitude, (X, Y, Z, 3 P), NaN if none."""
+def _peaks(partition: VoxelPartition, oriented: np.ndarray) -> np.ndarray:
+    """Returns the peak directions scaled by amplitude, (X, Y, Z, 3 P), NaN if none.
+
+    Args:
+        partition: The voxel partition.
+        oriented: Whether each tissue has a fibre direction, (T,); the fibres of
+            the others give no peaks.
+    """
     per_voxel: dict[int, list[tuple[np.ndarray, float]]] = {}
     offsets = partition.offsets
+    kept = oriented[partition.fibre_tissue]
     for index in np.flatnonzero(np.diff(offsets)):
         span = slice(offsets[index], offsets[index + 1])
+        if not kept[span].any():
+            continue
         per_voxel[int(index)] = _voxel_peaks(
-            partition.fibre_direction[span], partition.fibre_weight[span]
+            partition.fibre_direction[span][kept[span]],
+            partition.fibre_weight[span][kept[span]],
         )
     most = max((len(p) for p in per_voxel.values()), default=1)
     out = np.full((int(np.prod(partition.grid.shape)), 3 * most), np.nan, np.float32)

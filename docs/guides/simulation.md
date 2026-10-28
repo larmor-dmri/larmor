@@ -140,7 +140,7 @@ The folder is self-contained. It holds the images, the ground truth, and what is
 | `free_water_signal_fraction.nii.gz` | The share of the voxel's signal at b = 0 that comes from free water; one per echo time, as above |
 | `peaks.nii.gz` | The true fibre directions, in the layout `lar peaks` writes (below) |
 | `mask_<tissue>.nii.gz` | One mask per tissue: the voxels the tissue fills by at least half, background included |
-| `mask_bundles.nii.gz` | The voxels that the tissues of the bundles fill by at least half together, so that a crossing of bundles of different tissues is not left out |
+| `mask_bundles.nii.gz` | The voxels that the bundles fill by at least half together, so that a crossing of bundles of different tissues is not left out |
 | `bundle_<n>.tck` | The streamlines of each bundle |
 | `tissue_map_<tissue>.nii.gz` | A copy of each tissue map of the phantom |
 | `phantom.json` | The phantom file, with the protocol; its bundles are the geometry with the seed that was used, or the `.tck` of the folder |
@@ -164,7 +164,8 @@ The ground-truth peaks give the true fibre directions, to compare with the peaks
 followed by `lar peaks`. They are built from the streamlines, not fitted to the images. In each voxel, the
 streamline directions are grouped, from the largest down, into peaks: each joins the first peak within 20 degrees
 of it, or else starts a new one. A peak's direction is the weighted mean of its fibres, and its amplitude is the
-share of the voxel they fill. Peaks below a tenth of the voxel's largest are dropped. `peaks.nii.gz` has 3 volumes
+share of the voxel they fill. Peaks below a tenth of the voxel's largest are dropped, and a bundle whose tissue has
+no fibre direction, such as one filled with CSF, gives none. `peaks.nii.gz` has 3 volumes
 per peak, largest peak first, which hold the x, y and z of the direction scaled by the amplitude, in world
 coordinates, and are NaN where a voxel has fewer peaks.
 

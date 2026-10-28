@@ -1,3 +1,4 @@
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -8,9 +9,11 @@ from larmor.io import load_volume
 from larmor.main import app
 from larmor.simulation import (
     example_phantom,
+    read_phantom,
     simulation_files,
     write_phantom,
 )
+from larmor.types import GradientTable
 
 
 def _run(*args: str | Path) -> Result:
@@ -85,6 +88,20 @@ def test_shells_replace_the_gradients_of_the_file(tmp_path: Path) -> None:
     assert result.exit_code == 0, result.output
     bvals = np.loadtxt(out / "dwi.bval")
     assert bvals.tolist() == [0.0] * 3 + [500.0] * 6 + [2500.0] * 10
+
+
+def test_new_gradients_keep_the_b0_threshold_of_the_file(tmp_path: Path) -> None:
+    loaded = example_phantom()
+    assert loaded.protocol is not None
+    table = loaded.protocol.gradients
+    narrow = GradientTable(table.bvals, table.bvecs, b0_threshold=5.0)
+    protocol = replace(loaded.protocol, gradients=narrow)
+    path = tmp_path / "mine.phantom.json"
+    write_phantom(loaded.phantom, path, protocol=protocol)
+    assert _run(path, tmp_path / "out", "--shell", "1000:6").exit_code == 0
+    written = read_phantom(tmp_path / "out" / "phantom.json").protocol
+    assert written is not None
+    assert written.gradients.b0_threshold == 5.0
 
 
 def test_bvals_and_bvecs_files_are_read_in_the_given_frame(tmp_path: Path) -> None:

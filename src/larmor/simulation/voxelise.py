@@ -1,5 +1,6 @@
 """Mapping streamlines onto a voxel grid, by length and direction per bundle."""
 
+import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -260,8 +261,15 @@ def _empty_voxelisation(grid: Grid, num_bundles: int) -> Voxelisation:
     return Voxelisation(grid, num_bundles, empty, empty, np.empty((0, 3)), np.empty(0))
 
 
-# Number of sample points along each axis of a voxel near a tube.
+# The fewest and the most sample points along each axis of a voxel near a tube.
 TUBE_SUBDIVISIONS = 5
+TUBE_MAX_SUBDIVISIONS = 40
+# The widest spacing of the sample points, as a share of the tube's radius.
+TUBE_SPACING = 0.25
+# The thinnest tube, as a share of the grid's largest voxel size.
+MIN_TUBE_RADIUS = 0.05
+# Sample points handled at a time when filling a tube.
+TUBE_POINTS_PER_BATCH = 1_000_000
 
 
 def tube_fill(
@@ -270,7 +278,7 @@ def tube_fill(
     fan: tuple[float, float, float],
     grid: Grid,
     *,
-    subdivisions: int = TUBE_SUBDIVISIONS,
+    subdivisions: int | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Returns the fraction of each voxel inside a bundle's tube, and its direction.
 
@@ -285,18 +293,30 @@ def tube_fill(
         fan: (fan_start, fan_end, fan_sharpness).
         grid: The voxel grid.
         subdivisions: Number of sample points per voxel along each axis.
-            Defaults to TUBE_SUBDIVISIONS.
+            Defaults to None, which spaces them at most a quarter of the radius
+            apart, from TUBE_SUBDIVISIONS to TUBE_MAX_SUBDIVISIONS.
 
     Returns:
         The fill of each voxel in C order, in [0, 1], (V,), and the unit tangent
         of the centreline nearest each voxel's centre, zero where the fill is 0,
         (V, 3).
+
+    Raises:
+        ValueError: If the radius is not positive or is below MIN_TUBE_RADIUS
+            times the largest voxel size, too thin for the samples to measure.
     """
+    largest = float(np.linalg.norm(grid.affine[:3, :3], axis=0).max())
+    if not radius >= MIN_TUBE_RADIUS * largest:
+        raise ValueError(
+            f"A tube of radius {radius:g} mm is too thin for voxels of {largest:g} "
+            f"mm; its radius must be at least {MIN_TUBE_RADIUS * largest:g} mm."
+        )
+    if subdivisions is None:
+        needed = math.ceil(largest / (TUBE_SPACING * radius))
+        subdivisions = min(max(needed, TUBE_SUBDIVISIONS), TUBE_MAX_SUBDIVISIONS)
     num_voxels = int(np.prod(grid.shape))
     fill = np.zeros(num_voxels)
     direction = np.zeros((num_voxels, 3))
-    if radius <= 0:
-        return fill, direction
     tube = _sample_tube(np.asarray(control_points, dtype=np.float64), radius, fan, grid)
 
     # Only the voxels whose centre is within reach of the tube are sampled.
@@ -375,8 +395,9 @@ def _sampled_fill(
     sub = sub.reshape(-1, 3) @ axes.T  # (S, 3) world offsets in a voxel
     last_sample = len(tube.centre) - 1
     fill = np.zeros(len(centres))
-    for start in range(0, len(centres), 4096):
-        points = (centres[start : start + 4096, None, :] + sub[None]).reshape(-1, 3)
+    batch = max(1, TUBE_POINTS_PER_BATCH // len(sub))
+    for start in range(0, len(centres), batch):
+        points = (centres[start : start + batch, None, :] + sub[None]).reshape(-1, 3)
         gap, nearest = tube.tree.query(points)
         inside = (gap <= tube.reach[nearest]).astype(np.float64)
         # Past an end, the nearest centreline point is that end point.
@@ -387,7 +408,7 @@ def _sampled_fill(
         inside[last] *= _end_weight(
             (tube.centre[-1] - points[last]) @ tube.tangent[-1], tol
         )
-        fill[start : start + 4096] = inside.reshape(-1, len(sub)).mean(axis=1)
+        fill[start : start + batch] = inside.reshape(-1, len(sub)).mean(axis=1)
     return fill
 
 

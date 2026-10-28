@@ -195,6 +195,25 @@ def test_unknown_tissue_and_bad_map_values_are_rejected() -> None:
         Phantom(GRID, bundles=(dense_bundle(2.0, tissue="muscle"),))
     with pytest.raises(ValueError, match=r"\[0, 1\]"):
         Phantom(GRID, tissue_maps=(gm_map(1.5),))
+    with pytest.raises(ValueError, match="NaN"):
+        Phantom(GRID, tissue_maps=(gm_map(np.nan),))
+
+
+@pytest.mark.parametrize("offset", [0.0, 0.3])
+def test_a_thin_tube_fills_its_true_volume(offset: float) -> None:
+    grid = Grid((21, 21, 21), np.diag([2.0, 2.0, 2.0, 1.0]))
+    ends = np.array([[10.0, 20 + offset, 20.2], [30.0, 20 + offset, 20.0]])
+    fill, _ = tube_fill(ends, 0.2, (0.0, 0.0, 2.0), grid)
+    length = float(np.linalg.norm(ends[1] - ends[0]))
+    assert fill.sum() * 8.0 == pytest.approx(np.pi * 0.2**2 * length, rel=0.1)
+
+
+def test_a_tube_too_thin_for_the_grid_and_an_empty_tube_are_refused() -> None:
+    ends = np.array([[1.0, 3, 3], [5.0, 3, 3]])
+    with pytest.raises(ValueError, match="too thin"):
+        tube_fill(ends, 0.01, (0.0, 0.0, 2.0), GRID)
+    with pytest.raises(ValueError, match="radius 0"):
+        Bundle(BundleGeometry(ends, radius=0.0))
 
 
 def test_every_block_round_trips_through_the_file(tmp_path: Path) -> None:

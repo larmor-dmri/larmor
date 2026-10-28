@@ -61,8 +61,9 @@ class Protocol:
             Defaults to SPIN_ECHO.
 
     Raises:
-        ValueError: If a timing is not positive and finite, delta > Delta,
-            Delta + delta >= the first TE, or TR <= the last TE.
+        ValueError: If a timing is not positive and finite, two echo times are
+            the same, delta > Delta, Delta + delta >= the first TE, or TR <= the
+            last TE.
     """
 
     gradients: GradientTable
@@ -116,6 +117,8 @@ class Protocol:
         for name, value in named.items():
             if not math.isfinite(value) or value <= 0:
                 raise ValueError(f"{name} must be positive and finite, got {value} ms.")
+        if len(set(self.te_ms)) != len(self.te_ms):
+            raise ValueError(f"The echo times must differ, got {list(self.te_ms)} ms.")
         if self.small_delta_ms > self.big_delta_ms:
             raise ValueError(
                 f"delta ({self.small_delta_ms} ms) must not exceed Delta "

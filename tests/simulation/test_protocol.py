@@ -27,6 +27,7 @@ def protocol(**changes: object) -> Protocol:
         ({"te_ms": 45.0}, "shorter than the echo time"),
         ({"tr_ms": 70.0}, "TR"),
         ({"te_ms": [80.0, 3500.0]}, "TR"),
+        ({"te_ms": [80.0, 80.0]}, "must differ"),
     ],
 )
 def test_each_timing_check_rejects_its_case(

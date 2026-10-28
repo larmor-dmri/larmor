@@ -275,6 +275,8 @@ class PhantomEditor:
                     f"{state.grid.shape}."
                 )
             values = data.as_float()
+            if not np.all(np.isfinite(values)):
+                raise ValueError(f"{item.name} holds NaN or infinity.")
             if values.min() < -1e-6 or values.max() > 1 + 1e-6:
                 raise ValueError(f"{item.name} must hold fractions between 0 and 1.")
             if build_tissue(settings).is_oriented:
