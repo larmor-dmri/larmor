@@ -39,6 +39,7 @@ from larmor.viewer.model.matlab_import import (
     values_spec,
 )
 from larmor.viewer.model.options import OptionGroup, OptionName
+from larmor.viewer.model.phantom import RunOutputs
 from larmor.viewer.model.registry import REGISTRY, SUBSETS
 from larmor.viewer.model.session import SUFFIX, SessionReport, read_session
 from larmor.viewer.model.settings import (
@@ -983,12 +984,31 @@ class MainWindow(QMainWindow):
                 folder,
                 self.loader.open,
                 overwrite=overwrite,
-                on_done=lambda outputs: self.statusBar().showMessage(
-                    f"Simulation saved to {outputs.files.folder}", NOTICE_MS
-                ),
+                on_done=self._run_finished,
+                on_failed=lambda message: self._message("Simulation failed", message),
             )
         except (JobBusyError, ValueError) as e:
             self._message("Cannot run the phantom", str(e))
+
+    def _run_finished(self, outputs: RunOutputs) -> None:
+        """Says that a run finished, where it saved its files and what opened."""
+        folder = outputs.files.folder
+        self.statusBar().showMessage(f"Simulation saved to {folder}", NOTICE_MS)
+        opened = (
+            "Its images, tissue masks and fibre directions are open."
+            if self.viewer.is_current_run(outputs)
+            else "Its files are not opened, as another phantom was opened meanwhile."
+        )
+        box = QMessageBox(
+            QMessageBox.Icon.Information,
+            "Simulation finished",
+            f"The simulation is saved in {folder}. {opened}",
+            QMessageBox.StandardButton.Ok,
+            self,
+        )
+        box.setWindowModality(Qt.WindowModality.NonModal)
+        box.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        box.show()
 
     def _message(self, title: str, text: str) -> None:
         """Shows a warning without blocking the window."""

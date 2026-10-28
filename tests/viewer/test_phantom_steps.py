@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QMessageBox
 from pytestqt.qtbot import QtBot
 
 from larmor.viewer import Category, Viewer
@@ -73,6 +73,9 @@ def test_a_new_user_reaches_a_run_by_following_next(
         lambda: bool(viewer.scene.in_category(Category.VOLUMES)), timeout=60_000
     )
     qtbot.waitUntil(lambda: not panel.stop_button.isVisible())
+    assert not window.job_bar.isVisible()
+    texts = [box.text() for box in window.findChildren(QMessageBox)]
+    assert any(t.startswith("The simulation is saved in") for t in texts)
     state = viewer.phantom
     assert state is not None and state.scan.snr is not None
     assert state.tissue("WM").value("proton_density") == 0.8

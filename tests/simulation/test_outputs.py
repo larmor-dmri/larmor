@@ -522,3 +522,12 @@ def test_echo_times_that_round_alike_get_files_of_their_own() -> None:
         p.name for p in simulation_files(crossing(), protocol, "x", noise=False).dwi
     ]
     assert len(set(names)) == 2
+
+
+def test_saving_reports_its_progress_to_the_end(
+    simulated: SimulatedDWI, tmp_path: Path
+) -> None:
+    seen: list[tuple[int, int, str]] = []
+    save_simulation(simulated, tmp_path / "out", progress=lambda *a: seen.append(a))
+    assert [done for done, _, _ in seen] == list(range(1, seen[-1][1] + 1))
+    assert seen[-1][0] == seen[-1][1] and seen[-1][2] == "save"

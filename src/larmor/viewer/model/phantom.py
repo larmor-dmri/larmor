@@ -14,7 +14,7 @@ import numpy as np
 
 from larmor.io import read_bvals_bvecs
 from larmor.types import GradientTable, Grid, Tractogram, Volume
-from larmor.viewer.jobs import SAVING
+from larmor.viewer.jobs import SAVING, JobCancelledError
 from larmor.viewer.model.item import ItemId
 
 if TYPE_CHECKING:
@@ -1573,8 +1573,16 @@ def run_simulation(
         progress=report,
     )
     # The last chance to cancel, as saving runs to the end once it starts.
-    report(1, 1, SAVING)
-    written = sim.save_simulation(simulated, folder, force=force)
+    report(0, 1, SAVING)
+
+    def saving(done: int, total: int, stage: str) -> None:
+        """Reports how far the saving is; a cancel no longer stops it."""
+        try:
+            report(done, total, SAVING)
+        except JobCancelledError:
+            pass
+
+    written = sim.save_simulation(simulated, folder, force=force, progress=saving)
     data = json.loads(written.phantom.read_text(encoding="utf-8"))
     data["viewer"] = dict(inputs.viewer_block)
     written.phantom.write_text(

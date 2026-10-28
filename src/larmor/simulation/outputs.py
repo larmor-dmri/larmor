@@ -3,7 +3,7 @@
 import json
 import math
 import re
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
@@ -17,6 +17,7 @@ from larmor.simulation.instant import SimulatedDWI, relaxation_weights
 from larmor.simulation.phantom import (
     Bundle,
     Phantom,
+    Progress,
     VoxelPartition,
 )
 from larmor.simulation.phantom_file import write_phantom
@@ -202,6 +203,7 @@ def save_simulation(
     *,
     force: bool = False,
     bundle_names: Sequence[str] | None = None,
+    progress: Progress | None = None,
 ) -> SimulationFiles:
     """Writes a simulation and its ground truth into one self-contained folder.
 
@@ -237,6 +239,8 @@ def save_simulation(
         bundle_names: A name for each bundle, kept in the phantom file for the
             viewer, such as `PhantomFile.bundle_names` of the file the phantom
             was read from. Defaults to None, which leaves the bundles numbered.
+        progress: Called with (done, total, "save") as the files are written.
+            Defaults to None.
 
     Returns:
         The paths written.
@@ -264,16 +268,52 @@ def save_simulation(
     _clear_previous(files.folder, force)
     files.folder.mkdir(parents=True, exist_ok=True)
     partition = simulated.partition
-    affine = partition.grid.affine
+    steps = len(files.dwi) + len(files.noise_free) + 4
+    done = 0
+
+    def tick() -> None:
+        """Tells progress that one more step of the saving is done."""
+        nonlocal done
+        done += 1
+        if progress is not None:
+            progress(done, steps, "save")
 
     for echo, path in zip(simulated.echoes, files.dwi, strict=True):
         save_volume(echo, path)
+        tick()
     for echo, path in zip(simulated.noise_free, files.noise_free, strict=False):
         save_volume(echo, path)
+        tick()
     write_bvals_bvecs(
         simulated.gradients, files.bvals, files.bvecs, ref_path=files.dwi[0]
     )
 
+    _write_ground_truth(phantom, protocol, partition, files, tick)
+
+    for streamlines, path in zip(partition.streamlines, files.bundles, strict=True):
+        save_tractogram(Tractogram(streamlines.points, streamlines.offsets), path)
+    for tissue_map in phantom.tissue_maps:
+        save_volume(tissue_map.volume, files.tissue_maps[tissue_map.tissue])
+    tick()
+
+    _write_phantom_copy(phantom, protocol, files, bundle_names)
+    _write_info(simulated, phantom, protocol, files)
+    tick()
+    return files
+
+
+def _write_ground_truth(
+    phantom: Phantom,
+    protocol: Protocol,
+    partition: VoxelPartition,
+    files: SimulationFiles,
+    tick: Callable[[], None],
+) -> None:
+    """Writes the fractions, peaks, masks and compartment fractions.
+
+    `tick` is called once after the fractions and peaks, and once at the end.
+    """
+    affine = partition.grid.affine
     save_volume(
         _float_volume(partition.tissue_fractions, affine), files.tissue_fractions
     )
@@ -284,6 +324,7 @@ def save_simulation(
         )
     oriented = np.array([t.is_oriented for t in phantom.tissues], dtype=bool)
     save_volume(_float_volume(_peaks(partition, oriented), affine), files.peaks)
+    tick()
 
     fractions = partition.tissue_fractions.copy()
     if phantom.background is not None:
@@ -291,15 +332,7 @@ def save_simulation(
         fractions[..., column] += partition.background
     _write_masks(partition, fractions, files)
     _write_compartment_fractions(phantom, protocol, fractions, affine, files)
-
-    for streamlines, path in zip(partition.streamlines, files.bundles, strict=True):
-        save_tractogram(Tractogram(streamlines.points, streamlines.offsets), path)
-    for tissue_map in phantom.tissue_maps:
-        save_volume(tissue_map.volume, files.tissue_maps[tissue_map.tissue])
-
-    _write_phantom_copy(phantom, protocol, files, bundle_names)
-    _write_info(simulated, phantom, protocol, files)
-    return files
+    tick()
 
 
 def _float_volume(data: np.ndarray, affine: np.ndarray) -> Volume:
