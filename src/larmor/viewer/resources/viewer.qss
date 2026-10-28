@@ -357,6 +357,22 @@ QAbstractSpinBox:focus {
   border-color: ${accent};
 }
 
+QLineEdit:disabled,
+QAbstractSpinBox:disabled,
+QComboBox:disabled,
+QPushButton:disabled,
+QToolButton#menuButton:disabled {
+  color: ${faint};
+  background-color: ${window};
+  border-color: ${border};
+}
+
+QLabel:disabled,
+QCheckBox:disabled,
+QRadioButton:disabled {
+  color: ${faint};
+}
+
 QAbstractSpinBox::up-button,
 QAbstractSpinBox::down-button {
   width: 16px;
@@ -514,10 +530,39 @@ QCheckBox::indicator:disabled {
   background-color: transparent;
 }
 
-/* The text beside a slider: wide enough for six digits. */
+QRadioButton {
+  background-color: transparent;
+  spacing: 6px;
+  min-height: 20px;
+}
+
+/* A round box, ringed in the accent around a light dot when chosen. */
+QRadioButton::indicator {
+  width: 14px;
+  height: 14px;
+  border: 1px solid ${muted};
+  border-radius: 8px;
+  background-color: ${field};
+}
+
+QRadioButton::indicator:hover {
+  border-color: ${text};
+}
+
+QRadioButton::indicator:checked {
+  width: 8px;
+  height: 8px;
+  border: 4px solid ${accent};
+  background-color: ${on_accent};
+}
+
+QRadioButton::indicator:disabled {
+  border-color: ${faint};
+  background-color: transparent;
+}
+
+/* The text beside a slider; SliderField sets its width. */
 SliderField QLineEdit {
-  min-width: 64px;
-  max-width: 64px;
   padding: 2px 4px;
 }
 
@@ -556,6 +601,11 @@ QSlider::handle:horizontal {
 
 QSlider::handle:horizontal:hover {
   background-color: ${accent_light};
+}
+
+QSlider::sub-page:horizontal:disabled,
+QSlider::handle:horizontal:disabled {
+  background-color: ${faint};
 }
 
 /* ---- Dialogs ---- */

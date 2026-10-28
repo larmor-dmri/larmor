@@ -215,4 +215,8 @@ def _palette(colours: dict[str, str]) -> QPalette:
         (role.Link, "accent"),
     ):
         palette.setColor(r, QColor(colours[name]))
+    # Greyed-out widgets draw their text faint.
+    disabled = QPalette.ColorGroup.Disabled
+    for r in (role.WindowText, role.Text, role.ButtonText):
+        palette.setColor(disabled, r, QColor(colours["faint"]))
     return palette
