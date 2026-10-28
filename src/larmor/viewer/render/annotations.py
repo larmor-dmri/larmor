@@ -14,7 +14,7 @@ from larmor.viewer.model.events import (
     OptionChanged,
     ViewStateChanged,
 )
-from larmor.viewer.model.item import ViewKind
+from larmor.viewer.model.item import VIEW_NAMES, ViewKind
 from larmor.viewer.model.options import OptionName
 from larmor.viewer.model.readout import Readout
 from larmor.viewer.model.view_state import ViewField
@@ -28,6 +28,13 @@ FONT_SIZE = 13
 EDGE = 0.98  # how far towards the edges, in screen space (-1 to 1), text sits
 # The options of the main volume the readout shows.
 READ = {OptionName.VOLUME_INDEX, OptionName.INTERPOLATE}
+# About the mean width of one character of the text, logical pixels.
+CHAR_WIDTH = 0.52 * FONT_SIZE
+# Logical pixels kept free beside the readout, and between a text and a letter.
+MARGIN = 12.0
+# The most characters of a view's name and slice in its top left corner, as in
+# "Sagittal  x 100 / 256", besides the name.
+CORNER_CHARS = 13
 # The letter for each world direction, as (axis, sign).
 LETTERS = {
     (0, 1): "R",
@@ -59,7 +66,10 @@ class Annotations:
         # A faint box behind each text, sized to it before each draw.
         self.backings: dict[ViewKind, gfx.Group] = {}
         self._placers: dict[ViewKind, partial[None]] = {}
-        self.readout = ""  # the text the readouts show
+        self._fitters: dict[ViewKind, partial[None]] = {}
+        self.readout = ""  # the text the readouts show, before fitting a view
+        self._widths: dict[ViewKind, float] = {}  # each view's, at its last draw
+        self._shown: dict[ViewKind, str] = {}  # each view's readout, as fitted
         for kind, view in self.views.items():
             self.crosshairs[kind] = _crosshair()
             view.guides.add(self.crosshairs[kind])
@@ -74,6 +84,9 @@ class Annotations:
             texts = [*self.labels[kind].values(), self.readouts[kind]]
             self.backings[kind] = backings(texts)
             view.overlay.add(self.backings[kind])
+            # First, so that the backings follow the texts as fitted.
+            self._fitters[kind] = partial(self._fit, kind)
+            view.renderer.add_event_handler(self._fitters[kind], "before_render")
             self._placers[kind] = partial(place_backings, self.backings[kind])
             view.renderer.add_event_handler(self._placers[kind], "before_render")
         self._move_crosshairs()
@@ -110,6 +123,7 @@ class Annotations:
             view.overlay.remove(self.readouts[kind])
             view.overlay.remove(self.backings[kind])
             view.renderer.remove_event_handler(self._placers[kind], "before_render")
+            view.renderer.remove_event_handler(self._fitters[kind], "before_render")
             view.request_draw()
         # An event already on its way finds nothing left to update.
         self.views = {}
@@ -118,6 +132,7 @@ class Annotations:
         self.readouts.clear()
         self.backings.clear()
         self._placers.clear()
+        self._fitters.clear()
 
     def _move_crosshairs(self) -> None:
         """Puts each view's crosshair through the cursor, or hides it."""
@@ -150,9 +165,39 @@ class Annotations:
         if text == self.readout:
             return
         self.readout = text
-        for kind, label in self.readouts.items():
-            label.set_text(text)
+        for kind in self.readouts:
+            self._fit_texts(kind)
             self.views[kind].request_draw()
+
+    def _fit(self, kind: ViewKind, event: gfx.WindowEvent) -> None:
+        """Fits a view's text to its width before it draws, again if it changed."""
+        self._widths[kind] = float(event.width)
+        if self._fit_texts(kind):
+            self.views[kind].request_draw()  # the backing follows the new text
+
+    def _fit_texts(self, kind: ViewKind) -> bool:
+        """Cuts the readout's name short to fit the view, and hides letters in the way.
+
+        A letter at the top or bottom edge shows only while the text in the corner
+        beside it leaves it room. Before the view's first draw, its width is
+        unknown and the readout is shown whole.
+
+        Returns:
+            Whether the readout's text changed.
+        """
+        width = self._widths.get(kind)
+        text = self.readout if width is None else fitted_readout(self.readout, width)
+        changed = text != self._shown.get(kind)
+        if changed:
+            self.readouts[kind].set_text(text)
+            self._shown[kind] = text
+        if width is not None:
+            room = width / 2 - MARGIN
+            widest = max(len(line) for line in text.split("\n"))
+            corner = len(VIEW_NAMES[kind]) + CORNER_CHARS
+            self.labels[kind][(0, -1)].visible = widest * CHAR_WIDTH <= room
+            self.labels[kind][(0, 1)].visible = corner * CHAR_WIDTH <= room
+        return changed
 
 
 def readout_text(readout: Readout) -> str:
@@ -167,6 +212,20 @@ def readout_text(readout: Readout) -> str:
             lines.append("voxel " + ", ".join(str(v) for v in readout.voxel))
     lines.append(", ".join(f"{v:.1f}" for v in readout.position) + " mm")
     return "\n".join(lines)
+
+
+def fitted_readout(text: str, width: float) -> str:
+    """Returns a readout with its first line, the image's name, cut to a view's width.
+
+    A name cut short ends in "...".
+    """
+    name, newline, rest = text.partition("\n")
+    if not newline:
+        return text  # the position only
+    room = max(int((width - 2 * MARGIN) / CHAR_WIDTH), 4)
+    if len(name) > room:
+        name = name[: room - 3] + "..."
+    return f"{name}\n{rest}"
 
 
 def _letter(kind: ViewKind, convention: Convention, direction: tuple[int, int]) -> str:

@@ -9,7 +9,11 @@ from larmor.types import Volume
 from larmor.viewer import Category, Convention, OptionName, Readout, Viewer, ViewKind
 from larmor.viewer.model.camera import Camera2D, screen_axes
 from larmor.viewer.model.view_state import Workspace
-from larmor.viewer.render.annotations import readout_text
+from larmor.viewer.render.annotations import (
+    CHAR_WIDTH,
+    fitted_readout,
+    readout_text,
+)
 from larmor.viewer.render.backing import Backing
 from larmor.viewer.render.scene_renderer import SceneRenderer
 from larmor.viewer.render.view import ViewRenderer
@@ -400,6 +404,26 @@ def test_readout_text_lists_the_lines_in_order() -> None:
     assert (
         readout_text(readout) == "fa\nvalue 0.123457\nvoxel 1, 2, 3\n1.2, -2.0, 3.0 mm"
     )
+
+
+def test_a_long_name_in_the_readout_is_cut_to_the_view_s_width() -> None:
+    text = "sub-01_ses-baseline_acq-mprage_T1w.nii.gz\nvalue 1\n0.0, 0.0, 0.0 mm"
+    name, rest = fitted_readout(text, 200.0).split("\n", 1)
+    assert name.endswith("...") and len(name) * CHAR_WIDTH <= 200.0
+    assert rest == "value 1\n0.0, 0.0, 0.0 mm"
+    assert fitted_readout(text, 1000.0) == text
+
+
+def test_a_narrow_view_hides_the_letters_its_corner_texts_would_cover(
+    scene_renderer: tuple[Viewer, SceneRenderer],
+    views: dict[ViewKind, ViewRenderer],
+) -> None:
+    viewer, renderer = scene_renderer
+    viewer.add(_block(), Category.VOLUMES, name="t1")
+    _image(views[ViewKind.AXIAL])
+    labels = renderer.annotations.labels[ViewKind.AXIAL]
+    assert not labels[(0, 1)].visible and not labels[(0, -1)].visible
+    assert labels[(1, 0)].visible and labels[(-1, 0)].visible
 
 
 # The backing behind the text
