@@ -55,7 +55,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=a25e6b42"></script>
+    <script src="../../_static/documentation_options.js?v=92912210"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -67,7 +67,7 @@
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://larmor.org/versions.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.1.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.2.0';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -81,7 +81,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="2.1" />
+  <meta name="docsearch:version" content="2.2" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -709,7 +709,7 @@ Larmor, such as <code class="docutils literal notranslate"><span class="pre">cro
 <td><p>One mask per tissue: the voxels the tissue fills by at least half, background included</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mask_bundles.nii.gz</span></code></p></td>
-<td><p>The voxels that the tissues of the bundles fill by at least half together, so that a crossing of bundles of different tissues is not left out</p></td>
+<td><p>The voxels that the bundles fill by at least half together, so that a crossing of bundles of different tissues is not left out</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bundle_&lt;n&gt;.tck</span></code></p></td>
 <td><p>The streamlines of each bundle</p></td>
@@ -742,7 +742,8 @@ of the images that were fitted.</p>
 followed by <code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">peaks</span></code>. They are built from the streamlines, not fitted to the images. In each voxel, the
 streamline directions are grouped, from the largest down, into peaks: each joins the first peak within 20 degrees
 of it, or else starts a new one. A peak’s direction is the weighted mean of its fibres, and its amplitude is the
-share of the voxel they fill. Peaks below a tenth of the voxel’s largest are dropped. <code class="docutils literal notranslate"><span class="pre">peaks.nii.gz</span></code> has 3 volumes
+share of the voxel they fill. Peaks below a tenth of the voxel’s largest are dropped, and a bundle whose tissue has
+no fibre direction, such as one filled with CSF, gives none. <code class="docutils literal notranslate"><span class="pre">peaks.nii.gz</span></code> has 3 volumes
 per peak, largest peak first, which hold the x, y and z of the direction scaled by the amplitude, in world
 coordinates, and are NaN where a voxel has fewer peaks.</p>
 <p>Running <code class="docutils literal notranslate"><span class="pre">phantom.json</span></code> again with the same seed gives the same images. Without <code class="docutils literal notranslate"><span class="pre">--seed</span></code>, a seed is drawn and

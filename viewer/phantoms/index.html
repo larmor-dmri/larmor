@@ -55,7 +55,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=a25e6b42"></script>
+    <script src="../../_static/documentation_options.js?v=92912210"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -67,7 +67,7 @@
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://larmor.org/versions.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.1.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.2.0';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -81,7 +81,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="2.1" />
+  <meta name="docsearch:version" content="2.2" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -567,7 +567,8 @@ blue check mark next to a step shows that it is done, and a short line under it 
 size of the grid, the number of points of the bundle being drawn, or the b-value and the number of directions of the
 scan. The default grid, tissues and scan already work, so those three steps are ticked from the start, and a new
 phantom needs only a bundle before it can run. Above the steps, <strong>New</strong> starts a phantom, <strong>Open</strong> reads a phantom
-file or a simulation folder, and <strong>Save</strong> writes the phantom to a file.</p>
+file or a simulation folder, and <strong>Save</strong> writes the phantom to a file. New and Open ask before they discard a
+phantom that has bundles.</p>
 <p><img alt="The Simulate workspace while a bundle is drawn" src="../../_images/phantom-guided.png" /></p>
 <p>The panel on the right shows the page of the step you are on: a heading, a few sentences on what the step does, and
 the fields that matter for it. The rest of the step’s fields are under a <strong>More</strong> fold at the end of the page, which
@@ -579,7 +580,7 @@ go to any step at any time and in any order.</p>
 <li><p>On the Bundle step, choose <strong>Draw bundle</strong> in the toolbar or press <strong>N</strong>, place three or four points in a 2D view
 and press <strong>Enter</strong> to finish the bundle. The new bundle is filled with the WM tissue, a standard model of white
 matter. To fill it with another tissue, choose one in the bundle’s row of the bundles table.</p></li>
-<li><p>The Tissue step edits the tissues themselves. You can keep them as they are.</p></li>
+<li><p>The Tissue step edits the tissues themselves, with their parameters under More. You can keep them as they are.</p></li>
 <li><p>On the Scan step, the default scan is a single-shell acquisition at b = 1000 s/mm^2 with 32 directions and no
 noise, which you can also keep. <strong>Add shell</strong> adds a shell to the table, and More holds the sequence, the timings
 and the gradient files.</p></li>
@@ -594,7 +595,8 @@ The pages and the window show the same phantom, so a change made in one shows in
 <section id="grid-and-tissues">
 <h2>Grid and tissues<a class="headerlink" href="#grid-and-tissues" title="Link to this heading">#</a></h2>
 <p>The Grid step sets the voxel grid of the phantom. Type the size of a box in millimetres and a voxel size, then
-click <strong>Use this box</strong>, or take the grid of an image you have loaded. A new phantom starts on the grid of the main
+click <strong>Use this box</strong> or go to another step, or take the grid of an image you have loaded. A size that is not a
+whole number of voxels is rounded, and the step says so. A new phantom starts on the grid of the main
 volume when there is one. The grid’s box is outlined in every view while you draw; at other times, <strong>Show the grid
 box</strong> under the Grid step’s More shows or hides the outline, and a session remembers your choice.</p>
 <p>The phantom starts with three tissues: white matter (WM), grey matter (GM) and cerebrospinal fluid (CSF). Each
@@ -661,7 +663,9 @@ dropped.</p>
 the bundles table chooses the tissue that fills it. When you select a bundle, the editor shows its shape (the number
 of streamlines, the radius, the fanning, the dispersion and the seed) so that you can change it, and <strong>Edit</strong> brings
 its points back into draw mode. The bundle keeps its place in the scene tree and its options while you edit it. You
-can also make a loaded tractogram a bundle of the phantom with <strong>Use a tractogram…</strong>.</p>
+can also make a loaded tractogram a bundle of the phantom with <strong>Use a tractogram…</strong>. To remove bundles, select
+their rows in the bundles table and click <strong>Remove</strong> or press <strong>Delete</strong>; several rows can be selected at once, as
+in the scene tree.</p>
 </section>
 <section id="proxy-maps">
 <h2>Proxy maps<a class="headerlink" href="#proxy-maps" title="Link to this heading">#</a></h2>
@@ -710,14 +714,23 @@ models. From Python, <code class="docutils literal notranslate"><span class="pre
 <section id="running-and-saving">
 <h2>Running and saving<a class="headerlink" href="#running-and-saving" title="Link to this heading">#</a></h2>
 <p>The Scan step sets the sequence, the echo and repetition times, the gradient timing, the shells (or a pair of bvals
-and bvecs files) and the noise. <strong>Run</strong> (<strong>Ctrl+R</strong>), on the Run step or in the header, is greyed out until the
-phantom can run, with the first problem as its tooltip. It asks for an output folder if none is set, and asks before
-it replaces the outputs of an earlier run. The simulation then runs in the background, with its progress and a
-Cancel button in the status bar and on the Run step. A cancelled run opens nothing.</p>
+and bvecs files) and the noise. A bvecs file is read in the FSL frame, as <code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">simulate</span></code> reads it, unless you choose
+the world frame next to the file. A phantom file that holds a gradient table keeps that table exactly, and the Scan
+step says that the directions come from the file; editing the shells replaces it with directions made from the
+shells. The SNR is that of a voxel full of WM at b = 0, or of the noise reference tissue chosen under More. A run of
+a phantom file gives the same images as <code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">simulate</span></code> with the noise seed of the Scan step.</p>
+<p><strong>Run</strong> (<strong>Ctrl+R</strong>), on the Run step or in the header, is greyed out until the phantom can run, with the first
+problem as its tooltip; a bundle that is being drawn or edited must be finished or cancelled first. It asks for an
+output folder if none is set, and asks before it replaces the outputs of an earlier run or writes into a folder
+that holds other files. The simulation then runs in the background, with its progress and a Cancel button in the
+status bar and on the Run step. Once the files are being saved, the run can no longer be cancelled. A message
+says when the run has finished or failed; a cancelled run opens nothing.</p>
 <p>The output folder has the same contents as the one that <code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">simulate</span></code> writes. When the run ends, the diffusion
 images open as the main volume, the tissue masks as overlays and the true fibre directions as peaks. The bundles
 then refer to the streamline files in the folder, so a session saved afterwards keeps everything.</p>
-<p><strong>Save</strong> above the steps writes the phantom to a phantom file, and <strong>Open</strong> reads it back. From the command line,
+<p><strong>Save</strong> above the steps writes the phantom to a phantom file, and <strong>Open</strong> reads it back. A loaded tractogram or
+tissue map that was registered when it was opened, or read as a subset of its streamlines, is written next to the
+phantom file as the viewer shows it, so the file reopens it in the same place. From the command line,
 <code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">bv</span> <span class="pre">--phantom</span> <span class="pre">scene.phantom.json</span></code> opens a phantom file, and <code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">bv</span> <span class="pre">--simulation</span> <span class="pre">folder</span></code> opens a simulation
 folder with its phantom in the editor. A saved session also keeps the phantom, and opening the session restores
 the editor. A bundle that you are still drawing is not saved with the session, so finish it first.</p>

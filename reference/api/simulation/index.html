@@ -55,7 +55,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=a25e6b42"></script>
+    <script src="../../../_static/documentation_options.js?v=92912210"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -67,7 +67,7 @@
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://larmor.org/versions.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.1.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.2.0';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -81,7 +81,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="2.1" />
+  <meta name="docsearch:version" content="2.2" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -716,8 +716,9 @@ at 1. Not used for a geometry. Defaults to 0.7.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If streamline_area is not positive or densest_fill is not in
-    (0, 1].</p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If streamline_area is not positive, densest_fill is not in
+    (0, 1], or a geometry of radius 0 has no streamline_area, so it would
+    fill nothing.</p>
 </dd>
 </dl>
 <dl class="py method">
@@ -1212,7 +1213,7 @@ to None.</p></li>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If tissue names repeat, a bundle, map or the background names
     an unknown tissue, a map or the background uses a tissue that needs a
     fibre direction, two maps share a tissue, or a map is not a 3D volume
-    on the grid with values in [0, 1].</p>
+    on the grid with finite values in [0, 1].</p>
 </dd>
 </dl>
 <dl class="py method">
@@ -1317,8 +1318,9 @@ Defaults to SPIN_ECHO.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If a timing is not positive and finite, delta &gt; Delta,
-    Delta + delta &gt;= the first TE, or TR &lt;= the last TE.</p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If a timing is not positive and finite, two echo times are
+    the same, delta &gt; Delta, Delta + delta &gt;= the first TE, or TR &lt;= the
+    last TE.</p>
 </dd>
 </dl>
 <dl class="py property">
@@ -1808,7 +1810,8 @@ None if the phantom has no bundle.</p>
 <dd><p>The ground-truth fibre directions, in the layout <code class="xref py py-obj docutils literal notranslate"><span class="pre">lar</span> <span class="pre">peaks</span></code>
 writes. Each peak takes 3 volumes, its direction scaled by its
 amplitude, the share of the voxel its fibres fill. The peaks are
-sorted largest first, with NaN where a voxel has fewer peaks.</p>
+sorted largest first, with NaN where a voxel has fewer peaks. A
+bundle whose tissue has no fibre direction gives no peaks.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)">pathlib.Path</a></p>
@@ -1871,8 +1874,8 @@ the voxel’s signal at b = 0 that comes from free water.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="larmor.simulation.SimulationFiles.bundle_mask">
 <span class="sig-name descname"><span class="pre">bundle_mask</span></span><a class="headerlink" href="#larmor.simulation.SimulationFiles.bundle_mask" title="Link to this definition">#</a></dt>
-<dd><p>One 3D mask of the voxels the tissues of the bundles fill
-together; None if the phantom has no bundle.</p>
+<dd><p>One 3D mask of the voxels the bundles fill together; None
+if the phantom has no bundle.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)">pathlib.Path</a> | None</p>
@@ -2528,7 +2531,7 @@ clinical brain MRI sequences for use at 3.0 Tesla. J Magn Reson Imaging
 
 <dl class="py function">
 <dt class="sig sig-object py" id="larmor.simulation.save_simulation">
-<span class="sig-prename descclassname"><span class="pre">larmor.simulation.</span></span><span class="sig-name descname"><span class="pre">save_simulation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simulated</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">folder</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bundle_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.save_simulation" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">larmor.simulation.</span></span><span class="sig-name descname"><span class="pre">save_simulation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simulated</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">folder</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bundle_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.save_simulation" title="Link to this definition">#</a></dt>
 <dd><p>Writes a simulation and its ground truth into one self-contained folder.</p>
 <p>The folder holds the DWI with its .bval and .bvec in the FSL frame, the
 ground truth, the bundles’ streamlines, the phantom file with the scan and
@@ -2560,6 +2563,8 @@ simulation.json. Defaults to False.</p></li>
 <li><p><strong>bundle_names</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence" title="(in Python v3.15)"><em>Sequence</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>] </em><em>| </em><em>None</em>) – A name for each bundle, kept in the phantom file for the
 viewer, such as <a class="reference internal" href="#larmor.simulation.PhantomFile.bundle_names" title="larmor.simulation.PhantomFile.bundle_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PhantomFile.bundle_names</span></code></a> of the file the phantom
 was read from. Defaults to None, which leaves the bundles numbered.</p></li>
+<li><p><strong>progress</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.15)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em><em>, </em><em>None</em><em>] </em><em>| </em><em>None</em>) – Called with (done, total, “save”) as the files are written.
+Defaults to None.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>

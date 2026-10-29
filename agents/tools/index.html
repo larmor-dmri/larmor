@@ -55,7 +55,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=a25e6b42"></script>
+    <script src="../../_static/documentation_options.js?v=92912210"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -67,7 +67,7 @@
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://larmor.org/versions.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.1.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '2.2.0';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -81,7 +81,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="2.1" />
+  <meta name="docsearch:version" content="2.2" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -545,7 +545,7 @@ in world coordinates (mm, RAS+), and an item by the id that <code class="docutil
 runs on.</p>
 <dl class="py function">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">add_box</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">centre</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">role</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'include'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span></dt>
+<span class="sig-name descname"><span class="pre">add_box</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">centre</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">role</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Adds a box region, its edges along the world axes.</p>
 <p>As <code class="docutils literal notranslate"><span class="pre">add_sphere</span></code>; a point is inside the box when it is at most half the
 size from the centre along each of x, y and z.</p>
@@ -555,7 +555,8 @@ size from the centre along each of x, y and z.</p>
 <li><p><strong>centre</strong> – Its centre (x, y, z), world mm; the cursor if None.</p></li>
 <li><p><strong>size</strong> – Its edges’ lengths along x, y and z, mm, each positive; the
 last box’s size (10 mm a side at first) if None.</p></li>
-<li><p><strong>role</strong> – <code class="docutils literal notranslate"><span class="pre">RegionRole.INCLUDE</span></code>, <code class="docutils literal notranslate"><span class="pre">EXCLUDE</span></code> or <code class="docutils literal notranslate"><span class="pre">WITHIN</span></code>, as for a sphere.</p></li>
+<li><p><strong>role</strong> – <code class="docutils literal notranslate"><span class="pre">RegionRole.INCLUDE</span></code>, <code class="docutils literal notranslate"><span class="pre">EXCLUDE</span></code>, <code class="docutils literal notranslate"><span class="pre">WITHIN</span></code> or None, as for a
+sphere.</p></li>
 <li><p><strong>name</strong> – Its name in the scene tree; “Box 1” and so on if None.</p></li>
 <li><p><strong>apply</strong> – Apply it to every tractogram in the scene.</p></li>
 </ul>
@@ -565,7 +566,7 @@ last box’s size (10 mm a side at first) if None.</p></li>
 </dd>
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If role is not a RegionRole.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If role is not a RegionRole or None.</p></li>
 <li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If centre is not three finite numbers.</p></li>
 <li><p><a class="reference internal" href="../../reference/api/viewer/#larmor.viewer.OptionError" title="larmor.viewer.OptionError"><strong>OptionError</strong></a> – If size is not three positive numbers.</p></li>
 </ul>
@@ -582,8 +583,11 @@ last box’s size (10 mm a side at first) if None.</p></li>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>position</strong> – The point (x, y, z), world mm.</p>
 </dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If no bundle is being drawn, or position is not three
+</dl>
+<p>A point at the place of the last one is not added again.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If no bundle is being drawn, or position is not three
 finite numbers inside the phantom’s grid box.</p>
 </dd>
 </dl>
@@ -613,7 +617,7 @@ numbers, or no point of the stroke is inside the grid box.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">add_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mask_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">role</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'include'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span></dt>
+<span class="sig-name descname"><span class="pre">add_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mask_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">role</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Adds a mask region: the voxels of an image whose value is not zero.</p>
 <p>A point is inside the mask when it lies in a voxel whose value rounds to
 a whole number other than 0. The region is removed with its image.</p>
@@ -621,7 +625,8 @@ a whole number other than 0. The region is removed with its image.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>mask_id</strong> – The image: a volume or an overlay of one volume, on any grid.</p></li>
-<li><p><strong>role</strong> – <code class="docutils literal notranslate"><span class="pre">RegionRole.INCLUDE</span></code>, <code class="docutils literal notranslate"><span class="pre">EXCLUDE</span></code> or <code class="docutils literal notranslate"><span class="pre">WITHIN</span></code>, as for a sphere.</p></li>
+<li><p><strong>role</strong> – <code class="docutils literal notranslate"><span class="pre">RegionRole.INCLUDE</span></code>, <code class="docutils literal notranslate"><span class="pre">EXCLUDE</span></code>, <code class="docutils literal notranslate"><span class="pre">WITHIN</span></code> or None, as for a
+sphere.</p></li>
 <li><p><strong>name</strong> – Its name in the scene tree; the image’s name and “(mask)” if None.</p></li>
 <li><p><strong>apply</strong> – Apply it to every tractogram in the scene.</p></li>
 </ul>
@@ -631,7 +636,7 @@ a whole number other than 0. The region is removed with its image.</p>
 </dd>
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If role is not a RegionRole.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If role is not a RegionRole or None.</p></li>
 <li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If there is no item with that id.</p></li>
 <li><p><a class="reference internal" href="../../reference/api/viewer/#larmor.viewer.OptionError" title="larmor.viewer.OptionError"><strong>OptionError</strong></a> – If the item is not an image of one volume.</p></li>
 </ul>
@@ -641,7 +646,7 @@ a whole number other than 0. The region is removed with its image.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">add_sphere</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">centre</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">role</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'include'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span></dt>
+<span class="sig-name descname"><span class="pre">add_sphere</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">centre</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">role</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Adds a sphere region, an item of <code class="docutils literal notranslate"><span class="pre">Category.REGIONS</span></code>.</p>
 <p>A region filters the streamlines of the tractograms it is applied to
 (<code class="docutils literal notranslate"><span class="pre">apply_region</span></code>): a point is inside the sphere when it is at most the
@@ -653,7 +658,8 @@ radius from the centre. The sphere starts in its role’s colour.</p>
 <li><p><strong>radius</strong> – Its radius in mm, at least 0.1; the last sphere’s radius
 (5 mm at first) if None.</p></li>
 <li><p><strong>role</strong> – <code class="docutils literal notranslate"><span class="pre">RegionRole.INCLUDE</span></code> keeps the streamlines that pass through
-it, <code class="docutils literal notranslate"><span class="pre">EXCLUDE</span></code> drops them, <code class="docutils literal notranslate"><span class="pre">WITHIN</span></code> keeps those that stay inside.</p></li>
+it, <code class="docutils literal notranslate"><span class="pre">EXCLUDE</span></code> drops them, <code class="docutils literal notranslate"><span class="pre">WITHIN</span></code> keeps those that stay inside;
+None takes the regions’ default (<code class="docutils literal notranslate"><span class="pre">set_default</span></code>), else INCLUDE.</p></li>
 <li><p><strong>name</strong> – Its name in the scene tree; “Sphere 1” and so on if None.</p></li>
 <li><p><strong>apply</strong> – Apply it to every tractogram in the scene.</p></li>
 </ul>
@@ -663,7 +669,7 @@ it, <code class="docutils literal notranslate"><span class="pre">EXCLUDE</span><
 </dd>
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If role is not a RegionRole.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If role is not a RegionRole or None.</p></li>
 <li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If centre is not three finite numbers.</p></li>
 <li><p><a class="reference internal" href="../../reference/api/viewer/#larmor.viewer.OptionError" title="larmor.viewer.OptionError"><strong>OptionError</strong></a> – If the radius is not a number of at least 0.1.</p></li>
 </ul>
@@ -912,8 +918,8 @@ points.</p>
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">item_choices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Returns the items an option that names an item can name, for one item.</p>
-<p>For <code class="docutils literal notranslate"><span class="pre">OptionName.MODULATE</span></code>: the other volumes and overlays that are 3D
-and on the same grid (shape and affine) as the item. For
+<p>For <code class="docutils literal notranslate"><span class="pre">OptionName.MODULATE</span></code>: the other volumes and overlays with one
+volume, on the same grid (shape and affine) as the item. For
 <code class="docutils literal notranslate"><span class="pre">OptionName.VALUES_VOLUME</span></code> and a region’s <code class="docutils literal notranslate"><span class="pre">MASK</span></code>: the volumes and
 overlays with one volume (3D, or 4D with a single volume), on any grid.
 For a tractogram’s <code class="docutils literal notranslate"><span class="pre">REGIONS</span></code>: the region items.</p>
@@ -2036,11 +2042,14 @@ is not an image, or a tissue map is not on the new grid.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>name</strong> – <code class="docutils literal notranslate"><span class="pre">ScanField.SHELLS</span></code> ((b-value s/mm^2, directions) pairs),
 <code class="docutils literal notranslate"><span class="pre">NUM_B0</span></code>, <code class="docutils literal notranslate"><span class="pre">GRADIENT_SEED</span></code> (of the directions), <code class="docutils literal notranslate"><span class="pre">GRADIENT_FILES</span></code>
-(bvals and bvecs paths, directions in world coordinates, used
-instead of the shells; None for the shells), <code class="docutils literal notranslate"><span class="pre">SMALL_DELTA_MS</span></code>,
-<code class="docutils literal notranslate"><span class="pre">BIG_DELTA_MS</span></code>, <code class="docutils literal notranslate"><span class="pre">TE_MS</span></code> (one or several echo times), <code class="docutils literal notranslate"><span class="pre">TR_MS</span></code>,
-<code class="docutils literal notranslate"><span class="pre">SEQUENCE</span></code> (<code class="docutils literal notranslate"><span class="pre">EchoKind</span></code>), <code class="docutils literal notranslate"><span class="pre">SNR</span></code> (None for no noise) or <code class="docutils literal notranslate"><span class="pre">SEED</span></code> (of
-the noise).</p></li>
+(bvals and bvecs paths, used instead of the shells; None for the
+shells), <code class="docutils literal notranslate"><span class="pre">BVEC_FRAME</span></code> (<code class="docutils literal notranslate"><span class="pre">BvecFrame</span></code> of the bvecs file, FSL by
+default), <code class="docutils literal notranslate"><span class="pre">SMALL_DELTA_MS</span></code>, <code class="docutils literal notranslate"><span class="pre">BIG_DELTA_MS</span></code>, <code class="docutils literal notranslate"><span class="pre">TE_MS</span></code> (one or
+several echo times), <code class="docutils literal notranslate"><span class="pre">TR_MS</span></code>, <code class="docutils literal notranslate"><span class="pre">SEQUENCE</span></code> (<code class="docutils literal notranslate"><span class="pre">EchoKind</span></code>), <code class="docutils literal notranslate"><span class="pre">SNR</span></code>
+(None for no noise), <code class="docutils literal notranslate"><span class="pre">NOISE_REFERENCE</span></code> (the tissue whose b = 0
+signal the SNR is of) or <code class="docutils literal notranslate"><span class="pre">SEED</span></code> (of the noise). The four
+gradient settings replace a gradient table read from a phantom
+file.</p></li>
 <li><p><strong>value</strong> – The new value.</p></li>
 </ul>
 </dd>
