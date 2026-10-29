@@ -41,7 +41,8 @@ class RegionGuides:
 
     A 2D view draws a sphere's or a box's cross-section with its slice over the
     items; the 3D view draws the regions as translucent shapes among them. Masks
-    are not drawn: their overlay shows them.
+    are not drawn, as their overlay shows them, and label regions have their own
+    drawing.
     """
 
     def __init__(self, viewer: Viewer, views: dict[ViewKind, ViewRenderer]) -> None:
@@ -87,7 +88,7 @@ class RegionGuides:
             for r in self.viewer.scene.in_category(Category.REGIONS)
             if isinstance(r.options, RegionOptions)
             and r.options.visible
-            and r.options.shape != RegionShape.MASK
+            and r.options.shape in (RegionShape.SPHERE, RegionShape.BOX)
         ]
 
     def _draw(self) -> None:

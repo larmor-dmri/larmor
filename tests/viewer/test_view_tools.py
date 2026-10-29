@@ -184,6 +184,26 @@ def test_a_3d_click_places_a_sphere_on_what_is_under_the_pointer(
     assert refused and refused[-1].startswith("Nothing is under the pointer")
 
 
+def test_the_label_tool_adds_the_label_clicked_and_shift_click_removes_it(
+    window: MainWindow,
+) -> None:
+    viewer = window.viewer
+    labels = np.zeros((32, 32, 32), np.int32)
+    labels[16:, :, :] = 5
+    parcellation = viewer.add(Volume(labels, np.eye(4)), Category.OVERLAYS)
+    region = viewer.add_label_region(parcellation.id, apply=True)
+    viewer.set_tool(Tool.LABEL_REGION)
+    panel = _panel(window, ViewKind.AXIAL)
+    click = _point(panel, (24.0, 10.0, 0.0))
+    QTest.mouseClick(panel.canvas, LEFT, NONE, click)
+    (o,) = _regions(viewer)
+    assert o.labels_a == (5,)
+    QTest.mouseClick(panel.canvas, LEFT, Qt.KeyboardModifier.ShiftModifier, click)
+    o = viewer.scene.item(region).options
+    assert isinstance(o, RegionOptions)
+    assert o.labels_a == ()
+
+
 # Zoom boxes
 
 

@@ -85,6 +85,7 @@ class Drag(Enum):
     MOVE_DETAIL = auto()
     STROKE = auto()  # a freehand stroke of the bundle being drawn
     MOVE_POINT = auto()  # a control point of the bundle being drawn
+    PICK_LABEL = auto()  # a label of a label region, added or removed
 
 
 class ViewPanel(QFrame):
@@ -165,6 +166,7 @@ class ViewInput(QObject):
         self._offset = np.zeros(3)
         self._stroke: list[Vec3] = []
         self._box: VoxelBox | None = None
+        self._shift = False  # Shift was held when the button went down
         self.sketch = Sketch(panel.view) if self.kind in SLICE_AXIS else None
         panel.canvas.installEventFilter(self)
 
@@ -215,6 +217,7 @@ class ViewInput(QObject):
             self.viewer.toggle_maximised(self.kind)
             return
         self._pressed_at, self._moved, self._last = point, False, point
+        self._shift = bool(event.modifiers() & Qt.KeyboardModifier.ShiftModifier)
         if self.kind not in SLICE_AXIS:
             self._dragging = Drag.ROTATE
         elif event.modifiers() & ZOOM_MODIFIERS:
@@ -242,6 +245,8 @@ class ViewInput(QObject):
             self._target, self._dragging = None, Drag.PLACE_BOX
         elif tool == Tool.ZOOM_BOX:
             self._box, self._dragging = None, Drag.ZOOM_BOX
+        elif tool == Tool.LABEL_REGION:
+            self._dragging = Drag.PICK_LABEL
         else:
             self._dragging = Drag.CURSOR
             self._move_cursor(point)
@@ -487,7 +492,7 @@ class ViewInput(QObject):
             self._click_2d(drag, self._in_slice(event.position()))
 
     def _click_2d(self, drag: Drag, world: Vec3) -> None:
-        """Clicks with the tool: places a region, or adds one control point."""
+        """Clicks with the tool: places a region, picks a label, or adds a point."""
         region: int | None = None
         if drag == Drag.PAN:
             if self.viewer.scene.view.tool == Tool.DRAW_BUNDLE and self.viewer.drawing:
@@ -496,6 +501,9 @@ class ViewInput(QObject):
             region = self._act(lambda: self.viewer.add_sphere(self._anchor, apply=True))
         elif drag == Drag.PLACE_BOX:
             region = self._act(lambda: self.viewer.add_box(self._anchor, apply=True))
+        elif drag == Drag.PICK_LABEL:
+            remove = self._shift
+            self._act(lambda: self.viewer.click_label(world, remove=remove))
         if region is not None:
             self.viewer.select(region)
 
@@ -549,7 +557,7 @@ class ViewInput(QObject):
             for r in reversed(self.viewer.scene.in_category(Category.REGIONS))
             if isinstance(r.options, RegionOptions)
             and r.options.visible
-            and r.options.shape != RegionShape.MASK
+            and r.options.shape in (RegionShape.SPHERE, RegionShape.BOX)
         ]
         return sorted(regions, key=lambda r: r.id != selected)
 

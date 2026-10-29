@@ -3238,8 +3238,9 @@ class Viewer:
         """Chooses the pointer tool of the views, which decides what a click does.
 
         `Tool.CURSOR` moves the crosshair, `SPHERE` and `BOX` place regions,
-        `ZOOM_BOX` opens a rectangle of a 2D view in a detail window, and
-        `DRAW_BUNDLE` draws a phantom bundle: choosing it starts one, as
+        `ZOOM_BOX` opens a rectangle of a 2D view in a detail window,
+        `LABEL_REGION` adds the label clicked to a label region and removes it
+        with Shift (`click_label`), and `DRAW_BUNDLE` draws a phantom bundle: choosing it starts one, as
         `start_bundle` does, and choosing another tool while drawing finishes
         the bundle if it has two points, else drops it.
 
