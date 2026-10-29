@@ -68,7 +68,9 @@ them, and **Within** keeps only the streamlines whose points all lie inside it. 
 colour (teal for include, orange for exclude and violet for within), and its colour follows the role until you
 choose another colour in its options. Tab gives the selected region the next role.
 
-The Sphere tool (**O**) and the Box tool (**B**) place regions in the views. With the Sphere tool, a click places
+The Sphere tool (**O**) and the Box tool (**B**) place regions in the views; they belong to the Dissect workspace
+(see [Dissecting a bundle](16-dissect.md)), where regions are also moved and resized, and the regions they make
+still filter the tractograms in View. With the Sphere tool, a click places
 a sphere with the radius of the last one (5 mm at first) centred on the click, and a drag from the centre sets
 the radius as you place it, with the radius shown in the status bar. With the Box tool, a drag draws a box over
 the rectangle, as deep across the slice as the tractogram's slab (5 mm by default). In the 3D view, a click with
