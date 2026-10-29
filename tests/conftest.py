@@ -58,6 +58,7 @@ if any(
         "viewer/test_registration_dialog.py",
         "viewer/test_save_and_jobs.py",
         "viewer/test_phantom_panel.py",
+        "viewer/test_dissect_window.py",
         "viewer/test_phantom_steps.py",
         "viewer/test_breakdown_panel.py",
     ]

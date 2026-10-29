@@ -1,0 +1,155 @@
+"""The Dissect workspace in the window: the steps, the jobs and the saves."""
+
+import json
+from pathlib import Path
+
+import numpy as np
+import pytest
+from PySide6.QtWidgets import QMessageBox
+from pytestqt.qtbot import QtBot
+
+from larmor.io import load_volume, save_tractogram
+from larmor.types import Tractogram
+from larmor.viewer import Category
+from larmor.viewer.model.dissect import (
+    DissectStep,
+    DwiFiles,
+    FodSettings,
+    StartFrom,
+    TrackSettings,
+)
+from larmor.viewer.model.shortcuts import Command
+from larmor.viewer.model.view_state import Workspace
+from larmor.viewer.qt.main_window import MainWindow
+
+DATA = Path(__file__).parents[1] / "data"
+DKI, TRACKING = DATA / "dki", DATA / "tracking"
+
+
+@pytest.fixture
+def window(qtbot: QtBot) -> MainWindow:
+    window = MainWindow()
+    qtbot.addWidget(window)
+    return window
+
+
+def _messages(window: MainWindow) -> list[str]:
+    return [box.text() for box in window.findChildren(QMessageBox)]
+
+
+def test_the_switch_the_key_and_the_menu_show_dissect(window: MainWindow) -> None:
+    window.header.workspaces[Workspace.DISSECT].click()
+    assert window.viewer.scene.view.workspace == Workspace.DISSECT
+    assert window.left.currentWidget() is window.dissect_panel
+    window.shortcuts[Command.WORKSPACE_VIEW].trigger()
+    assert window.left.currentWidget() is window.scene_panel
+    window.shortcuts[Command.WORKSPACE_DISSECT].trigger()
+    assert window.right.currentWidget() is window.dissect_page
+
+
+def test_a_tractogram_start_goes_to_regions_past_the_skipped_steps(
+    window: MainWindow, qtbot: QtBot, tmp_path: Path
+) -> None:
+    path = tmp_path / "t.tck"
+    points = np.array([[0.0, 0, 0], [1, 0, 0], [2, 0, 0], [3, 0, 0]], np.float32)
+    save_tractogram(Tractogram(points, np.array([0, 2, 4])), path)
+    window.start_dissection(StartFrom.TRACTOGRAM, path)
+    qtbot.waitUntil(lambda: window.dissection.tractogram is not None)
+    assert window.dissect_steps.page == DissectStep.REGIONS
+    rows = window.dissect_panel.rows
+    assert not rows[DissectStep.FODS].isEnabled()
+    assert rows[DissectStep.TRACK].status.text().startswith("Skipped")
+    page = window.dissect_page
+    assert page.back_button.text() == "Back: Start"
+    assert "2 of 2 streamlines kept" in page.regions.kept.text()
+
+
+def test_a_fod_start_loads_the_file_in_its_basis(
+    window: MainWindow, qtbot: QtBot
+) -> None:
+    window.start_dissection(StartFrom.FOD, TRACKING / "fod.nii.gz")
+    fods = window.dissect_page.fods
+    assert window.dissect_steps.page == DissectStep.FODS
+    assert fods.load_choice.isChecked() and not fods.estimate_choice.isEnabled()
+    fods.load_button.click()
+    qtbot.waitUntil(lambda: window.dissection.fod is not None)
+    fod = window.dissection.fod
+    assert fod is not None and window.viewer.scene.item(fod).source is not None
+
+
+def test_estimating_then_tracking_adds_saveable_items_and_keeps_the_run(
+    window: MainWindow, qtbot: QtBot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    viewer, state = window.viewer, window.dissection
+    window.start_dissection(StartFrom.DWI, DKI / "dwi.nii.gz")
+    mask = viewer.load(DKI / "mask.nii.gz", Category.OVERLAYS).id
+    dwi = DwiFiles(DKI / "dwi.nii.gz", DKI / "bvals", DKI / "bvecs")
+    window.estimate_fods(dwi, mask, FodSettings())
+    qtbot.waitUntil(lambda: state.fod is not None, timeout=60_000)
+    assert window.dissect_page.fods.save_button.isVisibleTo(window.dissect_page)
+    names = [viewer.scene.item(i).name for i in state.made]
+    assert names == ["dwi_fod", "dwi_tissue_fraction"]
+
+    assert state.fod is not None
+    window.track_streamlines(state.fod, mask, mask, TrackSettings(streamlines=50))
+    qtbot.waitUntil(lambda: state.tractogram is not None, timeout=60_000)
+    assert state.tractogram is not None
+    run = state.runs[state.tractogram].run
+    assert {"seed", "step_size", "max_angle", "cutoff"} <= set(run.parameters)
+
+    page = window.dissect_page.save
+    page.refresh()
+    assert len(page.checks) == 3  # the FOD, the fractions and the tractogram
+    window.save_dissection(tmp_path, "b", page.chosen())
+    assert (tmp_path / "b.tck").is_file() and (tmp_path / "b_run.json").is_file()
+    assert window.dissection.unsaved(viewer.scene) == []
+    record = json.loads((tmp_path / "b_run.json").read_text(encoding="utf-8"))
+    assert Path(record["inputs"]["fod"]).is_file()
+
+    asked: list[str] = []
+
+    def no(*args: object) -> QMessageBox.StandardButton:
+        asked.append(str(args[2]))
+        return QMessageBox.StandardButton.No
+
+    monkeypatch.setattr(QMessageBox, "question", no)
+    before = (tmp_path / "b.tck").stat().st_mtime_ns
+    window.save_dissection(tmp_path, "b", [])
+    assert asked and "b.tck" in asked[0]
+    assert (tmp_path / "b.tck").stat().st_mtime_ns == before
+
+
+def test_cancel_stops_the_fit_and_a_failed_fit_says_why(
+    window: MainWindow, qtbot: QtBot
+) -> None:
+    viewer = window.viewer
+    mask = viewer.load(DKI / "mask.nii.gz", Category.OVERLAYS).id
+    dwi = DwiFiles(DKI / "dwi.nii.gz", DKI / "bvals", DKI / "bvecs")
+    window.estimate_fods(dwi, mask, FodSettings())
+    window.dissect_page.fods.job.cancel.click()
+    qtbot.waitUntil(lambda: not window.jobs.busy, timeout=60_000)
+    assert viewer.scene.in_category(Category.FODS) == []
+
+    window.estimate_fods(DwiFiles(DKI / "missing.nii.gz"), mask, FodSettings())
+    qtbot.waitUntil(
+        lambda: any("FOD" in t or "missing" in t for t in _messages(window)),
+        timeout=60_000,
+    )
+
+
+def test_saving_a_session_offers_to_save_the_unsaved_items_first(
+    window: MainWindow, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    viewer = window.viewer
+    fod = viewer.add(load_volume(TRACKING / "fod.nii.gz"), Category.FODS, name="fod")
+    monkeypatch.setattr(
+        QMessageBox, "exec", lambda self: QMessageBox.StandardButton.Save
+    )
+    monkeypatch.setattr(
+        "PySide6.QtWidgets.QFileDialog.getSaveFileName",
+        lambda *args, **kwargs: (str(tmp_path / "s.lar.json"), ""),
+    )
+    window._ask_save_session()
+    assert viewer.scene.item(fod.id).source == tmp_path / "s_fod.nii.gz"
+    session = json.loads((tmp_path / "s.lar.json").read_text(encoding="utf-8"))
+    assert [item["name"] for item in session["items"]] == ["fod"]

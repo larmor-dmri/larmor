@@ -1,6 +1,7 @@
 """Defines the Viewer, whose methods make every change to what the viewer shows."""
 
 import importlib.util
+import json
 import math
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
@@ -230,8 +231,15 @@ SAVABLE: Final = (
 
 # The pointer tools each workspace offers.
 WORKSPACE_TOOLS: Final = {
-    Workspace.VIEW: (Tool.CURSOR, Tool.SPHERE, Tool.BOX, Tool.ZOOM_BOX),
+    Workspace.VIEW: (Tool.CURSOR, Tool.ZOOM_BOX),
     Workspace.SIMULATE: (Tool.CURSOR, Tool.DRAW_BUNDLE),
+    Workspace.DISSECT: (
+        Tool.CURSOR,
+        Tool.SPHERE,
+        Tool.BOX,
+        Tool.LABEL_REGION,
+        Tool.ZOOM_BOX,
+    ),
 }
 
 # Set on the methods that agents may call; see `agent_action`.
@@ -2409,6 +2417,87 @@ class Viewer:
         self.scene.filtered(item_id, kept, total)
 
     @agent_action
+    def open_regions(
+        self, path: str | Path, tract_id: ItemId | None = None
+    ) -> SessionReport:
+        """Adds the regions of a regions file, or of a session, to the scene.
+
+        The images that mask regions name are opened unless an item already
+        shows the same file. With a tractogram, the regions are applied to it
+        and its region filter is set as the file holds it, so the same
+        tractogram keeps the same streamlines.
+
+        Args:
+            path: A regions file written by the Dissect workspace's Save step, or
+                a session file.
+            tract_id: The tractogram to apply the regions to; None applies them
+                to none.
+
+        Returns:
+            The images opened and the problems met, one sentence each.
+
+        Raises:
+            SessionError: If the file is not a regions or session file.
+            OSError: If the file cannot be read.
+            OptionError: If tract_id is not a tractogram.
+        """
+        if tract_id is not None:
+            self._tractogram_options(tract_id)
+        session = read_session(Path(path))
+        problems = list(session.problems)
+        ids, opened = self._open_region_images(session, problems)
+        added, refused = self._restore_regions(session, ids)
+        problems += refused
+        if tract_id is not None:
+            for region_id in added.values():
+                self.apply_region(tract_id, region_id)
+            raw = json.loads(Path(path).read_text(encoding="utf-8")).get("filter")
+            if isinstance(raw, dict):
+                for name in (OptionName.REGION_FILTER, OptionName.ENDS_ONLY):
+                    if isinstance(raw.get(name), bool):
+                        self.set(tract_id, name, raw[name])
+        for problem in problems:
+            LarmorLogger.warning(problem)
+        return SessionReport(tuple(opened), tuple(problems))
+
+    def _open_region_images(
+        self, session: Session, problems: list[str]
+    ) -> tuple[dict[ItemId, ItemId], list[Item]]:
+        """Opens the images a regions file names, unless an item shows the same file.
+
+        Args:
+            session: The regions file, as read.
+            problems: Told the images that cannot be opened.
+
+        Returns:
+            The id each image had when saved, mapped to its item's id now, and the
+            items opened.
+        """
+        shown = {
+            item.source.resolve(): item.id
+            for item in self.scene.items
+            if item.source is not None
+        }
+        ids: dict[ItemId, ItemId] = {}
+        opened: list[Item] = []
+        for entry in session.items:
+            source = entry.locate()
+            if source is None:
+                problems.append(missing_file(entry))
+                continue
+            known = shown.get(source.resolve())
+            if known is None:
+                try:
+                    item = self.load(source, entry.category)
+                except Exception as e:  # reported, and the other regions still open
+                    problems.append(f"Cannot open {source}: {e}")
+                    continue
+                opened.append(item)
+                known = item.id
+            ids[entry.id] = known
+        return ids, opened
+
+    @agent_action
     def kept_streamlines(self, item_id: ItemId) -> int:
         """Counts how many of a tractogram's streamlines its regions keep.
 
@@ -3026,9 +3115,12 @@ class Viewer:
         self.scene.set_view(ViewField.MAXIMISED, state.maximised)
         self.scene.set_view(ViewField.OVERLAY_VISIBLE, state.overlay_visible)
         self.scene.set_view(ViewField.CROSSHAIR_VISIBLE, state.crosshair_visible)
-        # Drawing a bundle is not restored, so neither is its tool.
+        # Drawing a bundle is not restored, so neither is its tool; nor is a tool
+        # the workspace does not offer, as the region tools in View once were.
         drawing = state.tool == Tool.DRAW_BUNDLE and not self.drawing
-        self.scene.set_view(ViewField.TOOL, Tool.CURSOR if drawing else state.tool)
+        offered = state.tool in WORKSPACE_TOOLS[state.workspace]
+        tool = state.tool if offered and not drawing else Tool.CURSOR
+        self.scene.set_view(ViewField.TOOL, tool)
         self.scene.set_view(ViewField.WORKSPACE, state.workspace)
         self.scene.set_view(ViewField.LAYOUT, state.layout)
         self.move_cursor(cursor)
@@ -3048,8 +3140,9 @@ class Viewer:
         """Chooses the pointer tool of the views, which decides what a click does.
 
         `Tool.CURSOR` moves the crosshair, `SPHERE` and `BOX` place regions,
-        `ZOOM_BOX` opens a rectangle of a 2D view in a detail window, and
-        `DRAW_BUNDLE` draws a phantom bundle: choosing it starts one, as
+        `LABEL_REGION` makes a region of a parcellation's label, `ZOOM_BOX`
+        opens a rectangle of a 2D view in a detail window, and `DRAW_BUNDLE`
+        draws a phantom bundle: choosing it starts one, as
         `start_bundle` does, and choosing another tool while drawing finishes
         the bundle if it has two points, else drops it.
 
@@ -3373,13 +3466,15 @@ class Viewer:
 
     @agent_action
     def set_workspace(self, workspace: Workspace) -> None:
-        """Shows the window's View or Simulate workspace.
+        """Shows the window's View, Simulate or Dissect workspace.
 
         A pointer tool the new workspace does not offer goes back to the cursor.
+        The region tools are offered only in Dissect.
 
         Args:
-            workspace: `Workspace.VIEW` for the scene tree and the inspector, or
-                `Workspace.SIMULATE` for the phantom editor's steps.
+            workspace: `Workspace.VIEW` for the scene tree and the inspector,
+                `Workspace.SIMULATE` for the phantom editor's steps, or
+                `Workspace.DISSECT` for the steps from FODs to a bundle.
 
         Raises:
             TypeError: If workspace is not a Workspace.

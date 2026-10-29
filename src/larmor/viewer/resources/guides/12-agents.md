@@ -73,7 +73,7 @@ into these groups:
 - **Items**: `load`, `load_matlab`, `remove`, `rename`, `save_item`, `save_session`, `load_session`.
 - **Options**: `set`, `set_default`, `labels`, `item_choices`, `data_choices`.
 - **Regions**: `add_sphere`, `add_box`, `add_mask`, `apply_region`, `clear_regions`,
-  `kept_streamlines`, `save_kept`.
+  `kept_streamlines`, `save_kept`, `open_regions`.
 - **Views**: `select`, `move_cursor`, `step_slice`, `select_view`, `step_volume`, `zoom`, `pan`,
   `reset_camera`, `rotate_camera`, `set_camera`, `set_convention`, `view_centre`, `readout`,
   `toggle_maximised`, `toggle_overlay`, `toggle_crosshair`, `set_tool`, `set_workspace`, `set_layout`.

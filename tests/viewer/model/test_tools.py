@@ -12,7 +12,7 @@ from larmor.viewer.model.phantom_editor import (
     simplify_stroke,
 )
 from larmor.viewer.model.shortcuts import Command, run
-from larmor.viewer.model.view_state import ViewState
+from larmor.viewer.model.view_state import ViewState, Workspace
 
 
 def _tool(viewer: Viewer) -> Tool:
@@ -108,8 +108,11 @@ def _draft_points(viewer: Viewer) -> tuple[tuple[float, float, float], ...]:
 
 def test_a_view_state_keeps_its_tool_but_not_a_bundle_tool_without_drawing() -> None:
     viewer = Viewer()
-    viewer.set_view_state(ViewState(tool=Tool.BOX))
+    viewer.set_view_state(ViewState(tool=Tool.BOX, workspace=Workspace.DISSECT))
     assert _tool(viewer) == Tool.BOX
+    # A session saved when View still offered the region tools opens on the cursor.
+    viewer.set_view_state(ViewState(tool=Tool.BOX, workspace=Workspace.VIEW))
+    assert _tool(viewer) == Tool.CURSOR
     viewer.set_view_state(ViewState(tool=Tool.DRAW_BUNDLE))
     assert _tool(viewer) == Tool.CURSOR
 

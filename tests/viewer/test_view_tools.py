@@ -23,6 +23,7 @@ from larmor.viewer import (
 )
 from larmor.viewer.model.detail import DetailId
 from larmor.viewer.model.options import RegionOptions, TractogramOptions
+from larmor.viewer.model.view_state import Workspace
 from larmor.viewer.qt.detail_window import DetailWindow
 from larmor.viewer.qt.main_window import MainWindow
 from larmor.viewer.qt.views import ViewInput, ViewPanel
@@ -154,6 +155,11 @@ def test_dragging_a_regions_centre_moves_it_and_its_ring_resizes_it(
     panel = _panel(window, ViewKind.AXIAL)
     target = (cursor[0] + 5.0, cursor[1] + 3.0, cursor[2])
     _drag(panel, _point(panel, cursor), _point(panel, target))
+    # Regions are edited only in Dissect: in View the drag moves the crosshair.
+    np.testing.assert_allclose(_regions(viewer)[0].centre, cursor)
+    viewer.move_cursor(cursor)
+    viewer.set_workspace(Workspace.DISSECT)
+    _drag(panel, _point(panel, cursor), _point(panel, target))
     o = _regions(viewer)[0]
     np.testing.assert_allclose(o.centre, target, atol=0.3)
     assert viewer.scene.view.selected == sphere
@@ -265,6 +271,9 @@ def test_keys_choose_the_tools_and_escape_returns_to_the_cursor(
     window: MainWindow,
 ) -> None:
     viewer = window.viewer
+    QTest.keyClick(window, Qt.Key.Key_O)
+    assert viewer.scene.view.tool == Tool.CURSOR  # View offers no regions
+    viewer.set_workspace(Workspace.DISSECT)
     tools = []
     for key in (Qt.Key.Key_O, Qt.Key.Key_B, Qt.Key.Key_Z, Qt.Key.Key_V):
         QTest.keyClick(window, key)
@@ -294,6 +303,7 @@ def test_a_right_click_offers_regions_and_a_zoom_box_there(
     window: MainWindow,
 ) -> None:
     viewer = window.viewer
+    viewer.set_workspace(Workspace.DISSECT)
     panel = _panel(window, ViewKind.SAGITTAL)
     asked: list[tuple[object, object]] = []
     _input(window, ViewKind.SAGITTAL).menu_requested.connect(
