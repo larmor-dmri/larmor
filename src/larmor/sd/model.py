@@ -34,7 +34,7 @@ from larmor.types import GradientTable, Volume
 FIT_CHUNK = 16_384
 
 
-MERGING_METHOD = ("ws", "majority")
+_MERGE_METHODS = ("ws", "majority")
 
 
 # A function that fits a chunk of voxels and returns their FOD amplitudes, the
@@ -477,7 +477,9 @@ def merge_fods(
     tissue_fractions: npt.NDArray[np.floating],
     method: Literal["ws", "majority"] = "ws",
 ) -> npt.NDArray[np.floating]:
-    """Merges two or more fods into a single one using the selected strategy.
+    """Merges one or more FODs into a single one using the selected strategy.
+
+    Isotropic RFs are ignored. Based off the mFOD paper.
 
     Args:
         fods: The list of fods to merge
@@ -487,11 +489,14 @@ def merge_fods(
 
 
     Returns:
-        npt.NDArray[np.floating]: The merged fods.
+        The merged fods.
 
     Raises:
         ValueError: Incorrect method or non matching fods/tissue shapes.
     """
+    if len(fods) == 0:
+        raise ValueError("Cannot merge empty list.")
+
     if tissue_fractions.shape[-1] < len(fods):
         raise ValueError("Mismatched number of fods and tissue fractions.")
 
@@ -499,16 +504,16 @@ def merge_fods(
         if f.shape != fods[0].shape:
             raise ValueError("Mismatched shapes between fods in list.")
 
-    if method not in MERGING_METHOD:
+    if method not in _MERGE_METHODS:
         raise ValueError(
-            f"Expected one method of {','.join(MERGING_METHOD)}, got {method}."
+            f"Expected one method of {','.join(_MERGE_METHODS)}, got {method}."
         )
 
     fod = np.zeros_like(fods[0])
 
     if method == "ws":
         for i, c_fod in enumerate(fods):
-            fod += c_fod * tissue_fractions[:, :, :, i, np.newaxis]
+            fod += c_fod * tissue_fractions[..., i, np.newaxis]
     elif method == "majority":
         winner = tissue_fractions[..., : len(fods)].argmax(axis=-1)
 
