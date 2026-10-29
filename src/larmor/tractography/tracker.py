@@ -538,7 +538,7 @@ class Tracker:
         row = prep.max_steps + 1
         positions = np.empty((prep.batch_size, row, 3), dtype=np.float32)
         totals = _Counts()
-        in_memory: list[Tractogram] = []
+        in_memory = _Gathered()
 
         # The first batch is drawn before any file is opened, so a run refused for
         # its seeds leaves existing outputs untouched.
@@ -598,11 +598,12 @@ class Tracker:
                 )
                 keep = _keep(counts, prep, remaining, totals)
 
-                tractogram = _batch_tractogram(positions, counts, status, keep, fod)
                 if tck_out is not None:
-                    tck_out.write(tractogram)
+                    tck_out.write(
+                        _batch_tractogram(positions, counts, status, keep, fod)
+                    )
                 else:
-                    in_memory.append(tractogram)
+                    in_memory.add(positions, counts, status, keep)
                 if seeds_out is not None:
                     kept = Seeds(
                         batch.positions[keep], followed[keep], batch.indices[keep]
@@ -637,7 +638,7 @@ class Tracker:
                     f"The seeds ran out with {totals.accepted} of {num_streamlines} "
                     "streamlines."
                 )
-        result = None if output is not None else _concatenate(in_memory, fod)
+        result = None if output is not None else in_memory.tractogram(fod)
         return totals, result
 
 
@@ -763,26 +764,66 @@ def _batch_tractogram(
     )
 
 
-def _concatenate(parts: list[Tractogram], fod: Volume) -> Tractogram:
-    """Returns the batches kept in memory as one tractogram, on the FOD's grid."""
-    if not parts:
+# How much a run's buffer of kept points grows when it is full.
+GROWTH = 1.25
+
+
+class _Gathered:
+    """Gathers the kept streamlines of a run kept in memory, batch by batch.
+
+    The points go straight into one buffer, which grows in place where the
+    allocator allows it and is trimmed at the end, rather than joining per-batch
+    copies at the end. The buffer is resized without NumPy's check for views, so
+    no view of `points` may outlive a call.
+    """
+
+    def __init__(self) -> None:
+        """Starts with no streamlines."""
+        self.points = np.empty((0, 3), np.float32)
+        self.used = 0  # points written
+        self.lengths: list[NDArray[np.int64]] = []
+        self.status: list[NDArray[np.uint8]] = []
+
+    def add(
+        self,
+        positions: NDArray[np.float32],
+        counts: NDArray[np.int64],
+        status: NDArray[np.uint8],
+        keep: NDArray[np.intp],
+    ) -> None:
+        """Copies the kept streamlines of a batch out of its buffers.
+
+        `positions`, `counts` and `status` are the batch's points, numbers of
+        points and end statuses; `keep` the rows to keep, in order.
+        """
+        lengths = counts[keep].astype(np.int64)
+        needed = self.used + int(lengths.sum())
+        if needed > len(self.points):
+            size = max(needed, int(len(self.points) * GROWTH))
+            self.points.resize((size, 3), refcheck=False)
+        start = self.used
+        for row, length in zip(keep, lengths, strict=True):
+            self.points[start : start + length] = positions[row, :length]
+            start += length
+        self.used = start
+        self.lengths.append(lengths)
+        self.status.append(status[keep].copy())
+
+    def tractogram(self, fod: Volume) -> Tractogram:
+        """Returns the streamlines gathered as one tractogram, on the FOD's grid."""
+        self.points.resize((self.used, 3), refcheck=False)
+        lengths = (
+            np.concatenate(self.lengths) if self.lengths else np.empty(0, np.int64)
+        )
+        status = (
+            np.concatenate(self.status) if self.status else np.empty((0, 2), np.uint8)
+        )
         return Tractogram(
-            np.empty((0, 3), np.float32),
-            np.zeros(1, np.int64),
-            streamline_data={"end_status": np.empty((0, 2), np.uint8)},
+            self.points,
+            np.concatenate([[0], np.cumsum(lengths)]).astype(np.int64),
+            streamline_data={"end_status": status},
             reference=fod.grid,
         )
-    lengths = np.concatenate([np.diff(t.offsets) for t in parts])
-    return Tractogram(
-        np.concatenate([t.points for t in parts]),
-        np.concatenate([[0], np.cumsum(lengths)]),
-        streamline_data={
-            "end_status": np.concatenate(
-                [t.streamline_data["end_status"] for t in parts]
-            )
-        },
-        reference=fod.grid,
-    )
 
 
 def _seed_points(seeds: Seeds | SeedStrategy) -> NDArray[np.float64] | None:
