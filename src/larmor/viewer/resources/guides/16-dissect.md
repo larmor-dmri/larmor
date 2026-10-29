@@ -25,8 +25,8 @@ An mFOD fit, or any fit with a NODDI grey matter, gives two FODs, one for white 
 tracker follows a single FOD, so **Merge FODs** under More makes them one, as `lar fod --fod-merge` does. The
 weighted sum (mFOD-WS, the default) multiplies each FOD by its tissue fraction and adds them, so the white matter
 FOD leads in the white matter and the grey matter FOD near the cortex. Majority keeps, in each voxel, the FOD of the
-tissue with the larger fraction. The CSF fraction counts in neither. With none, both FODs are added as items, and
-the Track step asks which one to track.
+tissue with the larger fraction. The CSF fraction counts in neither. With none, both FODs are added as items. Whenever
+there is more than one FOD, the Track step asks which one to track.
 
 The **Track** step tracks the whole brain through those FODs, with the library's defaults for every field left on
 auto. Under More you choose where streamlines start, the whole seed mask until the number of streamlines is kept or

@@ -55,15 +55,29 @@ def test_majority_keeps_the_fod_of_the_largest_anisotropic_fraction() -> None:
 
 @pytest.mark.parametrize("method", ["ws", "majority"])
 def test_a_single_fod_with_all_the_anisotropic_fraction_comes_back(
-    method: str,
+    method: Literal["ws", "majority"],
 ) -> None:
     fod = _fods()[0]
     fractions = np.stack([np.ones(SHAPE), np.zeros(SHAPE)], axis=-1)
-    np.testing.assert_allclose(merge_fods([fod], fractions, method), fod)  # type: ignore[arg-type]
+    np.testing.assert_allclose(merge_fods([fod], fractions, method), fod)
+
+
+@pytest.mark.parametrize("method", ["ws", "majority"])
+def test_masked_voxels_merge_like_a_grid(method: Literal["ws", "majority"]) -> None:
+    # The voxels of a mask as rows, (N, C), as well as a grid, (X, Y, Z, C).
+    fods = _fods()
+    fractions = _fractions(np.full(SHAPE, 0.3), np.full(SHAPE, 0.2))
+    fractions[0, 0, 0] = (0.1, 0.6, 0.3)  # grey matter wins in one voxel
+    grid = merge_fods(fods, fractions, method)
+    rows = merge_fods(
+        [f.reshape(-1, C) for f in fods], fractions.reshape(-1, 3), method
+    )
+    np.testing.assert_allclose(rows, grid.reshape(-1, C))
 
 
 def test_an_unknown_method_is_refused() -> None:
     with pytest.raises(ValueError, match="majority"):
+        # A method outside the Literal on purpose.
         merge_fods(_fods(), _fractions(np.zeros(SHAPE), np.zeros(SHAPE)), "mean")  # type: ignore[arg-type]
 
 

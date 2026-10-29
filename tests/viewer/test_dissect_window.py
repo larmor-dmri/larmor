@@ -191,6 +191,9 @@ def test_the_track_page_chooses_between_several_fods(window: MainWindow) -> None
     track.fod_box.show_value(second.id)
     track.fod_box.activated.emit(track.fod_box.currentIndex())
     assert window.dissection.fod == second.id
+    # The FODs page and the steps list follow the choice.
+    assert "gm" in window.dissect_page.fods.result.text()
+    assert "gm" in window.dissect_panel.rows[DissectStep.FODS].status.text()
     viewer.remove(second.id)
     track.refresh()
     assert not track.fod_box.isVisibleTo(track)

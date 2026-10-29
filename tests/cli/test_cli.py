@@ -887,6 +887,16 @@ def test_fod_noddi_writes_one_fod_merged_from_the_two(
     assert not (tmp_path / "one_fod1.nii.gz").exists()
 
 
+def test_fod_msmt_csd_refuses_fod_merge(tmp_path: Path) -> None:
+    result = _run(
+        "fod", "missing.nii.gz", "m", str(tmp_path / "fod"), *NO_GRADIENTS,
+        "--method", "msmt-csd", "--fod-merge", "majority",
+    )  # fmt: skip
+
+    assert result.exit_code != 0
+    assert "--fod-merge" in result.output
+
+
 def test_fod_merge_is_refused_for_a_fit_with_one_fod(
     tmp_path: Path, dki_files: tuple[str, str, list[str]]
 ) -> None:

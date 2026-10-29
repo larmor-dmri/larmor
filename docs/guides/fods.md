@@ -96,7 +96,7 @@ mFOD can also model grey matter with an anisotropic response, the NODDI response
 :::{tab-item} Python
 :sync: python
 ```python
-from larmor.sd import L2NNLS, SDMethod
+from larmor.sd import L2NNLS, SDMethod, merge_fods
 
 responses = build_response_functions(
     dwi, gtab, mask, gm_noddi=True, csf_diffusivity=3e-3
@@ -104,6 +104,7 @@ responses = build_response_functions(
 model = SDModel(responses, method=SDMethod.MFOD, solver=L2NNLS(reg=0.1))
 fit = model.fit(dwi, gtab, mask=mask)
 print(len(fit.fods), "FODs")
+fod = merge_fods(fit.fods, fit.tissue_fractions, "ws")  # one FOD to track
 ```
 :::
 
@@ -114,11 +115,17 @@ lar fod dwi.nii.gz mask.nii.gz mfod --bvals dwi.bval --bvecs dwi.bvec \
     --method mfod
 ```
 
-With mFOD, grey matter defaults to the NODDI response (`--gm-rf noddi`) and the solver to L2NNLS. This writes one
-FOD per anisotropic response, `mfod_fod1.nii.gz` (white matter) and `mfod_fod2.nii.gz` (grey matter), and
-`mfod_tissue_fraction.nii.gz`.
+With mFOD, grey matter defaults to the NODDI response (`--gm-rf noddi`) and the solver to L2NNLS. This merges the
+two FODs into one, `mfod.nii.gz`, and writes `mfod_tissue_fraction.nii.gz`. With `--fod-merge none` it writes one
+FOD per anisotropic response instead, `mfod_fod1.nii.gz` (white matter) and `mfod_fod2.nii.gz` (grey matter).
 :::
 ::::
+
+A tracker follows one FOD, so the two FODs are merged into one with {py:func}`~larmor.sd.merge_fods`
+(`--fod-merge`). The weighted sum, `"ws"` (mFOD-WS, the default of `lar fod`), multiplies each FOD by its tissue
+fraction and adds them, so the white matter FOD leads in the white matter and the grey matter FOD near the cortex.
+`"majority"` keeps, in each voxel, the FOD of the anisotropic tissue with the largest fraction. The isotropic
+fractions, such as the CSF's, count in neither.
 
 `inner_shell_weight` (`--inner-shell-weight`) changes the weight of the measurements outside the highest shell in
 a multi-tissue fit.

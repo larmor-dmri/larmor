@@ -672,6 +672,7 @@ class TrackPage(QWidget):
     """Sets up a whole-brain tracking run through the FODs, and starts it."""
 
     track_requested = Signal(object, object, object, object)  # FOD, seeds, mask, set
+    fod_chosen = Signal(object)  # the FOD item's id
     new_mask_requested = Signal(object)  # the MaskTarget
     save_requested = Signal(object)  # the tractogram item's id
     refused = Signal(str)
@@ -812,9 +813,10 @@ class TrackPage(QWidget):
         self.save_button.setVisible(run is not None)
 
     def _choose_fod(self, fod: object) -> None:
-        """Makes the FOD chosen the one tracked."""
+        """Makes the FOD chosen the one tracked, and tells the window."""
         if isinstance(fod, int):
             self.state.fod = fod
+            self.fod_chosen.emit(fod)
 
     def settings(self) -> TrackSettings:
         """Returns the choices of the run.

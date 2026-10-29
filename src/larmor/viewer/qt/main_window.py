@@ -1161,6 +1161,7 @@ class MainWindow(QMainWindow):
         page.fods.load_requested.connect(self.load_fods)
         page.fods.estimate_requested.connect(self.estimate_fods)
         page.track.track_requested.connect(self.track_streamlines)
+        page.track.fod_chosen.connect(lambda _: self._dissection_changed())
         for step in (page.fods, page.track, page.regions):
             step.new_mask_requested.connect(self.request_new_mask)
         for step in (page.fods, page.track):
