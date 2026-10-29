@@ -106,6 +106,19 @@ QT_WIDGET_TESTS = {
 }
 
 
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_call(item: pytest.Item) -> Iterator[None]:
+    """Finishes the viewer's background drawing work before the test's teardown.
+
+    Work handed back after a test would run on the views of a closed window.
+    """
+    result = yield
+    worker = sys.modules.get("larmor.viewer.render.worker")
+    if worker is not None:
+        worker.flush_all()
+    return result
+
+
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     for item in items:
         if item.path.parent == VIEWER_TESTS and item.path.name in QT_WIDGET_TESTS:

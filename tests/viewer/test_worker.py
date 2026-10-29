@@ -186,3 +186,22 @@ def test_a_failure_replaced_by_a_newer_request_is_not_handed_back() -> None:
     worker.submit(broken, done.append, lambda: failed.append("third"))
     loop.run()
     assert failed == ["third"]  # the newest request's failure still is
+
+
+def test_work_closed_while_it_runs_posts_nothing() -> None:
+    loop = _Loop()
+    started, release = threading.Event(), threading.Event()
+    worker = Worker(_canvas(loop), ThreadPoolExecutor(1))
+
+    def work() -> int:
+        started.set()
+        release.wait(2)
+        return 1
+
+    worker.submit(work, lambda _: None)
+    started.wait(2)
+    worker.close()
+    release.set()
+    assert worker._future is not None
+    worker._future.result(2)
+    assert loop.calls == []
