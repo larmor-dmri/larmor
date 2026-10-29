@@ -1,8 +1,10 @@
 """The Dissect workspace's panels: the steps to a bundle, and the page of one."""
 
-from dataclasses import dataclass
+from collections.abc import Callable
+from dataclasses import dataclass, replace
 from enum import StrEnum
 from pathlib import Path
+from typing import Any
 
 from PySide6.QtCore import QObject, Qt, Signal
 from PySide6.QtWidgets import (
@@ -25,10 +27,11 @@ from PySide6.QtWidgets import (
 )
 
 from larmor.types import Volume
-from larmor.viewer.jobs import JobStatus
+from larmor.viewer.jobs import CANCELLING, JobStatus
 from larmor.viewer.model.dissect import (
     CSF_DIFFUSIVITY,
     DISSECT_STEPS,
+    FOD_OPTION_METHODS,
     GM_DIFFUSIVITY,
     STREAMLINES,
     Dissection,
@@ -299,6 +302,7 @@ class JobBox(QWidget):
             self.hide()
             return
         self.label.setText(status.stage or status.name)
+        self.cancel.setEnabled(status.stage != CANCELLING)
         if status.total > 0:
             self.progress.setRange(0, 1000)
             self.progress.setValue(round(status.fraction * 1000))
@@ -455,6 +459,7 @@ class FodsPage(QWidget):
         self.method = ChoiceBox(section)
         self.method.set_choices([(m, m.value) for m in FodMethod])
         self.method.show_value(FodMethod.GRL)
+        self.method.chosen.connect(lambda _: self._show_method_options())
         form.addRow("Method", self.method)
         self.lmax = QSpinBox(section)
         self.lmax.setRange(2, 16)
@@ -469,7 +474,7 @@ class FodsPage(QWidget):
 
     def _build_estimate_more(self, section: Section) -> None:
         """Adds the responses, the solver and the bvecs frame under More."""
-        more = section.more_form
+        more = self.more_form = section.more_form
         self.grey_matter = ChoiceBox(section)
         self.grey_matter.set_choices(
             [
@@ -511,7 +516,29 @@ class FodsPage(QWidget):
         )
         self.frame.show_value(BvecFrame.FSL)
         more.addRow("bvecs frame", self.frame)
+        self.method_rows: dict[str, QWidget] = {
+            "grey_matter": self.grey_matter,
+            "gm_diffusivity": self.gm_diffusivity,
+            "csf_diffusivity": self.csf_diffusivity,
+            "response": self.response,
+            "wm_response": self.tissue_responses["WM"],
+            "gm_response": self.tissue_responses["GM"],
+            "csf_response": self.tissue_responses["CSF"],
+            "solver": self.solver,
+            "reg": self.reg,
+            "inner_shell_weight": self.inner_shell_weight,
+        }
+        self._show_method_options()
         section.set_more_shown(False)
+
+    def _applies(self, name: str) -> bool:
+        """Tells whether a choice of the fit applies to the method chosen."""
+        return self.method.value() in FOD_OPTION_METHODS[name][1]
+
+    def _show_method_options(self) -> None:
+        """Shows under More only the choices the method chosen takes."""
+        for name, row in self.method_rows.items():
+            self.more_form.setRowVisible(row, self._applies(name))
 
     def refresh(self) -> None:
         """Shows the route the dissection chose, its DWI, the masks and the result."""
@@ -568,26 +595,28 @@ class FodsPage(QWidget):
             ValueError: If a number cannot be read.
         """
         method = self.method.value()
-        grey = self.grey_matter.value()
-        solver = self.solver.value()
-        assert isinstance(method, FodMethod) and isinstance(grey, GreyMatter)
-        assert solver is None or isinstance(solver, FodSolver)
+        assert isinstance(method, FodMethod)
+        rows = self.tissue_responses
+        readers: dict[str, Callable[[], Any]] = {
+            "solver": self.solver.value,
+            "reg": self.reg.value,
+            "inner_shell_weight": self.inner_shell_weight.value,
+            "grey_matter": self.grey_matter.value,
+            "gm_diffusivity": lambda: float(self.gm_diffusivity.text()),
+            "csf_diffusivity": self._csf_diffusivity,
+            "response": self.response.path,
+            "wm_response": rows["WM"].path,
+            "gm_response": rows["GM"].path,
+            "csf_response": rows["CSF"].path,
+        }
+        # A hidden row keeps the default, so it never reaches the fit.
+        chosen = {n: read() for n, read in readers.items() if self._applies(n)}
+        return replace(FodSettings(method, self.lmax.value()), **chosen)
+
+    def _csf_diffusivity(self) -> float | None:
+        """Returns the CSF diffusivity typed; None for none."""
         csf = self.csf_diffusivity.text().strip()
-        responses = [row.path() for row in self.tissue_responses.values()]
-        return FodSettings(
-            method=method,
-            lmax=self.lmax.value(),
-            solver=solver,
-            reg=self.reg.value(),
-            inner_shell_weight=self.inner_shell_weight.value(),
-            grey_matter=grey,
-            gm_diffusivity=float(self.gm_diffusivity.text()),
-            csf_diffusivity=float(csf) if csf and csf != "none" else None,
-            response=self.response.path(),
-            wm_response=responses[0],
-            gm_response=responses[1],
-            csf_response=responses[2],
-        )
+        return float(csf) if csf and csf != "none" else None
 
     def _estimate(self) -> None:
         """Asks the window to fit the FODs with the choices on the page."""
@@ -957,7 +986,8 @@ class SavePage(QWidget):
             state, scene, Path(folder or "."), self.name.text(), self.chosen()
         )
         names = "\n".join(p.name for p in plan.paths)
-        self.files.setText(f"Writes:\n{names}")
+        notes = "".join(f"\n\n{note}" for note in plan.notes)
+        self.files.setText(f"Writes:\n{names}{notes}")
         self.save_button.setEnabled(bool(folder))
 
     def _save(self) -> None:

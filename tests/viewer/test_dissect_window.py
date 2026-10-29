@@ -15,6 +15,7 @@ from larmor.viewer import Category, LabelMode, LabelSet, OptionName
 from larmor.viewer.model.dissect import (
     DissectStep,
     DwiFiles,
+    FodMethod,
     FodSettings,
     StartFrom,
     TrackSettings,
@@ -137,6 +138,25 @@ def test_cancel_stops_the_fit_and_a_failed_fit_says_why(
         lambda: any("FOD" in t or "missing" in t for t in _messages(window)),
         timeout=60_000,
     )
+
+
+def test_the_fods_page_shows_only_the_choices_of_the_method(
+    window: MainWindow,
+) -> None:
+    fods = window.dissect_page.fods
+    fods.csf_diffusivity.setText("2e-3")
+    fods.response.set_path(Path("wm.txt"))
+    for method, csf, response in (
+        (FodMethod.CSD, False, True),
+        (FodMethod.GRL, True, False),
+    ):
+        fods.method.show_value(method)
+        fods.method.activated.emit(fods.method.currentIndex())
+        assert fods.more_form.isRowVisible(fods.csf_diffusivity) == csf
+        assert fods.more_form.isRowVisible(fods.response) == response
+        settings = fods.settings()
+        assert (settings.csf_diffusivity == 2e-3) == csf
+        assert (settings.response is not None) == response
 
 
 def test_saving_a_session_offers_to_save_the_unsaved_items_first(

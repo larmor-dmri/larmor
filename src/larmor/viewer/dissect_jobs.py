@@ -131,6 +131,11 @@ def start_tracking(
     else:
         seed_mask = _image(viewer, seed_mask_id)
     mask = None if mask_id is None else _image(viewer, mask_id)
+    files: dict[ItemId, Path] = {}
+    for used in (fod_id, seed_mask_id, mask_id):
+        source = None if used is None else viewer.scene.item(used).source
+        if used is not None and source is not None:
+            files[used] = source
 
     def work(report: Report) -> TractographyRun:
         """Tracks the streamlines."""
@@ -148,6 +153,7 @@ def start_tracking(
             settings.seeding,
             settings.seeds_per_voxel,
             support,
+            files,
         )
         state.adopt(item.id)
         state.tractogram = item.id

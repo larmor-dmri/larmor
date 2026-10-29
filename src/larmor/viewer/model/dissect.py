@@ -12,9 +12,9 @@ import numpy as np
 
 from larmor.types import Tractogram, Volume
 from larmor.viewer.model.item import Category, ItemId
-from larmor.viewer.model.options import Basis, RegionOptions, TractogramOptions
+from larmor.viewer.model.options import Basis, TractogramOptions
 from larmor.viewer.model.phantom import BvecFrame
-from larmor.viewer.model.regions import applied_regions
+from larmor.viewer.model.regions import applied_regions, image_of
 from larmor.viewer.model.scene import Scene
 from larmor.viewer.model.session import FORMAT, VERSION, region_entries, session_data
 from larmor.viewer.model.viewer import Viewer
@@ -182,6 +182,40 @@ class FodSettings:
     csf_response: Path | None = None
 
 
+# The methods that fit their own responses with SDModel: GRL and mFOD.
+SD_MODEL_METHODS: Final = (FodMethod.GRL, FodMethod.MFOD)
+# Each choice of a fit that only some methods take: its name, then the methods.
+FOD_OPTION_METHODS: Final[dict[str, tuple[str, tuple[FodMethod, ...]]]] = {
+    "solver": ("The solver", SD_MODEL_METHODS),
+    "reg": ("The penalty weight", SD_MODEL_METHODS),
+    "inner_shell_weight": ("The inner-shell weight", SD_MODEL_METHODS),
+    "grey_matter": ("The grey matter model", SD_MODEL_METHODS),
+    "gm_diffusivity": ("The grey matter diffusivity", SD_MODEL_METHODS),
+    "csf_diffusivity": ("The CSF diffusivity", SD_MODEL_METHODS),
+    "response": ("The CSD response", (FodMethod.CSD,)),
+    "wm_response": ("The white matter response", (FodMethod.MSMT_CSD,)),
+    "gm_response": ("The grey matter response", (FodMethod.MSMT_CSD,)),
+    "csf_response": ("The CSF response", (FodMethod.MSMT_CSD,)),
+}
+
+
+def check_fod_settings(settings: FodSettings) -> None:
+    """Refuses the choices of a fit that its method does not take.
+
+    A choice left at its default is always accepted.
+
+    Raises:
+        ValueError: If a choice other than its default does not apply to the
+            method, such as a CSF diffusivity with CSD.
+    """
+    defaults = FodSettings()
+    for name, (label, methods) in FOD_OPTION_METHODS.items():
+        if settings.method in methods:
+            continue
+        if getattr(settings, name) != getattr(defaults, name):
+            raise ValueError(f"{label} does not apply to {settings.method.value}.")
+
+
 @dataclass(frozen=True)
 class FodFit:
     """The result of a FOD fit, each map on the grid of the DWI.
@@ -252,8 +286,9 @@ def fod_model(
         The model, ready to fit.
 
     Raises:
-        ValueError: If the choices do not go together, such as grey matter or CSF
-            responses of MSMT-CSD without the white matter one.
+        ValueError: If a choice does not apply to the method, or the choices do
+            not go together, such as grey matter or CSF responses of MSMT-CSD
+            without the white matter one.
     """
     from larmor.io import read_mrtrix_response
     from larmor.sd import (
@@ -265,6 +300,7 @@ def fod_model(
         build_shell_response,
     )
 
+    check_fod_settings(settings)
     solver = fod_solver(settings)
     if settings.method == FodMethod.MSMT_CSD:
         given = [
@@ -322,6 +358,7 @@ def fit_fods(
     from larmor.io import load_dwi
     from larmor.sd.progress import fit_progress
 
+    check_fod_settings(settings)
     report(0, 0, "Reading the DWI")
     image, gtab = load_dwi(dwi.path, dwi.bvals, dwi.bvecs, frame=dwi.frame.value)
     report(0, 0, "Estimating the responses")
@@ -435,6 +472,8 @@ class TrackedRun:
         seeding: Where streamlines started.
         seeds_per_voxel: The seeds in each voxel, seeding per voxel.
         support: The FOD's support, the seed mask when no item was.
+        files: The file each input item showed when tracked, for those that had
+            one; the run record names it once the item is removed.
     """
 
     run: TractographyRun
@@ -444,6 +483,24 @@ class TrackedRun:
     seeding: Seeding
     seeds_per_voxel: int
     support: Volume | None = None
+    files: Mapping[ItemId, Path] = field(default_factory=dict)
+
+    @property
+    def inputs(self) -> list[ItemId]:
+        """Returns the input items: the FOD, then the seed and tracking masks."""
+        return [i for i in (self.fod, self.seed_mask, self.mask) if i is not None]
+
+
+def input_files(tracked: TrackedRun, scene: Scene) -> dict[ItemId, Path | None]:
+    """Returns the file of each input item of a run; None for one without a file.
+
+    An item still in the scene gives the file it shows now; a removed one gives
+    the file it showed when tracked.
+    """
+    present = {item.id: item.source for item in scene.items}
+    return {
+        i: present[i] if i in present else tracked.files.get(i) for i in tracked.inputs
+    }
 
 
 def run_inputs(
@@ -530,10 +587,13 @@ class Dissection:
         """Returns the items the steps made or use that have no file, in scene order.
 
         These are the items made (FODs, tissue fractions, tractograms, masks),
-        the masks of the fit and the runs, and the images of the mask regions.
+        the masks of the fit and the runs, and the images of the mask and label
+        regions.
         """
         wanted = set(self.made)
-        wanted |= {i for i in (self.fit_mask, self.fod, self.tractogram) if i}
+        wanted |= {
+            i for i in (self.fit_mask, self.fod, self.tractogram) if i is not None
+        }
         for tracked in self.runs.values():
             wanted |= {i for i in (tracked.seed_mask, tracked.mask) if i is not None}
         wanted |= set(region_images(scene))
@@ -619,13 +679,12 @@ def dissect_status(state: Dissection, scene: Scene) -> list[DissectStatus]:
 
 
 def region_images(scene: Scene) -> list[ItemId]:
-    """Returns the images the scene's regions name, such as a mask region's."""
+    """Returns the masks and parcellations the scene's regions name."""
     ids: list[ItemId] = []
     for region in scene.in_category(Category.REGIONS):
-        o = region.options
-        assert isinstance(o, RegionOptions)
-        if o.mask is not None and o.mask not in ids:
-            ids.append(o.mask)
+        image = image_of(region)
+        if image is not None and image not in ids:
+            ids.append(image)
     return ids
 
 
@@ -648,15 +707,10 @@ def regions_data(scene: Scene, tract_id: ItemId, folder: Path) -> dict[str, obje
         ValueError: If an image a region names has no file.
     """
     tract = scene.item(tract_id)
-    regions = {r.id for r in applied_regions(scene, tract)}
+    applied = applied_regions(scene, tract)
+    regions = {r.id for r in applied}
     entries = [e for e in region_entries(scene) if e["id"] in regions]
-    images: set[ItemId] = set()
-    for entry in entries:
-        options = entry["options"]
-        assert isinstance(options, dict)
-        mask = options.get("mask")
-        if isinstance(mask, int):
-            images.add(mask)
+    images = {i for i in map(image_of, applied) if i is not None}
     for image in images:
         if scene.item(image).source is None:
             raise ValueError(f"{scene.item(image).name} has no file: save it first.")
@@ -697,6 +751,8 @@ class SavePlan:
         run: The run record; None when the tractogram was not tracked here.
         items: The file of each unsaved item to write, chosen by the user.
         support: The file of the FOD's support, when a run seeded from it.
+        notes: Sentences on what the save leaves out, such as the run record
+            when an input of the run was removed without a file.
     """
 
     bundle: Path
@@ -704,6 +760,7 @@ class SavePlan:
     run: Path | None
     items: Mapping[ItemId, Path]
     support: Path | None = None
+    notes: tuple[str, ...] = ()
 
     @property
     def paths(self) -> list[Path]:
@@ -721,6 +778,17 @@ def item_file(scene: Scene, item_id: ItemId, folder: Path, name: str) -> Path:
     item = scene.item(item_id)
     stem = "".join(c if c.isalnum() or c in "-_" else "_" for c in item.name)
     return folder / f"{name}_{stem}{ITEM_SUFFIX.get(item.category, '.nii.gz')}"
+
+
+def _unique(path: Path, taken: set[Path]) -> Path:
+    """Returns the path, or the first of its `_2`, `_3`, ... forms not in taken."""
+    suffix = "".join(path.suffixes)
+    stem = path.name[: len(path.name) - len(suffix)] if suffix else path.name
+    number, found = 1, path
+    while found in taken:
+        number += 1
+        found = path.with_name(f"{stem}_{number}{suffix}")
+    return found
 
 
 def plan_save(
@@ -751,22 +819,32 @@ def plan_save(
         raise ValueError("Give the bundle a name.")
     folder, name = Path(folder).absolute(), name.strip()
     tracked = state.runs.get(state.tractogram)
-    needed = []
+    present = {item.id for item in scene.items}
+    needed, notes = [], []
     if tracked is not None:
-        for i in (tracked.fod, tracked.seed_mask, tracked.mask):
-            if i is not None and scene.item(i).source is None:
-                needed.append(i)
+        files = input_files(tracked, scene)
+        lost = [i for i, f in files.items() if f is None and i not in present]
+        if lost:
+            notes.append(
+                "The run record is not written, as an input of the tracking run "
+                "was removed before it was saved."
+            )
+            tracked = None
+        else:
+            needed = [i for i, f in files.items() if f is None]
     chosen = list(dict.fromkeys([*items, *needed, *_unsaved_images(state, scene)]))
     support = None
     if tracked is not None and tracked.seed_mask is None:
         support = folder / f"{name}_seeds.nii.gz"
-    return SavePlan(
-        bundle=folder / f"{name}.tck",
-        regions=folder / f"{name}{REGIONS_SUFFIX}",
-        run=folder / f"{name}_run.json" if tracked is not None else None,
-        items={i: item_file(scene, i, folder, name) for i in chosen},
-        support=support,
-    )
+    bundle = folder / f"{name}.tck"
+    regions = folder / f"{name}{REGIONS_SUFFIX}"
+    run = folder / f"{name}_run.json" if tracked is not None else None
+    taken = {p for p in (bundle, regions, run, support) if p is not None}
+    paths = {}
+    for i in chosen:
+        paths[i] = _unique(item_file(scene, i, folder, name), taken)
+        taken.add(paths[i])
+    return SavePlan(bundle, regions, run, paths, support, tuple(notes))
 
 
 def _unsaved_images(state: Dissection, scene: Scene) -> list[ItemId]:
@@ -775,10 +853,9 @@ def _unsaved_images(state: Dissection, scene: Scene) -> list[ItemId]:
         return []
     found = []
     for region in applied_regions(scene, scene.item(state.tractogram)):
-        o = region.options
-        assert isinstance(o, RegionOptions)
-        if o.mask is not None and scene.item(o.mask).source is None:
-            found.append(o.mask)
+        image = image_of(region)
+        if image is not None and scene.item(image).source is None:
+            found.append(image)
     return found
 
 
@@ -796,27 +873,50 @@ def write_save(viewer: Viewer, state: Dissection, plan: SavePlan) -> None:
     Raises:
         ValueError: If an item cannot be saved, or a region's image has no file.
         OSError: If a file cannot be written.
+
+    Either error lists the files written before it.
     """
+    assert state.tractogram is not None
+    written: list[Path] = []
+    try:
+        _write_plan(viewer, state, state.tractogram, plan, written)
+    except (OSError, ValueError) as e:
+        if not written:
+            raise
+        names = ", ".join(p.name for p in written)
+        kind = OSError if isinstance(e, OSError) else ValueError
+        raise kind(f"{e} These files were written already: {names}.") from e
+    state.saved = plan.bundle
+
+
+def _write_plan(
+    viewer: Viewer,
+    state: Dissection,
+    tract_id: ItemId,
+    plan: SavePlan,
+    written: list[Path],
+) -> None:
+    """Writes the files of a save plan in order, adding each one to written."""
     from larmor.io import save_volume
 
-    assert state.tractogram is not None
     for item_id, path in plan.items.items():
         viewer.save_item(item_id, path)
-    tracked = state.runs.get(state.tractogram)
+        written.append(path)
+    tracked = state.runs.get(tract_id)
     if plan.support is not None and tracked is not None:
         assert tracked.support is not None
         save_volume(tracked.support, plan.support)
-    viewer.save_kept(state.tractogram, plan.bundle)
-    write_regions(viewer.scene, state.tractogram, plan.regions)
+        written.append(plan.support)
+    viewer.save_kept(tract_id, plan.bundle)
+    written.append(plan.bundle)
+    write_regions(viewer.scene, tract_id, plan.regions)
+    written.append(plan.regions)
     if plan.run is not None and tracked is not None:
         paths: dict[ItemId, Path] = {}
-        for used in (tracked.fod, tracked.seed_mask, tracked.mask):
-            if used is None:
-                continue
-            source = viewer.scene.item(used).source
+        for used, source in input_files(tracked, viewer.scene).items():
             if source is None:
-                raise ValueError(f"{viewer.scene.item(used).name} has no file.")
+                raise ValueError("An input of the tracking run has no file.")
             paths[used] = source
         record = tracked_run(tracked, run_inputs(tracked, paths, plan.support))
         record.write_json(plan.run)
-    state.saved = plan.bundle
+        written.append(plan.run)

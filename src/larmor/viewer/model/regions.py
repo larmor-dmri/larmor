@@ -113,13 +113,13 @@ def mask_ids(scene: Scene, item: Item) -> tuple[ItemId, ...]:
     """Returns the ids of the images a tractogram's mask and label regions name."""
     ids = []
     for region in applied_regions(scene, item):
-        image = _image_of(region)
+        image = image_of(region)
         if image is not None:
             ids.append(image)
     return tuple(ids)
 
 
-def _image_of(region: Item) -> ItemId | None:
+def image_of(region: Item) -> ItemId | None:
     """Returns the image a mask or label region names; None for other regions."""
     r = region.options
     assert isinstance(r, RegionOptions)
@@ -235,7 +235,7 @@ def mask_regions_of(scene: Scene, image_id: ItemId) -> list[Item]:
     return [
         region
         for region in scene.in_category(Category.REGIONS)
-        if _image_of(region) == image_id
+        if image_of(region) == image_id
     ]
 
 
