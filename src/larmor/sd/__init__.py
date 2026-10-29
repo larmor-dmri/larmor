@@ -4,7 +4,7 @@ from larmor.sd.csd import CSDModel
 from larmor.sd.csd_rf import SingleFibreRF, build_csd_response, estimate_csd_rf
 from larmor.sd.csd_solver import CSDSolver
 from larmor.sd.method import SDMethod
-from larmor.sd.model import SDFit, SDModel
+from larmor.sd.model import SDFit, SDModel, merge_fods
 from larmor.sd.mritoolkit import (
     MRIToolkitFOD,
     read_mritoolkit_fod,
@@ -67,6 +67,7 @@ __all__ = [
     "estimate_wm_rf",
     "find_peaks",
     "fit_sh",
+    "merge_fods",
     "read_mritoolkit_fod",
     "read_mritoolkit_fod_count",
     "read_mritoolkit_sh",
