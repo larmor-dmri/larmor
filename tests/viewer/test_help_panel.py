@@ -34,6 +34,7 @@ SHIPPED_TITLES = [
     "Surfaces",
     "MATLAB files",
     "Phantoms",
+    "Dissecting a bundle",
 ]
 
 
@@ -84,7 +85,7 @@ def _click_link(window: HelpPanel, href: str) -> None:
 def test_shipped_guides_are_listed_in_order_with_their_titles() -> None:
     found = guides()
     assert [g.title for g in found] == SHIPPED_TITLES
-    assert [g.path.name[:2] for g in found] == [f"{i:02}" for i in range(1, 16)]
+    assert [g.path.name[:2] for g in found] == [f"{i:02}" for i in range(1, 17)]
 
 
 def test_a_guide_without_a_heading_is_titled_from_its_file_name(

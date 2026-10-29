@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QMainWindow, QMenu, QWidget
 from larmor.viewer.model.camera import Vec3
 from larmor.viewer.model.detail import MENU_BOX, VIEW_AXIS, centred_box
 from larmor.viewer.model.item import ViewKind
+from larmor.viewer.model.view_state import Workspace
 from larmor.viewer.model.viewer import Viewer
 from larmor.viewer.qt.detail_window import follow_details
 from larmor.viewer.qt.views import ViewInput
@@ -27,8 +28,9 @@ def build_view_menu(
 ) -> QMenu:
     """Returns the right-click menu of a view at a world position.
 
-    It adds a sphere or box region there, opens a detail window around it (in a
-    2D view), and, on the phantom, shows its voxel's Signal breakdown.
+    In Dissect it adds a sphere or box region there. It opens a detail window
+    around the point (in a 2D view), and, on the phantom, shows its voxel's
+    Signal breakdown.
 
     Args:
         parent: The menu's parent widget.
@@ -46,12 +48,15 @@ def build_view_menu(
         nothing = menu.addAction("Nothing under the pointer")
         nothing.setEnabled(False)
         return menu
-    sphere = menu.addAction("Add sphere region here")
-    sphere.triggered.connect(
-        lambda: viewer.select(viewer.add_sphere(position, apply=True))
-    )
-    box = menu.addAction("Add box region here")
-    box.triggered.connect(lambda: viewer.select(viewer.add_box(position, apply=True)))
+    if viewer.scene.view.workspace == Workspace.DISSECT:
+        sphere = menu.addAction("Add sphere region here")
+        sphere.triggered.connect(
+            lambda: viewer.select(viewer.add_sphere(position, apply=True))
+        )
+        box = menu.addAction("Add box region here")
+        box.triggered.connect(
+            lambda: viewer.select(viewer.add_box(position, apply=True))
+        )
     grid = viewer._detail_grid()
     if kind in VIEW_AXIS and grid is not None:
         zoom = menu.addAction("Zoom box from here")

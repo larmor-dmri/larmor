@@ -34,7 +34,7 @@ from larmor.viewer.model.regions import (
     ray_hit,
     sphere_radius_at,
 )
-from larmor.viewer.model.view_state import Tool
+from larmor.viewer.model.view_state import Tool, Workspace
 from larmor.viewer.model.viewer import Viewer
 from larmor.viewer.render.gpu import finish_gpu_work
 from larmor.viewer.render.phantom_guides import POINT_COLOUR
@@ -248,6 +248,8 @@ class ViewInput(QObject):
 
     def _press_region(self, point: QPointF, world: Vec3) -> bool:
         """Selects the region under a press and starts moving or resizing it."""
+        if not _editing_regions(self.viewer):
+            return False
         found = self._region_at(world)
         if found is None:
             return False
@@ -702,6 +704,8 @@ class ViewInput(QObject):
 
     def _resize_selected(self, point: QPointF, delta: int) -> bool:
         """Grows or shrinks the selected region under a 3D point; False if none."""
+        if not _editing_regions(self.viewer):
+            return False
         region = self._region_on_ray(point)
         if region is None or region.id != self.viewer.scene.view.selected:
             return False
@@ -762,3 +766,8 @@ def _drop_frame_copy(canvas: QRenderWidget) -> None:
     clear = getattr(downloader, "_clear_pending_download", None)
     if callable(clear):
         clear()
+
+
+def _editing_regions(viewer: Viewer) -> bool:
+    """Tells whether regions can be moved and resized: only in Dissect."""
+    return viewer.scene.view.workspace == Workspace.DISSECT

@@ -101,21 +101,22 @@ Delete that folder too to leave nothing behind.
 
 ## Workspaces
 
-The window has two workspaces, which the switch at the left of the header chooses. **View** (Ctrl+1, Cmd+1 on
+The window has three workspaces, which the switch at the left of the header chooses. **View** (Ctrl+1, Cmd+1 on
 macOS) shows the scene tree on the left of the views and the inspector on the right, and is where you look at
 images, tractograms and the rest. **Simulate** (Ctrl+2) shows the steps of a phantom on the left and the page of
-one step on the right, as [Phantoms](15-phantoms.md) explains. View > Workspace switches between them too, and a
-session remembers the workspace it was saved in.
+one step on the right, as [Phantoms](15-phantoms.md) explains. **Dissect** (Ctrl+3) shows, in the same way, the steps
+from a DWI, a FOD file or a tractogram to a bundle, as [Dissecting a bundle](16-dissect.md) explains. View >
+Workspace switches between them too, and a session remembers the workspace it was saved in.
 
 The header also names what is open, the session's name or else the main volume's file, and has **Export...** (see
 [Exporting images and videos](10-screenshots.md)), the gear that opens [Settings](09-settings.md) and the question
 mark that opens this help (F1). In Simulate it also has **Run**, which is greyed out until the phantom can run.
 
 Below the header, a toolbar holds the pointer tools of the workspace, each with its key: in View the Cursor (V),
-which moves the crosshair, the Sphere ROI (O) and Box ROI (B) tools, and the Zoom box (Z); in Simulate the Cursor
-and Draw bundle (N). Next to them are the three layouts of the views: **2 x 2**, **1 + 3**, which shows the
-selected view large with the other three stacked beside it, and **1**, which shows the selected view alone. The
-Crosshair (X) and Overlay (I) switches on the right show or hide the crosshair and the text over the views.
+which moves the crosshair, and the Zoom box (Z); in Simulate the Cursor and Draw bundle (N); in Dissect the Cursor,
+the Sphere ROI (O), Box ROI (B) and Label region (L) tools, and the Zoom box. Next to them are the three layouts
+of the views: **2 x 2**, **1 + 3**, which shows the selected view large with the other three stacked beside it, and
+**1**, which shows the selected view alone. The Crosshair (X) and Overlay (I) switches on the right show or hide the crosshair and the text over the views.
 
 **Ctrl+0**, or **Hide or show the side panels** in the View menu, hides the panels either side of the views and
 brings them back. You can drag the edge between a panel and the views to make it wider, and the viewer remembers

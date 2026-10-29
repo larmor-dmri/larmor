@@ -27,8 +27,8 @@ the edge of a detail window's box, takes that instead of the tool.
 | Key | Tool | A click or a drag in a 2D view |
 |---|---|---|
 | V | Cursor | Moves the crosshair, as above |
-| O | Sphere | Places a sphere region at the click; a drag from the centre sets its radius |
-| B | Box | Draws a box region over the rectangle dragged, as deep as a tractogram's slab |
+| O | Sphere | Places a sphere region at the click; a drag from the centre sets its radius (Dissect only) |
+| B | Box | Draws a box region over the rectangle dragged, as deep as a tractogram's slab (Dissect only) |
 | Z | Zoom box | Drags a rectangle that opens in a detail window |
 | N | Draw bundle | Draws a phantom bundle, in the Simulate workspace (see [Phantoms](15-phantoms.md)) |
 
