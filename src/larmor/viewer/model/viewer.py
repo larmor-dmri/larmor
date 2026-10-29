@@ -3240,9 +3240,10 @@ class Viewer:
         `Tool.CURSOR` moves the crosshair, `SPHERE` and `BOX` place regions,
         `ZOOM_BOX` opens a rectangle of a 2D view in a detail window,
         `LABEL_REGION` adds the label clicked to a label region and removes it
-        with Shift (`click_label`), and `DRAW_BUNDLE` draws a phantom bundle: choosing it starts one, as
-        `start_bundle` does, and choosing another tool while drawing finishes
-        the bundle if it has two points, else drops it.
+        with Shift (`click_label`), and `DRAW_BUNDLE` draws a phantom bundle:
+        choosing it starts one, as `start_bundle` does, and choosing another
+        tool while drawing finishes the bundle if it has two points, else
+        drops it.
 
         Args:
             tool: The tool.
