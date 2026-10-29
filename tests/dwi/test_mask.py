@@ -72,6 +72,12 @@ def test_dilating_and_eroding_by_one_voxel_moves_the_faces() -> None:
     assert grown.sum() == 27 + 6 * 9
     np.testing.assert_array_equal(erode_mask(grown, 1), cube)
     assert erode_mask(cube, 1).sum() == 1
+    # A cube against the grid's border loses that face too: outside is outside.
+    corner = np.zeros((5, 5, 5), dtype=bool)
+    corner[:3, :3, :3] = True
+    expected = np.zeros_like(corner)
+    expected[1, 1, 1] = True
+    np.testing.assert_array_equal(erode_mask(corner, 1), expected)
     np.testing.assert_array_equal(dilate_mask(cube, 0), cube)
     with pytest.raises(ValueError, match="0 or more"):
         erode_mask(cube, -1)
@@ -87,7 +93,7 @@ def test_fill_holes_fills_an_enclosed_cavity_only() -> None:
 
 def test_largest_component_keeps_the_biggest_piece() -> None:
     mask = _cube(11)
-    mask[0, 0, 0] = True
+    mask[3, 3, 3] = True  # touches the cube's corner (4, 4, 4) only diagonally
     np.testing.assert_array_equal(largest_component(mask), _cube(11))
     assert not largest_component(np.zeros((3, 3, 3), dtype=bool)).any()
 
