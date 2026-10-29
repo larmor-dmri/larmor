@@ -130,7 +130,8 @@ def test_a_click_adds_the_label_under_it_and_shift_click_removes_it() -> None:
     image = load_volume(PARCELLATION)
     labels = parcellation_labels(image)
     voxel = np.argwhere(labels > 0)[0]
-    point = tuple(float(c) for c in image.affine[:3, :3] @ voxel + image.affine[:3, 3])
+    x, y, z = (float(c) for c in image.affine[:3, :3] @ voxel + image.affine[:3, 3])
+    point = (x, y, z)
     label = int(labels[tuple(voxel)])
     viewer.set(parcellation, OptionName.LABELS, True)
 
