@@ -235,3 +235,38 @@ def test_a_new_mask_fills_the_field_that_asked_for_it(
         assert tract is not None
         (region,) = viewer.scene.in_category(Category.REGIONS)
         assert region.id in tract_options(viewer.scene.item(tract)).regions
+
+
+@pytest.mark.parametrize("replace", [True, False])
+def test_saving_items_beside_a_session_asks_before_replacing_files(
+    window: MainWindow, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, replace: bool
+) -> None:
+    viewer = window.viewer
+    fod = viewer.add(load_volume(TRACKING / "fod.nii.gz"), Category.FODS, name="fod")
+    existing = tmp_path / "s_fod.nii.gz"
+    existing.write_bytes(b"older")
+    asked: list[str] = []
+
+    def question(*args: object, **kwargs: object) -> QMessageBox.StandardButton:
+        asked.append(str(args[2]))
+        return (
+            QMessageBox.StandardButton.Yes if replace else QMessageBox.StandardButton.No
+        )
+
+    monkeypatch.setattr(QMessageBox, "question", question)
+    saved = window.save_items_beside([fod.id], tmp_path / "s.lar.json")
+    assert saved == replace
+    assert len(asked) == 1 and "s_fod.nii.gz" in asked[0]
+    assert (existing.read_bytes() != b"older") == replace
+
+
+def test_items_of_the_same_name_are_saved_beside_a_session_to_their_own_files(
+    window: MainWindow, tmp_path: Path
+) -> None:
+    viewer = window.viewer
+    data = load_volume(TRACKING / "fod.nii.gz")
+    first = viewer.add(data, Category.FODS, name="fod")
+    second = viewer.add(data, Category.FODS, name="fod")
+    assert window.save_items_beside([first.id, second.id], tmp_path / "s.lar.json")
+    sources = {viewer.scene.item(i).source for i in (first.id, second.id)}
+    assert sources == {tmp_path / "s_fod.nii.gz", tmp_path / "s_fod_2.nii.gz"}

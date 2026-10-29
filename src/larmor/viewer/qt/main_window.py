@@ -42,6 +42,7 @@ from larmor.viewer.model.dissect import (
     gradient_files,
     item_file,
     plan_save,
+    unique_path,
     write_save,
 )
 from larmor.viewer.model.events import Event, ViewStateChanged
@@ -870,12 +871,34 @@ class MainWindow(QMainWindow):
     def save_items_beside(self, items: list[ItemId], session: Path) -> bool:
         """Saves items without a file next to a session file, named after both.
 
+        Items of the same name get files of their own, and files that exist
+        already are replaced only if the user agrees.
+
         Returns:
-            False if an item could not be saved, which a message box tells.
+            False if the user kept the existing files or an item could not be
+            saved, which a message box tells.
         """
         stem = _session_name(session)
+        taken = {session}
+        paths: dict[ItemId, Path] = {}
         for item_id in items:
             path = item_file(self.viewer.scene, item_id, session.parent, stem)
+            paths[item_id] = unique_path(path, taken)
+            taken.add(paths[item_id])
+        existing = [p.name for p in paths.values() if p.exists()]
+        if existing:
+            answer = QMessageBox.question(
+                self,
+                "Replace files",
+                "These files exist already:\n\n"
+                + "\n".join(existing)
+                + "\n\nReplace them?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            if answer != QMessageBox.StandardButton.Yes:
+                return False
+        for item_id, path in paths.items():
             try:
                 self.viewer.save_item(item_id, path)
             except (OSError, ValueError) as e:

@@ -780,7 +780,7 @@ def item_file(scene: Scene, item_id: ItemId, folder: Path, name: str) -> Path:
     return folder / f"{name}_{stem}{ITEM_SUFFIX.get(item.category, '.nii.gz')}"
 
 
-def _unique(path: Path, taken: set[Path]) -> Path:
+def unique_path(path: Path, taken: set[Path]) -> Path:
     """Returns the path, or the first of its `_2`, `_3`, ... forms not in taken."""
     suffix = "".join(path.suffixes)
     stem = path.name[: len(path.name) - len(suffix)] if suffix else path.name
@@ -842,7 +842,7 @@ def plan_save(
     taken = {p for p in (bundle, regions, run, support) if p is not None}
     paths = {}
     for i in chosen:
-        paths[i] = _unique(item_file(scene, i, folder, name), taken)
+        paths[i] = unique_path(item_file(scene, i, folder, name), taken)
         taken.add(paths[i])
     return SavePlan(bundle, regions, run, paths, support, tuple(notes))
 
