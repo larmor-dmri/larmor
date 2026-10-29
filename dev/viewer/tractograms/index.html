@@ -491,6 +491,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../surfaces/">Surfaces</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../matlab-files/">MATLAB files</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../phantoms/">Phantoms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dissect/">Dissecting a bundle</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../shortcuts/">Keyboard shortcuts</a></li>
 </ul>
 </div>
@@ -608,7 +609,8 @@ colormap and the range.</p>
 <h2>Filtering by regions<a class="headerlink" href="#filtering-by-regions" title="Link to this heading">#</a></h2>
 <p>You can draw only the streamlines that pass through, avoid or stay within chosen regions. A region is an item of its
 own, listed under <strong>Regions</strong> in the scene tree, so one region can filter several tractograms and you can select it,
-hide it, rename it or remove it like any other item. There are three kinds of region. A sphere has a centre and a
+hide it, rename it or remove it like any other item. There are four kinds of region, the fourth being the label
+regions described below. A sphere has a centre and a
 radius, a box has a centre and a size along x, y and z (its edges run along the world axes), and a mask is an image
 of a single volume, already loaded as a volume or an overlay on any grid. A point is in a mask when the voxel
 nearest to it holds a value that rounds to a whole number other than 0, so a binary mask, or a probability map above
@@ -617,13 +619,15 @@ one half, works as it is.</p>
 them, and <strong>Within</strong> keeps only the streamlines whose points all lie inside it. A region starts in its role’s
 colour (teal for include, orange for exclude and violet for within), and its colour follows the role until you
 choose another colour in its options. Tab gives the selected region the next role.</p>
-<p>The Sphere tool (<strong>O</strong>) and the Box tool (<strong>B</strong>) place regions in the views. With the Sphere tool, a click places
+<p>The Sphere tool (<strong>O</strong>) and the Box tool (<strong>B</strong>) place regions in the views; they belong to the Dissect workspace
+(see <a class="reference internal" href="../dissect/"><span class="std std-doc">Dissecting a bundle</span></a>), where regions are also moved and resized, and the regions they make
+still filter the tractograms in View. With the Sphere tool, a click places
 a sphere with the radius of the last one (5 mm at first) centred on the click, and a drag from the centre sets
 the radius as you place it, with the radius shown in the status bar. With the Box tool, a drag draws a box over
 the rectangle, as deep across the slice as the tractogram’s slab (5 mm by default). In the 3D view, a click with
-either tool places the region on the streamline, slice or surface under the pointer. A right click in a view
-offers the same regions at the point clicked. A new region is applied to every tractogram loaded. To add a mask,
-use <code class="docutils literal notranslate"><span class="pre">add_mask</span></code> from Python or an agent; it is removed with its image.</p>
+either tool places the region on the streamline, slice or surface under the pointer. In the Dissect workspace,
+a right click in a view also offers the same regions at the point clicked. A new region is applied to every
+tractogram loaded. To add a mask, use <code class="docutils literal notranslate"><span class="pre">add_mask</span></code> from Python or an agent; it is removed with its image.</p>
 <p>Every 2D view draws each sphere and box where its slice cuts it: a sphere as a circle (dashed when the sphere’s
 centre is on another slice), a box as a rectangle. The 3D view draws them as translucent shapes. A mask is not
 drawn, as its overlay already shows it. Click a region’s outline or its centre to select it; the selected region
@@ -642,9 +646,19 @@ the streamlines that the ticked regions keep, out of all those loaded, to a trac
 <p>The filter runs over all the loaded streamlines, in the background, each time a region changes, and the scene tree
 then shows how many of them pass beside the tractogram. The subset and the points per streamline apply afterwards,
 to the streamlines kept, so a subset of 50% draws half of those. A session saves the regions (a sphere or box by its
-centre and size, a mask by its image) and the regions each tractogram applies.</p>
+centre and size, a mask by its image, a label region by its parcellation, mode, labels and end radius) and the
+regions each tractogram applies.</p>
+<p>A label region is made from the labels of a parcellation, and has two modes. <strong>From A to B</strong> keeps the
+streamlines with one end in label set A and the other end in label set B. An end belongs to the label of the
+nearest labelled voxel whose centre lies within the end radius (4 mm by default), as <code class="docutils literal notranslate"><span class="pre">endpoint_nodes</span></code> in
+<code class="docutils literal notranslate"><span class="pre">larmor.tractography</span></code> assigns it, and an empty set takes any end. <strong>Stay within</strong> keeps the streamlines whose points
+all lie in the voxels of the chosen labels, as <code class="docutils literal notranslate"><span class="pre">stays_within</span></code> does with their mask. The include and within roles
+keep these streamlines and exclude drops them. Labels are added by name from a searchable list, or with the Label
+region tool: a click on a slice adds the label under the pointer to the set being edited, and Shift+click removes
+it. The 2D views fill and outline the chosen voxels on each slice, set B in a lighter shade of the region’s colour,
+and the 3D view draws them as translucent surfaces. A label region is removed with its parcellation.</p>
 <p>From Python, <code class="docutils literal notranslate"><span class="pre">viewer.add_sphere((x,</span> <span class="pre">y,</span> <span class="pre">z),</span> <span class="pre">5.0,</span> <span class="pre">apply=True)</span></code> adds a sphere and applies it to every tractogram,
-and <code class="docutils literal notranslate"><span class="pre">viewer.add_box</span></code> and <code class="docutils literal notranslate"><span class="pre">viewer.add_mask(mask.id)</span></code> do the same for a box and a mask. Each takes
+and <code class="docutils literal notranslate"><span class="pre">viewer.add_box</span></code>, <code class="docutils literal notranslate"><span class="pre">viewer.add_mask(mask.id)</span></code> and <code class="docutils literal notranslate"><span class="pre">viewer.add_label_region(parcellation.id,</span> <span class="pre">labels_a=[...],</span> <span class="pre">labels_b=[...])</span></code> do the same for a box, a mask and a label region. Each takes
 <code class="docutils literal notranslate"><span class="pre">role=RegionRole.EXCLUDE</span></code> or <code class="docutils literal notranslate"><span class="pre">RegionRole.WITHIN</span></code> for the other roles, and returns the region’s id.
 <code class="docutils literal notranslate"><span class="pre">viewer.apply_region(tracts.id,</span> <span class="pre">region_id,</span> <span class="pre">False)</span></code> stops applying a region, <code class="docutils literal notranslate"><span class="pre">viewer.clear_regions(tracts.id)</span></code>
 stops applying all of them, <code class="docutils literal notranslate"><span class="pre">viewer.kept_streamlines(tracts.id)</span></code> counts the streamlines kept, and

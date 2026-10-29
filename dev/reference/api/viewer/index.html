@@ -605,6 +605,12 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#larmor.viewer.GlyphScaling" title="larmor.viewer.GlyphScaling"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GlyphScaling</span></code></a></p></td>
 <td><p>What an FOD glyph's size is relative to.</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.viewer.LabelMode" title="larmor.viewer.LabelMode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LabelMode</span></code></a></p></td>
+<td><p>What a label region keeps.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.viewer.LabelSet" title="larmor.viewer.LabelSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LabelSet</span></code></a></p></td>
+<td><p>One of the two label sets of a region.</p></td>
+</tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#larmor.viewer.Item" title="larmor.viewer.Item"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Item</span></code></a></p></td>
 <td><p>One loaded file or object.</p></td>
 </tr>
@@ -1141,6 +1147,38 @@ changed, and catches up when it resumes.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="larmor.viewer.LabelMode">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.viewer.</span></span><span class="sig-name descname"><span class="pre">LabelMode</span></span><a class="headerlink" href="#larmor.viewer.LabelMode" title="Link to this definition">#</a></dt>
+<dd><p>What a label region keeps.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.viewer.LabelMode.FROM_A_TO_B">
+<span class="sig-name descname"><span class="pre">FROM_A_TO_B</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'from_a_to_b'</span></span><a class="headerlink" href="#larmor.viewer.LabelMode.FROM_A_TO_B" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.viewer.LabelMode.STAY_WITHIN">
+<span class="sig-name descname"><span class="pre">STAY_WITHIN</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'stay_within'</span></span><a class="headerlink" href="#larmor.viewer.LabelMode.STAY_WITHIN" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="larmor.viewer.LabelSet">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.viewer.</span></span><span class="sig-name descname"><span class="pre">LabelSet</span></span><a class="headerlink" href="#larmor.viewer.LabelSet" title="Link to this definition">#</a></dt>
+<dd><p>One of the two label sets of a region.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.viewer.LabelSet.A">
+<span class="sig-name descname"><span class="pre">A</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'a'</span></span><a class="headerlink" href="#larmor.viewer.LabelSet.A" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.viewer.LabelSet.B">
+<span class="sig-name descname"><span class="pre">B</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'b'</span></span><a class="headerlink" href="#larmor.viewer.LabelSet.B" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="larmor.viewer.Item">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.viewer.</span></span><span class="sig-name descname"><span class="pre">Item</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">category</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_range</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">part</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.viewer.Item" title="Link to this definition">#</a></dt>
 <dd><p>One loaded file or object.</p>
@@ -1620,6 +1658,31 @@ options, and an option that a category does not have is refused.</p>
 <span class="sig-name descname"><span class="pre">MASK</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'mask'</span></span><a class="headerlink" href="#larmor.viewer.OptionName.MASK" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.viewer.OptionName.PARCELLATION">
+<span class="sig-name descname"><span class="pre">PARCELLATION</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'parcellation'</span></span><a class="headerlink" href="#larmor.viewer.OptionName.PARCELLATION" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.viewer.OptionName.LABEL_MODE">
+<span class="sig-name descname"><span class="pre">LABEL_MODE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'label_mode'</span></span><a class="headerlink" href="#larmor.viewer.OptionName.LABEL_MODE" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.viewer.OptionName.LABELS_A">
+<span class="sig-name descname"><span class="pre">LABELS_A</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'labels_a'</span></span><a class="headerlink" href="#larmor.viewer.OptionName.LABELS_A" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.viewer.OptionName.LABELS_B">
+<span class="sig-name descname"><span class="pre">LABELS_B</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'labels_b'</span></span><a class="headerlink" href="#larmor.viewer.OptionName.LABELS_B" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.viewer.OptionName.END_RADIUS">
+<span class="sig-name descname"><span class="pre">END_RADIUS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'end_radius'</span></span><a class="headerlink" href="#larmor.viewer.OptionName.END_RADIUS" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="py exception">
@@ -1890,6 +1953,11 @@ fields that were refused, one sentence each.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="larmor.viewer.Tool.DRAW_BUNDLE">
 <span class="sig-name descname"><span class="pre">DRAW_BUNDLE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'draw_bundle'</span></span><a class="headerlink" href="#larmor.viewer.Tool.DRAW_BUNDLE" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.viewer.Tool.LABEL_REGION">
+<span class="sig-name descname"><span class="pre">LABEL_REGION</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'label_region'</span></span><a class="headerlink" href="#larmor.viewer.Tool.LABEL_REGION" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -3202,6 +3270,101 @@ sphere.</p></li>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="larmor.viewer.Viewer.add_label_region">
+<span class="sig-name descname"><span class="pre">add_label_region</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parcellation_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">LabelMode.FROM_A_TO_B</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels_b</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">role</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.viewer.Viewer.add_label_region" title="Link to this definition">#</a></dt>
+<dd><p>Adds a label region: sets of a parcellation’s labels.</p>
+<p>From A to B keeps the streamlines with one end in set A and the other
+in set B, the ends assigned to labels as <code class="xref py py-obj docutils literal notranslate"><span class="pre">endpoint_nodes</span></code> assigns them,
+with <code class="xref py py-obj docutils literal notranslate"><span class="pre">end_radius</span></code> as its radius; an empty set takes any end. Stay
+within keeps the streamlines whose points all lie in the voxels of set
+A (with the tractogram’s ends only, only the first and last points), as
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">stays_within</span></code> with their mask. The include and within roles keep these
+streamlines and exclude drops them. With no labels the region keeps
+every streamline. The region is removed with its parcellation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>parcellation_id</strong> (<em>ItemId</em>) – The parcellation: a volume or an overlay of one
+volume.</p></li>
+<li><p><strong>mode</strong> (<a class="reference internal" href="#larmor.viewer.LabelMode" title="larmor.viewer.model.options.LabelMode"><em>LabelMode</em></a>) – <a class="reference internal" href="#larmor.viewer.LabelMode.FROM_A_TO_B" title="larmor.viewer.LabelMode.FROM_A_TO_B"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LabelMode.FROM_A_TO_B</span></code></a> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">STAY_WITHIN</span></code>.</p></li>
+<li><p><strong>labels_a</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.15)"><em>Iterable</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>]</em>) – Set A’s labels, each 1 or more.</p></li>
+<li><p><strong>labels_b</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.15)"><em>Iterable</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>]</em>) – Set B’s labels, each 1 or more.</p></li>
+<li><p><strong>end_radius</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – How far from an end a labelled voxel’s centre may be,
+mm; 0 uses only the voxel the end is in.</p></li>
+<li><p><strong>role</strong> (<a class="reference internal" href="#larmor.viewer.RegionRole" title="larmor.viewer.model.options.RegionRole"><em>RegionRole</em></a><em> | </em><em>None</em>) – <a class="reference internal" href="#larmor.viewer.RegionRole.INCLUDE" title="larmor.viewer.RegionRole.INCLUDE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RegionRole.INCLUDE</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">EXCLUDE</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">WITHIN</span></code> or None, as for a
+sphere.</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – Its name in the scene tree; “Labels 1” and so on if None.</p></li>
+<li><p><strong>apply</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Apply it to every tractogram in the scene.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The region’s id.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If mode or role is not its enum.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If there is no item with that id.</p></li>
+<li><p><a class="reference internal" href="#larmor.viewer.OptionError" title="larmor.viewer.OptionError"><strong>OptionError</strong></a> – If the item is not an image of one volume, a label is
+    below 1, or the radius is outside 0 to 50 mm.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>ItemId</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.viewer.Viewer.edit_labels">
+<span class="sig-name descname"><span class="pre">edit_labels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">region_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">LabelSet.A</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.viewer.Viewer.edit_labels" title="Link to this definition">#</a></dt>
+<dd><p>Chooses the label region and set that <a class="reference internal" href="#larmor.viewer.Viewer.click_label" title="larmor.viewer.Viewer.click_label"><code class="xref py py-obj docutils literal notranslate"><span class="pre">click_label</span></code></a> changes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>region_id</strong> (<em>ItemId</em>) – A label region.</p></li>
+<li><p><strong>which</strong> (<a class="reference internal" href="#larmor.viewer.LabelSet" title="larmor.viewer.model.options.LabelSet"><em>LabelSet</em></a>) – <a class="reference internal" href="#larmor.viewer.LabelSet.A" title="larmor.viewer.LabelSet.A"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LabelSet.A</span></code></a> or <a class="reference internal" href="#larmor.viewer.LabelSet.B" title="larmor.viewer.LabelSet.B"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LabelSet.B</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If which is not a LabelSet.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If there is no item with that id.</p></li>
+<li><p><a class="reference internal" href="#larmor.viewer.OptionError" title="larmor.viewer.OptionError"><strong>OptionError</strong></a> – If the item is not a label region.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.viewer.Viewer.click_label">
+<span class="sig-name descname"><span class="pre">click_label</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">point</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.viewer.Viewer.click_label" title="Link to this definition">#</a></dt>
+<dd><p>Adds the label at a point to the set being edited, or removes it.</p>
+<p>This is what a click with the Label region tool does. The set is the
+one chosen with <a class="reference internal" href="#larmor.viewer.Viewer.edit_labels" title="larmor.viewer.Viewer.edit_labels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">edit_labels</span></code></a>; without one, set A of the selected label
+region, else of the last label region. With no label region at all, one
+is added on the selected parcellation (or the topmost overlay shown as
+labels) and applied to every tractogram.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>point</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>]</em>) – The point (x, y, z), world mm.</p></li>
+<li><p><strong>remove</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Remove the label instead of adding it.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The label, or None if the point is in no label.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If there is no label region and no parcellation to make
+    one on.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="larmor.viewer.Viewer.apply_region">
 <span class="sig-name descname"><span class="pre">apply_region</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tract_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">region_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">applied</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.viewer.Viewer.apply_region" title="Link to this definition">#</a></dt>
 <dd><p>Applies a region to a tractogram’s streamlines, or stops applying it.</p>
@@ -3253,8 +3416,9 @@ apply to the streamlines kept. One region can filter several tractograms.</p>
 <dd><p>Writes the streamlines a tractogram’s regions keep to a file.</p>
 <p>The selection is made with <a class="reference internal" href="../tractography/#larmor.tractography.edit" title="larmor.tractography.edit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">larmor.tractography.edit</span></code></a>, the same tests
 as the views’, over every streamline loaded (not only the subset
-drawn). With the filter off or no region applied, all are written. The
-item itself does not change.</p>
+drawn); with label regions, it is the views’ selection. With the
+filter off or no region applied, all are written. The item itself
+does not change.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -3303,6 +3467,39 @@ or there are no regions).</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.viewer.Viewer.open_regions">
+<span class="sig-name descname"><span class="pre">open_regions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tract_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.viewer.Viewer.open_regions" title="Link to this definition">#</a></dt>
+<dd><p>Adds the regions of a regions file, or of a session, to the scene.</p>
+<p>The images that mask regions name are opened unless an item already
+shows the same file. With a tractogram, the regions are applied to it
+and its region filter is set as the file holds it, so the same
+tractogram keeps the same streamlines.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – A regions file written by the Dissect workspace’s Save step, or
+a session file.</p></li>
+<li><p><strong>tract_id</strong> (<em>ItemId</em><em> | </em><em>None</em>) – The tractogram to apply the regions to; None applies them
+to none.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The images opened and the problems met, one sentence each.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#larmor.viewer.SessionError" title="larmor.viewer.SessionError"><strong>SessionError</strong></a> – If the file is not a regions or session file.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#OSError" title="(in Python v3.15)"><strong>OSError</strong></a> – If the file cannot be read.</p></li>
+<li><p><a class="reference internal" href="#larmor.viewer.OptionError" title="larmor.viewer.OptionError"><strong>OptionError</strong></a> – If tract_id is not a tractogram.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#larmor.viewer.SessionReport" title="larmor.viewer.model.session.SessionReport"><em>SessionReport</em></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -3743,13 +3940,21 @@ readout.</p>
 <span class="sig-name descname"><span class="pre">set_tool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.viewer.Viewer.set_tool" title="Link to this definition">#</a></dt>
 <dd><p>Chooses the pointer tool of the views, which decides what a click does.</p>
 <p><a class="reference internal" href="#larmor.viewer.Tool.CURSOR" title="larmor.viewer.Tool.CURSOR"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Tool.CURSOR</span></code></a> moves the crosshair, <code class="xref py py-obj docutils literal notranslate"><span class="pre">SPHERE</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">BOX</span></code> place regions,
-<code class="xref py py-obj docutils literal notranslate"><span class="pre">ZOOM_BOX</span></code> opens a rectangle of a 2D view in a detail window, and
-<code class="xref py py-obj docutils literal notranslate"><span class="pre">DRAW_BUNDLE</span></code> draws a phantom bundle: choosing it starts one, as
-<a class="reference internal" href="#larmor.viewer.Viewer.start_bundle" title="larmor.viewer.Viewer.start_bundle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">start_bundle</span></code></a> does, and choosing another tool while drawing finishes
-the bundle if it has two points, else drops it.</p>
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">ZOOM_BOX</span></code> opens a rectangle of a 2D view in a detail window,
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">LABEL_REGION</span></code> adds the label clicked to a label region and removes it
+with Shift (<a class="reference internal" href="#larmor.viewer.Viewer.click_label" title="larmor.viewer.Viewer.click_label"><code class="xref py py-obj docutils literal notranslate"><span class="pre">click_label</span></code></a>), and <code class="xref py py-obj docutils literal notranslate"><span class="pre">DRAW_BUNDLE</span></code> draws a phantom bundle:
+choosing it starts one, as <a class="reference internal" href="#larmor.viewer.Viewer.start_bundle" title="larmor.viewer.Viewer.start_bundle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">start_bundle</span></code></a> does, and choosing another
+tool while drawing finishes the bundle if it has two points, else
+drops it.</p>
+<p>Each workspace offers its own tools: Cursor and Zoom box in View, Cursor
+and Draw bundle in Simulate, and Cursor, Sphere, Box, Label region and
+Zoom box in Dissect.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>tool</strong> (<a class="reference internal" href="#larmor.viewer.Tool" title="larmor.viewer.model.view_state.Tool"><em>Tool</em></a>) – The tool.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the workspace shown does not offer the tool.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -3980,12 +4185,14 @@ the two pictures.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="larmor.viewer.Viewer.set_workspace">
 <span class="sig-name descname"><span class="pre">set_workspace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.viewer.Viewer.set_workspace" title="Link to this definition">#</a></dt>
-<dd><p>Shows the window’s View or Simulate workspace.</p>
-<p>A pointer tool the new workspace does not offer goes back to the cursor.</p>
+<dd><p>Shows the window’s View, Simulate or Dissect workspace.</p>
+<p>A pointer tool the new workspace does not offer goes back to the cursor.
+The region tools are offered only in Dissect.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>workspace</strong> (<em>Workspace</em>) – <code class="xref py py-obj docutils literal notranslate"><span class="pre">Workspace.VIEW</span></code> for the scene tree and the inspector, or
-<code class="xref py py-obj docutils literal notranslate"><span class="pre">Workspace.SIMULATE</span></code> for the phantom editor’s steps.</p>
+<dd class="field-odd"><p><strong>workspace</strong> (<em>Workspace</em>) – <code class="xref py py-obj docutils literal notranslate"><span class="pre">Workspace.VIEW</span></code> for the scene tree and the inspector,
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">Workspace.SIMULATE</span></code> for the phantom editor’s steps, or
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">Workspace.DISSECT</span></code> for the steps from FODs to a bundle.</p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If workspace is not a Workspace.</p>
@@ -4605,6 +4812,16 @@ Qt’s events; in IPython or Jupyter with <code class="xref py py-obj docutils l
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.GlyphScaling.IMAGE"><code class="docutils literal notranslate"><span class="pre">GlyphScaling.IMAGE</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.LabelMode"><code class="docutils literal notranslate"><span class="pre">LabelMode</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.LabelMode.FROM_A_TO_B"><code class="docutils literal notranslate"><span class="pre">LabelMode.FROM_A_TO_B</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.LabelMode.STAY_WITHIN"><code class="docutils literal notranslate"><span class="pre">LabelMode.STAY_WITHIN</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.LabelSet"><code class="docutils literal notranslate"><span class="pre">LabelSet</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.LabelSet.A"><code class="docutils literal notranslate"><span class="pre">LabelSet.A</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.LabelSet.B"><code class="docutils literal notranslate"><span class="pre">LabelSet.B</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.Item"><code class="docutils literal notranslate"><span class="pre">Item</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.Item.id"><code class="docutils literal notranslate"><span class="pre">Item.id</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.Item.category"><code class="docutils literal notranslate"><span class="pre">Item.category</span></code></a></li>
@@ -4694,6 +4911,11 @@ Qt’s events; in IPython or Jupyter with <code class="xref py py-obj docutils l
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.OptionName.RADIUS"><code class="docutils literal notranslate"><span class="pre">OptionName.RADIUS</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.OptionName.SIZE"><code class="docutils literal notranslate"><span class="pre">OptionName.SIZE</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.OptionName.MASK"><code class="docutils literal notranslate"><span class="pre">OptionName.MASK</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.OptionName.PARCELLATION"><code class="docutils literal notranslate"><span class="pre">OptionName.PARCELLATION</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.OptionName.LABEL_MODE"><code class="docutils literal notranslate"><span class="pre">OptionName.LABEL_MODE</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.OptionName.LABELS_A"><code class="docutils literal notranslate"><span class="pre">OptionName.LABELS_A</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.OptionName.LABELS_B"><code class="docutils literal notranslate"><span class="pre">OptionName.LABELS_B</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.OptionName.END_RADIUS"><code class="docutils literal notranslate"><span class="pre">OptionName.END_RADIUS</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.PortInUseError"><code class="docutils literal notranslate"><span class="pre">PortInUseError</span></code></a></li>
@@ -4752,6 +4974,7 @@ Qt’s events; in IPython or Jupyter with <code class="xref py py-obj docutils l
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.Tool.BOX"><code class="docutils literal notranslate"><span class="pre">Tool.BOX</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.Tool.ZOOM_BOX"><code class="docutils literal notranslate"><span class="pre">Tool.ZOOM_BOX</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.Tool.DRAW_BUNDLE"><code class="docutils literal notranslate"><span class="pre">Tool.DRAW_BUNDLE</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.Tool.LABEL_REGION"><code class="docutils literal notranslate"><span class="pre">Tool.LABEL_REGION</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.TractStyle"><code class="docutils literal notranslate"><span class="pre">TractStyle</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
@@ -4824,10 +5047,14 @@ Qt’s events; in IPython or Jupyter with <code class="xref py py-obj docutils l
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.Viewer.add_sphere"><code class="docutils literal notranslate"><span class="pre">Viewer.add_sphere()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.Viewer.add_box"><code class="docutils literal notranslate"><span class="pre">Viewer.add_box()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.Viewer.add_mask"><code class="docutils literal notranslate"><span class="pre">Viewer.add_mask()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.Viewer.add_label_region"><code class="docutils literal notranslate"><span class="pre">Viewer.add_label_region()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.Viewer.edit_labels"><code class="docutils literal notranslate"><span class="pre">Viewer.edit_labels()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.Viewer.click_label"><code class="docutils literal notranslate"><span class="pre">Viewer.click_label()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.Viewer.apply_region"><code class="docutils literal notranslate"><span class="pre">Viewer.apply_region()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.Viewer.clear_regions"><code class="docutils literal notranslate"><span class="pre">Viewer.clear_regions()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.Viewer.save_kept"><code class="docutils literal notranslate"><span class="pre">Viewer.save_kept()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.Viewer.region_selection"><code class="docutils literal notranslate"><span class="pre">Viewer.region_selection()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.Viewer.open_regions"><code class="docutils literal notranslate"><span class="pre">Viewer.open_regions()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.Viewer.kept_streamlines"><code class="docutils literal notranslate"><span class="pre">Viewer.kept_streamlines()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.Viewer.labels"><code class="docutils literal notranslate"><span class="pre">Viewer.labels()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.viewer.Viewer.set_default"><code class="docutils literal notranslate"><span class="pre">Viewer.set_default()</span></code></a></li>

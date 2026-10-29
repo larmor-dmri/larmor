@@ -578,14 +578,32 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#larmor.dwi.DenoisedDWI" title="larmor.dwi.DenoisedDWI"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DenoisedDWI</span></code></a></p></td>
 <td><p>Result of <a class="reference internal" href="#larmor.dwi.denoise_mppca" title="larmor.dwi.denoise_mppca"><code class="xref py py-obj docutils literal notranslate"><span class="pre">denoise_mppca</span></code></a>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.dwi.create_brain_mask" title="larmor.dwi.create_brain_mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_brain_mask</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.dwi.combine_masks" title="larmor.dwi.combine_masks"><code class="xref py py-obj docutils literal notranslate"><span class="pre">combine_masks</span></code></a></p></td>
+<td><p>Combines two masks on the same grid.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.dwi.create_brain_mask" title="larmor.dwi.create_brain_mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_brain_mask</span></code></a></p></td>
 <td><p>Computes a brain mask from a b0 volume.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.dwi.denoise_mppca" title="larmor.dwi.denoise_mppca"><code class="xref py py-obj docutils literal notranslate"><span class="pre">denoise_mppca</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.dwi.denoise_mppca" title="larmor.dwi.denoise_mppca"><code class="xref py py-obj docutils literal notranslate"><span class="pre">denoise_mppca</span></code></a></p></td>
 <td><p>Denoises a diffusion-weighted volume by MP-PCA and estimates its noise level.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.dwi.estimate_s0" title="larmor.dwi.estimate_s0"><code class="xref py py-obj docutils literal notranslate"><span class="pre">estimate_s0</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.dwi.dilate_mask" title="larmor.dwi.dilate_mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dilate_mask</span></code></a></p></td>
+<td><p>Grows a mask by a number of voxels.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.dwi.erode_mask" title="larmor.dwi.erode_mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">erode_mask</span></code></a></p></td>
+<td><p>Shrinks a mask by a number of voxels.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.dwi.estimate_s0" title="larmor.dwi.estimate_s0"><code class="xref py py-obj docutils literal notranslate"><span class="pre">estimate_s0</span></code></a></p></td>
 <td><p>Returns the signal without diffusion weighting, S0, of every voxel of a mask.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.dwi.fill_mask_holes" title="larmor.dwi.fill_mask_holes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fill_mask_holes</span></code></a></p></td>
+<td><p>Adds to a mask the voxels it encloses in 3D.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.dwi.label_mask" title="larmor.dwi.label_mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">label_mask</span></code></a></p></td>
+<td><p>Makes a mask of the voxels of a parcellation that hold one of some labels.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.dwi.largest_component" title="larmor.dwi.largest_component"><code class="xref py py-obj docutils literal notranslate"><span class="pre">largest_component</span></code></a></p></td>
+<td><p>Keeps the largest connected piece of a mask.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#larmor.dwi.mean_b0" title="larmor.dwi.mean_b0"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mean_b0</span></code></a></p></td>
 <td><p>Returns the mean of a DWI's b0 volumes.</p></td>
@@ -595,6 +613,9 @@
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#larmor.dwi.shell_mask" title="larmor.dwi.shell_mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">shell_mask</span></code></a></p></td>
 <td><p>Selects the volumes whose b-value is within <code class="xref py py-obj docutils literal notranslate"><span class="pre">tol</span></code> of <code class="xref py py-obj docutils literal notranslate"><span class="pre">shell</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.dwi.threshold_mask" title="larmor.dwi.threshold_mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">threshold_mask</span></code></a></p></td>
+<td><p>Makes a mask of the voxels whose value lies between two bounds.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1057,6 +1078,31 @@ noise are float32 and num_signal is int64; noise and num_signal have shape
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="larmor.dwi.combine_masks">
+<span class="sig-prename descclassname"><span class="pre">larmor.dwi.</span></span><span class="sig-name descname"><span class="pre">combine_masks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">first</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">second</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">combination</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.combine_masks" title="Link to this definition">#</a></dt>
+<dd><p>Combines two masks on the same grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>first</strong> (<em>NDArray</em><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.bool" title="(in NumPy v2.5)"><em>bool</em></a><em>]</em>) – Boolean mask, shape (X, Y, Z).</p></li>
+<li><p><strong>second</strong> (<em>NDArray</em><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.bool" title="(in NumPy v2.5)"><em>bool</em></a><em>]</em>) – Boolean mask of the same shape.</p></li>
+<li><p><strong>combination</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.15)"><em>Literal</em></a><em>[</em><em>'union'</em><em>, </em><em>'intersect'</em><em>, </em><em>'subtract'</em><em>]</em>) – “union” keeps the voxels in either mask, “intersect” those
+in both, and “subtract” those in the first and not the second.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The combined mask.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the shapes differ or the combination is unknown.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>NDArray</em>[<a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.bool" title="(in NumPy v2.5)"><em>bool</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="larmor.dwi.create_brain_mask">
 <span class="sig-prename descclassname"><span class="pre">larmor.dwi.</span></span><span class="sig-name descname"><span class="pre">create_brain_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_b0</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">morph</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.create_brain_mask" title="Link to this definition">#</a></dt>
 <dd><p>Computes a brain mask from a b0 volume.</p>
@@ -1141,6 +1187,55 @@ for medical image processing and visualisation. NeuroImage 202 (2019)
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="larmor.dwi.dilate_mask">
+<span class="sig-prename descclassname"><span class="pre">larmor.dwi.</span></span><span class="sig-name descname"><span class="pre">dilate_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">voxels</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.dilate_mask" title="Link to this definition">#</a></dt>
+<dd><p>Grows a mask by a number of voxels.</p>
+<p>Each step adds the voxels that share a face with the mask.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mask</strong> (<em>NDArray</em><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.bool" title="(in NumPy v2.5)"><em>bool</em></a><em>]</em>) – Boolean mask, shape (X, Y, Z).</p></li>
+<li><p><strong>voxels</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – The number of steps, 0 or more; 0 returns a copy.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The grown mask.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If <code class="xref py py-obj docutils literal notranslate"><span class="pre">voxels</span></code> is negative.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>NDArray</em>[<a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.bool" title="(in NumPy v2.5)"><em>bool</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.dwi.erode_mask">
+<span class="sig-prename descclassname"><span class="pre">larmor.dwi.</span></span><span class="sig-name descname"><span class="pre">erode_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">voxels</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.erode_mask" title="Link to this definition">#</a></dt>
+<dd><p>Shrinks a mask by a number of voxels.</p>
+<p>Each step removes the voxels that share a face with the outside; the
+outside of the image counts as outside the mask.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mask</strong> (<em>NDArray</em><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.bool" title="(in NumPy v2.5)"><em>bool</em></a><em>]</em>) – Boolean mask, shape (X, Y, Z).</p></li>
+<li><p><strong>voxels</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – The number of steps, 0 or more; 0 returns a copy.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The shrunk mask.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If <code class="xref py py-obj docutils literal notranslate"><span class="pre">voxels</span></code> is negative.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>NDArray</em>[<a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.bool" title="(in NumPy v2.5)"><em>bool</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="larmor.dwi.estimate_s0">
 <span class="sig-prename descclassname"><span class="pre">larmor.dwi.</span></span><span class="sig-name descname"><span class="pre">estimate_s0</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">volume</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gtab</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.estimate_s0" title="Link to this definition">#</a></dt>
 <dd><p>Returns the signal without diffusion weighting, S0, of every voxel of a mask.</p>
@@ -1166,6 +1261,62 @@ NaN when there is none there either.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.dwi.fill_mask_holes">
+<span class="sig-prename descclassname"><span class="pre">larmor.dwi.</span></span><span class="sig-name descname"><span class="pre">fill_mask_holes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mask</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.fill_mask_holes" title="Link to this definition">#</a></dt>
+<dd><p>Adds to a mask the voxels it encloses in 3D.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>mask</strong> (<em>NDArray</em><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.bool" title="(in NumPy v2.5)"><em>bool</em></a><em>]</em>) – Boolean mask, shape (X, Y, Z).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The filled mask.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>NDArray</em>[<a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.bool" title="(in NumPy v2.5)"><em>bool</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.dwi.label_mask">
+<span class="sig-prename descclassname"><span class="pre">larmor.dwi.</span></span><span class="sig-name descname"><span class="pre">label_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">labels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.label_mask" title="Link to this definition">#</a></dt>
+<dd><p>Makes a mask of the voxels of a parcellation that hold one of some labels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>labels</strong> (<em>NDArray</em><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.number" title="(in NumPy v2.5)"><em>number</em></a><em>]</em>) – The parcellation, shape (X, Y, Z); its values are rounded to
+whole numbers.</p></li>
+<li><p><strong>values</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.15)"><em>Iterable</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>]</em>) – The labels kept.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Boolean mask, shape of <code class="xref py py-obj docutils literal notranslate"><span class="pre">labels</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>NDArray</em>[<a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.bool" title="(in NumPy v2.5)"><em>bool</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.dwi.largest_component">
+<span class="sig-prename descclassname"><span class="pre">larmor.dwi.</span></span><span class="sig-name descname"><span class="pre">largest_component</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mask</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.largest_component" title="Link to this definition">#</a></dt>
+<dd><p>Keeps the largest connected piece of a mask.</p>
+<p>Voxels are connected when they share a face.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>mask</strong> (<em>NDArray</em><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.bool" title="(in NumPy v2.5)"><em>bool</em></a><em>]</em>) – Boolean mask, shape (X, Y, Z).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The piece, shape of <code class="xref py py-obj docutils literal notranslate"><span class="pre">mask</span></code>; empty for an empty mask.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>NDArray</em>[<a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.bool" title="(in NumPy v2.5)"><em>bool</em></a>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1258,6 +1409,28 @@ to 100.</p></li>
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="larmor.dwi.threshold_mask">
+<span class="sig-prename descclassname"><span class="pre">larmor.dwi.</span></span><span class="sig-name descname"><span class="pre">threshold_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lower</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.threshold_mask" title="Link to this definition">#</a></dt>
+<dd><p>Makes a mask of the voxels whose value lies between two bounds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>image</strong> (<em>NDArray</em><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.floating" title="(in NumPy v2.5)"><em>floating</em></a><em>]</em>) – The image, shape (X, Y, Z).</p></li>
+<li><p><strong>lower</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The lowest value kept, included.</p></li>
+<li><p><strong>upper</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>) – The highest value kept, included; None for no upper bound.
+Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Boolean mask, shape of <code class="xref py py-obj docutils literal notranslate"><span class="pre">image</span></code>; NaN voxels are outside.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>NDArray</em>[<a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.bool" title="(in NumPy v2.5)"><em>bool</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
@@ -1325,12 +1498,19 @@ to 100.</p></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DenoisedDWI.num_signal"><code class="docutils literal notranslate"><span class="pre">DenoisedDWI.num_signal</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.combine_masks"><code class="docutils literal notranslate"><span class="pre">combine_masks()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.create_brain_mask"><code class="docutils literal notranslate"><span class="pre">create_brain_mask()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.denoise_mppca"><code class="docutils literal notranslate"><span class="pre">denoise_mppca()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.dilate_mask"><code class="docutils literal notranslate"><span class="pre">dilate_mask()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.erode_mask"><code class="docutils literal notranslate"><span class="pre">erode_mask()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.estimate_s0"><code class="docutils literal notranslate"><span class="pre">estimate_s0()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.fill_mask_holes"><code class="docutils literal notranslate"><span class="pre">fill_mask_holes()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.label_mask"><code class="docutils literal notranslate"><span class="pre">label_mask()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.largest_component"><code class="docutils literal notranslate"><span class="pre">largest_component()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.mean_b0"><code class="docutils literal notranslate"><span class="pre">mean_b0()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.remove_gibbs_ringing"><code class="docutils literal notranslate"><span class="pre">remove_gibbs_ringing()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.shell_mask"><code class="docutils literal notranslate"><span class="pre">shell_mask()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.threshold_mask"><code class="docutils literal notranslate"><span class="pre">threshold_mask()</span></code></a></li>
 </ul>
   </nav></div>
 

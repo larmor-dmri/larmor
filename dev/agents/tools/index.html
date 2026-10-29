@@ -617,6 +617,48 @@ numbers, or no point of the stroke is inside the grid box.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">add_label_region</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parcellation_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'from_a_to_b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels_b</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">role</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Adds a label region: sets of a parcellation’s labels.</p>
+<p>From A to B keeps the streamlines with one end in set A and the other
+in set B, the ends assigned to labels as <code class="docutils literal notranslate"><span class="pre">endpoint_nodes</span></code> assigns them,
+with <code class="docutils literal notranslate"><span class="pre">end_radius</span></code> as its radius; an empty set takes any end. Stay
+within keeps the streamlines whose points all lie in the voxels of set
+A (with the tractogram’s ends only, only the first and last points), as
+<code class="docutils literal notranslate"><span class="pre">stays_within</span></code> with their mask. The include and within roles keep these
+streamlines and exclude drops them. With no labels the region keeps
+every streamline. The region is removed with its parcellation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>parcellation_id</strong> – The parcellation: a volume or an overlay of one
+volume.</p></li>
+<li><p><strong>mode</strong> – <code class="docutils literal notranslate"><span class="pre">LabelMode.FROM_A_TO_B</span></code> or <code class="docutils literal notranslate"><span class="pre">STAY_WITHIN</span></code>.</p></li>
+<li><p><strong>labels_a</strong> – Set A’s labels, each 1 or more.</p></li>
+<li><p><strong>labels_b</strong> – Set B’s labels, each 1 or more.</p></li>
+<li><p><strong>end_radius</strong> – How far from an end a labelled voxel’s centre may be,
+mm; 0 uses only the voxel the end is in.</p></li>
+<li><p><strong>role</strong> – <code class="docutils literal notranslate"><span class="pre">RegionRole.INCLUDE</span></code>, <code class="docutils literal notranslate"><span class="pre">EXCLUDE</span></code>, <code class="docutils literal notranslate"><span class="pre">WITHIN</span></code> or None, as for a
+sphere.</p></li>
+<li><p><strong>name</strong> – Its name in the scene tree; “Labels 1” and so on if None.</p></li>
+<li><p><strong>apply</strong> – Apply it to every tractogram in the scene.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The region’s id.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If mode or role is not its enum.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If there is no item with that id.</p></li>
+<li><p><a class="reference internal" href="../../reference/api/viewer/#larmor.viewer.OptionError" title="larmor.viewer.OptionError"><strong>OptionError</strong></a> – If the item is not an image of one volume, a label is
+below 1, or the radius is outside 0 to 50 mm.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">add_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mask_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">role</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Adds a mask region: the voxels of an image whose value is not zero.</p>
 <p>A point is inside the mask when it lies in a voxel whose value rounds to
@@ -750,6 +792,32 @@ a region.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">click_label</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">point</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Adds the label at a point to the set being edited, or removes it.</p>
+<p>This is what a click with the Label region tool does. The set is the
+one chosen with <code class="docutils literal notranslate"><span class="pre">edit_labels</span></code>; without one, set A of the selected label
+region, else of the last label region. With no label region at all, one
+is added on the selected parcellation (or the topmost overlay shown as
+labels) and applied to every tractogram.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>point</strong> – The point (x, y, z), world mm.</p></li>
+<li><p><strong>remove</strong> – Remove the label instead of adding it.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The label, or None if the point is in no label.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If there is no label region and no parcellation to make
+one on.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">close_detail</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">detail_id</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Closes a detail window.</p>
 <dl class="field-list simple">
@@ -805,6 +873,27 @@ per vertex each, such as “curv” or “thickness”.</p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If it is not a drawn bundle of the phantom.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">edit_labels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">region_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'a'</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Chooses the label region and set that <code class="docutils literal notranslate"><span class="pre">click_label</span></code> changes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>region_id</strong> – A label region.</p></li>
+<li><p><strong>which</strong> – <code class="docutils literal notranslate"><span class="pre">LabelSet.A</span></code> or <code class="docutils literal notranslate"><span class="pre">LabelSet.B</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If which is not a LabelSet.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If there is no item with that id.</p></li>
+<li><p><a class="reference internal" href="../../reference/api/viewer/#larmor.viewer.OptionError" title="larmor.viewer.OptionError"><strong>OptionError</strong></a> – If the item is not a label region.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -1235,6 +1324,36 @@ outside the grid.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">open_regions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tract_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Adds the regions of a regions file, or of a session, to the scene.</p>
+<p>The images that mask regions name are opened unless an item already
+shows the same file. With a tractogram, the regions are applied to it
+and its region filter is set as the file holds it, so the same
+tractogram keeps the same streamlines.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – A regions file written by the Dissect workspace’s Save step, or
+a session file.</p></li>
+<li><p><strong>tract_id</strong> – The tractogram to apply the regions to; None applies them
+to none.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The images opened and the problems met, one sentence each.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="../../reference/api/viewer/#larmor.viewer.SessionError" title="larmor.viewer.SessionError"><strong>SessionError</strong></a> – If the file is not a regions or session file.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#OSError" title="(in Python v3.15)"><strong>OSError</strong></a> – If the file cannot be read.</p></li>
+<li><p><a class="reference internal" href="../../reference/api/viewer/#larmor.viewer.OptionError" title="larmor.viewer.OptionError"><strong>OptionError</strong></a> – If tract_id is not a tractogram.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">open_simulation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Opens a simulation folder, its phantom in the phantom editor.</p>
 <p>The folder is one <code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">simulate</span></code> or Run writes. Its phantom file opens
@@ -1573,8 +1692,9 @@ extension is not one its category writes.</p></li>
 <dd><p>Writes the streamlines a tractogram’s regions keep to a file.</p>
 <p>The selection is made with <code class="docutils literal notranslate"><span class="pre">larmor.tractography.edit</span></code>, the same tests
 as the views’, over every streamline loaded (not only the subset
-drawn). With the filter off or no region applied, all are written. The
-item itself does not change.</p>
+drawn); with label regions, it is the views’ selection. With the
+filter off or no region applied, all are written. The item itself
+does not change.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -2114,13 +2234,21 @@ a map can use.</p>
 <span class="sig-name descname"><span class="pre">set_tool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tool</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Chooses the pointer tool of the views, which decides what a click does.</p>
 <p><code class="docutils literal notranslate"><span class="pre">Tool.CURSOR</span></code> moves the crosshair, <code class="docutils literal notranslate"><span class="pre">SPHERE</span></code> and <code class="docutils literal notranslate"><span class="pre">BOX</span></code> place regions,
-<code class="docutils literal notranslate"><span class="pre">ZOOM_BOX</span></code> opens a rectangle of a 2D view in a detail window, and
-<code class="docutils literal notranslate"><span class="pre">DRAW_BUNDLE</span></code> draws a phantom bundle: choosing it starts one, as
-<code class="docutils literal notranslate"><span class="pre">start_bundle</span></code> does, and choosing another tool while drawing finishes
-the bundle if it has two points, else drops it.</p>
+<code class="docutils literal notranslate"><span class="pre">ZOOM_BOX</span></code> opens a rectangle of a 2D view in a detail window,
+<code class="docutils literal notranslate"><span class="pre">LABEL_REGION</span></code> adds the label clicked to a label region and removes it
+with Shift (<code class="docutils literal notranslate"><span class="pre">click_label</span></code>), and <code class="docutils literal notranslate"><span class="pre">DRAW_BUNDLE</span></code> draws a phantom bundle:
+choosing it starts one, as <code class="docutils literal notranslate"><span class="pre">start_bundle</span></code> does, and choosing another
+tool while drawing finishes the bundle if it has two points, else
+drops it.</p>
+<p>Each workspace offers its own tools: Cursor and Zoom box in View, Cursor
+and Draw bundle in Simulate, and Cursor, Sphere, Box, Label region and
+Zoom box in Dissect.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>tool</strong> – The tool.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the workspace shown does not offer the tool.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -2128,12 +2256,14 @@ the bundle if it has two points, else drops it.</p>
 <dl class="py function">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">set_workspace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace</span></span></em><span class="sig-paren">)</span></dt>
-<dd><p>Shows the window’s View or Simulate workspace.</p>
-<p>A pointer tool the new workspace does not offer goes back to the cursor.</p>
+<dd><p>Shows the window’s View, Simulate or Dissect workspace.</p>
+<p>A pointer tool the new workspace does not offer goes back to the cursor.
+The region tools are offered only in Dissect.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>workspace</strong> – <code class="docutils literal notranslate"><span class="pre">Workspace.VIEW</span></code> for the scene tree and the inspector, or
-<code class="docutils literal notranslate"><span class="pre">Workspace.SIMULATE</span></code> for the phantom editor’s steps.</p>
+<dd class="field-odd"><p><strong>workspace</strong> – <code class="docutils literal notranslate"><span class="pre">Workspace.VIEW</span></code> for the scene tree and the inspector,
+<code class="docutils literal notranslate"><span class="pre">Workspace.SIMULATE</span></code> for the phantom editor’s steps, or
+<code class="docutils literal notranslate"><span class="pre">Workspace.DISSECT</span></code> for the steps from FODs to a bundle.</p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If workspace is not a Workspace.</p>
