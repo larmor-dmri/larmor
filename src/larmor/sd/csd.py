@@ -9,6 +9,7 @@ from larmor.dwi.mask import unmask
 from larmor.sd.csd_rf import estimate_csd_rf
 from larmor.sd.csd_solver import CSDSolver, csd_shell, fit_csd
 from larmor.sd.model import SDFit
+from larmor.sd.progress import report_voxels
 from larmor.sd.rf import ZonalSHRF
 from larmor.sd.sh import BASES, convert_sh_basis
 from larmor.types import GradientTable, Volume
@@ -132,6 +133,8 @@ class CSDModel:
             f"Processing {int(finite.sum())} voxels across {threads} cores using CSD "
             f"on b = {bval:g} s/mm^2..."
         )
+        n_fitted = int(finite.sum())
+        report_voxels(0, n_fitted)
         fitted = fit_csd(
             signals[finite],
             gtab.bvecs[on_shell],
@@ -140,6 +143,7 @@ class CSDModel:
             self.solver,
             threads,
         )
+        report_voxels(n_fitted, n_fitted)
         coeffs = np.full((len(signals), fitted.shape[1]), np.nan)
         coeffs[finite] = fitted
         if self.basis != "tournier":

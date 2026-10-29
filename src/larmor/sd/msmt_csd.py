@@ -9,6 +9,7 @@ from larmor.dwi.inputs import as_mask, check_dwi
 from larmor.dwi.mask import unmask
 from larmor.sd.model import FIT_CHUNK, SDFit
 from larmor.sd.msmt import fit_msmt, prepare_msmt
+from larmor.sd.progress import report_voxels
 from larmor.sd.rf import ZonalSHRF
 from larmor.sd.sh import BASES, convert_sh_basis
 from larmor.sd.sphere import DIRS_300
@@ -164,11 +165,13 @@ class MSMTCSDModel:
         fitted_coefficients = np.empty((len(fitted), int(sum(sizes))))
         converged = np.empty(len(fitted), dtype=bool)
         chunks = range(0, len(fitted), FIT_CHUNK)
+        report_voxels(0, len(fitted))
         for start in tqdm(chunks, desc="Fitting voxels", disable=not self.progress):
-            stop = start + FIT_CHUNK
+            stop = min(start + FIT_CHUNK, len(fitted))
             fitted_coefficients[start:stop], converged[start:stop] = fit_msmt(
                 fitted[start:stop], design, threads
             )
+            report_voxels(stop, len(fitted))
         if not converged.all():
             LarmorLogger.warning(
                 f"The constrained fit of {int((~converged).sum())} voxels stopped at "

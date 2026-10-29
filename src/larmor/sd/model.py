@@ -15,6 +15,7 @@ from larmor.dwi.mask import unmask
 from larmor.sd.kernel import Kernel, order_rfs
 from larmor.sd.method import SDMethod
 from larmor.sd.peaks import PEAK_RELATIVE_THRESHOLD, SD_MODEL_PEAK_RELATIVE_THRESHOLD
+from larmor.sd.progress import report_voxels
 from larmor.sd.rf import IsotropicRF, ResponseFunction
 from larmor.sd.sh import BASES, fit_sh
 from larmor.sd.solvers import (
@@ -335,14 +336,16 @@ class SDModel:
         )
         unconverged = 0
         starts = range(0, len(signals), FIT_CHUNK)
+        report_voxels(0, len(signals))
         for start in tqdm(starts, desc="Fitting voxels", disable=not self.progress):
-            stop = start + FIT_CHUNK
+            stop = min(start + FIT_CHUNK, len(signals))
             fods[start:stop], chunk_fractions, chunk_unconverged = fit_chunk(
                 signals[start:stop]
             )
             unconverged += chunk_unconverged
             if fractions is not None and chunk_fractions is not None:
                 fractions[start:stop] = chunk_fractions
+            report_voxels(stop, len(signals))
         # Only the elastic net counts solves that stop at their limit.
         if unconverged:
             LarmorLogger.warning(

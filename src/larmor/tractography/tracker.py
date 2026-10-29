@@ -19,6 +19,7 @@ from larmor._log import LarmorLogger
 from larmor._threads import n_threads
 from larmor.io import BatchWriter, open_tractogram_writer
 from larmor.sd import convert_sh_basis, sh_layout
+from larmor.tractography.progress import report_tracking
 from larmor.tractography.seed import MaskSeeds, Seeds, SeedStrategy, write_seeds
 from larmor.tractography.termination import auto_cutoff
 from larmor.types import Tractogram, Volume
@@ -556,11 +557,16 @@ class Tracker:
             if output_seeds is not None
             else contextlib.nullcontext()
         )
+        stage = (
+            "Tracking streamlines" if num_streamlines is not None else "Tracking seeds"
+        )
+        target = num_streamlines if num_streamlines is not None else _count(seeds)
+        report_tracking(0, target or 0, stage)
         with (
             writer as tck_out,
             seeds_file as seeds_out,
             tqdm(
-                total=num_streamlines if num_streamlines is not None else _count(seeds),
+                total=target,
                 unit="streamlines" if num_streamlines is not None else "seeds",
                 disable=not self.progress,
             ) as bar,
@@ -608,6 +614,11 @@ class Tracker:
                     seeds=totals.seeds,
                     no_start=totals.no_start,
                     too_short=totals.too_short,
+                )
+                report_tracking(
+                    totals.accepted if num_streamlines is not None else totals.seeds,
+                    target or 0,
+                    stage,
                 )
                 if _should_stop(totals, num_streamlines):
                     break
