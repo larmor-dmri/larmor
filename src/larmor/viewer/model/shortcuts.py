@@ -42,9 +42,11 @@ class Command(StrEnum):
     SAVE_SESSION = "save_session"
     WORKSPACE_VIEW = "workspace_view"
     WORKSPACE_SIMULATE = "workspace_simulate"
+    WORKSPACE_DISSECT = "workspace_dissect"
     TOOL_CURSOR = "tool_cursor"
     TOOL_SPHERE = "tool_sphere"
     TOOL_BOX = "tool_box"
+    TOOL_LABEL_REGION = "tool_label_region"
     TOOL_ZOOM_BOX = "tool_zoom_box"
     EXPORT = "export"
     DELETE_ITEM = "delete_item"
@@ -133,9 +135,14 @@ def _tool(tool: Tool) -> Callable[[Viewer, ViewKind], None]:
     return lambda viewer, _: viewer.set_tool(tool)
 
 
-def _in_view(viewer: Viewer) -> bool:
-    """Tells whether the View workspace shows, whose tools the region keys choose."""
-    return viewer.scene.view.workspace == Workspace.VIEW
+def _in_dissect(viewer: Viewer) -> bool:
+    """Tells whether the Dissect workspace shows, whose tools the region keys choose."""
+    return viewer.scene.view.workspace == Workspace.DISSECT
+
+
+def _zoom_box_offered(viewer: Viewer) -> bool:
+    """Tells whether the workspace shown offers the Zoom box: View or Dissect."""
+    return viewer.scene.view.workspace in (Workspace.VIEW, Workspace.DISSECT)
 
 
 def _in_simulate(viewer: Viewer) -> bool:
@@ -390,6 +397,13 @@ SHORTCUTS: dict[Command, Shortcut] = {
             _workspace(Workspace.SIMULATE),
         ),
         Shortcut(
+            Command.WORKSPACE_DISSECT,
+            ("Ctrl+3",),
+            "Show the Dissect workspace: the steps from FODs to a bundle",
+            VIEW_KINDS,
+            _workspace(Workspace.DISSECT),
+        ),
+        Shortcut(
             Command.TOOL_CURSOR,
             ("V",),
             "Cursor tool: a click moves the crosshair",
@@ -402,7 +416,7 @@ SHORTCUTS: dict[Command, Shortcut] = {
             "Sphere tool: a click places a sphere region, a drag sets its radius",
             VIEW_KINDS,
             _tool(Tool.SPHERE),
-            enabled_when=_in_view,
+            enabled_when=_in_dissect,
         ),
         Shortcut(
             Command.TOOL_BOX,
@@ -410,7 +424,15 @@ SHORTCUTS: dict[Command, Shortcut] = {
             "Box tool: a drag in a 2D view draws a box region",
             VIEW_KINDS,
             _tool(Tool.BOX),
-            enabled_when=_in_view,
+            enabled_when=_in_dissect,
+        ),
+        Shortcut(
+            Command.TOOL_LABEL_REGION,
+            ("L",),
+            "Label region tool: a click on a parcellation makes a region of its label",
+            VIEW_KINDS,
+            _tool(Tool.LABEL_REGION),
+            enabled_when=_in_dissect,
         ),
         Shortcut(
             Command.TOOL_ZOOM_BOX,
@@ -418,7 +440,7 @@ SHORTCUTS: dict[Command, Shortcut] = {
             "Zoom box tool: a drag in a 2D view opens a detail window",
             VIEW_KINDS,
             _tool(Tool.ZOOM_BOX),
-            enabled_when=_in_view,
+            enabled_when=_zoom_box_offered,
         ),
         _window(
             Command.EXPORT,

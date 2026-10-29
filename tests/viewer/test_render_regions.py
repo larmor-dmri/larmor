@@ -115,3 +115,21 @@ def test_the_3d_view_picks_the_nearest_slice_or_streamline_under_the_pointer(
     picked = view.pick(width / 2, height / 2)
     assert picked is not None
     np.testing.assert_allclose(picked, near, atol=0.5)
+
+
+def test_a_label_region_fills_its_voxels_on_the_slice_and_has_a_surface_in_3d(
+    scene_renderer: tuple[Viewer, SceneRenderer],
+) -> None:
+    viewer, renderer = scene_renderer
+    labels = np.zeros((8, 8, 8), np.int32)
+    labels[2:4, 2:5, 1:6] = 3
+    labels[5:7, 5:7, 1:6] = 4
+    parcellation = viewer.add(Volume(labels, np.eye(4)), Category.OVERLAYS)
+    viewer.move_cursor((0.0, 0.0, 3.0))
+    viewer.add_label_region(parcellation.id, labels_a=[3], labels_b=[4])
+    group = renderer.label_regions.groups[ViewKind.AXIAL]
+    fills = [c for c in group.children if isinstance(c, gfx.Mesh)]
+    # Set A's six voxels and set B's four, each in its own colour.
+    assert [len(f.geometry.positions.data) // 4 for f in fills] == [6, 4]
+    assert fills[0].material.color != fills[1].material.color
+    assert len(renderer.label_regions.groups[ViewKind.THREE_D].children) == 2

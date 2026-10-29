@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 
 from larmor.types import Tractogram
 from larmor.viewer import APP_NAME
+from larmor.viewer.dissect_jobs import start_fod_fit, start_tracking
 from larmor.viewer.jobs import JobBusyError, JobRunner, JobStatus
 from larmor.viewer.loading import DEFAULT, Default, Loader
 from larmor.viewer.mcp_server import (
@@ -30,6 +31,20 @@ from larmor.viewer.mcp_server import (
     PortInUseError,
 )
 from larmor.viewer.model.breakdown import title
+from larmor.viewer.model.dissect import (
+    REGIONS_SUFFIX,
+    Dissection,
+    DissectStep,
+    DwiFiles,
+    FodSettings,
+    StartFrom,
+    TrackSettings,
+    gradient_files,
+    item_file,
+    plan_save,
+    unique_path,
+    write_save,
+)
 from larmor.viewer.model.events import Event, ViewStateChanged
 from larmor.viewer.model.item import Category, Item, ItemId, ViewKind
 from larmor.viewer.model.matlab_import import (
@@ -38,7 +53,7 @@ from larmor.viewer.model.matlab_import import (
     plan_import,
     values_spec,
 )
-from larmor.viewer.model.options import OptionGroup, OptionName
+from larmor.viewer.model.options import Basis, OptionGroup, OptionName
 from larmor.viewer.model.phantom import RunOutputs
 from larmor.viewer.model.registry import REGISTRY, SUBSETS
 from larmor.viewer.model.session import SUFFIX, SessionReport, read_session
@@ -55,6 +70,12 @@ from larmor.viewer.phantom_jobs import (
     start_open,
     start_open_simulation,
     start_run,
+)
+from larmor.viewer.qt.dissect_steps import (
+    DissectNavigator,
+    DissectStepPage,
+    DissectStepsPanel,
+    MaskTarget,
 )
 from larmor.viewer.qt.docks import (
     LAYOUT_FILE,
@@ -105,6 +126,7 @@ if TYPE_CHECKING:
 SIDE_TITLES = {
     Workspace.VIEW: ("Scene", "Inspector"),
     Workspace.SIMULATE: ("Steps", "Step"),
+    Workspace.DISSECT: ("Steps", "Step"),
 }
 
 
@@ -112,11 +134,13 @@ class RunJobBar(JobBar):
     """The job bar, which also tells whether a job runs."""
 
     running = Signal(bool)
+    status = Signal(object)  # the JobStatus, or None when no job runs
 
     def show_job(self, status: JobStatus | None) -> None:
-        """Shows how far the job is, and tells whether one runs."""
+        """Shows how far the job is, and tells whether one runs and how far it is."""
         super().show_job(status)
         self.running.emit(status is not None)
+        self.status.emit(status)
 
 
 class Workspaces(QObject):
@@ -132,13 +156,18 @@ class Workspaces(QObject):
         docks: Docks,
         view: tuple[QWidget, QWidget],
         simulate: tuple[QWidget, QWidget],
+        dissect: tuple[QWidget, QWidget],
         parent: QObject,
     ) -> None:
         """Holds each workspace's left and right panels, and shows the current ones."""
         super().__init__(parent)
         self.viewer = viewer
         self.docks = docks
-        self.panels = {Workspace.VIEW: view, Workspace.SIMULATE: simulate}
+        self.panels = {
+            Workspace.VIEW: view,
+            Workspace.SIMULATE: simulate,
+            Workspace.DISSECT: dissect,
+        }
         self.breakdown_was_open = False  # in Simulate, when View was last shown
         unsubscribe = viewer.scene.subscribe(self._on_event)
         self.destroyed.connect(lambda *_: unsubscribe())
@@ -222,6 +251,7 @@ class MainWindow(QMainWindow):
             self.docks,
             (self.scene_panel, self.inspector),
             (self.steps_panel, self.step_page),
+            (self.dissect_panel, self.dissect_page),
             self,
         )
 
@@ -250,12 +280,18 @@ class MainWindow(QMainWindow):
         self.steps = StepNavigator(viewer, self)
         self.steps_panel = StepsPanel(viewer, self.steps, self)
         self.step_page = StepPage(viewer, self.steps, self)
+        self.dissection = Dissection()
+        self.dissect_steps = DissectNavigator(self.dissection, self)
+        self.dissect_panel = DissectStepsPanel(viewer, self.dissect_steps, self)
+        self.dissect_page = DissectStepPage(viewer, self.dissect_steps, self)
         self.left = QStackedWidget(self)
         self.left.addWidget(self.scene_panel)
         self.left.addWidget(self.steps_panel)
+        self.left.addWidget(self.dissect_panel)
         self.right = QStackedWidget(self)
         self.right.addWidget(self.inspector)
         self.right.addWidget(self.step_page)
+        self.right.addWidget(self.dissect_page)
 
     def _create_bars(self) -> None:
         """Puts the header and, below it, the views' toolbar across the window."""
@@ -386,6 +422,7 @@ class MainWindow(QMainWindow):
         steps.breakdown_requested.connect(self.show_breakdown)
         steps.all_settings_requested.connect(self.show_all_settings)
         self._connect_phantom_panel(self.step_page.panel)
+        self._connect_dissect()
         self.job_bar.running.connect(self._show_running)
         for command, slot in (
             (Command.SETTINGS, self.show_settings),
@@ -500,6 +537,7 @@ class MainWindow(QMainWindow):
         for command, name in (
             (Command.WORKSPACE_VIEW, "&View"),
             (Command.WORKSPACE_SIMULATE, "&Simulate"),
+            (Command.WORKSPACE_DISSECT, "&Dissect"),
         ):
             action = self.shortcuts[command]
             action.setText(name)
@@ -541,6 +579,9 @@ class MainWindow(QMainWindow):
         )
         self.shortcuts[Command.WORKSPACE_SIMULATE].setChecked(
             state.workspace == Workspace.SIMULATE
+        )
+        self.shortcuts[Command.WORKSPACE_DISSECT].setChecked(
+            state.workspace == Workspace.DISSECT
         )
 
     def _show_file_menu(self) -> None:
@@ -780,7 +821,90 @@ class MainWindow(QMainWindow):
             )
             if answer != QMessageBox.StandardButton.Yes:
                 return
+        if not self._save_unsaved_first(final):
+            return
         self.save_session(final)
+
+    def unsaved_items(self) -> list[ItemId]:
+        """Returns the items a session would leave out: those with no file.
+
+        Items the phantom or the regions make again are not among them.
+        """
+        phantom = self.viewer.scene.phantom
+        owned = phantom.owned() if phantom is not None else set()
+        return [
+            item.id
+            for item in self.viewer.scene.items
+            if item.source is None and item.category in SAVABLE and item.id not in owned
+        ]
+
+    def _save_unsaved_first(self, session: Path) -> bool:
+        """Asks whether to save the items with no file beside the session, and does.
+
+        Returns:
+            False if the user cancelled or an item could not be saved, so the
+            session is not saved.
+        """
+        unsaved = self.unsaved_items()
+        if not unsaved:
+            return True
+        scene = self.viewer.scene
+        names = "\n".join(f"- {scene.item(i).name}" for i in unsaved)
+        box = QMessageBox(
+            QMessageBox.Icon.Question,
+            "Save items first",
+            f"These items have no file, so the session cannot reopen them:\n\n"
+            f"{names}\n\nSave them next to the session first?",
+            QMessageBox.StandardButton.Save
+            | QMessageBox.StandardButton.Ignore
+            | QMessageBox.StandardButton.Cancel,
+            self,
+        )
+        box.button(QMessageBox.StandardButton.Ignore).setText("Leave them out")
+        answer = box.exec()
+        if answer == QMessageBox.StandardButton.Cancel:
+            return False
+        if answer == QMessageBox.StandardButton.Save:
+            return self.save_items_beside(unsaved, session)
+        return True
+
+    def save_items_beside(self, items: list[ItemId], session: Path) -> bool:
+        """Saves items without a file next to a session file, named after both.
+
+        Items of the same name get files of their own, and files that exist
+        already are replaced only if the user agrees.
+
+        Returns:
+            False if the user kept the existing files or an item could not be
+            saved, which a message box tells.
+        """
+        stem = _session_name(session)
+        taken = {session}
+        paths: dict[ItemId, Path] = {}
+        for item_id in items:
+            path = item_file(self.viewer.scene, item_id, session.parent, stem)
+            paths[item_id] = unique_path(path, taken)
+            taken.add(paths[item_id])
+        existing = [p.name for p in paths.values() if p.exists()]
+        if existing:
+            answer = QMessageBox.question(
+                self,
+                "Replace files",
+                "These files exist already:\n\n"
+                + "\n".join(existing)
+                + "\n\nReplace them?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            if answer != QMessageBox.StandardButton.Yes:
+                return False
+        for item_id, path in paths.items():
+            try:
+                self.viewer.save_item(item_id, path)
+            except (OSError, ValueError) as e:
+                self._message("Cannot save item", f"Cannot save {path}: {e}")
+                return False
+        return True
 
     def save_session(self, path: str | Path) -> None:
         """Saves the session; a message box names the items it leaves out."""
@@ -1028,6 +1152,211 @@ class MainWindow(QMainWindow):
         box.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         box.show()
 
+    # The Dissect workspace
+
+    def _connect_dissect(self) -> None:
+        """Lets the window carry out the Dissect pages' files, jobs and saves."""
+        page = self.dissect_page
+        page.start.start_requested.connect(self.start_dissection)
+        page.fods.load_requested.connect(self.load_fods)
+        page.fods.estimate_requested.connect(self.estimate_fods)
+        page.track.track_requested.connect(self.track_streamlines)
+        for step in (page.fods, page.track, page.regions):
+            step.new_mask_requested.connect(self.request_new_mask)
+        for step in (page.fods, page.track):
+            step.save_requested.connect(self.ask_save_item)
+            step.job.cancel_requested.connect(self.cancel_job)
+        page.regions.open_requested.connect(self._ask_open_regions)
+        page.save.save_requested.connect(self.save_dissection)
+        self.job_bar.status.connect(page.show_job)
+
+    def show_dissect(self, step: DissectStep | None = None) -> DissectStepPage:
+        """Shows the Dissect workspace, at a step if given, and returns its page."""
+        self.set_workspace(Workspace.DISSECT)
+        if step is not None:
+            self.dissect_steps.go_to(step)
+        return self.dissect_page
+
+    def _dissection_changed(self) -> None:
+        """Shows the Dissect steps and page again after a change of the dissection."""
+        self.dissect_panel.refresh()
+        self.dissect_page.refresh()
+
+    def start_dissection(self, start: StartFrom, path: str | Path) -> None:
+        """Starts a dissection from a tractogram, a FOD file or a DWI.
+
+        A tractogram is read in the background and the Regions step shows. A FOD
+        file is offered on the FODs step, to load in its basis. A DWI opens as a
+        volume and the FODs step shows, ready to estimate, with the gradient files
+        found beside it.
+        """
+        path = Path(path).absolute()
+        state, page = self.dissection, self.dissect_page
+        if start == StartFrom.TRACTOGRAM:
+            state.begin(start)
+
+            def done(item: Item | None, error: str | None) -> None:
+                if item is None:
+                    self._message("Cannot open tractogram", error or str(path))
+                    return
+                state.tractogram = item.id
+                self._dissection_changed()
+
+            self.loader.load(path, Category.TRACTOGRAMS, then=done)
+            self.show_dissect(DissectStep.REGIONS)
+        elif start == StartFrom.FOD:
+            state.begin(start)
+            page.fods.fod_file.set_path(path)
+            self.show_dissect(DissectStep.FODS)
+        else:
+            dwi = DwiFiles(path, *gradient_files(path))
+            state.begin(start, dwi)
+            page.fods.show_dwi(dwi)
+            self.loader.open([path], Category.VOLUMES)
+            self.show_dissect(DissectStep.FODS)
+        self._dissection_changed()
+
+    def load_fods(self, path: str | Path, basis: Basis) -> None:
+        """Reads a FOD file in the background as the FOD the Track step tracks."""
+        state = self.dissection
+
+        def done(item: Item | None, error: str | None) -> None:
+            if item is None:
+                self._message("Cannot open FOD", error or str(path))
+                return
+            self.viewer.set(item.id, OptionName.BASIS, basis)
+            state.fod = item.id
+            self._dissection_changed()
+
+        self.loader.load(Path(path).absolute(), Category.FODS, then=done)
+
+    def estimate_fods(
+        self, dwi: DwiFiles, mask_id: ItemId, settings: FodSettings
+    ) -> None:
+        """Fits FODs to the DWI in the background; a message box tells a failure."""
+        try:
+            start_fod_fit(
+                self.viewer,
+                self.jobs,
+                self.dissection,
+                dwi,
+                mask_id,
+                settings,
+                on_done=lambda items: self._dissection_changed(),
+                on_failed=lambda text: self._message("FOD estimation failed", text),
+            )
+        except (JobBusyError, ValueError) as e:
+            self._message("Cannot estimate FODs", str(e))
+
+    def track_streamlines(
+        self,
+        fod_id: ItemId,
+        seed_mask_id: ItemId | None,
+        mask_id: ItemId | None,
+        settings: TrackSettings,
+    ) -> None:
+        """Tracks the whole brain in the background; a message box tells a failure."""
+        try:
+            start_tracking(
+                self.viewer,
+                self.jobs,
+                self.dissection,
+                fod_id,
+                seed_mask_id,
+                mask_id,
+                settings,
+                on_done=lambda item: self._dissection_changed(),
+                on_failed=lambda text: self._message("Tracking failed", text),
+            )
+        except (JobBusyError, ValueError) as e:
+            self._message("Cannot track", str(e))
+
+    def request_new_mask(self, target: MaskTarget) -> None:
+        """Opens the mask sheet, which fills the mask field of target."""
+        from larmor.viewer.qt.mask_sheet import open_mask_sheet
+
+        dwi = self.dissection.dwi
+        mask = open_mask_sheet(self, self.viewer, None if dwi is None else dwi.bvals)
+        if mask is None:
+            return
+        self.dissection.adopt(mask)
+        page = self.dissect_page
+        page.refresh_pages()
+        if target == MaskTarget.FIT:
+            page.fods.mask_box.show_value(mask)
+        elif target == MaskTarget.TRACK:
+            page.track.mask_box.show_value(mask)
+        elif self.dissection.tractogram is not None:
+            region = self.viewer.add_mask(mask)
+            self.viewer.apply_region(self.dissection.tractogram, region)
+            page.refresh_pages()
+
+    def _ask_open_regions(self) -> None:
+        """Asks for a regions file and applies its regions to the tractogram."""
+        path, _ = QFileDialog.getOpenFileName(self, "Open Regions", "", _REGIONS_FILTER)
+        if path:
+            self.open_regions(path)
+
+    def open_regions(self, path: str | Path) -> None:
+        """Adds a regions file's regions and applies them to the dissected tractogram.
+
+        Problems are shown in a message box.
+        """
+        try:
+            report = self.viewer.open_regions(path, self.dissection.tractogram)
+        except (OSError, ValueError) as e:
+            self._message("Cannot open regions", str(e))
+            return
+        if report.problems:
+            self._message("Regions opened with problems", "\n\n".join(report.problems))
+        self._dissection_changed()
+
+    def save_dissection(
+        self,
+        folder: str | Path,
+        name: str,
+        items: list[ItemId],
+        *,
+        overwrite: bool = False,
+    ) -> None:
+        """Writes the bundle, its regions, the run record and the unsaved items.
+
+        Asks before replacing files that exist, unless overwrite is given; a
+        message box tells why the files cannot be written.
+
+        Args:
+            folder: The folder to write into.
+            name: The start of every file's name.
+            items: The unsaved items to save too, beside those the bundle needs.
+            overwrite: Replace existing files without asking.
+        """
+        state = self.dissection
+        try:
+            plan = plan_save(state, self.viewer.scene, Path(folder), name, items)
+        except ValueError as e:
+            self._message("Cannot save", str(e))
+            return
+        existing = [p.name for p in plan.paths if p.exists()]
+        if existing and not overwrite:
+            answer = QMessageBox.question(
+                self,
+                "Replace files",
+                "These files exist already:\n\n"
+                + "\n".join(existing)
+                + "\n\nReplace them?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            if answer != QMessageBox.StandardButton.Yes:
+                return
+        try:
+            write_save(self.viewer, state, plan)
+        except (OSError, ValueError) as e:
+            self._message("Cannot save", str(e))
+            return
+        self.statusBar().showMessage(f"Bundle saved to {plan.bundle}", NOTICE_MS)
+        self._dissection_changed()
+
     # Showing and closing
 
     def showEvent(self, event: QShowEvent) -> None:  # noqa: N802
@@ -1078,6 +1407,7 @@ def _start_mcp(mcp: McpServer, port: int) -> None:
 NOTICE_MS = 10_000
 _SESSION_FILTER = f"Sessions (*{SUFFIX} *.json);;All files (*)"
 _PHANTOM_FILTER = "Phantom files (*.phantom.json *.json);;All files (*)"
+_REGIONS_FILTER = f"Regions (*{REGIONS_SUFFIX} *.json);;All files (*)"
 
 
 class FrameScheduler(QObject):

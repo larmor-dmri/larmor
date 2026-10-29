@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from larmor.viewer.jobs import SAVING, JobRunner, JobStatus
+from larmor.viewer.jobs import CANCELLING, SAVING, JobRunner, JobStatus
 from larmor.viewer.loading import Loader, LoadStatus
 from larmor.viewer.model.viewer import Viewer
 
@@ -83,7 +83,7 @@ class JobBar(LoadingBar):
         if saving:
             stage = ": Saving, cannot be cancelled"
         self.label.setText(f"{status.name}{stage}")
-        self.cancel.setEnabled(not saving)
+        self.cancel.setEnabled(not saving and status.stage != CANCELLING)
         if status.total > 0:
             self.progress.setRange(0, _STEPS)
             self.progress.setValue(round(status.fraction * _STEPS))

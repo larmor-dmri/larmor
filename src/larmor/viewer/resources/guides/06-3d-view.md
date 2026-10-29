@@ -44,4 +44,4 @@ A drag turns the scene whatever the pointer tool, but a click without moving act
 drawn under the pointer: a streamline, one of the slices or a surface. The region gets the radius or size of the
 last one, and when nothing is under the pointer the status bar says so and no region is placed. With the Cursor
 tool, a click on a region selects it, and the wheel over the selected region makes it larger or smaller instead of
-zooming. A right click offers to add a region at the point under the pointer.
+zooming. In the Dissect workspace, a right click offers to add a region at the point under the pointer.

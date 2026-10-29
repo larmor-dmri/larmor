@@ -121,6 +121,11 @@ class OptionName(StrEnum):
     RADIUS = "radius"
     SIZE = "size"
     MASK = "mask"
+    PARCELLATION = "parcellation"
+    LABEL_MODE = "label_mode"
+    LABELS_A = "labels_a"
+    LABELS_B = "labels_b"
+    END_RADIUS = "end_radius"
 
 
 @dataclass(frozen=True)
@@ -758,6 +763,7 @@ class RegionShape(StrEnum):
     SPHERE = "sphere"
     BOX = "box"
     MASK = "mask"  # the non-zero voxels of an image item
+    LABELS = "labels"  # sets of a parcellation's labels
 
 
 REGION_SHAPES: tuple[RegionShape, ...] = tuple(RegionShape)
@@ -771,6 +777,46 @@ def _sphere(options: object) -> bool:
 def _box(options: object) -> bool:
     """Tells whether the region is a box."""
     return getattr(options, "shape", None) == RegionShape.BOX
+
+
+def _labels(options: object) -> bool:
+    """Tells whether the region is made of labels."""
+    return getattr(options, "shape", None) == RegionShape.LABELS
+
+
+def _from_a_to_b(options: object) -> bool:
+    """Tells whether the region is made of labels and keeps the ends in A and B."""
+    return _labels(options) and getattr(options, "label_mode", None) == (
+        LabelMode.FROM_A_TO_B
+    )
+
+
+def check_labels(value: object) -> None:
+    """Raises OptionError if a label set holds a label below 1."""
+    assert isinstance(value, tuple)
+    if any(label < 1 for label in value):
+        raise OptionError(f"Labels are whole numbers from 1; got {value!r}.")
+
+
+class LabelMode(StrEnum):
+    """What a label region keeps."""
+
+    FROM_A_TO_B = "from_a_to_b"  # one end in set A, the other in set B
+    STAY_WITHIN = "stay_within"  # every point in set A
+
+
+LABEL_MODES: tuple[LabelMode, ...] = tuple(LabelMode)
+
+
+class LabelSet(StrEnum):
+    """One of the two label sets of a region."""
+
+    A = "a"
+    B = "b"
+
+
+# How far from an end a labelled voxel's centre may be for the end to be in it, mm.
+END_RADIUS: Final = 4.0
 
 
 # The colour a region of each role starts with; they differ in lightness as well
@@ -789,8 +835,9 @@ BOX_SIZE: Final = Lengths((10.0, 10.0, 10.0))
 class RegionOptions(ItemOptions):
     """A region's options: its shape, role, place and size, and how it is drawn.
 
-    A sphere uses the centre and the radius, a box the centre and the size, and a
-    mask region names the image whose non-zero voxels it is.
+    A sphere uses the centre and the radius, a box the centre and the size, a
+    mask region names the image whose non-zero voxels it is, and a label region
+    names a parcellation, its mode, its label sets and the end radius.
     """
 
     opacity_3d: float = option(
@@ -858,6 +905,52 @@ class RegionOptions(ItemOptions):
         panel=False,
         item_ref=True,
         group=OptionGroup.REGION,
+    )
+    parcellation: int | None = option(
+        None,
+        "Parcellation",
+        per_item=True,
+        panel=False,
+        item_ref=True,
+        group=OptionGroup.REGION,
+    )
+    label_mode: LabelMode = option(
+        LabelMode.FROM_A_TO_B,
+        "Keeps",
+        choices=LABEL_MODES,
+        per_item=True,
+        group=OptionGroup.REGION,
+        help="From A to B keeps the streamlines with one end in set A and the "
+        "other in set B; stay within keeps those whose points are all in set A.",
+        shown_when=_labels,
+    )
+    labels_a: tuple[int, ...] = option(
+        (),
+        "Labels A",
+        check=check_labels,
+        per_item=True,
+        panel=False,
+        group=OptionGroup.REGION,
+    )
+    labels_b: tuple[int, ...] = option(
+        (),
+        "Labels B",
+        check=check_labels,
+        per_item=True,
+        panel=False,
+        group=OptionGroup.REGION,
+    )
+    end_radius: float = option(
+        END_RADIUS,
+        "End radius (mm)",
+        minimum=0.0,
+        maximum=50.0,
+        step=0.5,
+        per_item=True,
+        group=OptionGroup.REGION,
+        help="How far from a streamline's end a labelled voxel may be for the end "
+        "to be in its label; 0 uses only the voxel the end is in.",
+        shown_when=_from_a_to_b,
     )
 
 

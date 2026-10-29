@@ -34,6 +34,8 @@ Help > Help or F1.
 - [MATLAB files](matlab-files.md): opening MRIToolkit and ExploreDTI results
 - [Phantoms](phantoms.md): the phantom editor and its guided layout, drawing bundles, tissues and the scan, the signal
   breakdown of a voxel, and running a simulation
+- [Dissecting a bundle](dissect.md): from a DWI, a FOD file or a tractogram to a bundle and its regions, and saving
+  them so that the bundle can be reproduced
 - [Keyboard shortcuts](shortcuts.md): every key and mouse control
 
 The [gallery](../gallery/viewer/index.rst) drives the viewer from Python, off screen, and saves screenshots of its
@@ -56,5 +58,6 @@ sessions
 surfaces
 matlab-files
 phantoms
+dissect
 shortcuts
 ```

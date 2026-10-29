@@ -1,6 +1,7 @@
-"""Brain masks from a b0 volume, and putting masked values back on the grid."""
+"""Brain masks from a b0 volume, mask operations, and putting masked values back."""
 
-from typing import cast
+from collections.abc import Iterable
+from typing import Literal, cast
 
 import numpy as np
 import numpy.typing as npt
@@ -71,16 +72,12 @@ def _get_largest_component(
     Raises:
         ValueError: If the mask is empty; `step` names the step that emptied it.
     """
-    labels, nums = label(mask)
-    if nums == 0:
+    if not mask.any():
         raise ValueError(
             f"The brain mask is empty after {step}. Pass a smaller morph, or give "
             "a mask explicitly."
         )
-    sizes = np.bincount(labels.ravel())
-    sizes[0] = 0
-    # numpy's stubs type this comparison as Any; it is a boolean array.
-    return cast(npt.NDArray[np.bool_], labels == np.argmax(sizes))
+    return largest_component(mask)
 
 
 def _make_structuring_element(size: int) -> npt.NDArray[np.bool_]:
@@ -166,3 +163,163 @@ def unmask(
     out = np.full(out_shape, fill_value, dtype=dtype)
     out[mask] = values.astype(dtype)
     return out
+
+
+def threshold_mask(
+    image: npt.NDArray[np.floating], lower: float, upper: float | None = None
+) -> npt.NDArray[np.bool_]:
+    """Makes a mask of the voxels whose value lies between two bounds.
+
+    Args:
+        image: The image, shape (X, Y, Z).
+        lower: The lowest value kept, included.
+        upper: The highest value kept, included; None for no upper bound.
+            Defaults to None.
+
+    Returns:
+        Boolean mask, shape of `image`; NaN voxels are outside.
+    """
+    values = np.asarray(image)
+    mask = values >= lower
+    if upper is not None:
+        mask &= values <= upper
+    return np.asarray(mask, dtype=bool)
+
+
+def label_mask(
+    labels: npt.NDArray[np.number], values: Iterable[int]
+) -> npt.NDArray[np.bool_]:
+    """Makes a mask of the voxels of a parcellation that hold one of some labels.
+
+    Args:
+        labels: The parcellation, shape (X, Y, Z); its values are rounded to
+            whole numbers.
+        values: The labels kept.
+
+    Returns:
+        Boolean mask, shape of `labels`.
+    """
+    data = np.asarray(labels)
+    if not np.issubdtype(data.dtype, np.integer):
+        data = np.rint(np.nan_to_num(data, nan=0.0))
+    return np.isin(data, np.fromiter(values, dtype=np.int64))
+
+
+def dilate_mask(mask: npt.NDArray[np.bool_], voxels: int) -> npt.NDArray[np.bool_]:
+    """Grows a mask by a number of voxels.
+
+    Each step adds the voxels that share a face with the mask.
+
+    Args:
+        mask: Boolean mask, shape (X, Y, Z).
+        voxels: The number of steps, 0 or more; 0 returns a copy.
+
+    Returns:
+        The grown mask.
+
+    Raises:
+        ValueError: If `voxels` is negative.
+    """
+    _check_steps(voxels)
+    if voxels == 0:
+        return np.array(mask, dtype=bool)
+    return np.asarray(binary_dilation(mask, iterations=voxels), dtype=bool)
+
+
+def erode_mask(mask: npt.NDArray[np.bool_], voxels: int) -> npt.NDArray[np.bool_]:
+    """Shrinks a mask by a number of voxels.
+
+    Each step removes the voxels that share a face with the outside; the
+    outside of the image counts as outside the mask.
+
+    Args:
+        mask: Boolean mask, shape (X, Y, Z).
+        voxels: The number of steps, 0 or more; 0 returns a copy.
+
+    Returns:
+        The shrunk mask.
+
+    Raises:
+        ValueError: If `voxels` is negative.
+    """
+    _check_steps(voxels)
+    if voxels == 0:
+        return np.array(mask, dtype=bool)
+    return np.asarray(binary_erosion(mask, iterations=voxels), dtype=bool)
+
+
+def _check_steps(voxels: int) -> None:
+    """Raises ValueError if a number of dilation or erosion steps is negative."""
+    if voxels < 0:
+        raise ValueError(f"The number of voxels must be 0 or more, got {voxels}.")
+
+
+def fill_mask_holes(mask: npt.NDArray[np.bool_]) -> npt.NDArray[np.bool_]:
+    """Adds to a mask the voxels it encloses in 3D.
+
+    Args:
+        mask: Boolean mask, shape (X, Y, Z).
+
+    Returns:
+        The filled mask.
+    """
+    return np.asarray(binary_fill_holes(mask), dtype=bool)
+
+
+def largest_component(mask: npt.NDArray[np.bool_]) -> npt.NDArray[np.bool_]:
+    """Keeps the largest connected piece of a mask.
+
+    Voxels are connected when they share a face.
+
+    Args:
+        mask: Boolean mask, shape (X, Y, Z).
+
+    Returns:
+        The piece, shape of `mask`; empty for an empty mask.
+    """
+    labels, count = label(mask)
+    if count == 0:
+        return np.zeros(np.shape(mask), dtype=bool)
+    sizes = np.bincount(labels.ravel())
+    sizes[0] = 0
+    # numpy's stubs type this comparison as Any; it is a boolean array.
+    return cast(npt.NDArray[np.bool_], labels == np.argmax(sizes))
+
+
+def combine_masks(
+    first: npt.NDArray[np.bool_],
+    second: npt.NDArray[np.bool_],
+    combination: Literal["union", "intersect", "subtract"],
+) -> npt.NDArray[np.bool_]:
+    """Combines two masks on the same grid.
+
+    Args:
+        first: Boolean mask, shape (X, Y, Z).
+        second: Boolean mask of the same shape.
+        combination: "union" keeps the voxels in either mask, "intersect" those
+            in both, and "subtract" those in the first and not the second.
+
+    Returns:
+        The combined mask.
+
+    Raises:
+        ValueError: If the shapes differ or the combination is unknown.
+    """
+    a = np.asarray(first, dtype=bool)
+    b = np.asarray(second, dtype=bool)
+    if a.shape != b.shape:
+        raise ValueError(
+            f"The masks must have the same shape, got {a.shape} and {b.shape}."
+        )
+    if combination == "union":
+        combined = a | b
+    elif combination == "intersect":
+        combined = a & b
+    elif combination == "subtract":
+        combined = a & ~b
+    else:
+        raise ValueError(
+            "The combination must be union, intersect or subtract, got "
+            f"{combination!r}."
+        )
+    return np.asarray(combined, dtype=bool)

@@ -94,8 +94,8 @@ class Worker:
                 if failed is not None:
                     loop.call_soon_threadsafe(self._fail, generation, failed)
                 return
-            if generation != self._generation:
-                return  # replaced while it ran: never hide a newer result
+            if generation != self._generation or self._closed:
+                return  # replaced or closed while it ran: nothing to hand back
             self._outcome = (generation, lambda: done(result))
             loop.call_soon_threadsafe(self._settle, generation)
         finally:
@@ -158,6 +158,13 @@ def _run_now[T](
     finally:
         if ended is not None:
             ended()
+
+
+def flush_all() -> None:
+    """Finishes the work of every open worker, and of the work it starts."""
+    while pending := [w for w in list(_WORKERS) if w.pending]:
+        for worker in pending:
+            worker.flush()
 
 
 def flush(canvases: Iterable[BaseRenderCanvas]) -> None:

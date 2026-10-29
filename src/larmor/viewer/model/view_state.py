@@ -15,6 +15,7 @@ class Tool(StrEnum):
     BOX = "box"  # places a box region
     ZOOM_BOX = "zoom_box"  # opens a rectangle of a 2D view in a detail window
     DRAW_BUNDLE = "draw_bundle"  # adds the points of a phantom bundle
+    LABEL_REGION = "label_region"  # adds a label to a label region, Shift removes it
 
 
 class Workspace(StrEnum):
@@ -22,6 +23,7 @@ class Workspace(StrEnum):
 
     VIEW = "view"  # the scene tree and the inspector
     SIMULATE = "simulate"  # the phantom editor's steps
+    DISSECT = "dissect"  # the steps from FODs to a bundle and its regions
 
 
 class Layout(StrEnum):

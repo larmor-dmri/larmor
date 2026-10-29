@@ -34,12 +34,17 @@ TOOLBAR_HEIGHT = 36  # px
 ICON_SIZE = 18  # px
 NO_DATA = "No images open"  # the centre of the header with nothing to name
 # The workspaces as the switch names them.
-WORKSPACE_NAMES = {Workspace.VIEW: "View", Workspace.SIMULATE: "Simulate"}
+WORKSPACE_NAMES = {
+    Workspace.VIEW: "View",
+    Workspace.SIMULATE: "Simulate",
+    Workspace.DISSECT: "Dissect",
+}
 # Each pointer tool's name and key, as its button shows them.
 TOOL_NAMES = {
     Tool.CURSOR: ("Cursor", "V"),
     Tool.SPHERE: ("Sphere ROI", "O"),
     Tool.BOX: ("Box ROI", "B"),
+    Tool.LABEL_REGION: ("Label region", "L"),
     Tool.ZOOM_BOX: ("Zoom box", "Z"),
     Tool.DRAW_BUNDLE: ("Draw bundle", "N"),
 }

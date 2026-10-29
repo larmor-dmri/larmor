@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from larmor.viewer.model.dissect import DissectStatus
 from larmor.viewer.model.events import (
     DataChanged,
     Event,
@@ -211,7 +212,7 @@ class StepRow(QFrame):
         row.addWidget(self.mark, 0, Qt.AlignmentFlag.AlignTop)
         row.addLayout(text, 1)
 
-    def show_status(self, status: StepStatus, current: bool) -> None:
+    def show_status(self, status: StepStatus | DissectStatus, current: bool) -> None:
         """Shows where the step stands, and whether it is the page shown."""
         self.ready = status.ready
         self.mark.setPixmap(_mark(status.ready).pixmap(MARK_SIZE, MARK_SIZE))

@@ -11,11 +11,26 @@ from larmor.viewer.model.view_state import Layout, Workspace
 
 def test_a_tool_the_new_workspace_lacks_goes_back_to_the_cursor() -> None:
     viewer = Viewer()
+    viewer.set_workspace(Workspace.DISSECT)
     viewer.set_tool(Tool.BOX)
     viewer.set_workspace(Workspace.SIMULATE)
     assert viewer.scene.view.tool == Tool.CURSOR
     viewer.set_tool(Tool.DRAW_BUNDLE)
     viewer.set_workspace(Workspace.VIEW)
+    assert viewer.scene.view.tool == Tool.CURSOR
+
+
+@pytest.mark.parametrize(
+    ("workspace", "tool"),
+    [(Workspace.VIEW, Tool.SPHERE), (Workspace.SIMULATE, Tool.ZOOM_BOX)],
+)
+def test_a_tool_the_workspace_lacks_is_refused(
+    workspace: Workspace, tool: Tool
+) -> None:
+    viewer = Viewer()
+    viewer.set_workspace(workspace)
+    with pytest.raises(ValueError, match=workspace.value):
+        viewer.set_tool(tool)
     assert viewer.scene.view.tool == Tool.CURSOR
 
 

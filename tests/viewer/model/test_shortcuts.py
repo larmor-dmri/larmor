@@ -41,10 +41,12 @@ KEYS: dict[Command, tuple[str, ...]] = {
     Command.SAVE_SESSION: ("Ctrl+S",),
     Command.WORKSPACE_VIEW: ("Ctrl+1",),
     Command.WORKSPACE_SIMULATE: ("Ctrl+2",),
+    Command.WORKSPACE_DISSECT: ("Ctrl+3",),
     Command.TOOL_CURSOR: ("V",),
     Command.TOOL_SPHERE: ("O",),
     Command.TOOL_BOX: ("B",),
     Command.TOOL_ZOOM_BOX: ("Z",),
+    Command.TOOL_LABEL_REGION: ("L",),
     Command.DELETE_ITEM: ("Delete", "Ctrl+Backspace"),
     Command.NEXT_ROLE: ("Tab",),
     Command.EXPORT: ("Ctrl+Shift+S",),
@@ -324,11 +326,17 @@ def test_the_workspace_keys_switch_the_workspace() -> None:
     assert _view(viewer).workspace == Workspace.VIEW
 
 
-def test_the_region_tool_keys_work_only_in_the_view_workspace() -> None:
+def test_the_region_tool_keys_work_only_in_the_dissect_workspace() -> None:
     viewer = _viewer()
+    for command in (Command.TOOL_SPHERE, Command.TOOL_BOX, Command.TOOL_LABEL_REGION):
+        assert not run(viewer, command)  # View offers no regions
+    assert _view(viewer).tool == Tool.CURSOR
+    assert run(viewer, Command.TOOL_ZOOM_BOX)
+    assert run(viewer, Command.WORKSPACE_DISSECT)
+    assert _view(viewer).workspace == Workspace.DISSECT
+    assert _view(viewer).tool == Tool.ZOOM_BOX  # Dissect offers it too
     assert run(viewer, Command.TOOL_SPHERE)
     assert _view(viewer).tool == Tool.SPHERE
     viewer.set_workspace(Workspace.SIMULATE)
     assert _view(viewer).tool == Tool.CURSOR  # Simulate offers no spheres
     assert not run(viewer, Command.TOOL_BOX)
-    assert _view(viewer).tool == Tool.CURSOR

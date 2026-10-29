@@ -94,7 +94,16 @@ def test_the_toolbar_offers_each_workspaces_tools_and_sets_them(
 ) -> None:
     tools = window.toolbar.tools
     shown = {t for t, b in tools.items() if b.isVisible()}
-    assert shown == {Tool.CURSOR, Tool.SPHERE, Tool.BOX, Tool.ZOOM_BOX}
+    assert shown == {Tool.CURSOR, Tool.ZOOM_BOX}
+    window.viewer.set_workspace(Workspace.DISSECT)
+    shown = {t for t, b in tools.items() if b.isVisible()}
+    assert shown == {
+        Tool.CURSOR,
+        Tool.SPHERE,
+        Tool.BOX,
+        Tool.LABEL_REGION,
+        Tool.ZOOM_BOX,
+    }
     tools[Tool.BOX].click()
     assert window.viewer.scene.view.tool == Tool.BOX
     assert tools[Tool.BOX].isChecked() and not tools[Tool.CURSOR].isChecked()

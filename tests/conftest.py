@@ -58,6 +58,7 @@ if any(
         "viewer/test_registration_dialog.py",
         "viewer/test_save_and_jobs.py",
         "viewer/test_phantom_panel.py",
+        "viewer/test_dissect_window.py",
         "viewer/test_phantom_steps.py",
         "viewer/test_breakdown_panel.py",
     ]
@@ -103,6 +104,19 @@ QT_WIDGET_TESTS = {
     "test_view_tools.py",
     "test_window.py",
 }
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_call(item: pytest.Item) -> Iterator[None]:
+    """Finishes the viewer's background drawing work before the test's teardown.
+
+    Work handed back after a test would run on the views of a closed window.
+    """
+    result = yield
+    worker = sys.modules.get("larmor.viewer.render.worker")
+    if worker is not None:
+        worker.flush_all()
+    return result
 
 
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:

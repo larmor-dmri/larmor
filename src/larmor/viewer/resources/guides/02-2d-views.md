@@ -20,15 +20,16 @@ Ctrl is Cmd on macOS. The keys act on the selected view, which has a thin frame 
 
 ## Pointer tools
 
-What a click and a drag do in the views depends on the pointer tool, which you choose with a key. Whatever the
-tool, Ctrl+drag pans and the wheel steps the slice, and a press on the outline or the centre of a region, or on
-the edge of a detail window's box, takes that instead of the tool.
+What a click and a drag do in the views depends on the pointer tool, which you choose with a key. Each workspace
+offers its own tools, and the region tools are offered only in the Dissect workspace. Whatever the tool, Ctrl+drag
+pans and the wheel steps the slice, and a press on the edge of a detail window's box takes that instead of the
+tool. In the Dissect workspace, so does a press on the outline or the centre of a region.
 
 | Key | Tool | A click or a drag in a 2D view |
 |---|---|---|
 | V | Cursor | Moves the crosshair, as above |
-| O | Sphere | Places a sphere region at the click; a drag from the centre sets its radius |
-| B | Box | Draws a box region over the rectangle dragged, as deep as a tractogram's slab |
+| O | Sphere | Places a sphere region at the click; a drag from the centre sets its radius (Dissect only) |
+| B | Box | Draws a box region over the rectangle dragged, as deep as a tractogram's slab (Dissect only) |
 | Z | Zoom box | Drags a rectangle that opens in a detail window |
 | N | Draw bundle | Draws a phantom bundle, in the Simulate workspace (see [Phantoms](15-phantoms.md)) |
 
@@ -37,8 +38,8 @@ and their handles are explained in [Tractograms](05-tractograms.md). The zoom bo
 volume (of the FOD when no volume is loaded) while you drag, and the status bar gives its size in voxels and in mm;
 Shift keeps it square and Alt grows it from the point pressed. When you let go, the rectangle opens in a detail
 window (see [FOD glyphs](07-fod-glyphs.md)) and stays outlined in the view, and dragging its edge moves the detail.
-A right click in a view offers to add a sphere or box region at that point, or to open a 12 x 12 voxel zoom box
-around it.
+A right click in a view offers to open a 12 x 12 voxel zoom box around that point, and in the Dissect workspace
+also to add a sphere or box region there.
 
 ## The crosshair and the readout
 

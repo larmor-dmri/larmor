@@ -17,6 +17,8 @@ type Report = Callable[[int, int, str], None]
 # The stage in which a job writes its outputs; from then on a cancel leaves it to
 # finish and deliver them.
 SAVING = "Saving"
+# The stage shown from a cancel until the job's thread stops.
+CANCELLING = "Cancelling..."
 
 
 class JobCancelledError(Exception):
@@ -123,8 +125,8 @@ class JobRunner:
         """Stops the running job, which then delivers nothing.
 
         The job's thread ends at its next report; until then the runner stays
-        busy and refuses a new job. A job that is saving is left to finish and
-        deliver its result, unless force is given.
+        busy, refuses a new job and shows the job as cancelling. A job that is
+        saving is left to finish and deliver its result, unless force is given.
 
         Args:
             force: Drop even a job that is saving, as when its window closes.
@@ -134,11 +136,17 @@ class JobRunner:
                 LarmorLogger.info(f"{self._running} is saving; it cannot be cancelled.")
                 return
             self._generation += 1
-        if self._running is not None:
-            LarmorLogger.info(f"{self._running} was cancelled.")
-            self._cancelled = self._thread
+        name = self._running
         self._running = None
-        self._on_status(None)
+        if name is None:
+            self._on_status(None)
+            return
+        LarmorLogger.info(f"{name} was cancelled.")
+        self._cancelled = self._thread
+        if self._stopping():
+            self._on_status(JobStatus(name, 0, 0, CANCELLING))
+        else:
+            self._on_status(None)
 
     def stop(self) -> None:
         """Cancels the job and reports nothing more, as the window is closing."""
@@ -176,6 +184,8 @@ class JobRunner:
             message = f"{name} failed: {str(e) or type(e).__name__}"
             self._post(partial(self._failed, generation, message, on_failed))
             return
+        finally:
+            self._post(partial(self._stopped, threading.current_thread()))
         self._post(partial(self._done, generation, result, on_done))
 
     # The main thread
@@ -206,6 +216,14 @@ class JobRunner:
         self._finish()
         LarmorLogger.error(message)
         (on_failed or self._on_error)(message)
+
+    def _stopped(self, thread: threading.Thread) -> None:
+        """Clears the cancelling status once a cancelled job's thread has stopped."""
+        if self._cancelled is not thread:
+            return
+        self._cancelled = None
+        if self._running is None:
+            self._on_status(None)
 
     def _finish(self) -> None:
         """Ends the job so that a new one may start."""

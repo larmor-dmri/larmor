@@ -1,6 +1,7 @@
 """Defines the Viewer, whose methods make every change to what the viewer shows."""
 
 import importlib.util
+import json
 import math
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
@@ -54,6 +55,7 @@ from larmor.viewer.model.export import (
     view_size,
 )
 from larmor.viewer.model.item import VIEW_GRID, Category, Item, ItemId, ViewKind
+from larmor.viewer.model.label_regions import label_at
 from larmor.viewer.model.labels import labels_in
 from larmor.viewer.model.matlab_import import (
     LoadAs,
@@ -68,12 +70,15 @@ from larmor.viewer.model.matlab_import import (
 )
 from larmor.viewer.model.options import (
     BOX_SIZE,
+    END_RADIUS,
     ROLE_COLOURS,
     SPHERE_RADIUS,
     SURFACE_COLOUR,
     SURFACE_COLOURS,
     Colormap,
     Colouring,
+    LabelMode,
+    LabelSet,
     Lengths,
     OptionError,
     OptionName,
@@ -112,6 +117,7 @@ from larmor.viewer.model.phantom_editor import PhantomEditor, Schedule, simplify
 from larmor.viewer.model.readout import Readout, closest_axis, read_volume
 from larmor.viewer.model.readout import slice_index as volume_slice
 from larmor.viewer.model.regions import (
+    LABEL_CACHE,
     RegionKey,
     mask_ids,
     mask_regions_of,
@@ -199,6 +205,11 @@ _REGION_GEOMETRY: Final = (
     OptionName.RADIUS,
     OptionName.SIZE,
     OptionName.MASK,
+    OptionName.PARCELLATION,
+    OptionName.LABEL_MODE,
+    OptionName.LABELS_A,
+    OptionName.LABELS_B,
+    OptionName.END_RADIUS,
 )
 # The events that can change the grid of the detail windows' rectangles.
 _GRID_EVENTS: Final = (
@@ -213,6 +224,7 @@ _REGION_NAMES: Final = {
     RegionShape.SPHERE: "Sphere",
     RegionShape.BOX: "Box",
     RegionShape.MASK: "Mask",
+    RegionShape.LABELS: "Labels",
 }
 # The range of a detail window's export scale, times its picture's size.
 DETAIL_SCALES: Final = (1.0, 8.0)
@@ -230,8 +242,15 @@ SAVABLE: Final = (
 
 # The pointer tools each workspace offers.
 WORKSPACE_TOOLS: Final = {
-    Workspace.VIEW: (Tool.CURSOR, Tool.SPHERE, Tool.BOX, Tool.ZOOM_BOX),
+    Workspace.VIEW: (Tool.CURSOR, Tool.ZOOM_BOX),
     Workspace.SIMULATE: (Tool.CURSOR, Tool.DRAW_BUNDLE),
+    Workspace.DISSECT: (
+        Tool.CURSOR,
+        Tool.SPHERE,
+        Tool.BOX,
+        Tool.LABEL_REGION,
+        Tool.ZOOM_BOX,
+    ),
 }
 
 # Set on the methods that agents may call; see `agent_action`.
@@ -305,6 +324,8 @@ class Viewer:
         # those of the last one added or resized.
         self.region_radius: float = SPHERE_RADIUS
         self.box_size: Lengths = BOX_SIZE
+        # The label region and set a click with the Label region tool edits.
+        self.label_target: tuple[ItemId, LabelSet] | None = None
 
     # Items
 
@@ -640,6 +661,7 @@ class Viewer:
             if item.id == self.scene.view.main_volume:
                 self._pass_main_volume(item)
             self.scene.remove(target)
+            LABEL_CACHE.forget(item.data)
             self._phantom.forget(target)
             self._labels = {k: v for k, v in self._labels.items() if k[0] != target}
             self._tsf_values.pop(target, None)
@@ -1090,9 +1112,8 @@ class Viewer:
             for key, value in entry.options.items():
                 try:
                     name = OptionName(key)
-                    if name == OptionName.MASK:
+                    if name in (OptionName.MASK, OptionName.PARCELLATION):
                         changes[name] = ids.get(value) if _is_id(value) else None
-
                         continue
 
                     changes[name] = validate(RegionOptions, name, value)
@@ -1103,6 +1124,11 @@ class Viewer:
                 problems.append(
                     f"{entry.name} is dropped, as the image it is a mask of was not "
                     "opened."
+                )
+                continue
+            if options.shape == RegionShape.LABELS and options.parcellation is None:
+                problems.append(
+                    f"{entry.name} is dropped, as its parcellation was not opened."
                 )
                 continue
             added[entry.id] = self._add_region(
@@ -2234,6 +2260,175 @@ class Viewer:
         )
 
     @agent_action
+    def add_label_region(
+        self,
+        parcellation_id: ItemId,
+        mode: LabelMode = LabelMode.FROM_A_TO_B,
+        labels_a: Iterable[int] = (),
+        labels_b: Iterable[int] = (),
+        end_radius: float = END_RADIUS,
+        role: RegionRole | None = None,
+        name: str | None = None,
+        *,
+        apply: bool = False,
+    ) -> ItemId:
+        """Adds a label region: sets of a parcellation's labels.
+
+        From A to B keeps the streamlines with one end in set A and the other
+        in set B, the ends assigned to labels as `endpoint_nodes` assigns them,
+        with `end_radius` as its radius; an empty set takes any end. Stay
+        within keeps the streamlines whose points all lie in the voxels of set
+        A (with the tractogram's ends only, only the first and last points), as
+        `stays_within` with their mask. The include and within roles keep these
+        streamlines and exclude drops them. With no labels the region keeps
+        every streamline. The region is removed with its parcellation.
+
+        Args:
+            parcellation_id: The parcellation: a volume or an overlay of one
+                volume.
+            mode: `LabelMode.FROM_A_TO_B` or `STAY_WITHIN`.
+            labels_a: Set A's labels, each 1 or more.
+            labels_b: Set B's labels, each 1 or more.
+            end_radius: How far from an end a labelled voxel's centre may be,
+                mm; 0 uses only the voxel the end is in.
+            role: `RegionRole.INCLUDE`, `EXCLUDE`, `WITHIN` or None, as for a
+                sphere.
+            name: Its name in the scene tree; "Labels 1" and so on if None.
+            apply: Apply it to every tractogram in the scene.
+
+        Returns:
+            The region's id.
+
+        Raises:
+            TypeError: If mode or role is not its enum.
+            ValueError: If there is no item with that id.
+            OptionError: If the item is not an image of one volume, a label is
+                below 1, or the radius is outside 0 to 50 mm.
+        """
+        _require(mode, LabelMode)
+        if role is not None:
+            _require(role, RegionRole)
+        image = self.scene.item(parcellation_id)
+        if image not in self._images_of_one_volume():
+            raise OptionError(f"{image.name} is not a volume or overlay of one volume.")
+        a = validate(RegionOptions, OptionName.LABELS_A, labels_a)
+        b = validate(RegionOptions, OptionName.LABELS_B, labels_b)
+        radius = validate(RegionOptions, OptionName.END_RADIUS, end_radius)
+        assert isinstance(a, tuple) and isinstance(b, tuple)
+        assert isinstance(radius, float)
+        options = RegionOptions(
+            shape=RegionShape.LABELS,
+            role=role or RegionRole.INCLUDE,
+            parcellation=parcellation_id,
+            label_mode=mode,
+            labels_a=a,
+            labels_b=b,
+            end_radius=radius,
+        )
+        return self._add_region(options, name, apply, role_given=role is not None)
+
+    @agent_action
+    def edit_labels(self, region_id: ItemId, which: LabelSet = LabelSet.A) -> None:
+        """Chooses the label region and set that `click_label` changes.
+
+        Args:
+            region_id: A label region.
+            which: `LabelSet.A` or `LabelSet.B`.
+
+        Raises:
+            TypeError: If which is not a LabelSet.
+            ValueError: If there is no item with that id.
+            OptionError: If the item is not a label region.
+        """
+        _require(which, LabelSet)
+        self._label_region(region_id)
+        self.label_target = (region_id, which)
+
+    @agent_action
+    def click_label(
+        self, point: tuple[float, float, float], remove: bool = False
+    ) -> int | None:
+        """Adds the label at a point to the set being edited, or removes it.
+
+        This is what a click with the Label region tool does. The set is the
+        one chosen with `edit_labels`; without one, set A of the selected label
+        region, else of the last label region. With no label region at all, one
+        is added on the selected parcellation (or the topmost overlay shown as
+        labels) and applied to every tractogram.
+
+        Args:
+            point: The point (x, y, z), world mm.
+            remove: Remove the label instead of adding it.
+
+        Returns:
+            The label, or None if the point is in no label.
+
+        Raises:
+            ValueError: If there is no label region and no parcellation to make
+                one on.
+        """
+        region_id, which = self._label_target()
+        o = self._label_region(region_id)
+        assert o.parcellation is not None
+        image = self.scene.item(o.parcellation).data
+        assert isinstance(image, Volume)
+        label = label_at(image, _position(point))
+        if label == 0:
+            return None
+        name = OptionName.LABELS_A if which == LabelSet.A else OptionName.LABELS_B
+        current = set(getattr(o, name))
+        changed = current - {label} if remove else current | {label}
+        if changed != current:
+            self.set(region_id, name, tuple(changed))
+        return label
+
+    def _label_target(self) -> tuple[ItemId, LabelSet]:
+        """Returns the label region and set a click edits, adding a region if none."""
+        regions = [
+            r.id
+            for r in self.scene.in_category(Category.REGIONS)
+            if isinstance(r.options, RegionOptions)
+            and r.options.shape == RegionShape.LABELS
+            and r.options.parcellation is not None
+        ]
+        if self.label_target is not None and self.label_target[0] in regions:
+            return self.label_target
+        selected = self.scene.view.selected
+        if selected in regions:
+            return selected, LabelSet.A
+        if regions:
+            return regions[-1], LabelSet.A
+        parcellation = self._parcellation_shown()
+        if parcellation is None:
+            raise ValueError(
+                "Open a parcellation and show it as labels to pick its labels."
+            )
+        return self.add_label_region(parcellation, apply=True), LabelSet.A
+
+    def _parcellation_shown(self) -> ItemId | None:
+        """Returns the selected overlay shown as labels, else the topmost one shown."""
+        overlays = [
+            o
+            for o in self.scene.in_category(Category.OVERLAYS)
+            if isinstance(o.options, OverlayOptions)
+            and o.options.labels
+            and o.volume_count == 1
+        ]
+        for overlay in overlays:
+            if overlay.id == self.scene.view.selected:
+                return overlay.id
+        visible = [o for o in overlays if o.options.visible]
+        return visible[0].id if visible else None
+
+    def _label_region(self, region_id: ItemId) -> RegionOptions:
+        """Returns a label region's options; raises OptionError for another item."""
+        item = self.scene.item(region_id)
+        o = item.options
+        if not isinstance(o, RegionOptions) or o.shape != RegionShape.LABELS:
+            raise OptionError(f"{item.name} is not a label region.")
+        return o
+
+    @agent_action
     def apply_region(
         self, tract_id: ItemId, region_id: ItemId, applied: bool = True
     ) -> None:
@@ -2287,8 +2482,9 @@ class Viewer:
 
         The selection is made with `larmor.tractography.edit`, the same tests
         as the views', over every streamline loaded (not only the subset
-        drawn). With the filter off or no region applied, all are written. The
-        item itself does not change.
+        drawn); with label regions, it is the views' selection. With the
+        filter off or no region applied, all are written. The item itself
+        does not change.
 
         Args:
             tract_id: The tractogram.
@@ -2310,7 +2506,11 @@ class Viewer:
         assert isinstance(tractogram, Tractogram)
         regions = region_filter(self.scene, item)
         kept = tractogram
-        if regions is not None:
+        if regions is not None and regions.labels:
+            selection = self.region_selection(tract_id)
+            assert selection is not None
+            kept = tractogram[selection]
+        elif regions is not None:
             from larmor.tractography import EditOptions, edit
 
             options = EditOptions(
@@ -2407,6 +2607,87 @@ class Viewer:
         total = data.num_streamlines
         kept = total if selection is None else int(np.count_nonzero(selection))
         self.scene.filtered(item_id, kept, total)
+
+    @agent_action
+    def open_regions(
+        self, path: str | Path, tract_id: ItemId | None = None
+    ) -> SessionReport:
+        """Adds the regions of a regions file, or of a session, to the scene.
+
+        The images that mask regions name are opened unless an item already
+        shows the same file. With a tractogram, the regions are applied to it
+        and its region filter is set as the file holds it, so the same
+        tractogram keeps the same streamlines.
+
+        Args:
+            path: A regions file written by the Dissect workspace's Save step, or
+                a session file.
+            tract_id: The tractogram to apply the regions to; None applies them
+                to none.
+
+        Returns:
+            The images opened and the problems met, one sentence each.
+
+        Raises:
+            SessionError: If the file is not a regions or session file.
+            OSError: If the file cannot be read.
+            OptionError: If tract_id is not a tractogram.
+        """
+        if tract_id is not None:
+            self._tractogram_options(tract_id)
+        session = read_session(Path(path))
+        problems = list(session.problems)
+        ids, opened = self._open_region_images(session, problems)
+        added, refused = self._restore_regions(session, ids)
+        problems += refused
+        if tract_id is not None:
+            for region_id in added.values():
+                self.apply_region(tract_id, region_id)
+            raw = json.loads(Path(path).read_text(encoding="utf-8")).get("filter")
+            if isinstance(raw, dict):
+                for name in (OptionName.REGION_FILTER, OptionName.ENDS_ONLY):
+                    if isinstance(raw.get(name), bool):
+                        self.set(tract_id, name, raw[name])
+        for problem in problems:
+            LarmorLogger.warning(problem)
+        return SessionReport(tuple(opened), tuple(problems))
+
+    def _open_region_images(
+        self, session: Session, problems: list[str]
+    ) -> tuple[dict[ItemId, ItemId], list[Item]]:
+        """Opens the images a regions file names, unless an item shows the same file.
+
+        Args:
+            session: The regions file, as read.
+            problems: Told the images that cannot be opened.
+
+        Returns:
+            The id each image had when saved, mapped to its item's id now, and the
+            items opened.
+        """
+        shown = {
+            item.source.resolve(): item.id
+            for item in self.scene.items
+            if item.source is not None
+        }
+        ids: dict[ItemId, ItemId] = {}
+        opened: list[Item] = []
+        for entry in session.items:
+            source = entry.locate()
+            if source is None:
+                problems.append(missing_file(entry))
+                continue
+            known = shown.get(source.resolve())
+            if known is None:
+                try:
+                    item = self.load(source, entry.category)
+                except Exception as e:  # reported, and the other regions still open
+                    problems.append(f"Cannot open {source}: {e}")
+                    continue
+                opened.append(item)
+                known = item.id
+            ids[entry.id] = known
+        return ids, opened
 
     @agent_action
     def kept_streamlines(self, item_id: ItemId) -> int:
@@ -3026,9 +3307,12 @@ class Viewer:
         self.scene.set_view(ViewField.MAXIMISED, state.maximised)
         self.scene.set_view(ViewField.OVERLAY_VISIBLE, state.overlay_visible)
         self.scene.set_view(ViewField.CROSSHAIR_VISIBLE, state.crosshair_visible)
-        # Drawing a bundle is not restored, so neither is its tool.
+        # Drawing a bundle is not restored, so neither is its tool; nor is a tool
+        # the workspace does not offer, as the region tools in View once were.
         drawing = state.tool == Tool.DRAW_BUNDLE and not self.drawing
-        self.scene.set_view(ViewField.TOOL, Tool.CURSOR if drawing else state.tool)
+        offered = state.tool in WORKSPACE_TOOLS[state.workspace]
+        tool = state.tool if offered and not drawing else Tool.CURSOR
+        self.scene.set_view(ViewField.TOOL, tool)
         self.scene.set_view(ViewField.WORKSPACE, state.workspace)
         self.scene.set_view(ViewField.LAYOUT, state.layout)
         self.move_cursor(cursor)
@@ -3048,18 +3332,34 @@ class Viewer:
         """Chooses the pointer tool of the views, which decides what a click does.
 
         `Tool.CURSOR` moves the crosshair, `SPHERE` and `BOX` place regions,
-        `ZOOM_BOX` opens a rectangle of a 2D view in a detail window, and
-        `DRAW_BUNDLE` draws a phantom bundle: choosing it starts one, as
-        `start_bundle` does, and choosing another tool while drawing finishes
-        the bundle if it has two points, else drops it.
+        `ZOOM_BOX` opens a rectangle of a 2D view in a detail window,
+        `LABEL_REGION` adds the label clicked to a label region and removes it
+        with Shift (`click_label`), and `DRAW_BUNDLE` draws a phantom bundle:
+        choosing it starts one, as `start_bundle` does, and choosing another
+        tool while drawing finishes the bundle if it has two points, else
+        drops it.
+
+        Each workspace offers its own tools: Cursor and Zoom box in View, Cursor
+        and Draw bundle in Simulate, and Cursor, Sphere, Box, Label region and
+        Zoom box in Dissect.
 
         Args:
             tool: The tool.
+
+        Raises:
+            ValueError: If the workspace shown does not offer the tool.
         """
         tool = Tool(tool)
+        if tool == Tool.DRAW_BUNDLE and self.drawing:
+            return
+        workspace = self.scene.view.workspace
+        if tool not in WORKSPACE_TOOLS[workspace]:
+            raise ValueError(
+                f"The {workspace.value} workspace does not offer the "
+                f"{tool.value} tool; show a workspace that does first."
+            )
         if tool == Tool.DRAW_BUNDLE:
-            if not self.drawing:
-                self.start_bundle()  # which chooses the tool
+            self.start_bundle()  # which chooses the tool
             return
         if self.drawing:
             _, draft = self._phantom.draft()
@@ -3373,13 +3673,15 @@ class Viewer:
 
     @agent_action
     def set_workspace(self, workspace: Workspace) -> None:
-        """Shows the window's View or Simulate workspace.
+        """Shows the window's View, Simulate or Dissect workspace.
 
         A pointer tool the new workspace does not offer goes back to the cursor.
+        The region tools are offered only in Dissect.
 
         Args:
-            workspace: `Workspace.VIEW` for the scene tree and the inspector, or
-                `Workspace.SIMULATE` for the phantom editor's steps.
+            workspace: `Workspace.VIEW` for the scene tree and the inspector,
+                `Workspace.SIMULATE` for the phantom editor's steps, or
+                `Workspace.DISSECT` for the steps from FODs to a bundle.
 
         Raises:
             TypeError: If workspace is not a Workspace.
@@ -4199,6 +4501,8 @@ def _check_region_option(item: Item, name: OptionName, value: object) -> None:
         raise OptionError(f"{item.name}: a region's shape is set when it is added.")
     if name == OptionName.MASK and o.shape != RegionShape.MASK:
         raise OptionError(f"{item.name} is a {o.shape}, so it names no mask.")
+    if name == OptionName.PARCELLATION and o.shape != RegionShape.LABELS:
+        raise OptionError(f"{item.name} is a {o.shape}, so it names no parcellation.")
 
 
 def _item_ref_error(scene: Scene, item: Item, name: OptionName, value: int) -> str:

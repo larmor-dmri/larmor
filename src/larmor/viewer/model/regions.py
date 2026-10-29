@@ -10,6 +10,12 @@ import numpy as np
 from larmor.types import Tractogram, Volume
 from larmor.viewer.model.camera import Vec3
 from larmor.viewer.model.item import Category, Item, ItemId
+from larmor.viewer.model.label_regions import (
+    LabelCache,
+    LabelRegion,
+    LabelTest,
+    tests_anything,
+)
 from larmor.viewer.model.options import (
     RegionOptions,
     RegionRole,
@@ -29,6 +35,8 @@ type RegionKey = tuple[object, ...]
 # How far the slice may be from a sphere's centre for the centre to count as on
 # it, mm.
 ON_SLICE = 1e-3
+# The labels of the streamlines' ends and points, shared by the label regions.
+LABEL_CACHE = LabelCache()
 
 
 @dataclass(frozen=True)
@@ -46,10 +54,19 @@ def region_data(options: RegionOptions) -> object:
     """Returns a region item's data for its options.
 
     Returns:
-        A `Sphere` or a `Box` of `larmor.tractography`, or a `MaskRegion`.
+        A `Sphere` or a `Box` of `larmor.tractography`, a `MaskRegion` or a
+        `LabelRegion`.
     """
     if options.shape == RegionShape.MASK:
         return MaskRegion(options.mask)
+    if options.shape == RegionShape.LABELS:
+        return LabelRegion(
+            options.parcellation,
+            options.label_mode,
+            options.labels_a,
+            options.labels_b,
+            options.end_radius,
+        )
     from larmor.tractography import Box, Sphere
 
     if options.shape == RegionShape.BOX:
@@ -73,29 +90,58 @@ def region_key(scene: Scene, item: Item) -> RegionKey:
     for region in applied_regions(scene, item):
         r = region.options
         assert isinstance(r, RegionOptions)
-        shapes.append((region.id, r.shape, r.role, r.centre, r.radius, r.size, r.mask))
+        shapes.append(
+            (
+                region.id,
+                r.shape,
+                r.role,
+                r.centre,
+                r.radius,
+                r.size,
+                r.mask,
+                r.parcellation,
+                r.label_mode,
+                r.labels_a,
+                r.labels_b,
+                r.end_radius,
+            )
+        )
     return (o.region_filter, o.ends_only, tuple(shapes))
 
 
 def mask_ids(scene: Scene, item: Item) -> tuple[ItemId, ...]:
-    """Returns the ids of the images a tractogram's mask regions name."""
+    """Returns the ids of the images a tractogram's mask and label regions name."""
     ids = []
     for region in applied_regions(scene, item):
-        r = region.options
-        assert isinstance(r, RegionOptions)
-        if r.shape == RegionShape.MASK and r.mask is not None:
-            ids.append(r.mask)
+        image = image_of(region)
+        if image is not None:
+            ids.append(image)
     return tuple(ids)
+
+
+def image_of(region: Item) -> ItemId | None:
+    """Returns the image a mask or label region names; None for other regions."""
+    r = region.options
+    assert isinstance(r, RegionOptions)
+    if r.shape == RegionShape.MASK:
+        return r.mask
+    if r.shape == RegionShape.LABELS:
+        return r.parcellation
+    return None
 
 
 @dataclass(frozen=True, eq=False)
 class RegionFilter:
-    """The regions a streamline must pass through, must not, and must stay within."""
+    """The regions a streamline must pass through, must not, and must stay within.
+
+    The label regions are kept apart, each with its own test.
+    """
 
     include: tuple[Region, ...]
     exclude: tuple[Region, ...]
     within: tuple[Region, ...] = ()
     ends_only: bool = False
+    labels: tuple[LabelTest, ...] = ()
 
 
 def region_filter(scene: Scene, item: Item) -> RegionFilter | None:
@@ -110,16 +156,38 @@ def region_filter(scene: Scene, item: Item) -> RegionFilter | None:
     if not o.region_filter:
         return None
     lists: dict[RegionRole, list[Region]] = {role: [] for role in RegionRole}
+    labels: list[LabelTest] = []
     for region in applied_regions(scene, item):
         r = region.options
         assert isinstance(r, RegionOptions)
+        if isinstance(region.data, LabelRegion):
+            test = _label_test(scene, region)
+            if test is not None:
+                labels.append(test)
+            continue
         library = _library_region(scene, region)
         if library is not None:
             lists[r.role].append(library)
     include, exclude, within = (tuple(lists[role]) for role in RegionRole)
-    if not include and not exclude and not within:
+    if not include and not exclude and not within and not labels:
         return None
-    return RegionFilter(include, exclude, within, o.ends_only)
+    return RegionFilter(include, exclude, within, o.ends_only, tuple(labels))
+
+
+def _label_test(scene: Scene, region: Item) -> LabelTest | None:
+    """Returns a label region's test; None without parcellation or labels.
+
+    The include and within roles keep the streamlines the region selects, and
+    exclude drops them.
+    """
+    data = region.data
+    assert isinstance(data, LabelRegion) and isinstance(region.options, RegionOptions)
+    if data.parcellation is None or not tests_anything(data):
+        return None
+    image = scene.item(data.parcellation).data
+    assert isinstance(image, Volume)
+    drop = region.options.role == RegionRole.EXCLUDE
+    return LabelTest(image, data, drop, LABEL_CACHE)
 
 
 def _library_region(scene: Scene, region: Item) -> Region | None:
@@ -138,7 +206,8 @@ def passes_regions(tractogram: Tractogram, regions: RegionFilter) -> np.ndarray:
     """Tests which streamlines pass the regions.
 
     A streamline is kept when it passes through every include region, through no
-    exclude one, and stays within every within region.
+    exclude one, stays within every within region, and passes every label
+    region's test.
 
     Args:
         tractogram: The streamlines to test.
@@ -156,15 +225,17 @@ def passes_regions(tractogram: Tractogram, regions: RegionFilter) -> np.ndarray:
         kept &= ~passes_through(tractogram, region, ends_only=regions.ends_only)
     for region in regions.within:
         kept &= stays_within(tractogram, region, ends_only=regions.ends_only)
+    for test in regions.labels:
+        kept &= test.kept(tractogram, regions.ends_only)
     return kept
 
 
 def mask_regions_of(scene: Scene, image_id: ItemId) -> list[Item]:
-    """Returns the mask regions that name an image."""
+    """Returns the mask and label regions that name an image."""
     return [
         region
         for region in scene.in_category(Category.REGIONS)
-        if isinstance(region.data, MaskRegion) and region.data.mask == image_id
+        if image_of(region) == image_id
     ]
 
 
@@ -206,7 +277,7 @@ def cross_section(
 
     Returns:
         The circle or rectangle in the slice's plane; None if the slice misses
-        the region, or for a mask region.
+        the region, or for a mask or label region.
     """
     centre = np.array(options.centre, dtype=float)
     offset = coordinate - centre[axis]
@@ -332,7 +403,7 @@ def ray_hit(
 
     Returns:
         The distance from the origin, mm, at least 0; None if the ray misses
-        the region, or for a mask region.
+        the region, or for a mask or label region.
     """
     centre = np.array(options.centre, dtype=float)
     if options.shape == RegionShape.SPHERE:

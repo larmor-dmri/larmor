@@ -104,9 +104,11 @@ def test_the_job_bar_shows_the_job_and_cancel_stops_it(
     assert not window.job_bar.isHidden()
     assert window.job_bar.progress.value() == 250
     window.job_bar.cancel.click()
+    assert window.job_bar.label.text() == "Simulation: Cancelling..."
+    assert not window.job_bar.cancel.isEnabled()
     go.set()
-    assert window.job_bar.isHidden()
-    qtbot.waitUntil(lambda: not window.jobs.busy)  # once its thread stops
+    qtbot.waitUntil(window.job_bar.isHidden)  # once its thread stops
+    assert not window.jobs.busy
     qtbot.wait(50)
     assert results == []
 

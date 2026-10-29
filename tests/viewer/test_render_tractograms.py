@@ -204,6 +204,29 @@ class _LaterWorker:
         self.queue.clear()
 
 
+def test_the_first_lines_are_made_in_the_background(
+    scene_renderer: tuple[Viewer, SceneRenderer], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Gathering the points of a large tractogram takes seconds: adding one must
+    # leave it to the worker, then draw the lines and sort them once they come.
+    workers: list[_LaterWorker] = []
+
+    def later(*_: object) -> _LaterWorker:
+        workers.append(_LaterWorker())
+        return workers[-1]
+
+    monkeypatch.setattr(tractogram_adapter, "Worker", later)
+    viewer, renderer = scene_renderer
+    data = _streamlines()
+    adapter = _tracts(viewer, renderer, data)
+    assert len(adapter.drawn.offsets) == 1 and not adapter.sorted_copies
+    while any(w.pending for w in workers):
+        for worker in workers:
+            worker.run()
+    assert len(adapter.drawn.offsets) - 1 == data.num_streamlines
+    assert set(adapter.sorted_copies) == {0, 1, 2}
+
+
 def test_other_regions_keeping_as_many_streamlines_still_change_the_lines(
     scene_renderer: tuple[Viewer, SceneRenderer], monkeypatch: pytest.MonkeyPatch
 ) -> None:

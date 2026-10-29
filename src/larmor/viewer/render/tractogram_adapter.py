@@ -183,10 +183,11 @@ class TractogramAdapter(Adapter):
     random order, so the 3D view can draw a prefix while the user interacts. Each
     2D view gets a copy of the segments sorted along its axis, made in the
     background within SLAB_BUDGET; until it is ready, or if it does not fit,
-    clipping planes cut the slab. The region filter, the tubes and the sorted
-    copies are made in the background, and their results come back on the main
-    thread. The region filter runs over all the streamlines loaded, and the subset
-    and the points per streamline apply to those kept. Tubes are drawn only within
+    clipping planes cut the slab. The lines, the region filter, the tubes and the
+    sorted copies are made in the background, and their results come back on the
+    main thread; nothing is drawn until the first lines come back. The region
+    filter runs over all the streamlines loaded, and the subset and the points per
+    streamline apply to those kept. Tubes are drawn only within
     tube_limit streamlines of POINTS_PER_STREAMLINE points; until the mesh is
     ready the lines stay. With ambient occlusion, the 3D view dims the lines or
     tubes by the light at each point; ray traced, it draws them as capsules of the
@@ -205,7 +206,7 @@ class TractogramAdapter(Adapter):
         order: float,
         tell: Callable[[str], None] = LarmorLogger.info,
     ) -> None:
-        """Builds the lines and adds them to the views.
+        """Adds the line objects to the views and asks for their lines.
 
         `tell` is given a notice when the regions cannot be applied.
         """
@@ -232,9 +233,12 @@ class TractogramAdapter(Adapter):
 
         self._count = self._drawn_count()  # of the lines last asked for
         key = self._wanted()
-        # The lines: subset, points, values and colours; and what they are.
-        self.drawn = self._make_lines(key)()
-        self._drawn_key: LinesKey = key
+        # The lines: subset, points, values and colours; and what they are. No
+        # lines until the first ones come back from the background, under a key
+        # that no request has, so that a change of colours meanwhile asks for lines.
+        empty = np.empty((0, 3), np.float32)
+        self.drawn = Lines(empty, np.zeros(1, np.int64), empty)
+        self._drawn_key: LinesKey = ((-1, 0), key[1], None, None)
         self._asked_key: LinesKey = key  # of the lines last asked for
         self._prefix = prefix_vertices(self.drawn.offsets, INTERACTIVE_VERTICES)
         self._init_3d_state()
@@ -245,10 +249,12 @@ class TractogramAdapter(Adapter):
         self.slabs: dict[ViewKind, list[gfx.Line]] = {}
         for kind, view in views.items():
             self._add_lines(kind, view, geometry)
-        self.request_sorts()
-        self.update_tubes()
-        self.update_light()
         self._show()
+        # Made in the background, as gathering the points of a large tractogram is
+        # slow; the sorted copies, the tubes and the light follow the lines.
+        self._lines_worker.submit(
+            self._make_lines(key), partial(self._take_lines, key=key)
+        )
         if region_filter(self.viewer.scene, item) is not None:
             self._request_selection()
 
