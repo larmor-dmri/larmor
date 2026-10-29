@@ -15,8 +15,10 @@ from larmor.viewer import Category, LabelMode, LabelSet, OptionName
 from larmor.viewer.model.dissect import (
     DissectStep,
     DwiFiles,
+    FodMerge,
     FodMethod,
     FodSettings,
+    GreyMatter,
     StartFrom,
     TrackSettings,
 )
@@ -157,6 +159,41 @@ def test_the_fods_page_shows_only_the_choices_of_the_method(
         settings = fods.settings()
         assert (settings.csf_diffusivity == 2e-3) == csf
         assert (settings.response is not None) == response
+
+
+def test_the_merge_row_shows_for_a_fit_with_two_fods_only(window: MainWindow) -> None:
+    fods = window.dissect_page.fods
+    fods.fod_merge.show_value(FodMerge.MAJORITY)
+    for method, grey, shown in (
+        (FodMethod.MFOD, GreyMatter.AUTO, True),
+        (FodMethod.GRL, GreyMatter.AUTO, False),
+        (FodMethod.GRL, GreyMatter.NODDI, True),
+        (FodMethod.MFOD, GreyMatter.ISOTROPIC, False),
+    ):
+        fods.method.show_value(method)
+        fods.method.activated.emit(fods.method.currentIndex())
+        fods.grey_matter.show_value(grey)
+        fods.grey_matter.activated.emit(fods.grey_matter.currentIndex())
+        assert fods.more_form.isRowVisible(fods.fod_merge) == shown
+        merge = fods.settings().fod_merge
+        assert merge == (FodMerge.MAJORITY if shown else FodMerge.WS)
+
+
+def test_the_track_page_chooses_between_several_fods(window: MainWindow) -> None:
+    viewer = window.viewer
+    data = load_volume(TRACKING / "fod.nii.gz")
+    first = viewer.add(data, Category.FODS, name="wm")
+    second = viewer.add(data, Category.FODS, name="gm")
+    window.dissection.fod = first.id
+    track = window.dissect_page.track
+    track.refresh()
+    assert track.fod_box.isVisibleTo(track) and track.fod_box.value() == first.id
+    track.fod_box.show_value(second.id)
+    track.fod_box.activated.emit(track.fod_box.currentIndex())
+    assert window.dissection.fod == second.id
+    viewer.remove(second.id)
+    track.refresh()
+    assert not track.fod_box.isVisibleTo(track)
 
 
 def test_saving_a_session_offers_to_save_the_unsaved_items_first(

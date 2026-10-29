@@ -19,6 +19,7 @@ from larmor.viewer.model.dissect import (
     Dissection,
     DissectStep,
     DwiFiles,
+    FodMerge,
     FodMethod,
     FodSettings,
     Seeding,
@@ -91,14 +92,35 @@ def test_the_fit_gives_the_fods_of_lar_fod(
     assert "Fitting voxels" in stages
 
 
+@pytest.mark.parametrize("merge", list(FodMerge))
+def test_an_mfod_fit_merges_its_two_fods_as_lar_fod_does(
+    tmp_path: Path, merge: FodMerge
+) -> None:
+    mask = load_volume(DKI / "mask.nii.gz")
+    dwi = DwiFiles(DKI / "dwi.nii.gz", DKI / "bvals", DKI / "bvecs")
+    settings = FodSettings(FodMethod.MFOD, lmax=4, fod_merge=merge)
+
+    fit = fit_fods(dwi, mask, settings, lambda *_: None)
+    _lar("fod", dwi.path, DKI / "mask.nii.gz", tmp_path / "out", "--bvals",
+         DKI / "bvals", "--bvecs", DKI / "bvecs", "--method", "mfod", "--lmax",
+         "4", "--fod-merge", merge.value)  # fmt: skip
+
+    names = ["out_fod1", "out_fod2"] if merge == FodMerge.NONE else ["out"]
+    assert len(fit.fods) == len(names)
+    for fod, name in zip(fit.fods, names, strict=True):
+        expected = load_volume(tmp_path / f"{name}.nii.gz").data
+        np.testing.assert_allclose(fod.data, expected, rtol=1e-5, atol=1e-6)
+
+
 @pytest.mark.parametrize(
     ("settings", "refused"),
     [
         (FodSettings(FodMethod.CSD, csf_diffusivity=None), "CSF diffusivity"),
         (FodSettings(FodMethod.MSMT_CSD, inner_shell_weight=0.5), "inner-shell"),
         (FodSettings(FodMethod.GRL, response=Path("r.txt")), "CSD response"),
+        (FodSettings(FodMethod.GRL, fod_merge=FodMerge.MAJORITY), "NODDI"),
     ],
-    ids=["csd-csf", "msmt-inner-shell", "grl-csd-response"],
+    ids=["csd-csf", "msmt-inner-shell", "grl-csd-response", "grl-merge"],
 )
 def test_a_fit_refuses_the_choices_its_method_does_not_take(
     settings: FodSettings, refused: str

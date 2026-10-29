@@ -21,6 +21,13 @@ the inner-shell weight and the frame of the bvecs file are under More. The defau
 same choices give the same FODs. The fit runs in the background with a progress bar and Cancel, and the FODs (and
 the tissue fractions of a multi-tissue fit) are added as items.
 
+An mFOD fit, or any fit with a NODDI grey matter, gives two FODs, one for white matter and one for grey matter. The
+tracker follows a single FOD, so **Merge FODs** under More makes them one, as `lar fod --fod-merge` does. The
+weighted sum (mFOD-WS, the default) multiplies each FOD by its tissue fraction and adds them, so the white matter
+FOD leads in the white matter and the grey matter FOD near the cortex. Majority keeps, in each voxel, the FOD of the
+tissue with the larger fraction. The CSF fraction counts in neither. With none, both FODs are added as items, and
+the Track step asks which one to track.
+
 The **Track** step tracks the whole brain through those FODs, with the library's defaults for every field left on
 auto. Under More you choose where streamlines start, the whole seed mask until the number of streamlines is kept or
 a number of seeds in every voxel, the seed and tracking masks, which default to the mask of the fit, and the random
