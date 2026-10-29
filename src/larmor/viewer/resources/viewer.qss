@@ -122,14 +122,16 @@ QLabel#datasetName {
   font-weight: bold;
 }
 
-QToolButton#workspaceSwitch {
+QToolButton#workspaceSwitch,
+QToolButton#segment {
   color: ${muted};
   background-color: ${field};
   border: 1px solid ${border};
   padding: 4px 14px;
 }
 
-QToolButton#workspaceSwitch:checked {
+QToolButton#workspaceSwitch:checked,
+QToolButton#segment:checked {
   color: ${text};
   background-color: ${accent_soft};
   font-weight: bold;
@@ -247,6 +249,14 @@ ads--CResizeHandle {
 QLabel#panelHint {
   color: ${muted};
   padding: 12px 14px;
+}
+
+QToolButton#labelChip {
+  color: ${text};
+  background-color: ${accent_faint};
+  border: 1px solid ${border};
+  border-radius: 9px;
+  padding: 1px 8px;
 }
 
 /* ---- The scene tree ---- */

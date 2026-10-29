@@ -57,7 +57,8 @@ colormap and the range.
 
 You can draw only the streamlines that pass through, avoid or stay within chosen regions. A region is an item of its
 own, listed under **Regions** in the scene tree, so one region can filter several tractograms and you can select it,
-hide it, rename it or remove it like any other item. There are three kinds of region. A sphere has a centre and a
+hide it, rename it or remove it like any other item. There are four kinds of region, the fourth being the label
+regions described below. A sphere has a centre and a
 radius, a box has a centre and a size along x, y and z (its edges run along the world axes), and a mask is an image
 of a single volume, already loaded as a volume or an overlay on any grid. A point is in a mask when the voxel
 nearest to it holds a value that rounds to a whole number other than 0, so a binary mask, or a probability map above
@@ -98,10 +99,22 @@ the streamlines that the ticked regions keep, out of all those loaded, to a trac
 The filter runs over all the loaded streamlines, in the background, each time a region changes, and the scene tree
 then shows how many of them pass beside the tractogram. The subset and the points per streamline apply afterwards,
 to the streamlines kept, so a subset of 50% draws half of those. A session saves the regions (a sphere or box by its
-centre and size, a mask by its image) and the regions each tractogram applies.
+centre and size, a mask by its image, a label region by its parcellation, mode, labels and end radius) and the
+regions each tractogram applies.
+
+A label region is made from the labels of a parcellation, and has two modes. **From A to B** keeps the
+streamlines with one end in label set A and the other end in label set B. An end belongs to the label of the
+nearest labelled voxel whose centre lies within the end radius (4 mm by default), as `endpoint_nodes` in
+`larmor.tractography` assigns it, and an empty set takes any end. **Stay within** keeps the streamlines whose points
+all lie in the voxels of the chosen labels, as `stays_within` does with their mask. The include and within roles
+keep these streamlines and exclude drops them. Labels are added by name from a searchable list, or with the Label
+region tool: a click on a slice adds the label under the pointer to the set being edited, and Shift+click removes
+it. The 2D views fill and outline the chosen voxels on each slice, set B in a lighter shade of the region's colour,
+and the 3D view draws them as translucent surfaces. A label region is removed with its parcellation.
 
 From Python, `viewer.add_sphere((x, y, z), 5.0, apply=True)` adds a sphere and applies it to every tractogram,
-and `viewer.add_box` and `viewer.add_mask(mask.id)` do the same for a box and a mask. Each takes
+and `viewer.add_box`, `viewer.add_mask(mask.id)` and `viewer.add_label_region(parcellation.id, labels_a=[...],
+labels_b=[...])` do the same for a box, a mask and a label region. Each takes
 `role=RegionRole.EXCLUDE` or `RegionRole.WITHIN` for the other roles, and returns the region's id.
 `viewer.apply_region(tracts.id, region_id, False)` stops applying a region, `viewer.clear_regions(tracts.id)`
 stops applying all of them, `viewer.kept_streamlines(tracts.id)` counts the streamlines kept, and

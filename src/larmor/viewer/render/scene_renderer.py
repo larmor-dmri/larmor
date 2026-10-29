@@ -19,6 +19,7 @@ from larmor.viewer.render.adapter import Adapter
 from larmor.viewer.render.annotations import Annotations
 from larmor.viewer.render.colour_bars import ColourBars
 from larmor.viewer.render.fod_adapter import FodAdapter
+from larmor.viewer.render.label_regions import LabelRegionGuides
 from larmor.viewer.render.navigation import Navigation
 from larmor.viewer.render.peaks_adapter import PeaksAdapter
 from larmor.viewer.render.phantom_guides import PhantomGuides
@@ -69,6 +70,7 @@ class SceneRenderer:
         self.view_labels = ViewLabels(viewer, views)
         self.phantom_guides = PhantomGuides(viewer, views)
         self.region_guides = RegionGuides(viewer, views)
+        self.label_regions = LabelRegionGuides(viewer, views)
         self.detail_boxes = DetailBoxes(viewer, views)
         for view in views.values():
             view.show_overlay(viewer.scene.view.overlay_visible)
@@ -136,6 +138,7 @@ class SceneRenderer:
         self.view_labels.on_event(event)
         self.phantom_guides.on_event(event)
         self.region_guides.on_event(event)
+        self.label_regions.on_event(event)
         self.detail_boxes.on_event(event)
         if (
             isinstance(event, ViewStateChanged)
@@ -209,4 +212,5 @@ class SceneRenderer:
         self.view_labels.close()
         self.phantom_guides.close()
         self.region_guides.close()
+        self.label_regions.close()
         self.detail_boxes.close()

@@ -332,6 +332,11 @@ def test_only_the_volume_index_and_its_per_item_options_are_set_per_item() -> No
         OptionName.RADIUS,
         OptionName.SIZE,
         OptionName.MASK,
+        OptionName.PARCELLATION,
+        OptionName.LABEL_MODE,
+        OptionName.LABELS_A,
+        OptionName.LABELS_B,
+        OptionName.END_RADIUS,
     }
 
 
