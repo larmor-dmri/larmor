@@ -1161,6 +1161,7 @@ class MainWindow(QMainWindow):
         page.fods.load_requested.connect(self.load_fods)
         page.fods.estimate_requested.connect(self.estimate_fods)
         page.track.track_requested.connect(self.track_streamlines)
+        page.track.fod_chosen.connect(self._fod_chosen)
         for step in (page.fods, page.track, page.regions):
             step.new_mask_requested.connect(self.request_new_mask)
         for step in (page.fods, page.track):
@@ -1176,6 +1177,10 @@ class MainWindow(QMainWindow):
         if step is not None:
             self.dissect_steps.go_to(step)
         return self.dissect_page
+
+    def _fod_chosen(self, _fod: ItemId) -> None:
+        """Shows the steps again once the Track step tracks another FOD."""
+        self._dissection_changed()
 
     def _dissection_changed(self) -> None:
         """Shows the Dissect steps and page again after a change of the dissection."""

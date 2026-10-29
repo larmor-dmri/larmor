@@ -37,6 +37,7 @@ from larmor.viewer.model.dissect import (
     Dissection,
     DissectStep,
     DwiFiles,
+    FodMerge,
     FodMethod,
     FodSettings,
     FodSolver,
@@ -47,6 +48,7 @@ from larmor.viewer.model.dissect import (
     TrackAlgorithm,
     TrackSettings,
     dissect_status,
+    two_fods,
 )
 from larmor.viewer.model.events import (
     DataChanged,
@@ -485,7 +487,23 @@ class FodsPage(QWidget):
             ]
         )
         self.grey_matter.show_value(GreyMatter.AUTO)
+        self.grey_matter.chosen.connect(lambda _: self._show_method_options())
         more.addRow("Grey matter", self.grey_matter)
+        self.fod_merge = ChoiceBox(section)
+        self.fod_merge.set_choices(
+            [
+                (FodMerge.WS, "weighted sum (mFOD-WS)"),
+                (FodMerge.MAJORITY, "majority"),
+                (FodMerge.NONE, "none: keep both"),
+            ]
+        )
+        self.fod_merge.show_value(FodMerge.WS)
+        self.fod_merge.setToolTip(
+            "How the white and grey matter FODs of a NODDI fit are made one FOD to "
+            "track: each times its tissue fraction and summed, or in each voxel the "
+            "one of the larger fraction"
+        )
+        more.addRow("Merge FODs", self.fod_merge)
         self.gm_diffusivity = QLineEdit(f"{GM_DIFFUSIVITY:g}", section)
         more.addRow("GM diffusivity (mm^2/s)", self.gm_diffusivity)
         self.csf_diffusivity = QLineEdit(f"{CSF_DIFFUSIVITY:g}", section)
@@ -539,6 +557,15 @@ class FodsPage(QWidget):
         """Shows under More only the choices the method chosen takes."""
         for name, row in self.method_rows.items():
             self.more_form.setRowVisible(row, self._applies(name))
+        self.more_form.setRowVisible(self.fod_merge, self._two_fods())
+
+    def _two_fods(self) -> bool:
+        """Tells whether the fit chosen has two FODs, a NODDI grey matter's."""
+        method = self.method.value()
+        assert isinstance(method, FodMethod)
+        grey = self.grey_matter.value()
+        assert isinstance(grey, GreyMatter)
+        return two_fods(FodSettings(method, grey_matter=grey))
 
     def refresh(self) -> None:
         """Shows the route the dissection chose, its DWI, the masks and the result."""
@@ -611,6 +638,8 @@ class FodsPage(QWidget):
         }
         # A hidden row keeps the default, so it never reaches the fit.
         chosen = {n: read() for n, read in readers.items() if self._applies(n)}
+        if self._two_fods():
+            chosen["fod_merge"] = self.fod_merge.value()
         return replace(FodSettings(method, self.lmax.value()), **chosen)
 
     def _csf_diffusivity(self) -> float | None:
@@ -643,6 +672,7 @@ class TrackPage(QWidget):
     """Sets up a whole-brain tracking run through the FODs, and starts it."""
 
     track_requested = Signal(object, object, object, object)  # FOD, seeds, mask, set
+    fod_chosen = Signal(object)  # the FOD item's id
     new_mask_requested = Signal(object)  # the MaskTarget
     save_requested = Signal(object)  # the tractogram item's id
     refused = Signal(str)
@@ -660,6 +690,11 @@ class TrackPage(QWidget):
         self.fod_label = QLabel(self)
         self.fod_label.setWordWrap(True)
         layout.addWidget(self.fod_label)
+        # Shown when there are several FODs, such as both of a NODDI fit.
+        self.fod_box = ChoiceBox(self)
+        self.fod_box.setToolTip("The FOD to track")
+        self.fod_box.chosen.connect(self._choose_fod)
+        layout.addWidget(self.fod_box)
         section = Section("Track")
         section.set_header_visible(False)
         self._build_fields(section)
@@ -744,11 +779,19 @@ class TrackPage(QWidget):
         state = self.state
         present = {item.id for item in self.viewer.scene.items}
         fod = state.fod if state.fod in present else None
-        self.fod_label.setText(
-            "No FOD yet: go back to the FODs step."
-            if fod is None
-            else f"Tracks {self.viewer.scene.item(fod).name}."
-        )
+        fods = self.viewer.scene.in_category(Category.FODS)
+        several = fod is not None and len(fods) > 1
+        if fod is None:
+            text = "No FOD yet: go back to the FODs step."
+        elif several:
+            text = "Tracks:"
+        else:
+            text = f"Tracks {self.viewer.scene.item(fod).name}."
+        self.fod_label.setText(text)
+        self.fod_box.setVisible(several)
+        if several:
+            self.fod_box.set_choices([(item.id, item.name) for item in fods])
+            self.fod_box.show_value(fod)
         images = image_choices(self.viewer)
         self.seed_mask.set_choices([(None, "the FOD's support"), *images])
         self.mask_box.set_choices([(None, "none"), *images])
@@ -768,6 +811,12 @@ class TrackPage(QWidget):
                 f"{run.run.num_seeds:,} seeds, random seed {seed}."
             )
         self.save_button.setVisible(run is not None)
+
+    def _choose_fod(self, fod: object) -> None:
+        """Makes the FOD chosen the one tracked, and tells the window."""
+        if isinstance(fod, int):
+            self.state.fod = fod
+            self.fod_chosen.emit(fod)
 
     def settings(self) -> TrackSettings:
         """Returns the choices of the run.

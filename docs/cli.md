@@ -195,7 +195,7 @@ $ lar fod [OPTIONS] {volume} {mask} {output}
 
 * `volume`: Path to the diffusion volume (.nii, .nii.gz, .mif, .mif.gz or .mih).  [required]
 * `mask`: Path to a brain mask on the grid of the diffusion volume.  [required]
-* `output`: Prefix of the output files. &#x27;out&#x27; writes the FOD to out.nii.gz. A fit with a NODDI grey matter response (--gm-rf noddi, the default for mFOD) writes two FODs instead, to out_fod1.nii.gz and out_fod2.nii.gz. A multi-tissue fit also writes the tissue fractions to out_tissue_fraction.nii.gz.  [required]
+* `output`: Prefix of the output files. &#x27;out&#x27; writes the FOD to out.nii.gz. A fit with a NODDI grey matter response (--gm-rf noddi, the default for mFOD) has two FODs, which are merged into out.nii.gz (see --fod-merge), or written to out_fod1.nii.gz and out_fod2.nii.gz with --fod-merge none. A multi-tissue fit also writes the tissue fractions to out_tissue_fraction.nii.gz.  [required]
 
 **Options**:
 
@@ -216,6 +216,7 @@ $ lar fod [OPTIONS] {volume} {mask} {output}
 * `--gm-response <file>`: Grey matter response for MSMT-CSD, a text file with one row per shell, as MRtrix3&#x27;s dwi2response writes it. Without any of the three responses, all three are estimated from the data in the mask; --gm-response and --csf-response need --wm-response.
 * `--csf-response <file>`: CSF response for MSMT-CSD, a text file with one row per shell, as MRtrix3&#x27;s dwi2response writes it. Without any of the three responses, all three are estimated from the data in the mask; --gm-response and --csf-response need --wm-response.
 * `--basis <tournier|descoteaux|leemans>`: SH basis to write the FOD in. The file does not record it, so give the same basis to the commands that read the FOD.  [default: tournier]
+* `--fod-merge <ws|majority|none>`: How the FODs of a fit with a NODDI grey matter response are merged into one: &#x27;ws&#x27; adds each FOD times its tissue fraction (mFOD-WS), &#x27;majority&#x27; keeps in each voxel the FOD of the anisotropic tissue with the largest fraction, and &#x27;none&#x27; writes each FOD to its own file.  [default: ws]
 * `--force`: Overwrite existing output files. Without it, the command stops before any work when an output exists.
 * `--nt <int>`: Number of threads; -1 uses all CPU cores.  [default: -1]
 * `--quiet`: Show only errors.

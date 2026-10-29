@@ -86,6 +86,14 @@ class GreyMatter(StrEnum):
     NONE = "none"  # no grey matter
 
 
+class FodMerge(StrEnum):
+    """How the two FODs of a fit with a NODDI grey matter are made one."""
+
+    WS = "ws"  # each FOD times its tissue fraction, summed (mFOD-WS)
+    MAJORITY = "majority"  # the FOD of the larger anisotropic fraction
+    NONE = "none"  # both FODs, as two items
+
+
 class TrackAlgorithm(StrEnum):
     """The tracking algorithms, as `lar track --algorithm` names them."""
 
@@ -166,6 +174,8 @@ class FodSettings:
             all three.
         gm_response: The grey matter response file of MSMT-CSD.
         csf_response: The CSF response file of MSMT-CSD.
+        fod_merge: How the two FODs of a fit with a NODDI grey matter are made
+            one; it applies to such fits only.
     """
 
     method: FodMethod = FodMethod.GRL
@@ -180,6 +190,7 @@ class FodSettings:
     wm_response: Path | None = None
     gm_response: Path | None = None
     csf_response: Path | None = None
+    fod_merge: FodMerge = FodMerge.WS
 
 
 # The methods that fit their own responses with SDModel: GRL and mFOD.
@@ -214,6 +225,11 @@ def check_fod_settings(settings: FodSettings) -> None:
             continue
         if getattr(settings, name) != getattr(defaults, name):
             raise ValueError(f"{label} does not apply to {settings.method.value}.")
+    if settings.fod_merge != defaults.fod_merge and not two_fods(settings):
+        raise ValueError(
+            "Merging FODs applies only to a fit with a NODDI grey matter, which "
+            "has two."
+        )
 
 
 @dataclass(frozen=True)
@@ -236,6 +252,13 @@ def grey_matter(settings: FodSettings) -> GreyMatter:
         return settings.grey_matter
     return (
         GreyMatter.NODDI if settings.method == FodMethod.MFOD else GreyMatter.ISOTROPIC
+    )
+
+
+def two_fods(settings: FodSettings) -> bool:
+    """Tells whether a fit has two FODs: GRL or mFOD with a NODDI grey matter."""
+    return settings.method in SD_MODEL_METHODS and grey_matter(settings) == (
+        GreyMatter.NODDI
     )
 
 
@@ -342,6 +365,9 @@ def fit_fods(
 ) -> FodFit:
     """Reads a DWI and fits its FODs, as `lar fod` does with the same choices.
 
+    The two FODs of a fit with a NODDI grey matter are merged into one unless
+    `fod_merge` is NONE.
+
     Args:
         dwi: The DWI and its gradient files.
         mask: The brain mask, on the DWI's grid.
@@ -356,6 +382,7 @@ def fit_fods(
         FileNotFoundError: If a file is missing.
     """
     from larmor.io import load_dwi
+    from larmor.sd import merge_fods
     from larmor.sd.progress import fit_progress
 
     check_fod_settings(settings)
@@ -365,8 +392,13 @@ def fit_fods(
     model = fod_model(settings, image, gtab, mask)
     with fit_progress(report):
         fit = model.fit(image, gtab, mask=mask)
-    fods = tuple(image.with_data(f) for f in fit.fods)
     fractions = fit.tissue_fractions
+    data = fit.fods
+    if two_fods(settings) and settings.fod_merge != FodMerge.NONE:
+        assert fractions is not None  # a fit with NODDI grey matter has fractions
+        majority = settings.fod_merge == FodMerge.MAJORITY
+        data = [merge_fods(fit.fods, fractions, "majority" if majority else "ws")]
+    fods = tuple(image.with_data(f) for f in data)
     return FodFit(fods, None if fractions is None else image.with_data(fractions))
 
 

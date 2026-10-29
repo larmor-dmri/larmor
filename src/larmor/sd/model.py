@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -31,6 +32,10 @@ from larmor.types import GradientTable, Volume
 
 # Voxels per call into the compiled code.
 FIT_CHUNK = 16_384
+
+
+_MERGE_METHODS = ("ws", "majority")
+
 
 # A function that fits a chunk of voxels and returns their FOD amplitudes, the
 # fractions of a multi-tissue fit, and the number of solves that did not converge.
@@ -465,3 +470,55 @@ def normalize_by_b0(signal: np.ndarray, is_b0: np.ndarray) -> np.ndarray:
     b0_means[b0_means == 0] = 1e-16
     signal_norm: npt.NDArray[np.floating] = signal / b0_means[:, np.newaxis]
     return signal_norm
+
+
+def merge_fods(
+    fods: list[npt.NDArray[np.floating]],
+    tissue_fractions: npt.NDArray[np.floating],
+    method: Literal["ws", "majority"] = "ws",
+) -> npt.NDArray[np.floating]:
+    """Merges one or more FODs into a single one using the selected strategy.
+
+    Isotropic RFs are ignored. Based off the mFOD paper.
+
+    Args:
+        fods: The list of fods to merge
+        tissue_fractions: tissue fractions to use for fod merging.
+        method: "ws" for the weighted sum, "majority" for the FOD of the largest
+            anisotropic fraction in each voxel.
+
+
+    Returns:
+        The merged fods.
+
+    Raises:
+        ValueError: Incorrect method or non matching fods/tissue shapes.
+    """
+    if len(fods) == 0:
+        raise ValueError("Cannot merge empty list.")
+
+    if tissue_fractions.shape[-1] < len(fods):
+        raise ValueError("Mismatched number of fods and tissue fractions.")
+
+    for f in fods:
+        if f.shape != fods[0].shape:
+            raise ValueError("Mismatched shapes between fods in list.")
+
+    if method not in _MERGE_METHODS:
+        raise ValueError(
+            f"Expected one method of {','.join(_MERGE_METHODS)}, got {method}."
+        )
+
+    fod = np.zeros_like(fods[0])
+
+    if method == "ws":
+        for i, c_fod in enumerate(fods):
+            fod += c_fod * tissue_fractions[..., i, np.newaxis]
+    elif method == "majority":
+        winner = tissue_fractions[..., : len(fods)].argmax(axis=-1)
+
+        for i, c_fod in enumerate(fods):
+            chosen = winner == i
+            fod[chosen] = c_fod[chosen]
+
+    return fod

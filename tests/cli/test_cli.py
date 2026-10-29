@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -540,7 +541,12 @@ def test_fod_response_goes_with_csd_only(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    "option", [["--wm-rf", "1.7e-3", "0.2e-3", "0.2e-3"], ["--csf-rf", "none"]]
+    "option",
+    [
+        ["--wm-rf", "1.7e-3", "0.2e-3", "0.2e-3"],
+        ["--csf-rf", "none"],
+        ["--fod-merge", "majority"],
+    ],
 )
 def test_fod_csd_refuses_the_options_of_grl_and_mfod(
     tmp_path: Path, option: list[str]
@@ -826,7 +832,7 @@ def test_fod_noddi_checks_both_fod_files_before_reading_inputs(
     (tmp_path / f"out_{existing}.nii.gz").write_bytes(b"old")
     result = _run(
         "fod", "missing.nii.gz", "m", str(tmp_path / "out"), *NO_GRADIENTS,
-        "--method", "mfod", "--gm-rf", "noddi",
+        "--method", "mfod", "--gm-rf", "noddi", "--fod-merge", "none",
     )  # fmt: skip
 
     assert result.exit_code == 1
@@ -847,6 +853,8 @@ def test_fod_noddi_writes_two_fods_and_the_fractions(
         "mfod",
         "--gm-rf",
         "noddi",
+        "--fod-merge",
+        "none",
     )
 
     inside = load_volume(mask).data > 0
@@ -857,6 +865,49 @@ def test_fod_noddi_writes_two_fods_and_the_fractions(
     # WM, NODDI GM and CSF.
     assert _read(tmp_path / "out_tissue_fraction.nii.gz").shape == (8, 8, 8, 3)
     assert not (tmp_path / "out.nii.gz").exists()
+
+
+@pytest.mark.parametrize(
+    "merge", [[], ["--fod-merge", "majority"]], ids=["ws", "majority"]
+)
+def test_fod_noddi_writes_one_fod_merged_from_the_two(
+    tmp_path: Path, dki_files: tuple[str, str, list[str]], merge: list[str]
+) -> None:
+    volume, mask, gradients = dki_files
+    mfod = ["--method", "mfod", "--gm-rf", "noddi"]
+    _fod_run(volume, mask, tmp_path / "two", gradients, *mfod, "--fod-merge", "none")
+    _fod_run(volume, mask, tmp_path / "one", gradients, *mfod, *merge)
+
+    method: Literal["ws", "majority"] = "majority" if merge else "ws"
+    fods = [_read(tmp_path / f"two_fod{i}.nii.gz") for i in (1, 2)]
+    fractions = _read(tmp_path / "two_tissue_fraction.nii.gz")
+    expected = larmor.sd.merge_fods(fods, fractions, method)
+    np.testing.assert_allclose(_read(tmp_path / "one.nii.gz"), expected, atol=1e-6)
+    assert (tmp_path / "one_tissue_fraction.nii.gz").exists()
+    assert not (tmp_path / "one_fod1.nii.gz").exists()
+
+
+def test_fod_msmt_csd_refuses_fod_merge(tmp_path: Path) -> None:
+    result = _run(
+        "fod", "missing.nii.gz", "m", str(tmp_path / "fod"), *NO_GRADIENTS,
+        "--method", "msmt-csd", "--fod-merge", "majority",
+    )  # fmt: skip
+
+    assert result.exit_code != 0
+    assert "--fod-merge" in result.output
+
+
+def test_fod_merge_is_refused_for_a_fit_with_one_fod(
+    tmp_path: Path, dki_files: tuple[str, str, list[str]]
+) -> None:
+    volume, mask, gradients = dki_files
+    result = _run(
+        "fod", volume, mask, str(tmp_path / "out"), *gradients,
+        "--method", "mfod", "--gm-rf", "0.8e-3", "--fod-merge", "ws",
+    )  # fmt: skip
+
+    assert result.exit_code != 0
+    assert "--fod-merge" in result.output
 
 
 def test_fod_noddi_with_grl_is_a_clean_error(

@@ -1,5 +1,6 @@
 """The `lar fod` command, which fits FODs by spherical deconvolution."""
 
+import dataclasses
 import logging
 import typing
 from enum import StrEnum
@@ -34,8 +35,9 @@ OutputArg = typing.Annotated[
     typer.Argument(
         help="Prefix of the output files. 'out' writes the FOD to out.nii.gz. A "
         "fit with a NODDI grey matter response (--gm-rf noddi, the default for "
-        "mFOD) writes two FODs instead, to out_fod1.nii.gz and out_fod2.nii.gz. A "
-        "multi-tissue fit also writes the tissue fractions to "
+        "mFOD) has two FODs, which are merged into out.nii.gz (see --fod-merge), "
+        "or written to out_fod1.nii.gz and out_fod2.nii.gz with --fod-merge none. "
+        "A multi-tissue fit also writes the tissue fractions to "
         "out_tissue_fraction.nii.gz.",
     ),
 ]
@@ -48,6 +50,26 @@ class Method(StrEnum):
     MFOD = "mFOD"
     CSD = "CSD"
     MSMT_CSD = "MSMT-CSD"
+
+
+class FodMerge(StrEnum):
+    """How `lar fod` merges the FODs of a fit with more than one."""
+
+    WS = "ws"
+    MAJORITY = "majority"
+    NONE = "none"
+
+
+FodMergeOpt = typing.Annotated[
+    FodMerge,
+    typer.Option(
+        "--fod-merge",
+        help="How the FODs of a fit with a NODDI grey matter response are merged "
+        "into one: 'ws' adds each FOD times its tissue fraction (mFOD-WS), "
+        "'majority' keeps in each voxel the FOD of the anisotropic tissue with "
+        "the largest fraction, and 'none' writes each FOD to its own file.",
+    ),
+]
 
 
 class Solver(StrEnum):
@@ -286,6 +308,7 @@ SD_MODEL_OPTIONS = {
     "inner_shell_weight": "--inner-shell-weight",
     "gm_rf": "--gm-rf",
     "csf_rf": "--csf-rf",
+    "fod_merge": "--fod-merge",
 }
 # The options that only one method takes.
 METHOD_OPTIONS = {
@@ -320,6 +343,20 @@ def _refuse_other_methods_options(context: typer.Context, method: Method) -> Non
             )
 
 
+def _merges(context: typer.Context, fod_merge: FodMerge, gm_noddi: bool) -> bool:
+    """Returns whether the FODs of the fit are merged into one.
+
+    Raises:
+        typer.BadParameter: If --fod-merge is given for a fit with one FOD.
+    """
+    if not gm_noddi and _given(context, "fod_merge"):
+        raise typer.BadParameter(
+            "applies only to a fit with two FODs (--gm-rf noddi)",
+            param_hint="--fod-merge",
+        )
+    return gm_noddi and fod_merge != FodMerge.NONE
+
+
 def _fod_paths(prefix: Path, n_aniso: int) -> list[Path]:
     """Returns <prefix>.nii.gz for one FOD, <prefix>_fod1.nii.gz, ... for several."""
     if n_aniso == 1:
@@ -349,6 +386,7 @@ def fod(
     gm_response: GMResponseOpt = None,
     csf_response: CSFResponseOpt = None,
     basis: BasisOpt = SHBasis.tournier,
+    fod_merge: FodMergeOpt = FodMerge.WS,
     force: ForceOpt = False,
     jobs: ThreadsOpt = -1,
 ) -> None:
@@ -359,6 +397,7 @@ def fod(
         SDModel,
         build_csd_response,
         build_response_functions,
+        merge_fods,
     )
 
     _refuse_other_methods_options(context, method)
@@ -393,10 +432,12 @@ def fod(
     if gm_rf == GM_AUTO:
         gm_rf = GM_NODDI if method == Method.MFOD else GM_ISOTROPIC_DEFAULT
     gm_noddi = gm_rf == GM_NODDI
+    merged = _merges(context, fod_merge, gm_noddi)
     gm_diffusivity = None if gm_rf is None or gm_noddi else float(gm_rf)
     prefix = output_prefix(output)
-    # One FOD for white matter, and one for grey matter when it is NODDI.
-    sh_outs = _fod_paths(prefix, n_aniso=2 if gm_noddi else 1)
+    # One FOD for white matter, and one for grey matter when it is NODDI, unless
+    # the two are merged into one.
+    sh_outs = _fod_paths(prefix, n_aniso=2 if gm_noddi and not merged else 1)
     frac_out = with_suffix(prefix, "_tissue_fraction.nii.gz")
 
     outs = list(sh_outs)
@@ -438,6 +479,13 @@ def fod(
             progress=LarmorLogger.isEnabledFor(logging.WARNING),
         )
     results = sd.fit(image, gtab, mask=mask_volume, n_jobs=jobs)
+    if merged:
+        assert results.tissue_fractions is not None  # a NODDI fit is multi-tissue
+        mode: typing.Literal["ws", "majority"] = (
+            "majority" if fod_merge == FodMerge.MAJORITY else "ws"
+        )
+        fod = merge_fods(results.fods, results.tissue_fractions, mode)
+        results = dataclasses.replace(results, fods=[fod])
 
     _save_fit(image, results, sh_outs, frac_out, basis)
 
