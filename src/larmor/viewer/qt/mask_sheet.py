@@ -67,17 +67,23 @@ SAVE_FILTER: Final = "Images (*.nii *.nii.gz *.mif *.mif.gz);;All files (*)"
 MAX_STEPS: Final = 20  # voxels a mask can grow or shrink by
 
 
-def open_mask_sheet(parent: QWidget | None, viewer: Viewer) -> ItemId | None:
+def open_mask_sheet(
+    parent: QWidget | None, viewer: Viewer, bvals: Path | None = None
+) -> ItemId | None:
     """Opens the New mask sheet and waits until it closes.
 
     Args:
         parent: The window it belongs to.
         viewer: The viewer whose images it reads and to which the mask is added.
+        bvals: The b-values file of the DWI, filled in for the brain mask.
 
     Returns:
         The new mask's item id, an overlay; None if it was cancelled.
     """
     sheet = MaskSheet(viewer, parent)
+    if bvals is not None:
+        sheet.bvals.setText(str(bvals))
+        sheet.changed()
     sheet.exec()
     return sheet.created
 

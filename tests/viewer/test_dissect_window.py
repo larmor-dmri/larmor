@@ -7,10 +7,11 @@ import numpy as np
 import pytest
 from PySide6.QtWidgets import QMessageBox
 from pytestqt.qtbot import QtBot
+from viewer_helpers import tract_options
 
 from larmor.io import load_volume, save_tractogram
-from larmor.types import Tractogram
-from larmor.viewer import Category
+from larmor.types import Tractogram, Volume
+from larmor.viewer import Category, LabelMode, LabelSet, OptionName
 from larmor.viewer.model.dissect import (
     DissectStep,
     DwiFiles,
@@ -20,6 +21,7 @@ from larmor.viewer.model.dissect import (
 )
 from larmor.viewer.model.shortcuts import Command
 from larmor.viewer.model.view_state import Workspace
+from larmor.viewer.qt.dissect_steps import MaskTarget
 from larmor.viewer.qt.main_window import MainWindow
 
 DATA = Path(__file__).parents[1] / "data"
@@ -153,3 +155,63 @@ def test_saving_a_session_offers_to_save_the_unsaved_items_first(
     assert viewer.scene.item(fod.id).source == tmp_path / "s_fod.nii.gz"
     session = json.loads((tmp_path / "s.lar.json").read_text(encoding="utf-8"))
     assert [item["name"] for item in session["items"]] == ["fod"]
+
+
+def _start_from_a_tractogram(window: MainWindow, qtbot: QtBot, tmp_path: Path) -> None:
+    path = tmp_path / "t.tck"
+    points = np.array([[0.0, 0, 0], [1, 0, 0], [2, 2, 2], [2, 2, 1]], np.float32)
+    save_tractogram(Tractogram(points, np.array([0, 2, 4])), path)
+    window.start_dissection(StartFrom.TRACTOGRAM, path)
+    qtbot.waitUntil(lambda: window.dissection.tractogram is not None)
+
+
+def test_a_labels_overlay_shows_its_parcellation_section(
+    window: MainWindow, qtbot: QtBot, tmp_path: Path
+) -> None:
+    _start_from_a_tractogram(window, qtbot, tmp_path)
+    regions = window.dissect_page.regions
+    assert regions.parcellation is None
+    data = np.zeros((3, 3, 3), np.int16)
+    data[2, 2, 2] = 7
+    viewer = window.viewer
+    item = viewer.add(Volume(data, np.eye(4)), Category.OVERLAYS, name="parc")
+    lut = tmp_path / "lut.txt"
+    lut.write_text("7 Brain-Stem 7 8 9 0\n")
+    viewer.set(item.id, OptionName.LOOKUP_TABLE, str(lut))
+    viewer.set(item.id, OptionName.LABELS, True)
+    window.dissect_page.refresh_pages()
+    section = regions.parcellation
+    assert section is not None and section.parcellation_id == item.id
+    section.add_label(LabelSet.A, 7)
+    section.set_mode(LabelMode.STAY_WITHIN)
+    assert "0 of 2 streamlines kept" in regions.kept.text()
+
+
+@pytest.mark.parametrize("target", list(MaskTarget))
+def test_a_new_mask_fills_the_field_that_asked_for_it(
+    window: MainWindow,
+    qtbot: QtBot,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    target: MaskTarget,
+) -> None:
+    _start_from_a_tractogram(window, qtbot, tmp_path)
+    viewer = window.viewer
+    mask = viewer.add(
+        Volume(np.ones((3, 3, 3), np.uint8), np.eye(4)), Category.OVERLAYS, name="m"
+    )
+    monkeypatch.setattr(
+        "larmor.viewer.qt.mask_sheet.open_mask_sheet", lambda *_: mask.id
+    )
+    window.request_new_mask(target)
+    page = window.dissect_page
+    assert mask.id in window.dissection.made
+    if target == MaskTarget.FIT:
+        assert page.fods.mask_box.value() == mask.id
+    elif target == MaskTarget.TRACK:
+        assert page.track.mask_box.value() == mask.id
+    else:
+        tract = window.dissection.tractogram
+        assert tract is not None
+        (region,) = viewer.scene.in_category(Category.REGIONS)
+        assert region.id in tract_options(viewer.scene.item(tract)).regions

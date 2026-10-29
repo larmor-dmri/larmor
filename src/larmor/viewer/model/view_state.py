@@ -13,7 +13,6 @@ class Tool(StrEnum):
     CURSOR = "cursor"  # moves the crosshair
     SPHERE = "sphere"  # places a sphere region
     BOX = "box"  # places a box region
-    LABEL_REGION = "label_region"  # makes a region of a parcellation's label
     ZOOM_BOX = "zoom_box"  # opens a rectangle of a 2D view in a detail window
     DRAW_BUNDLE = "draw_bundle"  # adds the points of a phantom bundle
     LABEL_REGION = "label_region"  # adds a label to a label region, Shift removes it

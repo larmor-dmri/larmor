@@ -10,7 +10,7 @@ from typer.testing import CliRunner, Result
 from larmor.io import load_tractogram, load_volume
 from larmor.main import app
 from larmor.types import Tractogram, Volume
-from larmor.viewer import Category, OptionName, Viewer
+from larmor.viewer import Basis, Category, OptionName, Viewer
 from larmor.viewer.model.dissect import (
     Dissection,
     DissectStep,
@@ -25,7 +25,6 @@ from larmor.viewer.model.dissect import (
     track,
     write_save,
 )
-from larmor.viewer.model.options import Basis
 
 DATA = Path(__file__).parents[2] / "data"
 DKI, TRACKING = DATA / "dki", DATA / "tracking"

@@ -55,9 +55,10 @@ from larmor.viewer.model.events import (
     SourceChanged,
 )
 from larmor.viewer.model.item import Category, ItemId
-from larmor.viewer.model.options import BASES, Basis, OptionName
+from larmor.viewer.model.options import BASES, Basis, OptionName, OverlayOptions
 from larmor.viewer.model.phantom import BvecFrame
 from larmor.viewer.model.viewer import Viewer
+from larmor.viewer.qt.parcellation_section import ParcellationSection
 from larmor.viewer.qt.phantom_panel import ChoiceBox, Section
 from larmor.viewer.qt.phantom_steps import StepRow
 from larmor.viewer.qt.regions_editor import RegionsEditor
@@ -800,6 +801,7 @@ class RegionsPage(QWidget):
         self.layout_.setContentsMargins(0, 0, 0, 0)
         self.parcellation_slot = QVBoxLayout()
         self.layout_.addLayout(self.parcellation_slot)
+        self.parcellation: ParcellationSection | None = None
         self.kept = QLabel(self)
         self.kept.setWordWrap(True)
         self.layout_.addWidget(self.kept)
@@ -823,6 +825,7 @@ class RegionsPage(QWidget):
 
     def refresh(self) -> None:
         """Shows the tractogram's regions and the count of streamlines kept."""
+        self._refresh_parcellation()
         tract = self.state.tractogram
         present = {item.id for item in self.viewer.scene.items}
         if tract not in present:
@@ -841,6 +844,29 @@ class RegionsPage(QWidget):
         data = self.viewer.scene.item(tract).data
         total = getattr(data, "num_streamlines", kept)
         self.kept.setText(f"{kept:,} of {total:,} streamlines kept.")
+
+    def _refresh_parcellation(self) -> None:
+        """Shows the label regions of the first overlay shown as labels, if any."""
+        parcellation = next(
+            (
+                o.id
+                for o in self.viewer.scene.in_category(Category.OVERLAYS)
+                if isinstance(o.options, OverlayOptions)
+                and o.options.labels
+                and o.volume_count == 1
+            ),
+            None,
+        )
+        shown = self.parcellation
+        if shown is not None and shown.parcellation_id == parcellation:
+            return
+        if shown is not None:
+            shown.deleteLater()
+            self.parcellation = None
+        if parcellation is not None:
+            self.parcellation = ParcellationSection(self.viewer, parcellation, self)
+            self.parcellation.changed.connect(lambda _: self.refresh())
+            self.parcellation_slot.addWidget(self.parcellation)
 
 
 class SavePage(QWidget):

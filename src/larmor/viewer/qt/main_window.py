@@ -1250,6 +1250,23 @@ class MainWindow(QMainWindow):
 
     def request_new_mask(self, target: MaskTarget) -> None:
         """Opens the mask sheet, which fills the mask field of target."""
+        from larmor.viewer.qt.mask_sheet import open_mask_sheet
+
+        dwi = self.dissection.dwi
+        mask = open_mask_sheet(self, self.viewer, None if dwi is None else dwi.bvals)
+        if mask is None:
+            return
+        self.dissection.adopt(mask)
+        page = self.dissect_page
+        page.refresh_pages()
+        if target == MaskTarget.FIT:
+            page.fods.mask_box.show_value(mask)
+        elif target == MaskTarget.TRACK:
+            page.track.mask_box.show_value(mask)
+        elif self.dissection.tractogram is not None:
+            region = self.viewer.add_mask(mask)
+            self.viewer.apply_region(self.dissection.tractogram, region)
+            page.refresh_pages()
 
     def _ask_open_regions(self) -> None:
         """Asks for a regions file and applies its regions to the tractogram."""
