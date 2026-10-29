@@ -6,12 +6,12 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QFileDialog
 from pytestqt.qtbot import QtBot
 
-from larmor.dwi import dilate_mask, label_mask, threshold_mask
+from larmor.dwi import create_brain_mask, dilate_mask, label_mask, threshold_mask
 from larmor.io import load_volume
 from larmor.types import Volume
 from larmor.viewer import Category, Viewer
-from larmor.viewer.model.mask_maker import MaskSource
-from larmor.viewer.qt.mask_sheet import PAINT_NAME, MaskSheet
+from larmor.viewer.model.mask_maker import MaskSource, b0_of
+from larmor.viewer.qt.mask_sheet import COMPUTING, PAINT_NAME, MaskSheet
 
 
 @pytest.fixture
@@ -83,3 +83,19 @@ def test_paint_is_listed_but_cannot_be_chosen(sheet: MaskSheet) -> None:
     rows = [sheet.sources.item(i) for i in range(sheet.sources.count())]
     (paint,) = [r for r in rows if r.text() == PAINT_NAME]
     assert not paint.flags() & Qt.ItemFlag.ItemIsEnabled
+
+
+def test_a_brain_mask_preview_is_made_off_the_gui_thread(qtbot: QtBot) -> None:
+    viewer = Viewer()
+    x, y, z = np.indices((20, 20, 12))
+    ball = np.where((x - 10) ** 2 + (y - 10) ** 2 + (z - 6) ** 2 <= 30, 900.0, 10.0)
+    dwi = Volume(np.stack([ball, ball / 2], axis=-1).astype(np.float32), np.eye(4))
+    viewer.add(dwi, Category.VOLUMES, name="dwi")
+    sheet = MaskSheet(viewer)
+    qtbot.addWidget(sheet)
+    sheet.choose_source(MaskSource.DWI)
+    sheet.update_preview()
+    assert sheet.preview.text() == COMPUTING and sheet.preview_mask is None
+    qtbot.waitUntil(lambda: sheet.preview_mask is not None)
+    assert sheet.preview_mask is not None
+    np.testing.assert_array_equal(sheet.preview_mask, create_brain_mask(b0_of(dwi)))

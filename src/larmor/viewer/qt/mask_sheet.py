@@ -1,5 +1,7 @@
 """The New mask sheet, which makes a mask image from a DWI, a threshold or labels."""
 
+import threading
+from functools import partial
 from pathlib import Path
 from typing import Final
 
@@ -39,6 +41,7 @@ from larmor.viewer.model.mask_maker import (
 )
 from larmor.viewer.model.options import OverlayOptions
 from larmor.viewer.model.viewer import Viewer
+from larmor.viewer.qt.loading import MainThread
 
 # The sources listed on the left, with Paint shown but not yet offered.
 SOURCE_NAMES: Final = {
@@ -65,6 +68,7 @@ PREVIEW_DELAY: Final = 120  # ms after the last change before the preview is mad
 OVERLAY_ALPHA: Final = 0.55  # how strongly the mask's red covers the image
 SAVE_FILTER: Final = "Images (*.nii *.nii.gz *.mif *.mif.gz);;All files (*)"
 MAX_STEPS: Final = 20  # voxels a mask can grow or shrink by
+COMPUTING: Final = "Computing..."  # the preview's text while a brain mask is made
 
 
 def open_mask_sheet(
@@ -108,6 +112,11 @@ class MaskSheet(QDialog):
         self.preview_mask: np.ndarray | None = None  # the mask previewed, None if none
         self._named = False  # the user typed the name
         self._background: tuple[tuple[object, ...], np.ndarray] | None = None
+        # Whether a brain mask is being made on another thread.
+        self._computing = False
+        # The source key of the last brain mask that failed, and why.
+        self._failed: tuple[tuple[object, ...], str] | None = None
+        self._main = MainThread(self)
         self.timer = QTimer(self)
         self.timer.setSingleShot(True)
         self.timer.setInterval(PREVIEW_DELAY)
@@ -428,16 +437,62 @@ class MaskSheet(QDialog):
         self.timer.start()
 
     def update_preview(self) -> None:
-        """Makes the mask for the settings and shows the slice."""
+        """Makes the mask for the settings and shows the slice.
+
+        A brain mask not made yet is made on another thread, the preview saying
+        so meanwhile; the preview is made again once it is ready.
+        """
         self.timer.stop()
+        recipe = self.recipe()
+        if (
+            recipe.source == MaskSource.DWI
+            and recipe.image is not None
+            and not self.maker.kept(recipe)
+        ):
+            self._make_brain_mask(recipe)
+            return
         try:
-            self.preview_mask = self.maker.make(self.recipe())
+            self.preview_mask = self.maker.make(recipe)
         except (ValueError, OSError) as e:
             self.preview_mask = None
             self._show_error(str(e))
         else:
             self.error.hide()
         self._show_slice()
+
+    def _make_brain_mask(self, recipe: MaskRecipe) -> None:
+        """Makes the brain mask of a recipe on another thread, unless it failed."""
+        key = self.maker.source_key(recipe)
+        self.preview_mask = None
+        if self._failed is not None and self._failed[0] == key:
+            self._show_error(self._failed[1])
+            self._show_slice()
+            return
+        self.error.hide()
+        self.preview.setPixmap(QPixmap())
+        self.preview.setText(COMPUTING)
+        self.count.setText("")
+        if self._computing:
+            return  # the running one makes the preview again when it ends
+        self._computing = True
+
+        def work() -> None:
+            """Makes the mask, which the maker keeps, and posts how it went."""
+            failure = None
+            try:
+                self.maker.source_mask(recipe)
+            except (ValueError, OSError) as e:
+                failure = str(e)
+            self._main.post(partial(self._brain_mask_made, key, failure))
+
+        threading.Thread(target=work, name="mask-preview", daemon=True).start()
+
+    def _brain_mask_made(self, key: tuple[object, ...], failure: str | None) -> None:
+        """Makes the preview again once a brain mask is made, or failed."""
+        self._computing = False
+        if failure is not None:
+            self._failed = (key, failure)
+        self.update_preview()
 
     def _show_error(self, text: str) -> None:
         """Shows why the mask cannot be made."""

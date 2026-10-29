@@ -114,14 +114,7 @@ class MaskMaker:
         if recipe.image is None:
             raise ValueError("Choose the image the mask is made from.")
         volume = self._volume(recipe.image)
-        key: tuple[object, ...] = (recipe.source, volume, recipe.image)
-        if recipe.source == MaskSource.DWI:
-            key += (recipe.bvals,)
-        elif recipe.source == MaskSource.THRESHOLD:
-            key += (recipe.lower, recipe.upper, self._index(recipe.image))
-        else:
-            key += (recipe.labels,)
-        # Volumes compare by identity, so new data is a new key.
+        key = self.source_key(recipe)
         if self._kept is not None and self._kept[0] == key:
             return self._kept[1]
         if recipe.source == MaskSource.DWI:
@@ -134,6 +127,22 @@ class MaskMaker:
             mask = label_mask(_scaled(volume, 0), recipe.labels)
         self._kept = (key, mask)
         return mask
+
+    def source_key(self, recipe: MaskRecipe) -> tuple[object, ...]:
+        """Returns what the source mask of a recipe depends on; it has an image."""
+        assert recipe.image is not None
+        volume = self._volume(recipe.image)
+        # Volumes compare by identity, so new data is a new key.
+        key: tuple[object, ...] = (recipe.source, volume, recipe.image)
+        if recipe.source == MaskSource.DWI:
+            return (*key, recipe.bvals)
+        if recipe.source == MaskSource.THRESHOLD:
+            return (*key, recipe.lower, recipe.upper, self._index(recipe.image))
+        return (*key, recipe.labels)
+
+    def kept(self, recipe: MaskRecipe) -> bool:
+        """Tells whether the source mask of a recipe with an image is kept."""
+        return self._kept is not None and self._kept[0] == self.source_key(recipe)
 
     def make(self, recipe: MaskRecipe) -> np.ndarray:
         """Returns the (X, Y, Z) bool mask a recipe makes.
