@@ -191,7 +191,7 @@ def test_the_label_tool_adds_the_label_clicked_and_shift_click_removes_it(
     labels = np.zeros((32, 32, 32), np.int32)
     labels[16:, :, :] = 5
     parcellation = viewer.add(Volume(labels, np.eye(4)), Category.OVERLAYS)
-    region = viewer.add_label_region(parcellation.id, apply=True)
+    viewer.add_label_region(parcellation.id, apply=True)
     viewer.set_tool(Tool.LABEL_REGION)
     panel = _panel(window, ViewKind.AXIAL)
     click = _point(panel, (24.0, 10.0, 0.0))
@@ -199,8 +199,7 @@ def test_the_label_tool_adds_the_label_clicked_and_shift_click_removes_it(
     (o,) = _regions(viewer)
     assert o.labels_a == (5,)
     QTest.mouseClick(panel.canvas, LEFT, Qt.KeyboardModifier.ShiftModifier, click)
-    o = viewer.scene.item(region).options
-    assert isinstance(o, RegionOptions)
+    (o,) = _regions(viewer)
     assert o.labels_a == ()
 
 
