@@ -64,6 +64,7 @@ def test_a_stroke_that_never_moves_gives_one_point() -> None:
 
 def test_the_bundle_tool_is_chosen_exactly_while_a_bundle_is_drawn() -> None:
     viewer = Viewer()
+    viewer.set_workspace(Workspace.SIMULATE)
     viewer.start_bundle()
     assert _tool(viewer) == Tool.DRAW_BUNDLE
     viewer.cancel_bundle()
@@ -72,8 +73,8 @@ def test_the_bundle_tool_is_chosen_exactly_while_a_bundle_is_drawn() -> None:
     assert viewer.drawing
     viewer.add_bundle_point((0.0, 0.0, 0.0))
     viewer.add_bundle_point((10.0, 0.0, 0.0))
-    viewer.set_tool(Tool.SPHERE)  # finishes the bundle, which has two points
-    assert not viewer.drawing and _tool(viewer) == Tool.SPHERE
+    viewer.set_tool(Tool.CURSOR)  # finishes the bundle, which has two points
+    assert not viewer.drawing and _tool(viewer) == Tool.CURSOR
     state = viewer.phantom
     assert state is not None and len(state.bundles) == 1
 

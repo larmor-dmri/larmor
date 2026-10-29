@@ -79,6 +79,12 @@ class LabelCache:
             lambda: point_labels(tractogram.points, parcellation),
         )
 
+    def forget(self, data: object) -> None:
+        """Drops the kept values of a tractogram or parcellation, once it is removed."""
+        with self._lock:
+            for key in [k for k, v in self._kept.items() if any(o is data for o in v)]:
+                del self._kept[key]
+
     def _get(
         self,
         key: tuple[object, ...],

@@ -18,6 +18,7 @@ from larmor.viewer import (
 )
 from larmor.viewer.model.label_regions import slice_cells
 from larmor.viewer.model.options import RegionOptions
+from larmor.viewer.model.regions import LABEL_CACHE
 
 CONNECTOME = Path(__file__).parents[2] / "data" / "connectome"
 TRACKS = CONNECTOME / "tracks.tck"
@@ -170,3 +171,18 @@ def test_slice_cells_are_the_chosen_voxels_of_the_slice() -> None:
     centres = cut.cells.mean(axis=1)
     np.testing.assert_allclose(sorted(centres[:, 0]), [2, 2, 2, 4, 4, 4])
     assert len(slice_cells(labels, affine, (7,), axis=2, coordinate=0.0).cells) == 0
+
+
+def test_removing_the_tractogram_drops_its_labels_from_the_cache() -> None:
+    viewer, tracts, parcellation = _scene()
+    a, _ = _common_pair()
+    viewer.add_label_region(parcellation, labels_a=[a], apply=True)
+    viewer.region_selection(tracts)
+    data = viewer.scene.item(tracts).data
+
+    def kept() -> bool:
+        return any(o is data for v in LABEL_CACHE._kept.values() for o in v)
+
+    assert kept()
+    viewer.remove(tracts)
+    assert not kept()

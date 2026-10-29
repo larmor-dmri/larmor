@@ -104,6 +104,7 @@ def test_a_sphere_click_places_the_last_radius_at_the_click_and_applies_it(
     window: MainWindow,
 ) -> None:
     viewer = window.viewer
+    viewer.set_workspace(Workspace.DISSECT)
     viewer.set_tool(Tool.SPHERE)
     panel = _panel(window, ViewKind.AXIAL)
     click = _point(panel, (20.0, 10.0, 0.0))
@@ -122,6 +123,7 @@ def test_a_sphere_drag_from_the_centre_sets_the_radius_and_says_it(
     window: MainWindow,
 ) -> None:
     viewer = window.viewer
+    viewer.set_workspace(Workspace.DISSECT)
     viewer.set_tool(Tool.SPHERE)
     notices: list[str] = []
     _input(window, ViewKind.CORONAL).notice.connect(notices.append)
@@ -137,6 +139,7 @@ def test_a_sphere_drag_from_the_centre_sets_the_radius_and_says_it(
 
 def test_a_box_drag_draws_a_rectangle_a_slab_deep(window: MainWindow) -> None:
     viewer = window.viewer
+    viewer.set_workspace(Workspace.DISSECT)
     viewer.set_tool(Tool.BOX)
     panel = _panel(window, ViewKind.AXIAL)
     z = viewer.scene.view.cursor[2]
@@ -174,6 +177,7 @@ def test_a_3d_click_places_a_sphere_on_what_is_under_the_pointer(
     window: MainWindow,
 ) -> None:
     viewer = window.viewer
+    viewer.set_workspace(Workspace.DISSECT)
     viewer.set_tool(Tool.SPHERE)
     panel = _panel(window, ViewKind.THREE_D)
     panel.canvas.force_draw()
@@ -198,6 +202,7 @@ def test_the_label_tool_adds_the_label_clicked_and_shift_click_removes_it(
     labels[16:, :, :] = 5
     parcellation = viewer.add(Volume(labels, np.eye(4)), Category.OVERLAYS)
     viewer.add_label_region(parcellation.id, apply=True)
+    viewer.set_workspace(Workspace.DISSECT)
     viewer.set_tool(Tool.LABEL_REGION)
     panel = _panel(window, ViewKind.AXIAL)
     click = _point(panel, (24.0, 10.0, 0.0))

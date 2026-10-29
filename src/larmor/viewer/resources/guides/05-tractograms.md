@@ -75,9 +75,9 @@ still filter the tractograms in View. With the Sphere tool, a click places
 a sphere with the radius of the last one (5 mm at first) centred on the click, and a drag from the centre sets
 the radius as you place it, with the radius shown in the status bar. With the Box tool, a drag draws a box over
 the rectangle, as deep across the slice as the tractogram's slab (5 mm by default). In the 3D view, a click with
-either tool places the region on the streamline, slice or surface under the pointer. A right click in a view
-offers the same regions at the point clicked. A new region is applied to every tractogram loaded. To add a mask,
-use `add_mask` from Python or an agent; it is removed with its image.
+either tool places the region on the streamline, slice or surface under the pointer. In the Dissect workspace,
+a right click in a view also offers the same regions at the point clicked. A new region is applied to every
+tractogram loaded. To add a mask, use `add_mask` from Python or an agent; it is removed with its image.
 
 Every 2D view draws each sphere and box where its slice cuts it: a sphere as a circle (dashed when the sphere's
 centre is on another slice), a box as a rectangle. The 3D view draws them as translucent shapes. A mask is not

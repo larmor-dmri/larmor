@@ -117,6 +117,7 @@ from larmor.viewer.model.phantom_editor import PhantomEditor, Schedule, simplify
 from larmor.viewer.model.readout import Readout, closest_axis, read_volume
 from larmor.viewer.model.readout import slice_index as volume_slice
 from larmor.viewer.model.regions import (
+    LABEL_CACHE,
     RegionKey,
     mask_ids,
     mask_regions_of,
@@ -660,6 +661,7 @@ class Viewer:
             if item.id == self.scene.view.main_volume:
                 self._pass_main_volume(item)
             self.scene.remove(target)
+            LABEL_CACHE.forget(item.data)
             self._phantom.forget(target)
             self._labels = {k: v for k, v in self._labels.items() if k[0] != target}
             self._tsf_values.pop(target, None)
@@ -3337,13 +3339,27 @@ class Viewer:
         tool while drawing finishes the bundle if it has two points, else
         drops it.
 
+        Each workspace offers its own tools: Cursor and Zoom box in View, Cursor
+        and Draw bundle in Simulate, and Cursor, Sphere, Box, Label region and
+        Zoom box in Dissect.
+
         Args:
             tool: The tool.
+
+        Raises:
+            ValueError: If the workspace shown does not offer the tool.
         """
         tool = Tool(tool)
+        if tool == Tool.DRAW_BUNDLE and self.drawing:
+            return
+        workspace = self.scene.view.workspace
+        if tool not in WORKSPACE_TOOLS[workspace]:
+            raise ValueError(
+                f"The {workspace.value} workspace does not offer the "
+                f"{tool.value} tool; show a workspace that does first."
+            )
         if tool == Tool.DRAW_BUNDLE:
-            if not self.drawing:
-                self.start_bundle()  # which chooses the tool
+            self.start_bundle()  # which chooses the tool
             return
         if self.drawing:
             _, draft = self._phantom.draft()
