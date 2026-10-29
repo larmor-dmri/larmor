@@ -7,6 +7,9 @@ from contextvars import ContextVar
 # A function given the voxels fitted so far, the voxels to fit, and the stage.
 type Report = Callable[[int, int, str], None]
 
+# The stage reported before the responses are estimated inside a fit.
+RESPONSE_STAGE = "Estimating responses"
+
 _report: ContextVar[Report | None] = ContextVar("report", default=None)
 
 
@@ -34,3 +37,14 @@ def report_voxels(done: int, total: int) -> None:
     report = _report.get()
     if report is not None:
         report(done, total, "Fitting voxels")
+
+
+def report_stage(stage: str) -> None:
+    """Passes a new stage, with no voxel count, to the `fit_progress` block, if any.
+
+    It lets a caller cancel a fit from `report` before a long stage, such as the
+    response estimation, starts.
+    """
+    report = _report.get()
+    if report is not None:
+        report(0, 0, stage)

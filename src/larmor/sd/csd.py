@@ -9,7 +9,7 @@ from larmor.dwi.mask import unmask
 from larmor.sd.csd_rf import estimate_csd_rf
 from larmor.sd.csd_solver import CSDSolver, csd_shell, fit_csd
 from larmor.sd.model import SDFit
-from larmor.sd.progress import report_voxels
+from larmor.sd.progress import RESPONSE_STAGE, report_stage, report_voxels
 from larmor.sd.rf import ZonalSHRF
 from larmor.sd.sh import BASES, convert_sh_basis
 from larmor.types import GradientTable, Volume
@@ -115,6 +115,7 @@ class CSDModel:
         on_shell = gtab.shell_index == int(np.argmin(np.abs(gtab.shells - bval)))
         response = self.response
         if response is None:
+            report_stage(RESPONSE_STAGE)
             response = estimate_csd_rf(volume, gtab, mask, n_jobs=n_jobs).rf
         zonal = response.shell_coefficients(bval)
         if gtab.count_shells() > 1:

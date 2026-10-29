@@ -6,7 +6,7 @@ from collections.abc import Callable
 
 import pytest
 
-from larmor.viewer.jobs import JobBusyError, JobRunner, JobStatus, Report
+from larmor.viewer.jobs import CANCELLING, JobBusyError, JobRunner, JobStatus, Report
 
 WAIT = 10.0  # seconds
 
@@ -66,6 +66,7 @@ def test_a_cancelled_job_delivers_nothing() -> None:
     rec.jobs.start("Job", work, rec.results.append, rec.errors.append)
     assert started.wait(WAIT)
     rec.jobs.cancel()
+    assert rec.statuses[-1] == JobStatus("Job", 0, 0, CANCELLING)
     # Busy until its thread stops, so no second job writes beside it.
     with pytest.raises(JobBusyError, match="stopping"):
         rec.jobs.start("Second", lambda report: None, rec.results.append)

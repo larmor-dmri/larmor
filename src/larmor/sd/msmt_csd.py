@@ -9,7 +9,7 @@ from larmor.dwi.inputs import as_mask, check_dwi
 from larmor.dwi.mask import unmask
 from larmor.sd.model import FIT_CHUNK, SDFit
 from larmor.sd.msmt import fit_msmt, prepare_msmt
-from larmor.sd.progress import report_voxels
+from larmor.sd.progress import RESPONSE_STAGE, report_stage, report_voxels
 from larmor.sd.rf import ZonalSHRF
 from larmor.sd.sh import BASES, convert_sh_basis
 from larmor.sd.sphere import DIRS_300
@@ -132,11 +132,9 @@ class MSMTCSDModel:
             mask = np.ones(volume.data.shape[:-1], dtype=bool)
         else:
             mask = as_mask(volume, mask)
-        if self.rfs is None:
-            estimated = estimate_tissue_responses(volume, gtab, mask, n_jobs=threads)
-            rfs = [estimated.wm, estimated.gm, estimated.csf]
-        else:
-            rfs = self.rfs
+        rfs = self.rfs
+        if rfs is None:
+            rfs = _estimated_responses(volume, gtab, mask, threads)
 
         n_aniso = sum(1 for rf in rfs if rf.lmax > 0)
         lmax = min(self.lmax, *(rf.lmax for rf in rfs[:n_aniso]))
@@ -221,6 +219,15 @@ def _fods_and_fractions(
         total = shares.sum(axis=1, keepdims=True) + FRACTION_SUM_OFFSET
         fractions = unmask(shares / total, mask)
     return fods, fractions
+
+
+def _estimated_responses(
+    volume: Volume, gtab: GradientTable, mask: np.ndarray, threads: int
+) -> list[ZonalSHRF]:
+    """Estimates the white matter, grey matter and CSF responses, in that order."""
+    report_stage(RESPONSE_STAGE)
+    estimated = estimate_tissue_responses(volume, gtab, mask, n_jobs=threads)
+    return [estimated.wm, estimated.gm, estimated.csf]
 
 
 def _anisotropic_first(rfs: list[ZonalSHRF]) -> list[ZonalSHRF]:

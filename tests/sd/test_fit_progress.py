@@ -8,7 +8,7 @@ import pytest
 import larmor.sd.model as sd_module
 import larmor.sd.msmt_csd as msmt_module
 from larmor.sd import AnisotropicRF, CSDModel, MSMTCSDModel, SDModel, ZonalSHRF
-from larmor.sd.progress import fit_progress
+from larmor.sd.progress import RESPONSE_STAGE, fit_progress
 from larmor.sd.sphere import get_dirs
 from larmor.types import GradientTable, Volume
 
@@ -110,3 +110,19 @@ def test_fits_outside_the_block_report_nothing(grl: dict[str, Any]) -> None:
         pass
     sd.fit(volume, gtab, mask=mask, n_jobs=1)
     assert calls == []
+
+
+@pytest.mark.parametrize("model", [CSDModel(lmax=4), MSMTCSDModel(lmax=4)])
+def test_a_cancel_at_the_response_stage_stops_before_estimating(
+    model: CSDModel | MSMTCSDModel,
+) -> None:
+    volume, gtab = _one_shell()
+    stages: list[str] = []
+
+    def report(done: int, total: int, stage: str) -> None:
+        stages.append(stage)
+        raise StopError
+
+    with pytest.raises(StopError), fit_progress(report):
+        model.fit(volume, gtab, mask=np.ones((7, 1, 1), bool), n_jobs=1)
+    assert stages == [RESPONSE_STAGE]
