@@ -653,19 +653,22 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#larmor.sd.fit_sh" title="larmor.sd.fit_sh"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_sh</span></code></a></p></td>
 <td><p>Fits SH coefficients to amplitudes sampled on unit directions.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.sd.read_mritoolkit_fod" title="larmor.sd.read_mritoolkit_fod"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_mritoolkit_fod</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.sd.merge_fods" title="larmor.sd.merge_fods"><code class="xref py py-obj docutils literal notranslate"><span class="pre">merge_fods</span></code></a></p></td>
+<td><p>Merges one or more FODs into a single one using the selected strategy.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.sd.read_mritoolkit_fod" title="larmor.sd.read_mritoolkit_fod"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_mritoolkit_fod</span></code></a></p></td>
 <td><p>Reads the result of an MRIToolkit GRL or mFOD fit from a MATLAB file.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.sd.read_mritoolkit_fod_count" title="larmor.sd.read_mritoolkit_fod_count"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_mritoolkit_fod_count</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.sd.read_mritoolkit_fod_count" title="larmor.sd.read_mritoolkit_fod_count"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_mritoolkit_fod_count</span></code></a></p></td>
 <td><p>Returns the number of FODs (anisotropic responses) a GRL or mFOD result holds.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.sd.read_mritoolkit_sh" title="larmor.sd.read_mritoolkit_sh"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_mritoolkit_sh</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.sd.read_mritoolkit_sh" title="larmor.sd.read_mritoolkit_sh"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_mritoolkit_sh</span></code></a></p></td>
 <td><p>Reads one FOD image of a MATLAB file in MRIToolkit's layout, as world SH.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.sd.response_shells" title="larmor.sd.response_shells"><code class="xref py py-obj docutils literal notranslate"><span class="pre">response_shells</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.sd.response_shells" title="larmor.sd.response_shells"><code class="xref py py-obj docutils literal notranslate"><span class="pre">response_shells</span></code></a></p></td>
 <td><p>Returns the b-values of the rows of an MRtrix response for these data.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.sd.sh_layout" title="larmor.sd.sh_layout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sh_layout</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.sd.sh_layout" title="larmor.sd.sh_layout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sh_layout</span></code></a></p></td>
 <td><p>Returns the lmax of num_coeffs SH coefficients and whether all degrees are kept.</p></td>
 </tr>
 </tbody>
@@ -2177,6 +2180,32 @@ asymmetric function, rather than the even degrees only,
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="larmor.sd.merge_fods">
+<span class="sig-prename descclassname"><span class="pre">larmor.sd.</span></span><span class="sig-name descname"><span class="pre">merge_fods</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fods</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tissue_fractions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ws'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.sd.merge_fods" title="Link to this definition">#</a></dt>
+<dd><p>Merges one or more FODs into a single one using the selected strategy.</p>
+<p>Isotropic RFs are ignored. Based off the mFOD paper.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fods</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><em>NDArray</em><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.floating" title="(in NumPy v2.5)"><em>floating</em></a><em>]</em><em>]</em>) – The list of fods to merge</p></li>
+<li><p><strong>tissue_fractions</strong> (<em>NDArray</em><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.floating" title="(in NumPy v2.5)"><em>floating</em></a><em>]</em>) – tissue fractions to use for fod merging.</p></li>
+<li><p><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.15)"><em>Literal</em></a><em>[</em><em>'ws'</em><em>, </em><em>'majority'</em><em>]</em>) – “ws” for the weighted sum, “majority” for the FOD of the largest
+anisotropic fraction in each voxel.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The merged fods.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – Incorrect method or non matching fods/tissue shapes.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>NDArray</em>[<a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.floating" title="(in NumPy v2.5)"><em>floating</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="larmor.sd.read_mritoolkit_fod">
 <span class="sig-prename descclassname"><span class="pre">larmor.sd.</span></span><span class="sig-name descname"><span class="pre">read_mritoolkit_fod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">variable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.sd.read_mritoolkit_fod" title="Link to this definition">#</a></dt>
 <dd><p>Reads the result of an MRIToolkit GRL or mFOD fit from a MATLAB file.</p>
@@ -2468,6 +2497,7 @@ symmetric, which makes 1 coefficient symmetric lmax 0.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.sd.estimate_wm_rf"><code class="docutils literal notranslate"><span class="pre">estimate_wm_rf()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.sd.find_peaks"><code class="docutils literal notranslate"><span class="pre">find_peaks()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.sd.fit_sh"><code class="docutils literal notranslate"><span class="pre">fit_sh()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.sd.merge_fods"><code class="docutils literal notranslate"><span class="pre">merge_fods()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.sd.read_mritoolkit_fod"><code class="docutils literal notranslate"><span class="pre">read_mritoolkit_fod()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.sd.read_mritoolkit_fod_count"><code class="docutils literal notranslate"><span class="pre">read_mritoolkit_fod_count()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.sd.read_mritoolkit_sh"><code class="docutils literal notranslate"><span class="pre">read_mritoolkit_sh()</span></code></a></li>

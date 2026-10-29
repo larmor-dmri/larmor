@@ -693,7 +693,7 @@ non-negative values, while the elastic net can give negative ones.</p>
 <input checked="checked" id="sd-tab-item-2" name="sd-tab-set-1" type="radio">
 <label class="sd-tab-label" data-sync-group="interface" data-sync-id="python" for="sd-tab-item-2">
 Python</label><div class="sd-tab-content docutils">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">larmor.sd</span><span class="w"> </span><span class="kn">import</span> <span class="n">L2NNLS</span><span class="p">,</span> <span class="n">SDMethod</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">larmor.sd</span><span class="w"> </span><span class="kn">import</span> <span class="n">L2NNLS</span><span class="p">,</span> <span class="n">SDMethod</span><span class="p">,</span> <span class="n">merge_fods</span>
 
 <span class="n">responses</span> <span class="o">=</span> <span class="n">build_response_functions</span><span class="p">(</span>
     <span class="n">dwi</span><span class="p">,</span> <span class="n">gtab</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">gm_noddi</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">csf_diffusivity</span><span class="o">=</span><span class="mf">3e-3</span>
@@ -701,6 +701,7 @@ Python</label><div class="sd-tab-content docutils">
 <span class="n">model</span> <span class="o">=</span> <span class="n">SDModel</span><span class="p">(</span><span class="n">responses</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">SDMethod</span><span class="o">.</span><span class="n">MFOD</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="n">L2NNLS</span><span class="p">(</span><span class="n">reg</span><span class="o">=</span><span class="mf">0.1</span><span class="p">))</span>
 <span class="n">fit</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">dwi</span><span class="p">,</span> <span class="n">gtab</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">fods</span><span class="p">),</span> <span class="s2">"FODs"</span><span class="p">)</span>
+<span class="n">fod</span> <span class="o">=</span> <span class="n">merge_fods</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">fods</span><span class="p">,</span> <span class="n">fit</span><span class="o">.</span><span class="n">tissue_fractions</span><span class="p">,</span> <span class="s2">"ws"</span><span class="p">)</span>  <span class="c1"># one FOD to track</span>
 </pre></div>
 </div>
 </div>
@@ -711,11 +712,16 @@ Command line</label><div class="sd-tab-content docutils">
 <span class="w">    </span>--method<span class="w"> </span>mfod
 </pre></div>
 </div>
-<p>With mFOD, grey matter defaults to the NODDI response (<code class="docutils literal notranslate"><span class="pre">--gm-rf</span> <span class="pre">noddi</span></code>) and the solver to L2NNLS. This writes one
-FOD per anisotropic response, <code class="docutils literal notranslate"><span class="pre">mfod_fod1.nii.gz</span></code> (white matter) and <code class="docutils literal notranslate"><span class="pre">mfod_fod2.nii.gz</span></code> (grey matter), and
-<code class="docutils literal notranslate"><span class="pre">mfod_tissue_fraction.nii.gz</span></code>.</p>
+<p>With mFOD, grey matter defaults to the NODDI response (<code class="docutils literal notranslate"><span class="pre">--gm-rf</span> <span class="pre">noddi</span></code>) and the solver to L2NNLS. This merges the
+two FODs into one, <code class="docutils literal notranslate"><span class="pre">mfod.nii.gz</span></code>, and writes <code class="docutils literal notranslate"><span class="pre">mfod_tissue_fraction.nii.gz</span></code>. With <code class="docutils literal notranslate"><span class="pre">--fod-merge</span> <span class="pre">none</span></code> it writes one
+FOD per anisotropic response instead, <code class="docutils literal notranslate"><span class="pre">mfod_fod1.nii.gz</span></code> (white matter) and <code class="docutils literal notranslate"><span class="pre">mfod_fod2.nii.gz</span></code> (grey matter).</p>
 </div>
 </div>
+<p>A tracker follows one FOD, so the two FODs are merged into one with <a class="reference internal" href="../../reference/api/sd/#larmor.sd.merge_fods" title="larmor.sd.merge_fods"><code class="xref py py-func docutils literal notranslate"><span class="pre">merge_fods()</span></code></a>
+(<code class="docutils literal notranslate"><span class="pre">--fod-merge</span></code>). The weighted sum, <code class="docutils literal notranslate"><span class="pre">&quot;ws&quot;</span></code> (mFOD-WS, the default of <code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">fod</span></code>), multiplies each FOD by its tissue
+fraction and adds them, so the white matter FOD leads in the white matter and the grey matter FOD near the cortex.
+<code class="docutils literal notranslate"><span class="pre">&quot;majority&quot;</span></code> keeps, in each voxel, the FOD of the anisotropic tissue with the largest fraction. The isotropic
+fractions, such as the CSF’s, count in neither.</p>
 <p><code class="docutils literal notranslate"><span class="pre">inner_shell_weight</span></code> (<code class="docutils literal notranslate"><span class="pre">--inner-shell-weight</span></code>) changes the weight of the measurements outside the highest shell in
 a multi-tissue fit.</p>
 <p>GRL and mFOD find the FOD’s values on 300 fixed directions and then fit SH coefficients to those values. With the
