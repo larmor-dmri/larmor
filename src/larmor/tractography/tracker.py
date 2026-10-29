@@ -772,8 +772,9 @@ class _Gathered:
     """Gathers the kept streamlines of a run kept in memory, batch by batch.
 
     The points go straight into one buffer, which grows in place where the
-    allocator allows it and is trimmed at the end, so a run never holds its
-    streamlines twice.
+    allocator allows it and is trimmed at the end, rather than joining per-batch
+    copies at the end. The buffer is resized without NumPy's check for views, so
+    no view of `points` may outlive a call.
     """
 
     def __init__(self) -> None:
