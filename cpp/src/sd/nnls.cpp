@@ -160,6 +160,9 @@ Index default_inner_steps(Index n_columns) {
 // for which the ridge fits use the normal equations.
 constexpr double MAX_NORMAL_EQUATIONS_CONDITION = 1e8;
 
+// A Cholesky pivot below this share of its diagonal entry counts as a dependent column.
+constexpr double MIN_RELATIVE_PIVOT = 1e-12;
+
 // The Cholesky factor L of the Gram matrix on the active columns, G_AA = L L^T, with the columns
 // in the order they joined the factor.
 class ActiveCholesky {
@@ -168,23 +171,17 @@ public:
         : gram(gram_matrix), factor(gram_matrix.rows(), gram_matrix.rows()),
           in_factor(ActiveSet::Constant(gram_matrix.rows(), false)) {}
 
-    // Brings the factor to the columns of is_active, appending a column that joined and
-    // rebuilding it if any column left. Returns false when a pivot is not positive, the Gram
-    // matrix being singular on those columns.
+    // Brings the factor to the columns of is_active, removing the columns that left and
+    // appending those that joined. Returns false when a pivot is not clearly positive, the Gram
+    // matrix being singular or nearly so on those columns.
     bool update(const ActiveSet& is_active) {
-        if ((in_factor && !is_active).any()) {
-            std::vector<Index> kept;
-            for (const Index column : columns) {
-                if (is_active(column)) {
-                    kept.push_back(column);
-                }
-            }
-            columns.clear();
-            in_factor.setConstant(false);
-            for (const Index column : kept) {
-                if (!append(column)) {
-                    return false;
-                }
+        for (std::size_t position = columns.size(); position-- > 0;) {
+            const Index column = columns[position];
+            if (!is_active(column)) {
+                remove_cholesky_column(factor, static_cast<Index>(columns.size()),
+                                       static_cast<Index>(position));
+                columns.erase(columns.begin() + static_cast<std::ptrdiff_t>(position));
+                in_factor(column) = false;
             }
         }
         for (Index column = 0; column < is_active.size(); ++column) {
@@ -218,7 +215,7 @@ private:
         }
         factor.topLeftCorner(position, position).triangularView<Eigen::Lower>().solveInPlace(cross);
         const double pivot = gram(column, column) - cross.squaredNorm();
-        if (!(pivot > 0.0)) {
+        if (!(pivot > MIN_RELATIVE_PIVOT * gram(column, column))) {
             return false;
         }
         factor.row(position).head(position) = cross.transpose();
@@ -235,6 +232,27 @@ private:
 };
 
 } // namespace
+
+void remove_cholesky_column(Matrix& factor, Index n_columns, Index position) {
+    // Dropping the column's row leaves one entry above the diagonal in each row below it; a
+    // rotation of two columns, which keeps L L^T, clears each in turn.
+    for (Index row = position; row < n_columns - 1; ++row) {
+        factor.row(row).head(n_columns) = factor.row(row + 1).head(n_columns);
+    }
+    for (Index column = position; column < n_columns - 1; ++column) {
+        const double diagonal = factor(column, column);
+        const double above = factor(column, column + 1);
+        const double length = std::hypot(diagonal, above);
+        const double cosine = diagonal / length;
+        const double sine = above / length;
+        for (Index row = column; row < n_columns - 1; ++row) {
+            const double left = factor(row, column);
+            const double right = factor(row, column + 1);
+            factor(row, column) = cosine * left + sine * right;
+            factor(row, column + 1) = cosine * right - sine * left;
+        }
+    }
+}
 
 Vector solve_nnls(const MatrixView& design, const VectorView& data, double gradient_tolerance) {
     return solve_nnls_with_limit(design, data, gradient_tolerance,
@@ -262,8 +280,9 @@ RidgeDesign make_ridge_design(const MatrixView& kernel, double ridge) {
     Matrix gram = kernel.transpose() * kernel;
     gram.diagonal().array() += ridge * ridge;
     const double ridge_squared = ridge * ridge;
+    // With no ridge, a fit whose Cholesky pivot is not clearly positive falls back to the QR.
     const bool normal_equations =
-        ridge_squared > 0.0 &&
+        ridge_squared == 0.0 ||
         kernel.squaredNorm() + ridge_squared <= MAX_NORMAL_EQUATIONS_CONDITION * ridge_squared;
     return {.kernel = kernel,
             .gram = std::move(gram),
