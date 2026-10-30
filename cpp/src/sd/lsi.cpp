@@ -109,16 +109,15 @@ public:
         return true;
     }
 
-    // Rebuilds the factor from the columns still active, in their order.
-    bool keep(const std::vector<bool>& is_active) {
-        std::vector<Index> kept;
-        for (const Index column : columns) {
-            if (is_active[static_cast<std::size_t>(column)]) {
-                kept.push_back(column);
+    // Removes the columns no longer active from the factor, keeping the others in their order.
+    void keep(const std::vector<bool>& is_active) {
+        for (std::size_t position = columns.size(); position-- > 0;) {
+            if (!is_active[static_cast<std::size_t>(columns[position])]) {
+                remove_cholesky_column(factor, static_cast<Index>(columns.size()),
+                                       static_cast<Index>(position));
+                columns.erase(columns.begin() + static_cast<std::ptrdiff_t>(position));
             }
         }
-        columns.clear();
-        return std::ranges::all_of(kept, [this](Index column) { return append(column); });
     }
 
     // Returns the solution of G_AA z = rhs_A, spread into a vector of all columns.
@@ -234,9 +233,7 @@ std::optional<Vector> ldp_multipliers(const LsiDesign& design, const Vector& bou
                     solution(column) = 0.0;
                 }
             }
-            if (!cholesky.keep(is_active)) {
-                return std::nullopt;
-            }
+            cholesky.keep(is_active);
             candidate = cholesky.solve(bounds);
         }
         solution = candidate;

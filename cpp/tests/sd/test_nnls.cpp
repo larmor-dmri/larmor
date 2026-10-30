@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <limits>
 
+#include <Eigen/Cholesky>
 #include <doctest/doctest.h>
 
 #include "common/types.hpp"
@@ -239,5 +240,49 @@ TEST_CASE("nnls: the ridge solve matches plain NNLS on the stacked matrix") {
             check_close(larmor::sd::solve_ridge_nnls(design, signal, 1e-12),
                         larmor::sd::solve_nnls(stacked, data, 1e-12), 1e-9);
         }
+    }
+}
+
+TEST_CASE("nnls: with no ridge, the normal equations give plain NNLS") {
+    // A tall (30, 8) kernel, whose Gram matrix is well conditioned.
+    PseudoRandom random;
+    Matrix kernel(30, 8);
+    for (Index row = 0; row < 30; ++row) {
+        for (Index column = 0; column < 8; ++column) {
+            kernel(row, column) = random.next();
+        }
+    }
+    const larmor::sd::RidgeDesign design = larmor::sd::make_ridge_design(kernel, 0.0);
+    CHECK(design.normal_equations);
+    for (int voxel = 0; voxel < 5; ++voxel) {
+        Vector signal(30);
+        for (Index row = 0; row < 30; ++row) {
+            signal(row) = 2.0 * random.next() - 0.5;
+        }
+        check_close(larmor::sd::solve_ridge_nnls(design, signal, 1e-12),
+                    larmor::sd::solve_nnls(kernel, signal, 1e-12), 1e-9);
+    }
+}
+
+TEST_CASE("nnls: removing a column keeps the Cholesky factor of the others") {
+    PseudoRandom random;
+    Matrix columns(8, 5);
+    for (Index row = 0; row < 8; ++row) {
+        for (Index column = 0; column < 5; ++column) {
+            columns(row, column) = random.next();
+        }
+    }
+    for (Index position = 0; position < 5; ++position) {
+        Matrix factor = Matrix(columns.transpose() * columns).llt().matrixL();
+        larmor::sd::remove_cholesky_column(factor, 5, position);
+        Matrix kept(8, 4);
+        for (Index column = 0, out = 0; column < 5; ++column) {
+            if (column != position) {
+                kept.col(out++) = columns.col(column);
+            }
+        }
+        const Matrix lower = factor.topLeftCorner(4, 4).triangularView<Eigen::Lower>();
+        CHECK((lower * lower.transpose() - kept.transpose() * kept).cwiseAbs().maxCoeff() <= 1e-12);
+        CHECK((lower.diagonal().array() > 0.0).all());
     }
 }
