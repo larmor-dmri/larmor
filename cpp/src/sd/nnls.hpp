@@ -42,10 +42,17 @@ struct RidgeDesign {
     Matrix gram;
     /// The weight of the ridge.
     double ridge = 0.0;
-    /// Whether the least-squares fits solve the normal equations with the Gram matrix, which the
-    /// ridge keeps well conditioned, instead of a QR decomposition of the stacked matrix.
+    /// Whether the least-squares fits solve the normal equations with the Gram matrix instead of a
+    /// QR decomposition of the stacked matrix: with no ridge, or a ridge that keeps them well
+    /// conditioned.
     bool normal_equations = false;
 };
+
+/// Removes the column at `position` from the lower Cholesky factor L of the Gram matrix of
+/// n_columns columns, so that L L^T is the Gram matrix of the others, in the same order.
+///
+/// Only the top-left (n_columns - 1) square of `factor` is valid afterwards.
+void remove_cholesky_column(Matrix& factor, Index n_columns, Index position);
 
 /// Prepares a kernel for solve_ridge_nnls.
 RidgeDesign make_ridge_design(const MatrixView& kernel, double ridge);
