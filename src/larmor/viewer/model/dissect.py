@@ -155,6 +155,34 @@ def gradient_files(dwi: Path) -> tuple[Path | None, Path | None]:
     return None, None
 
 
+def start_items(scene: Scene, start: StartFrom) -> list[ItemId]:
+    """Returns the items of the scene a dissection can start from, in scene order.
+
+    A DWI is a 4D volume read from a file, since the fit reads the file again
+    with its gradient files.
+    """
+    if start == StartFrom.TRACTOGRAM:
+        return [item.id for item in scene.in_category(Category.TRACTOGRAMS)]
+    if start == StartFrom.FOD:
+        return [item.id for item in scene.in_category(Category.FODS)]
+    return [
+        item.id
+        for item in scene.in_category(Category.VOLUMES)
+        if isinstance(item.data, Volume)
+        and item.data.data.ndim == 4
+        and item.source is not None
+    ]
+
+
+def item_from_file(scene: Scene, path: Path, category: Category) -> ItemId | None:
+    """Returns the item of a category already read from a file; None if none is."""
+    path = path.absolute()
+    for item in scene.in_category(category):
+        if item.source is not None and item.source.absolute() == path:
+            return item.id
+    return None
+
+
 @dataclass(frozen=True)
 class FodSettings:
     """The choices of a FOD fit, with the defaults of `lar fod`.

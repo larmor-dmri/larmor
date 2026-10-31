@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMenu,
     QProgressBar,
     QPushButton,
     QRadioButton,
@@ -48,6 +49,7 @@ from larmor.viewer.model.dissect import (
     TrackAlgorithm,
     TrackSettings,
     dissect_status,
+    start_items,
     two_fods,
 )
 from larmor.viewer.model.events import (
@@ -346,10 +348,12 @@ class StartPage(QWidget):
     """Offers the three starts: a tractogram, a FOD file, or a DWI."""
 
     start_requested = Signal(object, object)  # the StartFrom and the file
+    item_chosen = Signal(object, object)  # the StartFrom and the item's id
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, viewer: Viewer, parent: QWidget | None = None) -> None:
         """Creates the three buttons."""
         super().__init__(parent)
+        self.viewer = viewer
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         self.buttons: dict[StartFrom, QPushButton] = {}
@@ -374,6 +378,34 @@ class StartPage(QWidget):
         layout.addStretch(1)
 
     def _ask(self, start: StartFrom) -> None:
+        """Offers the scene's items of a start, or asks for its file.
+
+        With such items open, a menu lists them above "From a file...".
+        """
+        items = start_items(self.viewer.scene, start)
+        if not items:
+            self._ask_file(start)
+            return
+        menu = self.start_menu(start, items)
+        button = self.buttons[start]
+        menu.exec(button.mapToGlobal(button.rect().bottomLeft()))
+
+    def start_menu(self, start: StartFrom, items: list[ItemId]) -> QMenu:
+        """Returns the menu of a start: its items, then "From a file..."."""
+        menu = QMenu(self)
+        for item_id in items:
+            name = self.viewer.scene.item(item_id).name
+            action = menu.addAction(name)
+            action.triggered.connect(
+                lambda _=False, i=item_id: self.item_chosen.emit(start, i)
+            )
+        menu.addSeparator()
+        menu.addAction("From a file...").triggered.connect(
+            lambda _=False: self._ask_file(start)
+        )
+        return menu
+
+    def _ask_file(self, start: StartFrom) -> None:
         """Asks for the file of a start, then asks the window to start from it."""
         path, _ = QFileDialog.getOpenFileName(self, self.buttons[start].text())
         if path:
@@ -1060,7 +1092,7 @@ class DissectStepPage(QWidget):
         self.viewer = viewer
         self.steps = steps
         state = steps.state
-        self.start = StartPage(self)
+        self.start = StartPage(viewer, self)
         self.fods = FodsPage(viewer, state, self)
         self.track = TrackPage(viewer, state, self)
         self.regions = RegionsPage(viewer, state, self)

@@ -82,6 +82,32 @@ def test_a_fod_start_loads_the_file_in_its_basis(
     assert fod is not None and window.viewer.scene.item(fod).source is not None
 
 
+def test_the_start_menu_offers_the_open_items_above_a_file(window: MainWindow) -> None:
+    fod = window.viewer.load(TRACKING / "fod.nii.gz", Category.FODS)
+    menu = window.dissect_page.start.start_menu(StartFrom.FOD, [fod.id])
+    texts = [a.text() for a in menu.actions() if not a.isSeparator()]
+    assert texts == [fod.name, "From a file..."]
+    menu.actions()[0].trigger()
+    assert window.dissection.fod == fod.id
+    assert window.dissect_steps.page == DissectStep.TRACK
+
+
+def test_starting_from_an_open_file_reads_it_no_second_time(
+    window: MainWindow,
+) -> None:
+    viewer = window.viewer
+    dwi = viewer.load(DKI / "dwi.nii.gz", Category.VOLUMES)
+    window.start_dissection(StartFrom.DWI, DKI / "dwi.nii.gz")
+    assert len(viewer.scene.in_category(Category.VOLUMES)) == 1
+    state = window.dissection
+    assert state.dwi is not None and state.dwi.path == dwi.source
+    assert window.dissect_page.fods.dwi.path() == dwi.source
+    fod = viewer.load(TRACKING / "fod.nii.gz", Category.FODS)
+    window.start_dissection(StartFrom.FOD, TRACKING / "fod.nii.gz")
+    assert state.fod == fod.id
+    assert len(viewer.scene.in_category(Category.FODS)) == 1
+
+
 def test_estimating_then_tracking_adds_saveable_items_and_keeps_the_run(
     window: MainWindow, qtbot: QtBot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

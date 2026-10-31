@@ -14,6 +14,11 @@ to the FODs step, where you choose the file's SH basis, which the file does not 
 DWI opens it as a volume and takes you to the FODs step with the DWI filled in, and with its bvals and bvecs files
 when they sit beside it with the same name.
 
+When the viewer already holds tractograms, FODs or DWIs read from a file, each Start button opens a menu that lists
+them above **From a file...**, so nothing has to be loaded twice. Choosing a FOD that is open goes straight to the
+Track step, since it already has its basis. A file that is already open is not read again, from the Start step or
+the FODs step: its item is used.
+
 The **FODs** step either loads a FOD file or estimates the FODs from the DWI. Estimating needs a brain mask, chosen
 from the overlays and volumes loaded, or made with **New mask...**, and offers the method and the highest SH degree
 on the page; the grey matter and CSF responses, response files for CSD and MSMT-CSD, the solver, its penalty weight,
