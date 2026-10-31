@@ -19,6 +19,7 @@ $ lar [OPTIONS] COMMAND [ARGS]...
 
 * `dti`: Fit the diffusion tensor (DTI) in every...
 * `dki`: Fit diffusion kurtosis imaging (DKI) to...
+* `noddi`: Fit NODDI (neurite density and orientation...
 * `denoise`: Denoise a DWI volume with MP-PCA and...
 * `mask`: Compute a binary brain mask from the mean...
 * `degibbs`: Remove Gibbs ringing from an image by...
@@ -88,6 +89,34 @@ $ lar dki [OPTIONS] {volume} {output}
 * `-m, --mask <str>`: Brain mask; voxels outside it are not fitted. Without it, a mask is computed from the mean b = 0 image.
 * `--fit <ols|wls>`: Fitting method. &#x27;wls&#x27; is iterated weighted least squares, weighted by the predicted signal, and &#x27;ols&#x27; is ordinary least squares.  [default: wls]
 * `--unconstrained`: Fit without constraints. By default, the diffusivity D(n) and the kurtosis K(n) along every direction n are kept within D(n) &gt;= 0 and 0 &lt;= K(n) &lt;= 3 / (b_max D(n)).
+* `--force`: Overwrite existing output files. Without it, the command stops before any work when an output exists.
+* `--nt <int>`: Number of threads; -1 uses all CPU cores.  [default: -1]
+* `--quiet`: Show only errors.
+* `--info`: Show progress and informational messages.
+* `--debug`: Show debug messages and full tracebacks.
+* `--help`: Show this message and exit.
+
+## `lar noddi`
+
+Fit NODDI (neurite density and orientation dispersion) and write its maps.
+
+**Usage**:
+
+```console
+$ lar noddi [OPTIONS] {volume} {output}
+```
+
+**Arguments**:
+
+* `volume`: Path to the diffusion volume (.nii, .nii.gz, .mif, .mif.gz or .mih).  [required]
+* `output`: Prefix of the output maps. &#x27;out&#x27; writes the neurite density to out_v_ic.nii.gz, the orientation dispersion index to out_od, the Watson concentration to out_kappa, the free-water fraction to out_v_iso and the mean neurite direction to out_mu, all as .nii.gz. The direction is in world coordinates (RAS), not in the voxel frame of the image.  [required]
+
+**Options**:
+
+* `--bvals <str>`: Path to the b-values file. It is not needed for a .mif file with a gradient table in its header; given with such a file, --bvals and --bvecs replace that table.
+* `--bvecs <str>`: Path to the b-vectors file. It is not needed for a .mif file with a gradient table in its header; given with such a file, --bvals and --bvecs replace that table.
+* `--bvec-frame <fsl|world>`: Coordinate frame of the b-vectors. &#x27;fsl&#x27; means the frame of FSL bvecs files, along the image axes with x flipped when the affine determinant is positive, and &#x27;world&#x27; means scanner coordinates (RAS).  [default: fsl]
+* `-m, --mask <str>`: Brain mask; voxels outside it are not fitted. Without it, a mask is computed from the mean b = 0 image.
 * `--force`: Overwrite existing output files. Without it, the command stops before any work when an output exists.
 * `--nt <int>`: Number of threads; -1 uses all CPU cores.  [default: -1]
 * `--quiet`: Show only errors.

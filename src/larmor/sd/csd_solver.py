@@ -159,35 +159,46 @@ def _initial_matrix(
     return initial
 
 
-def fit_csd(
-    signals: npt.NDArray[np.float64],
-    bvecs: np.ndarray,
-    zonal: np.ndarray,
-    lmax: int,
-    solver: CSDSolver,
-    n_threads: int,
-) -> npt.NDArray[np.float64]:
-    """Fits the FOD of many voxels of one shell by CSD, in C++.
+@dataclass(frozen=True)
+class CSDProblem:
+    """Holds the matrices and settings of the CSD fit of one shell, for `solve_csd`.
+
+    Attributes:
+        initial: Maps a voxel's signal to its starting FOD.
+        forward: Maps FOD coefficients to the signal on the shell.
+        constraint: The FOD amplitudes on the constraint directions, weighted.
+        norm_weight: Weight of the norm penalty.
+        threshold: Amplitude below which a direction is constrained.
+        max_iter: Iteration limit of each voxel's fit.
+    """
+
+    initial: npt.NDArray[np.float64]
+    forward: npt.NDArray[np.float64]
+    constraint: npt.NDArray[np.float64]
+    norm_weight: float
+    threshold: float
+    max_iter: int
+
+
+def csd_problem(
+    bvecs: np.ndarray, zonal: np.ndarray, lmax: int, solver: CSDSolver
+) -> CSDProblem:
+    """Checks the settings of a CSD fit of one shell and builds its matrices.
 
     Args:
-        signals: Signal of each voxel on the shell, one per row, shape
-            (n_voxels, n_meas), in the units of the response; negative values are
-            fitted as 0.
         bvecs: Unit gradient direction of each measurement, shape (n_meas, 3).
         zonal: The response's zonal SH coefficients on this shell, l = 0, 2, ...
         lmax: Highest degree of the FOD.
         solver: The CSD settings.
-        n_threads: Number of threads.
 
     Returns:
-        The FODs in the tournier basis, shape (n_voxels, C).
+        The problem `solve_csd` fits voxels with.
 
     Raises:
         ValueError: If the shell has fewer than 6 measurements, the response's l = 0
             coefficient is not positive or it has no anisotropic degree, or
             norm_lambda is 0 while the data or the response do not determine every
-            coefficient (more coefficients than measurements, or lmax above the
-            response's degrees), which leaves the solve singular.
+            coefficient, which leaves the solve singular.
     """
     if len(bvecs) < 6:
         raise ValueError(
@@ -220,20 +231,84 @@ def fit_csd(
     constraint = _basis(directions, lmax) * weight
     norm_weight = solver.norm_lambda * NORM_SCALE * float(forward[:, 0] @ forward[:, 0])
     initial = _initial_matrix(bvecs, zonal, lmax, solver.init_lmax)
-    fods, converged = _core.fit_csd(
-        np.ascontiguousarray(np.maximum(signals, 0.0), dtype=np.float64),
-        np.ascontiguousarray(initial),
-        np.ascontiguousarray(forward),
-        np.ascontiguousarray(constraint),
+    return CSDProblem(
+        initial=np.ascontiguousarray(initial),
+        forward=np.ascontiguousarray(forward),
+        constraint=np.ascontiguousarray(constraint),
         norm_weight=norm_weight,
         threshold=solver.threshold * weight,
         max_iter=solver.max_iter,
+    )
+
+
+def solve_csd(
+    signals: npt.NDArray[np.float64], problem: CSDProblem, n_threads: int
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.bool_]]:
+    """Fits the FODs of some voxels, and says which converged.
+
+    Args:
+        signals: Signal of each voxel on the shell, one per row, shape
+            (n_voxels, n_meas); negative values are fitted as 0.
+        problem: The matrices from `csd_problem`.
+        n_threads: Number of threads.
+
+    Returns:
+        The FODs in the tournier basis, shape (n_voxels, C), and whether each
+        voxel's fit converged, shape (n_voxels,).
+    """
+    fods, converged = _core.fit_csd(
+        np.ascontiguousarray(np.maximum(signals, 0.0), dtype=np.float64),
+        problem.initial,
+        problem.forward,
+        problem.constraint,
+        norm_weight=problem.norm_weight,
+        threshold=problem.threshold,
+        max_iter=problem.max_iter,
         n_threads=n_threads,
     )
-    if not converged.all():
+    return fods, converged
+
+
+def warn_unconverged(n_unconverged: int, max_iter: int) -> None:
+    """Warns that some voxels' CSD fits stopped at the iteration limit."""
+    if n_unconverged:
         LarmorLogger.warning(
-            f"{int((~converged).sum())} voxels did not converge within "
-            f"{solver.max_iter} iterations; their FODs are those of the last one."
+            f"{n_unconverged} voxels did not converge within {max_iter} "
+            "iterations; their FODs are those of the last one."
         )
-    result: npt.NDArray[np.float64] = fods
-    return result
+
+
+def fit_csd(
+    signals: npt.NDArray[np.float64],
+    bvecs: np.ndarray,
+    zonal: np.ndarray,
+    lmax: int,
+    solver: CSDSolver,
+    n_threads: int,
+) -> npt.NDArray[np.float64]:
+    """Fits the FOD of many voxels of one shell by CSD, in C++.
+
+    Args:
+        signals: Signal of each voxel on the shell, one per row, shape
+            (n_voxels, n_meas), in the units of the response; negative values are
+            fitted as 0.
+        bvecs: Unit gradient direction of each measurement, shape (n_meas, 3).
+        zonal: The response's zonal SH coefficients on this shell, l = 0, 2, ...
+        lmax: Highest degree of the FOD.
+        solver: The CSD settings.
+        n_threads: Number of threads.
+
+    Returns:
+        The FODs in the tournier basis, shape (n_voxels, C).
+
+    Raises:
+        ValueError: If the shell has fewer than 6 measurements, the response's l = 0
+            coefficient is not positive or it has no anisotropic degree, or
+            norm_lambda is 0 while the data or the response do not determine every
+            coefficient (more coefficients than measurements, or lmax above the
+            response's degrees), which leaves the solve singular.
+    """
+    problem = csd_problem(bvecs, zonal, lmax, solver)
+    fods, converged = solve_csd(signals, problem, n_threads)
+    warn_unconverged(int((~converged).sum()), solver.max_iter)
+    return fods

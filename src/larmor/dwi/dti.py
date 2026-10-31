@@ -12,7 +12,9 @@ from larmor.dwi.inputs import (
     check_dwi,
     estimate_s0,
     floor_bad_samples,
+    largest_finite_signal,
     mean_b0,
+    signal_chunks,
 )
 from larmor.dwi.mask import create_brain_mask, unmask
 from larmor.types import GradientTable, Volume
@@ -125,7 +127,6 @@ class DTIModel:
         """
         threads = n_threads(n_jobs)
         check_dwi(volume, gtab)
-        s = volume.as_float()
         b_mat = gtab.b_matrix
 
         # The fit itself needs no b0 (log S0 is its intercept); only the automatic
@@ -135,11 +136,15 @@ class DTIModel:
         else:
             mask = as_mask(volume, mask)
 
-        s_masked = s[mask].astype(np.float64)
         s0 = estimate_s0(volume, gtab, mask)[mask] if gtab.b0_mask.any() else None
-        floor_bad_samples(s_masked, s0)
+        voxels = np.nonzero(mask)
+        # The floor of voxels without a usable S0 comes from the largest signal of
+        # all the voxels, not of a chunk.
+        largest = None
+        if s0 is None or not (np.isfinite(s0) & (s0 > 0)).all():
+            largest = largest_finite_signal(volume, voxels)
 
-        N = s.shape[-1]
+        N = volume.data.shape[-1]
         design_matrix = np.column_stack([np.ones(N), -b_mat])
         # A rank-deficient system has no unique fit (e.g. one shell without b0).
         if np.linalg.matrix_rank(design_matrix) < design_matrix.shape[1]:
@@ -147,9 +152,12 @@ class DTIModel:
                 "The b-values and b-vectors cannot determine a tensor: DTI needs at "
                 "least two distinct b-values and six non-coplanar directions."
             )
-        x, _ = fit_log_signal(
-            design_matrix, s_masked, self.fit_method == "wls", n_threads=threads
-        )
+        x = np.empty((design_matrix.shape[1], len(voxels[0])))
+        for rows, s in signal_chunks(volume, voxels):
+            floor_bad_samples(s, None if s0 is None else s0[rows], largest=largest)
+            x[:, rows], _ = fit_log_signal(
+                design_matrix, s, self.fit_method == "wls", n_threads=threads
+            )
 
         d_params = x[1:7, :]
         dt, fa, md, ad, rd, pe, eigen_vals, npd = compute_dti_metrics(d_params, mask)

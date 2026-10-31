@@ -15,7 +15,9 @@ from larmor.dwi.inputs import (
     check_dwi,
     estimate_s0,
     floor_bad_samples,
+    largest_finite_signal,
     mean_b0,
+    signal_chunks,
 )
 from larmor.dwi.mask import create_brain_mask, unmask
 from larmor.types import GradientTable, Volume
@@ -216,7 +218,6 @@ class DKIModel:
         else:
             mask = as_mask(volume, mask)
 
-        s = volume.as_float()[mask].astype(np.float64)
         fitted = mask.copy()
         is_b0 = gtab.b0_mask
         s0: np.ndarray | None = None
@@ -230,17 +231,26 @@ class DKIModel:
                     int((~usable).sum()),
                 )
             fitted[mask] = usable
-            s, s0 = s[usable], s0[usable]
-            own = s[:, is_b0].mean(axis=1)
-            repaired = ~np.isclose(s0, own, rtol=1e-9, atol=0.0)
-            s[np.ix_(repaired, is_b0)] = s0[repaired, None]
-            s[:, ~is_b0] = np.minimum(s[:, ~is_b0], s0[:, None])
-        floor_bad_samples(s, s0)
+            s0 = s0[usable]
+        voxels = np.nonzero(fitted)
+        # Without b0, every voxel's floor comes from the largest signal of all the
+        # voxels, not of a chunk.
+        largest = largest_finite_signal(volume, voxels) if s0 is None else None
 
         constraints = _constraint_matrix(gtab) if self.constrained else None
-        params, broke = fit_log_signal(
-            design, s, self.fit_method == "wls", constraints, threads
-        )
+        params = np.empty((design.shape[1], len(voxels[0])))
+        broke = np.empty(len(voxels[0]), dtype=bool)
+        for rows, s in signal_chunks(volume, voxels):
+            chunk_s0 = None if s0 is None else s0[rows]
+            if chunk_s0 is not None:
+                own = s[:, is_b0].mean(axis=1)
+                repaired = ~np.isclose(chunk_s0, own, rtol=1e-9, atol=0.0)
+                s[np.ix_(repaired, is_b0)] = chunk_s0[repaired, None]
+                s[:, ~is_b0] = np.minimum(s[:, ~is_b0], chunk_s0[:, None])
+            floor_bad_samples(s, chunk_s0, largest=largest)
+            params[:, rows], broke[rows] = fit_log_signal(
+                design, s, self.fit_method == "wls", constraints, threads
+            )
         if self.constrained:
             LarmorLogger.info(
                 "%d of %d voxels break a constraint.",

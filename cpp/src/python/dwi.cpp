@@ -1,4 +1,5 @@
-// Bindings of the log-signal fits of DTI and DKI, MP-PCA denoising and Gibbs-ringing removal.
+// Bindings of the log-signal fits of DTI and DKI, the NODDI fit, MP-PCA denoising and Gibbs-ringing
+// removal.
 
 #include <array>
 #include <cstddef>
@@ -6,6 +7,7 @@
 #include <string>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
@@ -18,6 +20,7 @@
 #include "dwi/gibbs.hpp"
 #include "dwi/log_fit.hpp"
 #include "dwi/mppca.hpp"
+#include "dwi/noddi.hpp"
 #include "python/arrays.hpp"
 #include "python/bindings.hpp"
 
@@ -31,6 +34,8 @@ namespace {
 constexpr Index BLOCK_SIZE = 64;
 // Voxels per block of the parallel loop of the denoising.
 constexpr Index DENOISE_BLOCK_SIZE = 8;
+// Voxels per block of the parallel loop of the NODDI fit.
+constexpr Index NODDI_BLOCK_SIZE = 16;
 
 // Fits the log signal of every voxel and returns the parameters and the constrained flags.
 std::pair<NumpyArray<double, 2>, NumpyArray<bool, 1>>
@@ -74,6 +79,101 @@ fit_log_signal(const InArray<double, 2>& design_array, const InArray<double, 2>&
             });
     }
     return {to_numpy(std::move(parameters)), to_numpy(std::move(constrained))};
+}
+
+// Returns "(rows, columns)", for error messages.
+std::string shape_tuple(Index rows, Index columns) {
+    return "(" + std::to_string(rows) + ", " + std::to_string(columns) + ")";
+}
+
+// Fits NODDI to every voxel and returns the parameters and which voxels were fitted.
+std::pair<NumpyArray<double, 2>, NumpyArray<bool, 1>>
+fit_noddi(const InArray<double, 2>& signals_array, const InArray<double, 2>& directions_array,
+          const InArray<double, 1>& bvals_array, const InArray<double, 2>& bvecs_array,
+          const InArray<bool, 1>& is_b0_array, const InArray<double, 1>& v_ic_grid_array,
+          const InArray<double, 1>& kappa_grid_array, double d_par, double d_iso, double ridge,
+          double l1, int n_threads) {
+    const auto signals = matrix_view(signals_array); // checks contiguity
+    const auto directions = matrix_view(directions_array);
+    const auto bvals = flat_view(bvals_array);
+    const auto bvecs = matrix_view(bvecs_array);
+    const auto is_b0 = flat_view(is_b0_array);
+    const auto v_ic_grid = flat_view(v_ic_grid_array);
+    const auto kappa_grid = flat_view(kappa_grid_array);
+    const Index n_volumes = bvals.size();
+    if (signals.cols() != n_volumes || bvecs.rows() != n_volumes || bvecs.cols() != 3 ||
+        is_b0.size() != n_volumes || directions.rows() != signals.rows() ||
+        directions.cols() != 3) {
+        throw nb::value_error(("signals must be (v, n_volumes), mu (v, 3), bvals (n_volumes,), "
+                               "bvecs (n_volumes, 3) and is_b0 (n_volumes,): got "
+                               "signals " +
+                               shape_tuple(signals.rows(), signals.cols()) + ", mu " +
+                               shape_tuple(directions.rows(), directions.cols()) + ", bvals (" +
+                               std::to_string(n_volumes) + ",), bvecs " +
+                               shape_tuple(bvecs.rows(), bvecs.cols()) + ", is_b0 (" +
+                               std::to_string(is_b0.size()) + ",)")
+                                  .c_str());
+    }
+    if (v_ic_grid.size() == 0 || kappa_grid.size() == 0) {
+        throw nb::value_error("the v_ic and kappa grids must not be empty");
+    }
+    if (!(ridge > 0.0) || !(l1 >= 0.0)) {
+        throw nb::value_error("ridge must be positive and l1 at least 0");
+    }
+    require_threads(n_threads);
+
+    const dwi::NoddiSettings settings{
+        .d_par = d_par,
+        .d_iso = d_iso,
+        .v_ic_grid = std::vector<double>(v_ic_grid.begin(), v_ic_grid.end()),
+        .kappa_grid = std::vector<double>(kappa_grid.begin(), kappa_grid.end()),
+        .ridge = ridge,
+        .l1 = l1};
+    const Index n_voxels = signals.rows();
+    Matrix parameters = Matrix::Zero(n_voxels, 6);
+    dwi::Flags fitted(n_voxels);
+    {
+        const nb::gil_scoped_release release;
+        const dwi::NoddiProtocol protocol = dwi::make_noddi_protocol(
+            Vector(bvals), Matrix(bvecs), std::vector<bool>(is_b0.begin(), is_b0.end()), settings);
+        parallel_for_blocks(
+            n_voxels, NODDI_BLOCK_SIZE, n_threads, [] { return 0; },
+            [&](Index begin, Index end, int& /*scratch*/) {
+                for (Index voxel = begin; voxel < end; ++voxel) {
+                    const Vector signal = signals.row(voxel).transpose();
+                    const Vector3 mu = directions.row(voxel).transpose();
+                    const dwi::NoddiVoxelFit fit =
+                        dwi::fit_noddi_voxel(protocol, settings, signal, mu);
+                    parameters.row(voxel) << fit.v_ic, fit.kappa, fit.v_iso, fit.mu.x(), fit.mu.y(),
+                        fit.mu.z();
+                    fitted(voxel) = fit.fitted;
+                }
+            });
+    }
+    return {to_numpy(std::move(parameters)), to_numpy(std::move(fitted))};
+}
+
+// Returns the normalised NODDI signal of every volume.
+NumpyArray<double, 1> noddi_signal(const InArray<double, 1>& bvals_array,
+                                   const InArray<double, 2>& bvecs_array, double v_ic, double kappa,
+                                   double v_iso, const std::array<double, 3>& mu, double d_par,
+                                   double d_iso) {
+    const auto bvals = flat_view(bvals_array); // checks contiguity
+    const auto bvecs = matrix_view(bvecs_array);
+    if (bvecs.rows() != bvals.size() || bvecs.cols() != 3) {
+        throw nb::value_error(("bvals must be (n,) and bvecs (n, 3): got (" +
+                               std::to_string(bvals.size()) + ",) and " +
+                               shape_tuple(bvecs.rows(), bvecs.cols()))
+                                  .c_str());
+    }
+    const dwi::NoddiSettings settings{
+        .d_par = d_par, .d_iso = d_iso, .v_ic_grid = {}, .kappa_grid = {}, .ridge = 0.0, .l1 = 0.0};
+    const dwi::NoddiProtocol protocol = dwi::make_noddi_protocol(
+        Vector(bvals), Matrix(bvecs), std::vector<bool>(static_cast<std::size_t>(bvals.size())),
+        settings);
+    Vector signal = dwi::noddi_signal(protocol, settings, v_ic, kappa, v_iso,
+                                      Vector3(mu[0], mu[1], mu[2]).normalized());
+    return to_numpy(std::move(signal));
 }
 
 // The denoised signals, the noise levels and the numbers of signal components.
@@ -229,6 +329,35 @@ void register_dwi(nb::module_& module) {
                "Raises:\n"
                "    ValueError: If an array is not C-contiguous, the shapes do not match,\n"
                "        max_iter is negative or n_threads is 0.\n");
+    module.def("fit_noddi", &fit_noddi, nb::arg("signals").noconvert(), nb::arg("mu").noconvert(),
+               nb::arg("bvals").noconvert(), nb::arg("bvecs").noconvert(),
+               nb::arg("is_b0").noconvert(), nb::arg("v_ic_grid").noconvert(),
+               nb::arg("kappa_grid").noconvert(), nb::arg("d_par"), nb::arg("d_iso"),
+               nb::arg("ridge"), nb::arg("l1"), nb::arg("n_threads"),
+               "Fits NODDI to each voxel's signal, a row of signals (v, n), from the direction\n"
+               "mu (v, 3).\n"
+               "\n"
+               "The start comes from a dictionary of NODDI signals over v_ic_grid and\n"
+               "kappa_grid, solved with the ridge and l1 weights; the fit is then by maximum\n"
+               "likelihood with Rician noise.\n"
+               "d_par and d_iso are in mm^2/s and bvals in s/mm^2.\n"
+               "\n"
+               "Returns v_ic, kappa, v_iso and the fitted direction of each voxel (v, 6), and\n"
+               "whether each voxel was fitted (v,).\n"
+               "\n"
+               "Raises:\n"
+               "    ValueError: If an array is not C-contiguous, the shapes do not match, a\n"
+               "        grid is empty, ridge is not positive, l1 is negative or n_threads is 0.\n");
+    module.def("noddi_signal", &noddi_signal, nb::arg("bvals").noconvert(),
+               nb::arg("bvecs").noconvert(), nb::arg("v_ic"), nb::arg("kappa"), nb::arg("v_iso"),
+               nb::arg("mu"), nb::arg("d_par"), nb::arg("d_iso"),
+               "Returns the normalised NODDI signal of each volume for the neurite density\n"
+               "v_ic, Watson concentration kappa and free-water fraction v_iso about the\n"
+               "direction mu. bvals (n,) are in s/mm^2, bvecs (n, 3) unit directions, and\n"
+               "d_par and d_iso in mm^2/s.\n"
+               "\n"
+               "Raises:\n"
+               "    ValueError: If an array is not C-contiguous or the shapes do not match.\n");
     module.def("denoise_mppca", &denoise_mppca, nb::arg("image").noconvert(),
                nb::arg("voxels").noconvert(), nb::arg("patch"), nb::arg("n_threads"),
                "Denoises by MP-PCA the voxels at flat indices voxels (k,) int64 of a\n"

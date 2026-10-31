@@ -15,7 +15,8 @@ void L2NnlsSolver::solve_block(const MatrixView& block_signals,
                                Eigen::Ref<Matrix> block_fods) const {
     for (Index voxel = 0; voxel < block_signals.rows(); ++voxel) {
         const Vector signal = block_signals.row(voxel).transpose();
-        block_fods.row(voxel) = solve_ridge_nnls(design, signal, gradient_tolerance).transpose();
+        block_fods.row(voxel) =
+            solve_ridge_nnls(design, signal, 0.0, gradient_tolerance).transpose();
     }
 }
 

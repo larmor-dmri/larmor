@@ -14,8 +14,20 @@ from scipy.special import eval_legendre, lpmv
 from larmor import _core
 from larmor._log import LarmorLogger
 from larmor._threads import n_threads
-from larmor.dwi.inputs import as_mask, check_dwi
-from larmor.sd.csd_solver import CSDSolver, csd_shell, fit_csd
+from larmor.dwi.inputs import (
+    as_mask,
+    check_dwi,
+    finite_rows,
+    signal_chunks,
+    signal_rows,
+)
+from larmor.sd.csd_solver import (
+    CSDSolver,
+    csd_problem,
+    csd_shell,
+    solve_csd,
+    warn_unconverged,
+)
 from larmor.sd.rf import ZonalSHRF
 from larmor.sd.sh import build_basis_matrix
 from larmor.sd.sphere import get_theta_phi
@@ -383,8 +395,8 @@ def estimate_csd_rf(
     bval = csd_shell(gtab)
     on_shell = gtab.shell_index == len(gtab.shells) - 1
     bvecs = gtab.bvecs[on_shell]
-    data = volume.as_float()[..., on_shell]
-    usable = np.isfinite(data).all(axis=-1)
+    usable = np.zeros(brain.shape, dtype=bool)
+    usable[brain] = finite_rows(volume, np.nonzero(brain), on_shell)
 
     response = INITIAL_RESPONSE
     candidates = brain & usable
@@ -393,8 +405,9 @@ def estimate_csd_rf(
     converged = False
     for iteration in range(max_iter):
         fod_lmax = min(2 * (len(response) - 1), MAX_FOD_LMAX)
-        signals = data[candidates].astype(np.float64)
-        fods = fit_csd(signals, bvecs, response, fod_lmax, CSDSolver(), threads)
+        fods = _candidate_fods(
+            volume, candidates, on_shell, bvecs, response, fod_lmax, threads
+        )
         peaks = _two_largest_peaks(fods, fod_lmax, threads)
         cost = np.full(brain.shape, np.nan)
         with np.errstate(divide="ignore", invalid="ignore"):
@@ -403,15 +416,15 @@ def estimate_csd_rf(
             )
         selected = _top(cost, num_voxels)
         # The cost is finite only on candidates, and both masks list voxels in the
-        # same order, so these are the selected voxels' FODs in the order of
-        # data[selected].
+        # same order, so these are the selected voxels' FODs in the order of their
+        # signals.
         fibres = np.array(
             [_first_lobe_direction(f, fod_lmax) for f in fods[selected[candidates]]]
         )
         response_lmax = INITIAL_LMAX if iteration == 0 else lmax
-        response = _fit_zonal_response(
-            data[selected].astype(np.float64), bvecs, fibres, response_lmax
-        )
+        selected_voxels = np.nonzero(selected)
+        signals = signal_rows(volume, selected_voxels, slice(None), on_shell)
+        response = _fit_zonal_response(signals, bvecs, fibres, response_lmax)
         LarmorLogger.info(
             f"Response iteration {iteration + 1}: {int(selected.sum())} voxels, "
             f"coefficients {np.array2string(response, precision=3)}"
@@ -435,3 +448,38 @@ def estimate_csd_rf(
         num_iter=iteration + 1,
         converged=converged,
     )
+
+
+def _candidate_fods(
+    volume: Volume,
+    candidates: np.ndarray,
+    on_shell: np.ndarray,
+    bvecs: np.ndarray,
+    response: np.ndarray,
+    lmax: int,
+    threads: int,
+) -> np.ndarray:
+    """Returns the CSD FODs of the candidate voxels on the shell, read in chunks.
+
+    Args:
+        volume: The DWI.
+        candidates: The voxels to fit, (X, Y, Z) bool.
+        on_shell: The volumes of the shell, bool.
+        bvecs: Their gradient directions, (n_meas, 3).
+        response: The response's zonal SH coefficients on the shell.
+        lmax: Highest degree of the FODs.
+        threads: Number of threads.
+
+    Returns:
+        The FODs in the tournier basis, one row per candidate in mask order.
+    """
+    solver = CSDSolver()
+    problem = csd_problem(bvecs, response, lmax, solver)
+    voxels = np.nonzero(candidates)
+    fods = np.empty((len(voxels[0]), problem.forward.shape[1]))
+    unconverged = 0
+    for rows, signals in signal_chunks(volume, voxels, on_shell):
+        fods[rows], converged = solve_csd(signals, problem, threads)
+        unconverged += int((~converged).sum())
+    warn_unconverged(unconverged, solver.max_iter)
+    return fods

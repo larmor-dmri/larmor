@@ -79,6 +79,7 @@ TASK_PAGES = [
             "gradient-tables",
             "dti",
             "dki",
+            "noddi",
             "fods",
             "peaks",
             "tractography",

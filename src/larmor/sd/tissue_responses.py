@@ -10,7 +10,7 @@ from scipy.special import eval_legendre, lpmv
 from larmor import _core
 from larmor._log import LarmorLogger
 from larmor._threads import n_threads
-from larmor.dwi.inputs import as_mask, check_dwi
+from larmor.dwi.inputs import as_mask, check_dwi, signal_chunks, signal_rows
 from larmor.sd.msmt import fit_msmt, prepare_msmt
 from larmor.sd.peaks import find_peaks
 from larmor.sd.rf import ZonalSHRF
@@ -182,15 +182,13 @@ def estimate_tissue_responses(
     rows = np.where(gtab.b0_mask, 0, gtab.shell_index + 1)
 
     eroded = _erode(brain, erode)
-    signal = volume.as_float()[eroded].astype(np.float64)
+    eroded_voxels = np.nonzero(eroded)
 
-    sdm, valid = _signal_decay_metric(signal, rows, len(shell_bvals))
-    fa, fibre_dirs = _tensor_fa_and_direction(signal[valid], gtab)
-    # The metric is kept as the float32 values an image would hold, compared in
-    # float64.
-    sdm = sdm[valid].astype(np.float64)
-    signal = signal[valid]
+    valid, sdm, fa, fibre_dirs = _voxel_metrics(
+        volume, eroded_voxels, gtab, rows, len(shell_bvals)
+    )
     safe = _flat_to_mask(eroded, valid)
+    safe_voxels = tuple(axis[valid] for axis in eroded_voxels)
     LarmorLogger.info(
         f"Mask: {int(brain.sum())} -> {int(eroded.sum())} -> {int(safe.sum())} voxels"
     )
@@ -223,21 +221,29 @@ def estimate_tissue_responses(
     n_shells = len(shell_bvals)
     csf = ZonalSHRF(
         bvals=shell_bvals,
-        coefficients=_isotropic_response(signal[csf_voxels], rows, n_shells),
+        coefficients=_isotropic_response(
+            _signals_of(volume, safe_voxels, csf_voxels), rows, n_shells
+        ),
     )
     gm = ZonalSHRF(
         bvals=shell_bvals,
-        coefficients=_isotropic_response(signal[gm_voxels], rows, n_shells),
+        coefficients=_isotropic_response(
+            _signals_of(volume, safe_voxels, gm_voxels), rows, n_shells
+        ),
     )
 
     n_wm = round(refined_wm.sum() * wm_percent / 100)
     wm_voxels = _single_fibre_voxels(
-        signal, refined_wm, csf, gtab, shell_bvals, n_wm, threads
+        volume, safe_voxels, refined_wm, csf, gtab, shell_bvals, n_wm, threads
     )
     wm = ZonalSHRF(
         bvals=shell_bvals,
         coefficients=_anisotropic_response(
-            signal[wm_voxels], fibre_dirs[wm_voxels], gtab, rows, n_shells
+            _signals_of(volume, safe_voxels, wm_voxels),
+            fibre_dirs[wm_voxels],
+            gtab,
+            rows,
+            n_shells,
         ),
     )
     LarmorLogger.info(
@@ -277,6 +283,47 @@ def _wm_outliers(sdm: np.ndarray, crude_wm: np.ndarray) -> np.ndarray:
     wm_mad = _median(np.abs(sdm[crude_wm] - wm_median).astype(np.float32))
     outliers: np.ndarray = crude_wm & (sdm > wm_median + _MAD_TO_SD * wm_mad * 2.0)
     return outliers
+
+
+def _voxel_metrics(
+    volume: Volume,
+    voxels: tuple[np.ndarray, ...],
+    gtab: GradientTable,
+    rows: np.ndarray,
+    n_shells: int,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Returns the numbers the voxel classes come from, reading the voxels in chunks.
+
+    Returns:
+        Which voxels have a valid signal decay metric, (n_voxels,) bool, and for
+        those voxels the metric as float64, the FA and the fibre direction.
+    """
+    valid_parts, sdm_parts, fa_parts, direction_parts = [], [], [], []
+    for _, chunk in signal_chunks(volume, voxels):
+        chunk_sdm, chunk_valid = _signal_decay_metric(chunk, rows, n_shells)
+        chunk_fa, chunk_dirs = _tensor_fa_and_direction(chunk[chunk_valid], gtab)
+        valid_parts.append(chunk_valid)
+        sdm_parts.append(chunk_sdm[chunk_valid])
+        fa_parts.append(chunk_fa)
+        direction_parts.append(chunk_dirs)
+    if not valid_parts:
+        return np.zeros(0, bool), np.zeros(0), np.zeros(0, np.float32), np.zeros((0, 3))
+    # The metric is kept as the float32 values an image would hold, compared in
+    # float64.
+    return (
+        np.concatenate(valid_parts),
+        np.concatenate(sdm_parts).astype(np.float64),
+        np.concatenate(fa_parts),
+        np.concatenate(direction_parts),
+    )
+
+
+def _signals_of(
+    volume: Volume, voxels: tuple[np.ndarray, ...], selected: np.ndarray
+) -> np.ndarray:
+    """Returns the float64 signals of the voxels that `selected` keeps, one per row."""
+    kept = tuple(axis[selected] for axis in voxels)
+    return signal_rows(volume, kept, slice(None))
 
 
 def _flat_to_mask(mask: np.ndarray, selected: np.ndarray) -> np.ndarray:
@@ -597,7 +644,8 @@ def _anisotropic_response(
 
 
 def _single_fibre_voxels(
-    signal: np.ndarray,
+    volume: Volume,
+    voxels: tuple[np.ndarray, ...],
     refined_wm: np.ndarray,
     csf: ZonalSHRF,
     gtab: GradientTable,
@@ -612,11 +660,16 @@ def _single_fibre_voxels(
     largest peak amplitude over the summed l = 0 coefficients; a fit at lmax 6 over
     those keeps the count best.
 
+    The signals of `voxels` are read chunk by chunk from `volume`; `refined_wm`
+    has one entry per voxel.
+
     Returns:
-        Which voxels (entries of signal) are kept, (n_voxels,) bool.
+        Which voxels are kept, (n_voxels,) bool.
     """
+    wm_voxels = tuple(axis[refined_wm] for axis in voxels)
+    means = [chunk.mean(axis=1) for _, chunk in signal_chunks(volume, wm_voxels)]
     level = np.sqrt(4 * np.pi) * _median(
-        signal[refined_wm].mean(axis=1).astype(np.float32)
+        (np.concatenate(means) if means else np.zeros(0)).astype(np.float32)
     )
     generic = np.tile([level, -level, level, -level], (len(shell_bvals), 1))
     generic[0, 1:] = 0.0
@@ -628,11 +681,17 @@ def _single_fibre_voxels(
         )
         # Selection only ranks the voxels, so one that stopped at the iteration limit
         # still counts with its last fit.
-        coefficients, _ = fit_msmt(signal[selected], design, threads)
+        selected_voxels = tuple(axis[selected] for axis in voxels)
+        coefficients = np.concatenate(
+            [
+                fit_msmt(chunk, design, threads)[0]
+                for _, chunk in signal_chunks(volume, selected_voxels)
+            ]
+        )
         n_fod = (lmax + 1) * (lmax + 2) // 2
         peaks = find_peaks(coefficients[:, :n_fod], num_peaks=1, n_jobs=threads)
         total = coefficients[:, 0] + coefficients[:, n_fod]
-        metric = np.full(len(signal), 0.0, dtype=np.float32)
+        metric = np.full(len(refined_wm), 0.0, dtype=np.float32)
         metric[selected] = (peaks.amplitudes[:, 0] / total).astype(np.float32)
         selected = selected & _top(metric, n_keep)
     return selected

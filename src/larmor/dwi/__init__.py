@@ -1,4 +1,4 @@
-"""Preparing diffusion-weighted images (DWIs) and fitting the DTI and DKI models."""
+"""Preparing diffusion-weighted images (DWIs) and fitting DTI, DKI and NODDI."""
 
 from larmor.dwi.denoise import DenoisedDWI, denoise_mppca
 from larmor.dwi.dki import DKIFit, DKIModel
@@ -15,6 +15,7 @@ from larmor.dwi.mask import (
     largest_component,
     threshold_mask,
 )
+from larmor.dwi.noddi import NoddiFit, NoddiModel
 from larmor.dwi.shells import shell_mask
 
 __all__ = [
@@ -23,6 +24,8 @@ __all__ = [
     "DTIFit",
     "DTIModel",
     "DenoisedDWI",
+    "NoddiFit",
+    "NoddiModel",
     "combine_masks",
     "create_brain_mask",
     "denoise_mppca",

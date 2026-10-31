@@ -51,6 +51,13 @@ The same information is in the repository's `CITATION.cff` file, which GitHub an
 - **Weighted fits of DTI and DKI.** Veraart J, Sijbers J, Sunaert S, Leemans A, Jeurissen B. Weighted linear
   least squares estimation of diffusion MRI parameters: strengths, limitations, and pitfalls. NeuroImage 81
   (2013) 335-346.
+- **NODDI.** Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC. NODDI: Practical in vivo neurite
+  orientation dispersion and density imaging of the human brain. NeuroImage 61 (2012) 1000-1016.
+- **The start of the NODDI fit,** a dictionary solved by convex optimisation. Daducci A, Canales-Rodriguez EJ,
+  Zhang H, Dyrby TB, Alexander DC, Thiran JP. Accelerated Microstructure Imaging via Convex Optimization (AMICO)
+  from diffusion MRI data. NeuroImage 105 (2015) 32-44.
+- **The NODDI model and fit as Larmor computes them** follow the NODDI Matlab Toolbox 1.05,
+  [nitrc.org/projects/noddi_toolbox](https://www.nitrc.org/projects/noddi_toolbox).
 
 ### Spherical deconvolution
 

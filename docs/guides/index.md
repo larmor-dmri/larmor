@@ -19,6 +19,7 @@ The task pages show each step both from Python and from the command line.
 - [Gradient tables and shells](gradient-tables.md)
 - [DTI](dti.md)
 - [DKI](dki.md)
+- [NODDI](noddi.md)
 - [FODs](fods.md)
 - [Peaks](peaks.md)
 - [Tractography](tractography.md)
@@ -37,6 +38,7 @@ Loading and saving data <loading-and-saving>
 Gradient tables and shells <gradient-tables>
 DTI <dti>
 DKI <dki>
+NODDI <noddi>
 FODs <fods>
 Peaks <peaks>
 Tractography <tractography>

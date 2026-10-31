@@ -22,6 +22,7 @@ under [Citing](../about/citing.md#methods-and-papers).
 ## Models
 
 - DTI and DKI, fitted by ordinary or weighted least squares (`lar dti`, `lar dki`).
+- NODDI, for neurite density, orientation dispersion and free water (`lar noddi`).
 - Fibre orientation distributions (FODs) by spherical deconvolution (`lar fod`), with generalized
   Richardson-Lucy (GRL), with mFOD, which fits one FOD for each anisotropic tissue, or with constrained spherical
   deconvolution (CSD). GRL and mFOD can be solved by damped Richardson-Lucy (dRL), non-negative least squares or

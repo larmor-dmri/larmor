@@ -11,7 +11,7 @@ from scipy.special import erf, erfi, eval_legendre
 
 from larmor._log import LarmorLogger
 from larmor.dwi.fitting import fit_log_signal
-from larmor.dwi.inputs import as_mask
+from larmor.dwi.inputs import as_mask, signal_chunks
 from larmor.dwi.shells import SHELL_TOLERANCE
 from larmor.sd.sphere import get_theta_phi
 from larmor.types import GradientTable, Volume
@@ -199,9 +199,13 @@ def estimate_wm_rf(
         columns.append((gtab.bvals * 1e-3) ** 2 / 6)
     design = np.column_stack(columns)
 
-    s = volume.as_float()[mask].astype(np.float64)
-    usable = np.isfinite(s).all(axis=1) & (s > 0).all(axis=1)
-    params, _ = fit_log_signal(design, s[usable], weighted=True)
+    fitted = []
+    for _, s in signal_chunks(volume, np.nonzero(mask)):
+        usable = np.isfinite(s).all(axis=1) & (s > 0).all(axis=1)
+        fitted.append(fit_log_signal(design, s[usable], weighted=True)[0])
+    params = (
+        np.concatenate(fitted, axis=1) if fitted else np.empty((design.shape[1], 0))
+    )
 
     e_vals = _tensor_eigenvalues(params[1:7])
     fa = _fractional_anisotropy(e_vals)

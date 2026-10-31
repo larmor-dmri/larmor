@@ -78,11 +78,14 @@ NumpyArray<double, 2> compartment_attenuation(const InArray<std::int64_t, 1>& mo
     const simulation::PulseTiming timing{.small_delta_ms = small_delta_ms,
                                          .big_delta_ms = big_delta_ms};
     Matrix result(static_cast<Index>(compartments.size()), bvals.size());
-    for (Index row = 0; row < result.rows(); ++row) {
-        for (Index column = 0; column < result.cols(); ++column) {
-            result(row, column) =
-                simulation::attenuation(compartments[static_cast<std::size_t>(row)], bvals(column),
-                                        cosines(column), timing);
+    {
+        const nb::gil_scoped_release release;
+        for (Index row = 0; row < result.rows(); ++row) {
+            for (Index column = 0; column < result.cols(); ++column) {
+                result(row, column) =
+                    simulation::attenuation(compartments[static_cast<std::size_t>(row)],
+                                            bvals(column), cosines(column), timing);
+            }
         }
     }
     return to_numpy(std::move(result));

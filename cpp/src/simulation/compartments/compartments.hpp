@@ -89,9 +89,6 @@ const std::array<double, N_SPHERE_ROOTS>& sphere_roots();
 /// D = 0.
 double sphere(double b_value, double diffusivity, double radius_um, const PulseTiming& timing);
 
-/// Returns exp(-y) I0(y) for y >= 0, with I0 the modified Bessel function of the first kind.
-double scaled_bessel_i0(double y);
-
 /// Returns the attenuation of sticks with diffusivity D dispersed about the fibre direction mu by
 /// a Watson density (Zhang et al. 2012, Eqs. 2 and 3):
 ///
