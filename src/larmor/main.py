@@ -6,6 +6,7 @@ import typer
 
 from larmor import __version__
 from larmor.cli import (
+    afod,
     bv,
     connectome,
     convert,
@@ -44,6 +45,7 @@ app.command(name="info")(larmor_command(info.info))
 app.command(name="convert")(larmor_command(convert.convert))
 app.command(name="sh-convert")(larmor_command(sh_convert.sh_convert))
 app.command(name="peaks")(larmor_command(peaks.peaks))
+app.command(name="afod")(larmor_command(afod.afod))
 app.command(name="track")(larmor_command(track.track))
 app.command(name="tract-edit")(larmor_command(tract_edit.tract_edit))
 app.command(name="tract-profile")(larmor_command(tract_profile.tract_profile))

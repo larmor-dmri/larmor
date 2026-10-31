@@ -82,6 +82,7 @@ TASK_PAGES = [
             "noddi",
             "fods",
             "peaks",
+            "afod",
             "tractography",
             "surfaces",
             "simulation",

@@ -31,6 +31,7 @@ under [Citing](../about/citing.md#methods-and-papers).
   or estimated from the data (`lar fod --method msmt-csd`).
 - Conversion of FODs between spherical harmonic (SH) bases (`lar sh-convert`).
 - The peaks of the FODs (`lar peaks`).
+- Asymmetric FODs, made by filtering symmetric ones with their neighbouring voxels (`lar afod`).
 
 (track)=
 ## Tractography

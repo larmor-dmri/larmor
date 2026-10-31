@@ -22,6 +22,7 @@ The task pages show each step both from Python and from the command line.
 - [NODDI](noddi.md)
 - [FODs](fods.md)
 - [Peaks](peaks.md)
+- [Asymmetric FODs](afod.md)
 - [Tractography](tractography.md)
 - [Isolating a bundle](isolating-a-bundle.md)
 - [Tract profiles](tract-profiles.md)
@@ -41,6 +42,7 @@ DKI <dki>
 NODDI <noddi>
 FODs <fods>
 Peaks <peaks>
+Asymmetric FODs <afod>
 Tractography <tractography>
 Isolating a bundle <isolating-a-bundle>
 Tract profiles <tract-profiles>
