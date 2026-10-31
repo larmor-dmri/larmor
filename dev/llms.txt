@@ -19,6 +19,7 @@ Larmor simulates and processes diffusion MRI from Python and from its command li
 - [Gradient tables and shells](https://larmor.org/guides/gradient-tables/): bvals and bvecs, MRtrix gradient files, the FSL and world frames, and shells
 - [DTI](https://larmor.org/guides/dti/): fitting the diffusion tensor, and the FA, MD, AD, RD and direction maps
 - [DKI](https://larmor.org/guides/dki/): fitting diffusion kurtosis, constrained and weighted, and the MK, AK, RK and KA maps
+- [NODDI](https://larmor.org/guides/noddi/): fitting NODDI, and the neurite density, orientation dispersion and free-water maps
 - [FODs](https://larmor.org/guides/fods/): response functions, the GRL, mFOD, CSD and MSMT-CSD methods and their solvers, and SH bases
 - [Peaks](https://larmor.org/guides/peaks/): the peaks of FODs, and the peaks image
 - [Tractography](https://larmor.org/guides/tractography/): deterministic and probabilistic tracking, seeding, stopping and output formats

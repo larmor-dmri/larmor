@@ -6,12 +6,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta content="Diffusion-weighted images in Larmor: brain masks, MP-PCA denoising, Gibbs ringing removal, and the DTI and DKI models." name="description" />
+<meta content="Diffusion-weighted images in Larmor: brain masks, MP-PCA denoising, Gibbs ringing removal, and the DTI, DKI and NODDI models." name="description" />
 <meta property="og:title" content="larmor.dwi" />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://larmor.org/reference/api/dwi/" />
 <meta property="og:site_name" content="Larmor" />
-<meta property="og:description" content="Diffusion-weighted images in Larmor: brain masks, MP-PCA denoising, Gibbs ringing removal, and the DTI and DKI models." />
+<meta property="og:description" content="Diffusion-weighted images in Larmor: brain masks, MP-PCA denoising, Gibbs ringing removal, and the DTI, DKI and NODDI models." />
 <meta property="og:image" content="https://larmor.org/_static/larmor-card.png" />
 <meta property="og:image:alt" content="Larmor: a Python library and viewer for diffusion MRI" />
 <meta property="og:image:width" content="1200" />
@@ -560,7 +560,7 @@
                   
   <section id="module-larmor.dwi">
 <span id="larmor-dwi"></span><h1>larmor.dwi<a class="headerlink" href="#module-larmor.dwi" title="Link to this heading">#</a></h1>
-<p>Preparing diffusion-weighted images (DWIs) and fitting the DTI and DKI models.</p>
+<p>Preparing diffusion-weighted images (DWIs) and fitting DTI, DKI and NODDI.</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#larmor.dwi.DKIFit" title="larmor.dwi.DKIFit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DKIFit</span></code></a></p></td>
@@ -577,6 +577,12 @@
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#larmor.dwi.DenoisedDWI" title="larmor.dwi.DenoisedDWI"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DenoisedDWI</span></code></a></p></td>
 <td><p>Result of <a class="reference internal" href="#larmor.dwi.denoise_mppca" title="larmor.dwi.denoise_mppca"><code class="xref py py-obj docutils literal notranslate"><span class="pre">denoise_mppca</span></code></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.dwi.NoddiFit" title="larmor.dwi.NoddiFit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NoddiFit</span></code></a></p></td>
+<td><p>Holds the maps of a NODDI fit, on the image grid and zero outside the mask.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.dwi.NoddiModel" title="larmor.dwi.NoddiModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NoddiModel</span></code></a></p></td>
+<td><p>NODDI model, which fits neurite density, dispersion and free water per voxel.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#larmor.dwi.combine_masks" title="larmor.dwi.combine_masks"><code class="xref py py-obj docutils literal notranslate"><span class="pre">combine_masks</span></code></a></p></td>
 <td><p>Combines two masks on the same grid.</p></td>
@@ -1077,6 +1083,130 @@ noise are float32 and num_signal is int64; noise and num_signal have shape
 
 </dd></dl>
 
+<dl class="py class">
+<dt class="sig sig-object py" id="larmor.dwi.NoddiFit">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.dwi.</span></span><span class="sig-name descname"><span class="pre">NoddiFit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v_ic</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">od</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kappa</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_iso</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.NoddiFit" title="Link to this definition">#</a></dt>
+<dd><p>Holds the maps of a NODDI fit, on the image grid and zero outside the mask.</p>
+<p>Each map has the spatial shape (X, Y, Z) of the DWI, with a last axis of 3
+for mu, and is float32. The fractions are signal fractions, which differ from
+volume fractions when the compartments have different T2 or proton density.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.NoddiFit.v_ic">
+<span class="sig-name descname"><span class="pre">v_ic</span></span><a class="headerlink" href="#larmor.dwi.NoddiFit.v_ic" title="Link to this definition">#</a></dt>
+<dd><p>Neurite density, the neurites’ share of the tissue outside free
+water.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.NoddiFit.od">
+<span class="sig-name descname"><span class="pre">od</span></span><a class="headerlink" href="#larmor.dwi.NoddiFit.od" title="Link to this definition">#</a></dt>
+<dd><p>Orientation dispersion index, (2 / pi) arctan(1 / kappa), from 0
+(aligned neurites) to 1 (isotropic); 0 where v_ic is 0.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.NoddiFit.kappa">
+<span class="sig-name descname"><span class="pre">kappa</span></span><a class="headerlink" href="#larmor.dwi.NoddiFit.kappa" title="Link to this definition">#</a></dt>
+<dd><p>Watson concentration of the neurites about mu.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.NoddiFit.v_iso">
+<span class="sig-name descname"><span class="pre">v_iso</span></span><a class="headerlink" href="#larmor.dwi.NoddiFit.v_iso" title="Link to this definition">#</a></dt>
+<dd><p>Free-water fraction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.dwi.NoddiFit.mu">
+<span class="sig-name descname"><span class="pre">mu</span></span><a class="headerlink" href="#larmor.dwi.NoddiFit.mu" title="Link to this definition">#</a></dt>
+<dd><p>Fitted mean neurite direction in world coordinates (RAS+); its sign
+is arbitrary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="larmor.dwi.NoddiModel">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.dwi.</span></span><span class="sig-name descname"><span class="pre">NoddiModel</span></span><a class="headerlink" href="#larmor.dwi.NoddiModel" title="Link to this definition">#</a></dt>
+<dd><p>NODDI model, which fits neurite density, dispersion and free water per voxel.</p>
+<p><a class="reference internal" href="#larmor.dwi.NoddiModel.fit" title="larmor.dwi.NoddiModel.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a> returns a <a class="reference internal" href="#larmor.dwi.NoddiFit" title="larmor.dwi.NoddiFit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NoddiFit</span></code></a>. The fit is that of the NODDI Matlab Toolbox, by
+maximum likelihood with Rician noise, but it starts from a dictionary solve
+(Daducci et al. 2015) rather than a grid search.</p>
+<p class="rubric">References</p>
+<p>Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC. NODDI: Practical
+in vivo neurite orientation dispersion and density imaging of the human
+brain. NeuroImage 61 (2012) 1000-1016.
+Daducci A, Canales-Rodriguez EJ, Zhang H, Dyrby TB, Alexander DC, Thiran
+JP. Accelerated Microstructure Imaging via Convex Optimization (AMICO)
+from diffusion MRI data. NeuroImage 105 (2015) 32-44.
+NODDI Matlab Toolbox 1.05, <a class="reference external" href="https://www.nitrc.org/projects/noddi_toolbox">https://www.nitrc.org/projects/noddi_toolbox</a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.dwi.NoddiModel.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">volume</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gtab</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.NoddiModel.fit" title="Link to this definition">#</a></dt>
+<dd><p>Fits NODDI in every voxel of the mask.</p>
+<p>Each voxel is fitted on its own, so the result does not depend on n_jobs.
+A voxel with a signal that is not finite, without a positive mean b0, or
+with fewer than six positive diffusion-weighted measurements is not fitted
+and gets zeros, and a warning gives the number of such voxels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>volume</strong> (<a class="reference internal" href="../types/#larmor.types.Volume" title="larmor.types.volume.Volume"><em>Volume</em></a>) – Diffusion-weighted volume, shape (X, Y, Z, N), with b0 volumes.</p></li>
+<li><p><strong>gtab</strong> (<a class="reference internal" href="../types/#larmor.types.GradientTable" title="larmor.types.gradient_table.GradientTable"><em>GradientTable</em></a>) – Its gradient table, with at least two non-zero shells.</p></li>
+<li><p><strong>mask</strong> (<a class="reference internal" href="../types/#larmor.types.Volume" title="larmor.types.volume.Volume"><em>Volume</em></a><em> | </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a><em> | </em><em>None</em>) – Voxels to fit (nonzero inside), on the volume’s grid. Defaults
+to None, which computes a brain mask from the mean b0 volume.</p></li>
+<li><p><strong>mu</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a><em> | </em><em>None</em>) – The starting direction of each voxel, (X, Y, Z, 3), in world
+coordinates; it need not be unit length. Defaults to None, which
+takes the principal eigenvector of a DTI fit.</p></li>
+<li><p><strong>n_jobs</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Number of threads for the fit, at most the number of cores;
+-1 uses every core. Defaults to -1.</p></li>
+<li><p><strong>progress</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether to show a progress bar. Defaults to False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>NoddiFit</em> – The maps, zero outside the mask.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the table or the mask does not match the volume, the
+    table has fewer than two non-zero shells, mu does not have the
+    shape (X, Y, Z, 3) or is zero or not finite in a mask voxel, or
+    n_jobs is 0 or below -1.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#larmor.dwi.NoddiFit" title="larmor.dwi.noddi.NoddiFit"><em>NoddiFit</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="larmor.dwi.combine_masks">
 <span class="sig-prename descclassname"><span class="pre">larmor.dwi.</span></span><span class="sig-name descname"><span class="pre">combine_masks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">first</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">second</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">combination</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.dwi.combine_masks" title="Link to this definition">#</a></dt>
@@ -1496,6 +1626,18 @@ Defaults to None.</p></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DenoisedDWI.volume"><code class="docutils literal notranslate"><span class="pre">DenoisedDWI.volume</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DenoisedDWI.noise"><code class="docutils literal notranslate"><span class="pre">DenoisedDWI.noise</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.DenoisedDWI.num_signal"><code class="docutils literal notranslate"><span class="pre">DenoisedDWI.num_signal</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.NoddiFit"><code class="docutils literal notranslate"><span class="pre">NoddiFit</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.NoddiFit.v_ic"><code class="docutils literal notranslate"><span class="pre">NoddiFit.v_ic</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.NoddiFit.od"><code class="docutils literal notranslate"><span class="pre">NoddiFit.od</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.NoddiFit.kappa"><code class="docutils literal notranslate"><span class="pre">NoddiFit.kappa</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.NoddiFit.v_iso"><code class="docutils literal notranslate"><span class="pre">NoddiFit.v_iso</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.NoddiFit.mu"><code class="docutils literal notranslate"><span class="pre">NoddiFit.mu</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.NoddiModel"><code class="docutils literal notranslate"><span class="pre">NoddiModel</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.NoddiModel.fit"><code class="docutils literal notranslate"><span class="pre">NoddiModel.fit()</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.dwi.combine_masks"><code class="docutils literal notranslate"><span class="pre">combine_masks()</span></code></a></li>

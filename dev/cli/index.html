@@ -573,6 +573,7 @@
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">dti</span></code>: Fit the diffusion tensor (DTI) in every…</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">dki</span></code>: Fit diffusion kurtosis imaging (DKI) to…</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">noddi</span></code>: Fit NODDI (neurite density and orientation…</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">denoise</span></code>: Denoise a DWI volume with MP-PCA and…</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">mask</span></code>: Compute a binary brain mask from the mean…</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">degibbs</span></code>: Remove Gibbs ringing from an image by…</p></li>
@@ -637,6 +638,32 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">-m,</span> <span class="pre">--mask</span> <span class="pre">&lt;str&gt;</span></code>: Brain mask; voxels outside it are not fitted. Without it, a mask is computed from the mean b = 0 image.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--fit</span> <span class="pre">&lt;ols|wls&gt;</span></code>: Fitting method. ‘wls’ is iterated weighted least squares, weighted by the predicted signal, and ‘ols’ is ordinary least squares.  [default: wls]</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--unconstrained</span></code>: Fit without constraints. By default, the diffusivity D(n) and the kurtosis K(n) along every direction n are kept within D(n) &gt;= 0 and 0 &lt;= K(n) &lt;= 3 / (b_max D(n)).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--force</span></code>: Overwrite existing output files. Without it, the command stops before any work when an output exists.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--nt</span> <span class="pre">&lt;int&gt;</span></code>: Number of threads; -1 uses all CPU cores.  [default: -1]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--quiet</span></code>: Show only errors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--info</span></code>: Show progress and informational messages.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--debug</span></code>: Show debug messages and full tracebacks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--help</span></code>: Show this message and exit.</p></li>
+</ul>
+</section>
+<section id="lar-noddi">
+<h2><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">noddi</span></code><a class="headerlink" href="#lar-noddi" title="Link to this heading">#</a></h2>
+<p>Fit NODDI (neurite density and orientation dispersion) and write its maps.</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>lar<span class="w"> </span>noddi<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">{</span>volume<span class="o">}</span><span class="w"> </span><span class="o">{</span>output<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Arguments</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">volume</span></code>: Path to the diffusion volume (.nii, .nii.gz, .mif, .mif.gz or .mih).  [required]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output</span></code>: Prefix of the output maps. ‘out’ writes the neurite density to out_v_ic.nii.gz, the orientation dispersion index to out_od, the Watson concentration to out_kappa, the free-water fraction to out_v_iso and the mean neurite direction to out_mu, all as .nii.gz. The direction is in world coordinates (RAS), not in the voxel frame of the image.  [required]</p></li>
+</ul>
+<p><strong>Options</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--bvals</span> <span class="pre">&lt;str&gt;</span></code>: Path to the b-values file. It is not needed for a .mif file with a gradient table in its header; given with such a file, –bvals and –bvecs replace that table.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--bvecs</span> <span class="pre">&lt;str&gt;</span></code>: Path to the b-vectors file. It is not needed for a .mif file with a gradient table in its header; given with such a file, –bvals and –bvecs replace that table.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--bvec-frame</span> <span class="pre">&lt;fsl|world&gt;</span></code>: Coordinate frame of the b-vectors. ‘fsl’ means the frame of FSL bvecs files, along the image axes with x flipped when the affine determinant is positive, and ‘world’ means scanner coordinates (RAS).  [default: fsl]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-m,</span> <span class="pre">--mask</span> <span class="pre">&lt;str&gt;</span></code>: Brain mask; voxels outside it are not fitted. Without it, a mask is computed from the mean b = 0 image.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--force</span></code>: Overwrite existing output files. Without it, the command stops before any work when an output exists.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--nt</span> <span class="pre">&lt;int&gt;</span></code>: Number of threads; -1 uses all CPU cores.  [default: -1]</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--quiet</span></code>: Show only errors.</p></li>
@@ -1157,6 +1184,7 @@ surface are moved into the same space.</p>
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-dti"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">dti</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-dki"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">dki</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-noddi"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">noddi</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-denoise"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">denoise</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-mask"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">mask</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lar-degibbs"><code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">degibbs</span></code></a></li>
