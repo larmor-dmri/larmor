@@ -82,8 +82,8 @@ def test_noisy_fit_errors_are_those_of_the_toolbox(
 def test_noisy_fit_matches_the_toolbox_voxel_by_voxel(
     fits: dict[str, NoddiFit], toolbox: dict[str, dict[str, np.ndarray]], name: str
 ) -> None:
-    # Both reach the best fit of the same model; they differ in the noise model.
-    assert _mean_error(fits["noisy"], toolbox["noisy"], name) < 0.01
+    # Same model and likelihood, another start: a few voxels reach another optimum.
+    assert _mean_error(fits["noisy"], toolbox["noisy"], name) < 0.005
 
 
 def test_toolbox_reference_recovers_the_noise_free_phantom(

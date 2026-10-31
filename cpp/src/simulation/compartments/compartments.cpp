@@ -5,6 +5,8 @@
 #include <cstddef>
 #include <numbers>
 
+#include "common/maths.hpp"
+
 namespace larmor::simulation {
 
 namespace {
@@ -30,13 +32,6 @@ constexpr double CYLINDER_LONG_PULSE_SUM = 7.0 / 192.0;
 constexpr int N_NEWTON_ROOTS = 200;
 // Number of Newton steps per cylinder root.
 constexpr int NEWTON_STEPS = 8;
-
-// y below which exp(-y) I0(y) sums its power series, and above which its asymptotic series.
-constexpr double BESSEL_SERIES_LIMIT = 25.0;
-// Relative size of the last term at which a series stops.
-constexpr double SERIES_TOLERANCE = 1e-17;
-// Maximum number of terms of a series.
-constexpr int MAX_SERIES_TERMS = 200;
 
 // The Watson integrals in u = 1 - t stop at u = WATSON_CUTOFF / rate, where the integrand is
 // below exp(-WATSON_CUTOFF).
@@ -287,28 +282,6 @@ double sphere(double b_value, double diffusivity, double radius_um, const PulseT
         sum -= decays / (rate * rate * alpha_squared * (x * x - 2.0));
     }
     return std::exp(-2.0 * gamma_g_squared * sum);
-}
-
-double scaled_bessel_i0(double y) {
-    if (y < BESSEL_SERIES_LIMIT) {
-        const double quarter_squared = 0.25 * y * y;
-        double term = 1.0;
-        double sum = 1.0;
-        for (int order = 1; order < MAX_SERIES_TERMS && term > SERIES_TOLERANCE * sum; ++order) {
-            term *= quarter_squared / (static_cast<double>(order) * order);
-            sum += term;
-        }
-        return std::exp(-y) * sum;
-    }
-    // 1 / sqrt(2 pi y) sum_k c_k / y^k with c_k = c_{k-1} (2k - 1)^2 / (8 k); the terms fall
-    // until k is about 2 y, far beyond the precision needed.
-    double term = 1.0;
-    double sum = 1.0;
-    for (int order = 1; order < MAX_SERIES_TERMS && term > SERIES_TOLERANCE * sum; ++order) {
-        term *= (2.0 * order - 1.0) * (2.0 * order - 1.0) / (8.0 * order * y);
-        sum += term;
-    }
-    return sum / std::sqrt(2.0 * std::numbers::pi * y);
 }
 
 double watson_stick(double b_value, double diffusivity, double kappa, double cosine) {

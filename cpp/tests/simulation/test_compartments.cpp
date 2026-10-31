@@ -4,6 +4,7 @@
 
 #include <doctest/doctest.h>
 
+#include "common/maths.hpp"
 #include "simulation/compartments/compartments.hpp"
 
 namespace {
@@ -71,15 +72,11 @@ TEST_CASE("compartments: the cylinder roots solve J1'(x) = 0 and satisfy the sum
 
 TEST_CASE("compartments: exp(-y) I0(y) has its reference values on both sides of y = 25") {
     // The references are scipy.special.i0e.
-    CHECK(larmor::simulation::scaled_bessel_i0(0.0) == 1.0);
-    CHECK(larmor::simulation::scaled_bessel_i0(1.0) ==
-          doctest::Approx(0.4657596075936404).epsilon(1e-14));
-    CHECK(larmor::simulation::scaled_bessel_i0(24.999) ==
-          doctest::Approx(0.08019839425680447).epsilon(1e-14));
-    CHECK(larmor::simulation::scaled_bessel_i0(25.0) ==
-          doctest::Approx(0.08019677354743669).epsilon(1e-14));
-    CHECK(larmor::simulation::scaled_bessel_i0(40.0) ==
-          doctest::Approx(0.06327827987523532).epsilon(1e-14));
+    CHECK(larmor::scaled_bessel_i0(0.0) == 1.0);
+    CHECK(larmor::scaled_bessel_i0(1.0) == doctest::Approx(0.4657596075936404).epsilon(1e-14));
+    CHECK(larmor::scaled_bessel_i0(24.999) == doctest::Approx(0.08019839425680447).epsilon(1e-14));
+    CHECK(larmor::scaled_bessel_i0(25.0) == doctest::Approx(0.08019677354743669).epsilon(1e-14));
+    CHECK(larmor::scaled_bessel_i0(40.0) == doctest::Approx(0.06327827987523532).epsilon(1e-14));
 }
 
 TEST_CASE("compartments: the dot is 1 and the Watson sticks span the powder stick to the stick") {

@@ -8,6 +8,9 @@ namespace larmor {
 /// Returns the Euclidean norm of a 3-vector.
 double norm3(const Vector3& vector);
 
+/// Returns exp(-y) I0(y) for y >= 0, with I0 the modified Bessel function of the first kind.
+double scaled_bessel_i0(double y);
+
 /// Rotates `direction` by the rotation that takes +z to `reference`, a unit vector.
 ///
 /// When `reference` is -z, `direction` is negated.

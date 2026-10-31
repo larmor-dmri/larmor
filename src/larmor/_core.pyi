@@ -249,6 +249,36 @@ def fit_log_signal(x: Annotated[NDArray[numpy.float64], dict(shape=(None, None),
             max_iter is negative or n_threads is 0.
     """
 
+def fit_noddi(signals: Annotated[NDArray[numpy.float64], dict(shape=(None, None), device='cpu', writable=False)], mu: Annotated[NDArray[numpy.float64], dict(shape=(None, None), device='cpu', writable=False)], bvals: Annotated[NDArray[numpy.float64], dict(shape=(None,), device='cpu', writable=False)], bvecs: Annotated[NDArray[numpy.float64], dict(shape=(None, None), device='cpu', writable=False)], is_b0: Annotated[NDArray[numpy.bool_], dict(shape=(None,), device='cpu', writable=False)], v_ic_grid: Annotated[NDArray[numpy.float64], dict(shape=(None,), device='cpu', writable=False)], kappa_grid: Annotated[NDArray[numpy.float64], dict(shape=(None,), device='cpu', writable=False)], d_par: float, d_iso: float, ridge: float, l1: float, n_threads: int) -> tuple[Annotated[NDArray[numpy.float64], dict(shape=(None, None))], Annotated[NDArray[numpy.bool_], dict(shape=(None,))]]:
+    """
+    Fits NODDI to each voxel's signal, a row of signals (v, n), from the direction
+    mu (v, 3).
+
+    The start comes from a dictionary of NODDI signals over v_ic_grid and
+    kappa_grid, solved with the ridge and l1 weights; the fit is the NODDI
+    Matlab Toolbox's maximum-likelihood fit with Rician noise, with its model.
+    d_par and d_iso are in mm^2/s and bvals in s/mm^2.
+
+    Returns v_ic, kappa, v_iso and the fitted direction of each voxel (v, 6), and
+    whether each voxel was fitted (v,).
+
+    Raises:
+        ValueError: If an array is not C-contiguous, the shapes do not match, a
+            grid is empty, ridge is not positive, l1 is negative or n_threads is 0.
+    """
+
+def noddi_signal(bvals: Annotated[NDArray[numpy.float64], dict(shape=(None,), device='cpu', writable=False)], bvecs: Annotated[NDArray[numpy.float64], dict(shape=(None, None), device='cpu', writable=False)], v_ic: float, kappa: float, v_iso: float, mu: Sequence[float], d_par: float, d_iso: float) -> Annotated[NDArray[numpy.float64], dict(shape=(None,))]:
+    """
+    Returns the normalised NODDI signal of each volume, as the NODDI Matlab
+    Toolbox's WatsonSHStickTortIsoV_B0 model computes it, for the neurite density
+    v_ic, Watson concentration kappa and free-water fraction v_iso about the
+    direction mu. bvals (n,) are in s/mm^2, bvecs (n, 3) unit directions, and
+    d_par and d_iso in mm^2/s.
+
+    Raises:
+        ValueError: If an array is not C-contiguous or the shapes do not match.
+    """
+
 def denoise_mppca(image: Annotated[NDArray[numpy.float32], dict(shape=(None, None, None, None), device='cpu', writable=False)], voxels: Annotated[NDArray[numpy.int64], dict(shape=(None,), device='cpu', writable=False)], patch: Sequence[int], n_threads: int) -> tuple[Annotated[NDArray[numpy.float64], dict(shape=(None, None))], Annotated[NDArray[numpy.float64], dict(shape=(None,))], Annotated[NDArray[numpy.int64], dict(shape=(None,))]]:
     """
     Denoises by MP-PCA the voxels at flat indices voxels (k,) int64 of a
