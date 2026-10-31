@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from larmor.sd import asymmetry, convert_sh_basis, filter_afod
-from larmor.sd.asymmetry import _offset_weights, _sphere_bases
+from larmor.sd.asymmetry import _sphere_bases
 from larmor.sd.sh import get_sh_indices
 
 LMAX = 8
@@ -11,21 +11,42 @@ DIRS, B_EVEN, B_FULL = _sphere_bases(LMAX, 300)
 # The x axis is flipped, as in HCP: voxel index i grows towards world -x.
 AFFINE = np.diag([-1.25, 1.25, 1.25, 1.0])
 SHAPE = (8, 7, 6)
+# Voxels of different sizes along the axes, one axis flipped and the grid turned, so
+# that distances in mm and voxels differ.
+TURN = np.array([[0.8, -0.6, 0.0], [0.6, 0.8, 0.0], [0.0, 0.0, 1.0]])
+OBLIQUE = np.eye(4)
+OBLIQUE[:3, :3] = TURN @ np.diag([-0.8, 1.5, 2.5])
 
 
-def _slow_filter(fod: np.ndarray, mask: np.ndarray) -> np.ndarray:
-    """The filter written out voxel by voxel and neighbour by neighbour."""
-    offsets, weights = _offset_weights(DIRS, AFFINE, 1.25, 2.0)
+def _slow_filter(
+    fod: np.ndarray,
+    mask: np.ndarray,
+    affine: np.ndarray,
+    sigma: float,
+    sharpness: float,
+) -> np.ndarray:
+    """The filter written out voxel by voxel and neighbour by neighbour.
+
+    The weights come from the voxel centres' world positions, not from the module.
+    """
     to_full = np.linalg.pinv(B_FULL)
     out = np.zeros((*fod.shape[:3], B_FULL.shape[1]))
     for voxel in zip(*np.nonzero(mask), strict=True):
+        here = affine[:3, :3] @ np.array(voxel)
         num = fod[voxel] @ B_EVEN.T
         den = np.ones_like(num)
-        for offset, w in zip(offsets, weights, strict=True):
-            near = np.array(voxel) + offset
-            if np.any(near < 0) or np.any(near >= mask.shape) or not mask[tuple(near)]:
+        for offset in np.ndindex(3, 3, 3):
+            near = tuple(int(n) for n in np.array(voxel) + np.array(offset) - 1)
+            inside = all(0 <= n < s for n, s in zip(near, mask.shape, strict=True))
+            if near == voxel or not inside or not mask[near]:
                 continue
-            num += w * (fod[tuple(near)] @ B_EVEN.T)
+            step = affine[:3, :3] @ np.array(near) - here
+            distance = np.linalg.norm(step)
+            w = (
+                np.exp(-(distance**2) / (2 * sigma**2))
+                * np.clip(DIRS @ (step / distance), 0, None) ** sharpness
+            )
+            num += w * (fod[near] @ B_EVEN.T)
             den += w
         out[voxel] = to_full @ (num / den)
     return out
@@ -49,9 +70,10 @@ def test_matches_the_filter_written_out_voxel_by_voxel(kept: float) -> None:
     fod = rng.standard_normal((*SHAPE, B_EVEN.shape[1]))
     mask = rng.random(SHAPE) < kept
 
-    out = filter_afod(fod, mask, AFFINE)
+    out = filter_afod(fod, mask, OBLIQUE, sigma=1.7, sharpness=3.0)
 
-    np.testing.assert_allclose(out, _slow_filter(fod, mask), atol=1e-5)
+    expected = _slow_filter(fod, mask, OBLIQUE, sigma=1.7, sharpness=3.0)
+    np.testing.assert_allclose(out, expected, atol=1e-5)
 
 
 def test_the_same_fod_everywhere_stays_symmetric_up_to_the_mask_edge() -> None:
@@ -127,3 +149,16 @@ def test_every_voxel_is_filtered_when_chunks_are_small(
     out = filter_afod(fod, np.ones((12, 12, 12), dtype=bool), AFFINE)
 
     np.testing.assert_allclose(out[..., ~ODD], fod, atol=1e-5)
+
+
+def test_values_outside_the_mask_do_not_reach_it() -> None:
+    rng = np.random.default_rng(1)
+    fod = rng.standard_normal((*SHAPE, B_EVEN.shape[1]))
+    mask = np.zeros(SHAPE, dtype=bool)
+    mask[2:6, 2:5, 1:5] = True
+    with_nan = fod.copy()
+    with_nan[~mask] = np.nan
+
+    np.testing.assert_array_equal(
+        filter_afod(with_nan, mask, AFFINE), filter_afod(fod, mask, AFFINE)
+    )

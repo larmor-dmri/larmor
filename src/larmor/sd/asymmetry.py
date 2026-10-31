@@ -101,7 +101,9 @@ def _filter_border_voxels(
         near = np.clip(near, (0, 0, 0), np.asarray(mask.shape) - 1)
         near = tuple(near.T)
         valid = on_grid & mask[near]
-        amps = fod[near] @ b_even.T
+        # Neighbours that do not count are set to 0 rather than multiplied by 0,
+        # so that a NaN outside the mask cannot reach the voxel.
+        amps = np.where(valid[:, None], fod[near] @ b_even.T, 0.0)
         num += valid[:, None] * weight * amps
         den += valid[:, None] * weight
 
@@ -182,7 +184,9 @@ def filter_afod(
         chunk = full_voxels[i : i + CHUNK_SIZE]
         out[tuple(chunk.T)] = _filter_full_voxels(fod, chunk, offsets, matrices)
 
-    out[border_mask] = _filter_border_voxels(
-        fod, mask, border_voxels, offsets, weights, b_even, b_full
-    )
+    for i in range(0, len(border_voxels), CHUNK_SIZE):
+        chunk = border_voxels[i : i + CHUNK_SIZE]
+        out[tuple(chunk.T)] = _filter_border_voxels(
+            fod, mask, chunk, offsets, weights, b_even, b_full
+        )
     return out
