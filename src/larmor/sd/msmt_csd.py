@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 from larmor._log import LarmorLogger
 from larmor._threads import n_threads
-from larmor.dwi.inputs import as_mask, check_dwi
+from larmor.dwi.inputs import as_mask, check_dwi, finite_rows, signal_chunks
 from larmor.dwi.mask import unmask
 from larmor.sd.model import FIT_CHUNK, SDFit
 from larmor.sd.msmt import fit_msmt, prepare_msmt
@@ -148,8 +148,8 @@ class MSMTCSDModel:
         starts = np.concatenate([[0], np.cumsum(sizes)[:-1]]).astype(int)
         design = prepare_msmt(rfs, lmaxes, gtab.bvals, gtab.bvecs, self.directions)
 
-        signals = volume.as_float()[mask].astype(np.float64)
-        finite = np.isfinite(signals).all(axis=1)
+        voxels = np.nonzero(mask)
+        finite = finite_rows(volume, voxels)
         if not finite.all():
             LarmorLogger.warning(
                 f"{int((~finite).sum())} voxels have a NaN or infinite signal; their "
@@ -159,23 +159,28 @@ class MSMTCSDModel:
             f"Processing {int(finite.sum())} voxels across {threads} cores using "
             "MSMT-CSD..."
         )
-        fitted = signals[finite]
-        fitted_coefficients = np.empty((len(fitted), int(sum(sizes))))
-        converged = np.empty(len(fitted), dtype=bool)
-        chunks = range(0, len(fitted), FIT_CHUNK)
-        report_voxels(0, len(fitted))
-        for start in tqdm(chunks, desc="Fitting voxels", disable=not self.progress):
-            stop = min(start + FIT_CHUNK, len(fitted))
-            fitted_coefficients[start:stop], converged[start:stop] = fit_msmt(
-                fitted[start:stop], design, threads
+        fitted_voxels = tuple(axis[finite] for axis in voxels)
+        n_fitted = int(finite.sum())
+        fitted_coefficients = np.empty((n_fitted, int(sum(sizes))))
+        converged = np.empty(n_fitted, dtype=bool)
+        chunks = signal_chunks(volume, fitted_voxels, size=FIT_CHUNK)
+        report_voxels(0, n_fitted)
+        for rows, signals in tqdm(
+            chunks,
+            desc="Fitting voxels",
+            total=-(-n_fitted // FIT_CHUNK),
+            disable=not self.progress,
+        ):
+            fitted_coefficients[rows], converged[rows] = fit_msmt(
+                signals, design, threads
             )
-            report_voxels(stop, len(fitted))
+            report_voxels(rows.stop, n_fitted)
         if not converged.all():
             LarmorLogger.warning(
                 f"The constrained fit of {int((~converged).sum())} voxels stopped at "
                 "its iteration limit; their FODs may be slightly negative."
             )
-        coefficients = np.full((len(signals), fitted_coefficients.shape[1]), np.nan)
+        coefficients = np.full((len(finite), fitted_coefficients.shape[1]), np.nan)
         coefficients[finite] = fitted_coefficients
 
         fods, fractions = _fods_and_fractions(

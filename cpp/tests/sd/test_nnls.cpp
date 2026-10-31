@@ -1,6 +1,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <stdexcept>
 
 #include <Eigen/Cholesky>
 #include <doctest/doctest.h>
@@ -225,20 +226,23 @@ TEST_CASE("nnls: the ridge solve matches plain NNLS on the stacked matrix") {
         }
     }
     for (const double ridge : {0.1, 1e-7}) {
-        const larmor::sd::RidgeDesign design = larmor::sd::make_ridge_design(kernel, ridge);
-        CHECK(design.normal_equations == (ridge == 0.1));
-        Matrix stacked = Matrix::Zero(50, 40);
-        stacked.topRows(10) = kernel;
-        stacked.bottomRows(40).diagonal().setConstant(ridge);
-        for (int voxel = 0; voxel < 5; ++voxel) {
-            Vector signal(10);
-            for (Index row = 0; row < 10; ++row) {
-                signal(row) = 2.0 * random.next() - 0.5;
+        for (const double l1 : {0.0, 0.01}) {
+            const larmor::sd::RidgeDesign design = larmor::sd::make_ridge_design(kernel, ridge);
+            CHECK(design.normal_equations == (ridge == 0.1));
+            Matrix stacked = Matrix::Zero(50, 40);
+            stacked.topRows(10) = kernel;
+            stacked.bottomRows(40).diagonal().setConstant(ridge);
+            for (int voxel = 0; voxel < 5; ++voxel) {
+                Vector signal(10);
+                for (Index row = 0; row < 10; ++row) {
+                    signal(row) = 2.0 * random.next() - 0.5;
+                }
+                Vector data = Vector::Zero(50);
+                data.head(10) = signal;
+                data.tail(40).setConstant(-l1 / ridge);
+                check_close(larmor::sd::solve_ridge_nnls(design, signal, l1, 1e-12),
+                            larmor::sd::solve_nnls(stacked, data, 1e-12), 1e-9);
             }
-            Vector data = Vector::Zero(50);
-            data.head(10) = signal;
-            check_close(larmor::sd::solve_ridge_nnls(design, signal, 1e-12),
-                        larmor::sd::solve_nnls(stacked, data, 1e-12), 1e-9);
         }
     }
 }
@@ -259,7 +263,7 @@ TEST_CASE("nnls: with no ridge, the normal equations give plain NNLS") {
         for (Index row = 0; row < 30; ++row) {
             signal(row) = 2.0 * random.next() - 0.5;
         }
-        check_close(larmor::sd::solve_ridge_nnls(design, signal, 1e-12),
+        check_close(larmor::sd::solve_ridge_nnls(design, signal, 0.0, 1e-12),
                     larmor::sd::solve_nnls(kernel, signal, 1e-12), 1e-9);
     }
 }
@@ -285,4 +289,21 @@ TEST_CASE("nnls: removing a column keeps the Cholesky factor of the others") {
         CHECK((lower * lower.transpose() - kept.transpose() * kept).cwiseAbs().maxCoeff() <= 1e-12);
         CHECK((lower.diagonal().array() > 0.0).all());
     }
+}
+
+TEST_CASE("nnls: exception thrown if l1 > 0 and ridge == 0") {
+    PseudoRandom random;
+    Matrix kernel(10, 40);
+    for (Index row = 0; row < 10; ++row) {
+        for (Index column = 0; column < 40; ++column) {
+            kernel(row, column) = random.next();
+        }
+    }
+    Vector signal(10);
+    for (Index row = 0; row < 10; ++row) {
+        signal(row) = 2.0 * random.next() - 0.5;
+    }
+    CHECK_THROWS_AS(larmor::sd::solve_ridge_nnls(larmor::sd::make_ridge_design(kernel, 0.0), signal,
+                                                 0.5, 1e-12),
+                    std::invalid_argument);
 }

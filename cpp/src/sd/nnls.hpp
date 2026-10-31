@@ -57,11 +57,12 @@ void remove_cholesky_column(Matrix& factor, Index n_columns, Index position);
 /// Prepares a kernel for solve_ridge_nnls.
 RidgeDesign make_ridge_design(const MatrixView& kernel, double ridge);
 
-/// Solves min ||K x - s||^2 + ridge^2 ||x||^2 subject to x >= 0.
+/// Solves min ||K x - s||^2 + ridge^2 ||x||^2 + 2 l1 sum(x) subject to x >= 0.
 ///
-/// The steps and result are those of solve_nnls on the stacked matrix [K; ridge I] and data
-/// [s; 0].
-Vector solve_ridge_nnls(const RidgeDesign& design, const VectorView& signal,
+/// Since x >= 0, the last term is an L1 penalty. The steps and result are those of solve_nnls on
+/// the stacked matrix [K; ridge I] and data [s; -l1 / ridge]. l1 > 0 needs ridge > 0, and throws
+/// std::invalid_argument otherwise.
+Vector solve_ridge_nnls(const RidgeDesign& design, const VectorView& signal, double l1,
                         double gradient_tolerance);
 
 } // namespace larmor::sd

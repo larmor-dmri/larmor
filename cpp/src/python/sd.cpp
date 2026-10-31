@@ -1,5 +1,6 @@
 // Bindings of the spherical-deconvolution code.
 
+#include <cmath>
 #include <cstddef>
 #include <new>
 #include <optional>
@@ -226,6 +227,36 @@ NumpyArray<double, 1> lsqnonneg(const InArray<double, 2>& design_array,
     return to_numpy(std::move(solution));
 }
 
+// Solves one non-negative least-squares problem with a ridge and an L1 penalty.
+NumpyArray<double, 1> ridge_l1_nnls(const InArray<double, 2>& design_array,
+                                    const InArray<double, 1>& data_array, double ridge, double l1,
+                                    std::optional<double> gradient_tolerance) {
+    const auto design = matrix_view(design_array); // checks contiguity
+    const Vector data = copy_vector(data_array);
+    if (data.size() != design.rows()) {
+        throw nb::value_error(("c must be (m, n) and d (m,): got " +
+                               shape_tuple(design.rows(), design.cols()) + " and " +
+                               std::to_string(data.size()))
+                                  .c_str());
+    }
+    // Written so that NaN fails too.
+    if (!std::isfinite(ridge) || ridge < 0.0 || !std::isfinite(l1) || l1 < 0.0) {
+        throw nb::value_error("ridge and l1 must be finite and >= 0.");
+    }
+    if (l1 > 0.0 && ridge == 0.0) {
+        throw nb::value_error("l1 > 0 needs ridge > 0.");
+    }
+    Vector solution;
+    {
+        const nb::gil_scoped_release release;
+        const double tolerance =
+            gradient_tolerance ? *gradient_tolerance : sd::default_gradient_tolerance(design);
+        const sd::RidgeDesign ridge_design = sd::make_ridge_design(design, ridge);
+        solution = sd::solve_ridge_nnls(ridge_design, data, l1, tolerance);
+    }
+    return to_numpy(std::move(solution));
+}
+
 // Constructs a TissueKernel in place from copies of the kernel matrices.
 void construct_kernel(sd::TissueKernel* kernel, const InArray<double, 2>& anisotropic_array,
                       const InArray<double, 2>& isotropic_array,
@@ -446,6 +477,19 @@ void register_sd(nb::module_& module) {
                "\n"
                "Raises:\n"
                "    ValueError: If c is not C-contiguous or the shapes do not match.\n");
+
+    module.def("ridge_l1_nnls", &ridge_l1_nnls, nb::arg("c").noconvert(), nb::arg("d").noconvert(),
+               nb::arg("ridge"), nb::arg("l1"), nb::arg("tol_x") = nb::none(),
+               "Solves min ||c x - d||^2 + ridge^2 ||x||^2 + 2 l1 sum(x) with x >= 0.\n"
+               "\n"
+               "c is (m, n) and d (m,). Since x >= 0, the last term is an L1 penalty, which\n"
+               "sets the coefficients the data do not support to zero; ridge = l1 = 0 is\n"
+               "plain NNLS. A coefficient enters the solution only when its gradient\n"
+               "exceeds tol_x; None uses 10 * eps * norm(c, 1) * max(m, n).\n"
+               "\n"
+               "Raises:\n"
+               "    ValueError: If c is not C-contiguous, the shapes do not match, ridge or\n"
+               "        l1 is negative or not finite, or l1 > 0 with ridge = 0.\n");
 
     nb::class_<sd::TissueKernel>(module, "DeconvKernel",
                                  "One resolution of a multi-tissue kernel, copied into C++.")

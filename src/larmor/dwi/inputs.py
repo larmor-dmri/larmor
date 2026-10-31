@@ -1,4 +1,6 @@
-"""Checks the inputs of the DWI fits, and computes the mean b0 and S0."""
+"""Checks the inputs of the DWI fits, reads their voxels, and computes b0 and S0."""
+
+from collections.abc import Iterator
 
 import numpy as np
 from scipy.ndimage import uniform_filter
@@ -11,6 +13,8 @@ from larmor.types import GradientTable, Volume
 S0_NEIGHBOURHOODS = (3, 5)
 # Fraction of S0 that replaces a measurement that is not finite and positive.
 SIGNAL_FLOOR = 1e-3
+# Voxels read at a time by `signal_chunks`.
+READ_CHUNK = 2**15
 
 
 def check_dwi(volume: Volume, gtab: GradientTable) -> None:
@@ -130,21 +134,117 @@ def estimate_s0(volume: Volume, gtab: GradientTable, mask: np.ndarray) -> np.nda
     return s0
 
 
-def floor_bad_samples(s: np.ndarray, s0: np.ndarray | None) -> None:
+def signal_rows(
+    volume: Volume,
+    voxels: tuple[np.ndarray, ...],
+    rows: slice,
+    columns: np.ndarray | None = None,
+) -> np.ndarray:
+    """Returns the scaled signal of some voxels as float64, one row per voxel.
+
+    The values are scaled in float32, as `Volume.as_float` does, then made
+    float64, so a fit reading them in chunks sees the same numbers as one reading
+    the whole image.
+
+    Args:
+        volume: The DWI, shape (X, Y, Z, N).
+        voxels: The voxel indices, as `np.nonzero` of a mask gives them.
+        rows: Which of those voxels to read.
+        columns: The volumes to keep, a boolean mask of length N. Defaults to
+            None, every volume.
+
+    Returns:
+        The signals, shape (n_rows, N), or (n_rows, n_columns) with `columns`.
+    """
+    index = tuple(axis[rows] for axis in voxels)
+    signal = volume.data[index]
+    if columns is not None:
+        signal = signal[:, columns]
+    # The steps of Volume.as_float, in float32.
+    scaled = signal.astype(np.float32)
+    if volume.slope != 1.0 or volume.intercept != 0.0:
+        scaled *= volume.slope
+        scaled += volume.intercept
+    result: np.ndarray = scaled.astype(np.float64)
+    return result
+
+
+def signal_chunks(
+    volume: Volume,
+    voxels: tuple[np.ndarray, ...],
+    columns: np.ndarray | None = None,
+    size: int | None = None,
+) -> Iterator[tuple[slice, np.ndarray]]:
+    """Yields the voxels' signals chunk by chunk, with the rows each chunk covers.
+
+    Args:
+        volume: The DWI, shape (X, Y, Z, N).
+        voxels: The voxel indices, as `np.nonzero` of a mask gives them.
+        columns: The volumes to keep; see `signal_rows`. Defaults to None.
+        size: Voxels per chunk. Defaults to None, READ_CHUNK.
+
+    Yields:
+        The rows of the chunk, and their signals as `signal_rows` returns them.
+    """
+    size = READ_CHUNK if size is None else size
+    n_voxels = len(voxels[0])
+    for start in range(0, n_voxels, size):
+        rows = slice(start, min(start + size, n_voxels))
+        yield rows, signal_rows(volume, voxels, rows, columns)
+
+
+def finite_rows(
+    volume: Volume,
+    voxels: tuple[np.ndarray, ...],
+    columns: np.ndarray | None = None,
+) -> np.ndarray:
+    """Returns whether each voxel's signal is finite in every kept volume.
+
+    Args:
+        volume: The DWI, shape (X, Y, Z, N).
+        voxels: The voxel indices, as `np.nonzero` of a mask gives them.
+        columns: The volumes to check; see `signal_rows`. Defaults to None.
+
+    Returns:
+        One flag per voxel, bool.
+    """
+    flags = [
+        np.isfinite(s).all(axis=1) for _, s in signal_chunks(volume, voxels, columns)
+    ]
+    return np.concatenate(flags) if flags else np.zeros(0, dtype=bool)
+
+
+def largest_finite_signal(volume: Volume, voxels: tuple[np.ndarray, ...]) -> float:
+    """Returns the largest finite signal of the voxels, or 1 when none is positive."""
+    largest = -np.inf
+    for _, s in signal_chunks(volume, voxels):
+        finite = s[np.isfinite(s)]
+        if finite.size:
+            largest = max(largest, float(finite.max()))
+    return largest if largest > 0 else 1.0
+
+
+def floor_bad_samples(
+    s: np.ndarray, s0: np.ndarray | None, *, largest: float | None = None
+) -> None:
     """Sets the measurements that are not finite and positive to 1e-3 S0, in place.
 
     A voxel without a finite, positive S0 (or every voxel when `s0` is None, as
-    for a table without b0) uses 1e-3 times the largest finite value of `s`.
+    for a table without b0) uses 1e-3 times the largest finite value of `s`, or
+    of `largest` when given, for a fit that floors its voxels in chunks.
 
     Args:
         s: The measurements, shape (n_voxels, N).
         s0: The S0 of each voxel, shape (n_voxels,), or None.
+        largest: The largest finite signal of all the voxels being fitted.
+            Defaults to None, the largest of `s`.
     """
     bad = ~(np.isfinite(s) & (s > 0))
     if not bad.any():
         return
-    finite = s[np.isfinite(s)]
-    largest = float(finite.max()) if finite.size and finite.max() > 0 else 1.0
+    if largest is None:
+        finite = s[np.isfinite(s)]
+        largest = float(finite.max()) if finite.size and finite.max() > 0 else 1.0
     floor = np.full(len(s), SIGNAL_FLOOR * largest)
     if s0 is not None:
         usable = np.isfinite(s0) & (s0 > 0)

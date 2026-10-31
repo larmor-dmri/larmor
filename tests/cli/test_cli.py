@@ -20,7 +20,7 @@ from larmor.types import Volume
 COMMANDS = ["dti", "mask", "fod"]
 # Commands that need a multi-shell DWI, which the single-shell fixtures here are
 # not; only their checks before any work are tested in this file.
-MULTI_SHELL_COMMANDS = ["dki"]
+MULTI_SHELL_COMMANDS = ["dki", "noddi"]
 # Gradient options for runs whose inputs do not exist.
 NO_GRADIENTS = ("--bvals", "a", "--bvecs", "b")
 
@@ -72,7 +72,7 @@ def test_every_command_has_the_shared_flags(command: str) -> None:
         assert flag in result.output
 
 
-@pytest.mark.parametrize("command", ["fod", "dti", "dki"])
+@pytest.mark.parametrize("command", ["fod", "dti", "dki", "noddi"])
 def test_fitting_commands_have_the_threads_flag(command: str) -> None:
     assert "--nt" in _run(command, "--help").output
 

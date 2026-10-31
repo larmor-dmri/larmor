@@ -4,10 +4,16 @@ import numpy as np
 
 from larmor._log import LarmorLogger
 from larmor._threads import n_threads
-from larmor.dwi.inputs import as_mask, check_dwi
+from larmor.dwi.inputs import as_mask, check_dwi, finite_rows, signal_chunks
 from larmor.dwi.mask import unmask
 from larmor.sd.csd_rf import estimate_csd_rf
-from larmor.sd.csd_solver import CSDSolver, csd_shell, fit_csd
+from larmor.sd.csd_solver import (
+    CSDSolver,
+    csd_problem,
+    csd_shell,
+    solve_csd,
+    warn_unconverged,
+)
 from larmor.sd.model import SDFit
 from larmor.sd.progress import RESPONSE_STAGE, report_stage, report_voxels
 from larmor.sd.rf import ZonalSHRF
@@ -123,8 +129,8 @@ class CSDModel:
                 f"CSD fits one shell: using b = {bval:g} s/mm^2 "
                 f"({int(on_shell.sum())} volumes) and leaving out the others."
             )
-        signals = volume.as_float()[mask][:, on_shell].astype(np.float64)
-        finite = np.isfinite(signals).all(axis=1)
+        voxels = np.nonzero(mask)
+        finite = finite_rows(volume, voxels, on_shell)
         if not finite.all():
             LarmorLogger.warning(
                 f"{int((~finite).sum())} voxels have a NaN or infinite signal; their "
@@ -136,17 +142,17 @@ class CSDModel:
         )
         n_fitted = int(finite.sum())
         report_voxels(0, n_fitted)
-        fitted = fit_csd(
-            signals[finite],
-            gtab.bvecs[on_shell],
-            zonal,
-            self.lmax,
-            self.solver,
-            threads,
-        )
+        problem = csd_problem(gtab.bvecs[on_shell], zonal, self.lmax, self.solver)
+        coeffs = np.full((len(finite), problem.forward.shape[1]), np.nan)
+        rows_of_fitted = np.flatnonzero(finite)
+        unconverged = 0
+        fitted_voxels = tuple(axis[finite] for axis in voxels)
+        for rows, signals in signal_chunks(volume, fitted_voxels, on_shell):
+            fods, converged = solve_csd(signals, problem, threads)
+            coeffs[rows_of_fitted[rows]] = fods
+            unconverged += int((~converged).sum())
+        warn_unconverged(unconverged, self.solver.max_iter)
         report_voxels(n_fitted, n_fitted)
-        coeffs = np.full((len(signals), fitted.shape[1]), np.nan)
-        coeffs[finite] = fitted
         if self.basis != "tournier":
             coeffs = convert_sh_basis(coeffs, "tournier", self.basis)
         return SDFit(

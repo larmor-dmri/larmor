@@ -11,7 +11,7 @@ from tqdm import tqdm
 from larmor._log import LarmorLogger
 from larmor._threads import n_threads
 from larmor.dwi import estimate_s0, shell_mask
-from larmor.dwi.inputs import as_mask, check_dwi
+from larmor.dwi.inputs import as_mask, check_dwi, signal_chunks
 from larmor.dwi.mask import unmask
 from larmor.sd.kernel import Kernel, order_rfs
 from larmor.sd.method import SDMethod
@@ -212,16 +212,15 @@ class SDModel:
         else:
             mask = as_mask(volume, mask)
 
-        # Scaled in float32 as the image is read, then float64 for the solvers.
         s0 = estimate_s0(volume, gtab, mask)[mask]
-        signals = volume.as_float()[mask].astype(np.float64) / s0[:, np.newaxis]
+        voxels = np.nonzero(mask)
 
         # The solvers would turn a NaN signal into a small, plausible FOD, so such
         # voxels are left out and given NaN. Checked before the cap, which would
         # turn +inf into 1.
-        finite = np.isfinite(signals).all(axis=1)
-        # Diffusion weighting only lowers the signal, so a value above S0 is noise.
-        np.minimum(signals, 1.0, out=signals)
+        finite = np.zeros(len(s0), dtype=bool)
+        for rows, signals in signal_chunks(volume, voxels):
+            finite[rows] = np.isfinite(signals / s0[rows, np.newaxis]).all(axis=1)
         if not finite.all():
             LarmorLogger.warning(
                 f"{int((~finite).sum())} voxels have a NaN or infinite signal or "
@@ -232,28 +231,24 @@ class SDModel:
             f"Processing {int(finite.sum())} voxels across {threads} cores "
             f"using {self.method} with {solver}..."
         )
-        fitted_fods, fitted_fractions = self._run_chunks(
-            signals[finite], hr_kernel.k_aniso.shape[1], fit_chunk
+        fitted_sh, fitted_fractions = self._run_chunks(
+            volume,
+            tuple(axis[finite] for axis in voxels),
+            s0[finite],
+            hr_kernel.aniso_blocks,
+            fit_chunk,
+            lmax,
+            exact_integral=isinstance(solver, (L2NNLS, Lasso)),
         )
 
-        amplitudes = np.full((len(signals), fitted_fods.shape[1]), np.nan)
-        amplitudes[finite] = fitted_fods
-        exact_integral = isinstance(solver, (L2NNLS, Lasso))
-        fods = [
-            unmask(
-                _to_sh(
-                    amplitudes[:, block],
-                    lmax,
-                    self.basis,
-                    exact_integral=exact_integral,
-                ),
-                mask,
-            )
-            for block in hr_kernel.aniso_blocks
-        ]
+        fods = []
+        for sh in fitted_sh:
+            coefficients = np.full((len(finite), sh.shape[1]), np.nan)
+            coefficients[finite] = sh
+            fods.append(unmask(coefficients, mask))
         fractions = None
         if fitted_fractions is not None:
-            fractions = np.full((len(signals), fitted_fractions.shape[1]), np.nan)
+            fractions = np.full((len(finite), fitted_fractions.shape[1]), np.nan)
             fractions[finite] = fitted_fractions
             fractions = unmask(fractions, mask)
         return SDFit(
@@ -326,38 +321,74 @@ class SDModel:
         return hr, fit_multi
 
     def _run_chunks(
-        self, signals: np.ndarray, n_cols: int, fit_chunk: _ChunkFit
-    ) -> tuple[np.ndarray, np.ndarray | None]:
+        self,
+        volume: Volume,
+        voxels: tuple[np.ndarray, ...],
+        s0: np.ndarray,
+        blocks: list[slice],
+        fit_chunk: _ChunkFit,
+        lmax: int,
+        *,
+        exact_integral: bool,
+    ) -> tuple[list[np.ndarray], np.ndarray | None]:
         """Fits the voxels in chunks of FIT_CHUNK, with a progress bar.
 
-        Warns when some solves stopped at the solver's iteration limit.
+        Each chunk is read, divided by S0 and capped at 1, fitted, and its FOD
+        amplitudes turned into SH coefficients, so only one chunk of signals and
+        amplitudes is held at a time. Warns when some solves stopped at the
+        solver's iteration limit.
+
+        Args:
+            volume: The DWI.
+            voxels: The voxels to fit, as `np.nonzero` gives them.
+            s0: Their S0.
+            blocks: The columns of each anisotropic tissue's amplitudes.
+            fit_chunk: Fits one chunk of normalised signals.
+            lmax: Maximum SH degree of the FODs.
+            exact_integral: Passed to `_to_sh`.
 
         Returns:
-            The FOD amplitudes, and the fractions of a multi-tissue fit or None.
+            The SH coefficients of each anisotropic tissue, one row per voxel, and
+            the fractions of a multi-tissue fit or None.
         """
-        fods = np.empty((len(signals), n_cols))
+        n_voxels = len(s0)
+        n_coefficients = (lmax + 1) * (lmax + 2) // 2
+        sh = [np.empty((n_voxels, n_coefficients)) for _ in blocks]
         fractions = (
-            np.empty((len(signals), len(self.rfs))) if self.is_multi_tissue else None
+            np.empty((n_voxels, len(self.rfs))) if self.is_multi_tissue else None
         )
         unconverged = 0
-        starts = range(0, len(signals), FIT_CHUNK)
-        report_voxels(0, len(signals))
-        for start in tqdm(starts, desc="Fitting voxels", disable=not self.progress):
-            stop = min(start + FIT_CHUNK, len(signals))
-            fods[start:stop], chunk_fractions, chunk_unconverged = fit_chunk(
-                signals[start:stop]
-            )
+        chunks = signal_chunks(volume, voxels, size=FIT_CHUNK)
+        report_voxels(0, n_voxels)
+        for rows, signals in tqdm(
+            chunks,
+            desc="Fitting voxels",
+            total=-(-n_voxels // FIT_CHUNK),
+            disable=not self.progress,
+        ):
+            signals /= s0[rows, np.newaxis]
+            # Diffusion weighting only lowers the signal, so a value above S0 is
+            # noise.
+            np.minimum(signals, 1.0, out=signals)
+            amplitudes, chunk_fractions, chunk_unconverged = fit_chunk(signals)
+            for tissue, block in zip(sh, blocks, strict=True):
+                tissue[rows] = _to_sh(
+                    amplitudes[:, block],
+                    lmax,
+                    self.basis,
+                    exact_integral=exact_integral,
+                )
             unconverged += chunk_unconverged
             if fractions is not None and chunk_fractions is not None:
-                fractions[start:stop] = chunk_fractions
-            report_voxels(stop, len(signals))
+                fractions[rows] = chunk_fractions
+            report_voxels(rows.stop, n_voxels)
         # Only the elastic net counts solves that stop at their limit.
         if unconverged:
             LarmorLogger.warning(
                 f"{unconverged} elastic net solves did not converge within max_iter "
                 "sweeps; their FODs are those of the last sweep."
             )
-        return fods, fractions
+        return sh, fractions
 
 
 def low_resolution_dirs(rfs: list[ResponseFunction], n_meas: int) -> list[np.ndarray]:

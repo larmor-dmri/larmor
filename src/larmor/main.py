@@ -16,6 +16,7 @@ from larmor.cli import (
     fod,
     info,
     mask,
+    noddi,
     peaks,
     sh_convert,
     simulate,
@@ -34,6 +35,7 @@ app = typer.Typer(
 )
 app.command(name="dti")(larmor_command(dti.dti))
 app.command(name="dki")(larmor_command(dki.dki))
+app.command(name="noddi")(larmor_command(noddi.noddi))
 app.command(name="denoise")(larmor_command(denoise.denoise))
 app.command(name="mask")(larmor_command(mask.mask))
 app.command(name="degibbs")(larmor_command(degibbs.degibbs))

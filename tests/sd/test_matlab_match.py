@@ -152,7 +152,7 @@ def test_match_mfod_fit() -> None:
     hr, fit_chunk = model._prepare(
         model.method.default_solver(), bvals, bvecs, n_threads=2
     )
-    fods, fractions = model._run_chunks(signals, hr.k_aniso.shape[1], fit_chunk)
+    fods, fractions, _ = fit_chunk(signals)
 
     # The reference is single precision and the NNLS active set can flip at
     # rounding level, so the bounds leave headroom over the observed 5e-5 and 2e-6.

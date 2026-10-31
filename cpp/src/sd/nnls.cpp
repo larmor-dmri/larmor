@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <limits>
 #include <optional>
+#include <stdexcept>
 #include <vector>
 
 #include <Eigen/QR>
@@ -290,14 +291,17 @@ RidgeDesign make_ridge_design(const MatrixView& kernel, double ridge) {
             .normal_equations = normal_equations};
 }
 
-Vector solve_ridge_nnls(const RidgeDesign& design, const VectorView& signal,
+Vector solve_ridge_nnls(const RidgeDesign& design, const VectorView& signal, double l1,
                         double gradient_tolerance) {
+    if (l1 > 0 && design.ridge == 0) {
+        throw std::invalid_argument("l1 > 0 needs ridge > 0.");
+    }
     const Index n_measurements = design.kernel.rows();
     const Index n_columns = design.kernel.cols();
-    // C^T d, with C = [K; ridge I] and d = [s; 0].
-    const Vector correlations = design.kernel.transpose() * signal;
+    // C^T d = K^T s - l1, with C = [K; ridge I] and d = [s; -l1 / ridge].
+    const Vector correlations = (design.kernel.transpose() * signal).array() - l1;
 
-    // C^T (d - C x) = K^T s - (K^T K + ridge^2 I) x, over the non-zero coefficients only.
+    // C^T (d - C x) = K^T s - l1 - (K^T K + ridge^2 I) x, over the non-zero coefficients only.
     const auto gradient_at = [&](const Vector& solution) {
         Vector gradients = correlations;
         for (Index column = 0; column < n_columns; ++column) {
@@ -323,6 +327,7 @@ Vector solve_ridge_nnls(const RidgeDesign& design, const VectorView& signal,
         data.head(n_measurements) = signal;
         if (has_ridge) {
             active_design.bottomRows(n_active).diagonal().setConstant(design.ridge);
+            data.tail(n_active).setConstant(-l1 / design.ridge);
         }
         return scatter(least_squares(active_design, data), indices, n_columns);
     };

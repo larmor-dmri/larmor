@@ -164,6 +164,20 @@ def lsqnonneg(c: Annotated[NDArray[numpy.float64], dict(shape=(None, None), devi
         ValueError: If c is not C-contiguous or the shapes do not match.
     """
 
+def ridge_l1_nnls(c: Annotated[NDArray[numpy.float64], dict(shape=(None, None), device='cpu', writable=False)], d: Annotated[NDArray[numpy.float64], dict(shape=(None,), device='cpu', writable=False)], ridge: float, l1: float, tol_x: float | None = None) -> Annotated[NDArray[numpy.float64], dict(shape=(None,))]:
+    """
+    Solves min ||c x - d||^2 + ridge^2 ||x||^2 + 2 l1 sum(x) with x >= 0.
+
+    c is (m, n) and d (m,). Since x >= 0, the last term is an L1 penalty, which
+    sets the coefficients the data do not support to zero; ridge = l1 = 0 is
+    plain NNLS. A coefficient enters the solution only when its gradient
+    exceeds tol_x; None uses 10 * eps * norm(c, 1) * max(m, n).
+
+    Raises:
+        ValueError: If c is not C-contiguous, the shapes do not match, ridge or
+            l1 is negative or not finite, or l1 > 0 with ridge = 0.
+    """
+
 class DeconvKernel:
     """One resolution of a multi-tissue kernel, copied into C++."""
 

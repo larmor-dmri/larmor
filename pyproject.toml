@@ -270,6 +270,7 @@ layers = ["main", "cli", "viewer", "plot", "simulation", "tractography", "sd", "
 # `from larmor import _core` reads as an import of the package: the compiled module is invisible here.
 ignore_imports = [
     "larmor.dwi.fitting -> larmor",
+    "larmor.dwi.noddi -> larmor",
     "larmor.dwi.denoise -> larmor",
     "larmor.dwi.gibbs -> larmor",
     "larmor.simulation.instant -> larmor",
