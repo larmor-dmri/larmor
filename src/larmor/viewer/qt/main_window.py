@@ -41,6 +41,7 @@ from larmor.viewer.model.dissect import (
     TrackSettings,
     gradient_files,
     item_file,
+    item_from_file,
     plan_save,
     unique_path,
     write_save,
@@ -1158,6 +1159,7 @@ class MainWindow(QMainWindow):
         """Lets the window carry out the Dissect pages' files, jobs and saves."""
         page = self.dissect_page
         page.start.start_requested.connect(self.start_dissection)
+        page.start.item_chosen.connect(self.start_dissection_from_item)
         page.fods.load_requested.connect(self.load_fods)
         page.fods.estimate_requested.connect(self.estimate_fods)
         page.track.track_requested.connect(self.track_streamlines)
@@ -1193,10 +1195,19 @@ class MainWindow(QMainWindow):
         A tractogram is read in the background and the Regions step shows. A FOD
         file is offered on the FODs step, to load in its basis. A DWI opens as a
         volume and the FODs step shows, ready to estimate, with the gradient files
-        found beside it.
+        found beside it. A file already open is not read again: its item is used.
         """
         path = Path(path).absolute()
         state, page = self.dissection, self.dissect_page
+        category = {
+            StartFrom.TRACTOGRAM: Category.TRACTOGRAMS,
+            StartFrom.FOD: Category.FODS,
+            StartFrom.DWI: Category.VOLUMES,
+        }[start]
+        found = item_from_file(self.viewer.scene, path, category)
+        if found is not None:
+            self.start_dissection_from_item(start, found)
+            return
         if start == StartFrom.TRACTOGRAM:
             state.begin(start)
 
@@ -1221,9 +1232,45 @@ class MainWindow(QMainWindow):
             self.show_dissect(DissectStep.FODS)
         self._dissection_changed()
 
+    def start_dissection_from_item(self, start: StartFrom, item_id: ItemId) -> None:
+        """Starts a dissection from an item already in the scene.
+
+        A tractogram goes to the Regions step and a FOD to the Track step. A DWI
+        shows on the FODs step, ready to estimate, with the gradient files found
+        beside its file.
+        """
+        state, page = self.dissection, self.dissect_page
+        if start == StartFrom.TRACTOGRAM:
+            state.begin(start)
+            state.tractogram = item_id
+            self.show_dissect(DissectStep.REGIONS)
+        elif start == StartFrom.FOD:
+            state.begin(start)
+            state.fod = item_id
+            self.show_dissect(DissectStep.TRACK)
+        else:
+            source = self.viewer.scene.item(item_id).source
+            if source is None:
+                self._message("Cannot start", "The DWI was not read from a file.")
+                return
+            dwi = DwiFiles(source, *gradient_files(source))
+            state.begin(start, dwi)
+            page.fods.show_dwi(dwi)
+            self.show_dissect(DissectStep.FODS)
+        self._dissection_changed()
+
     def load_fods(self, path: str | Path, basis: Basis) -> None:
-        """Reads a FOD file in the background as the FOD the Track step tracks."""
+        """Reads a FOD file in the background as the FOD the Track step tracks.
+
+        A file already open is not read again: its item is used.
+        """
         state = self.dissection
+        found = item_from_file(self.viewer.scene, Path(path), Category.FODS)
+        if found is not None:
+            self.viewer.set(found, OptionName.BASIS, basis)
+            state.fod = found
+            self._dissection_changed()
+            return
 
         def done(item: Item | None, error: str | None) -> None:
             if item is None:
