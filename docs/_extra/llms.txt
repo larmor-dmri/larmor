@@ -22,6 +22,7 @@ Larmor simulates and processes diffusion MRI from Python and from its command li
 - [NODDI](https://larmor.org/guides/noddi/): fitting NODDI, and the neurite density, orientation dispersion and free-water maps
 - [FODs](https://larmor.org/guides/fods/): response functions, the GRL, mFOD, CSD and MSMT-CSD methods and their solvers, and SH bases
 - [Peaks](https://larmor.org/guides/peaks/): the peaks of FODs, and the peaks image
+- [Asymmetric FODs](https://larmor.org/guides/afod/): asymmetric FODs made by filtering symmetric ones with their neighbouring voxels
 - [Tractography](https://larmor.org/guides/tractography/): deterministic and probabilistic tracking, seeding, stopping and output formats
 - [Surfaces](https://larmor.org/guides/surfaces/): FreeSurfer and GIfTI surfaces, their values, and registrations
 - [Isolating a bundle](https://larmor.org/guides/isolating-a-bundle/): selecting streamlines with include and exclude regions

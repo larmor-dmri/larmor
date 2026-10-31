@@ -1,5 +1,6 @@
 """Spherical deconvolution models, response functions, peaks and SH helpers."""
 
+from larmor.sd.asymmetry import filter_afod
 from larmor.sd.csd import CSDModel
 from larmor.sd.csd_rf import SingleFibreRF, build_csd_response, estimate_csd_rf
 from larmor.sd.csd_solver import CSDSolver
@@ -59,6 +60,7 @@ __all__ = [
     "TissueResponses",
     "ZonalSHRF",
     "build_csd_response",
+    "filter_afod",
     "build_response_functions",
     "build_shell_response",
     "convert_sh_basis",

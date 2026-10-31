@@ -28,6 +28,7 @@ $ lar [OPTIONS] COMMAND [ARGS]...
 * `convert`: Convert an image or a tractogram to...
 * `sh-convert`: Convert an FOD image from one spherical...
 * `peaks`: Find the peaks (local maxima) of an FOD...
+* `afod`: Make asymmetric FODs from symmetric ones.
 * `track`: Track streamlines through an FOD image.
 * `tract-edit`: Select, crop and resample the streamlines...
 * `tract-profile`: Write the profile of maps (FA, MD and so...
@@ -360,6 +361,34 @@ $ lar peaks [OPTIONS] {fod_path} {output_path}
 * `--threshold <float>`: Drop peaks whose amplitude is below this value.  [default: 0.0]
 * `--force`: Overwrite existing output files. Without it, the command stops before any work when an output exists.
 * `--nt <int>`: Number of threads; -1 uses all CPU cores.  [default: -1]
+* `--quiet`: Show only errors.
+* `--info`: Show progress and informational messages.
+* `--debug`: Show debug messages and full tracebacks.
+* `--help`: Show this message and exit.
+
+## `lar afod`
+
+Make asymmetric FODs from symmetric ones.
+
+**Usage**:
+
+```console
+$ lar afod [OPTIONS] {fod_path} {output_path}
+```
+
+**Arguments**:
+
+* `fod_path`: Path to the symmetric FOD image, with its spherical harmonic (SH) coefficients of the even degrees along the 4th axis.  [required]
+* `output_path`: Path of the asymmetric FOD image, with the SH coefficients of every degree up to the input&#x27;s lmax, in the input&#x27;s basis.  [required]
+
+**Options**:
+
+* `-m, --mask <path>`: Voxels to make asymmetric; neighbours outside the mask are not used, and voxels outside it are 0. Without it, every voxel whose FOD is not all zero.
+* `--method <filter>`: filter: each direction of a voxel&#x27;s FOD is averaged with the same direction in the neighbours it points at (Poirier and Descoteaux 2024).  [default: filter]
+* `--sigma <float>`: Width in mm of the Gaussian that weights the neighbours by distance.  [default: 1.25]
+* `--sharpness <float>`: Exponent of the weight cos^n of the angle between a direction and a neighbour; higher values use only the neighbours closest to it.  [default: 2.0]
+* `--basis <tournier|descoteaux|leemans>`: SH basis the FOD is stored in, which the file does not record; the output is in the same basis.  [default: tournier]
+* `--force`: Overwrite existing output files. Without it, the command stops before any work when an output exists.
 * `--quiet`: Show only errors.
 * `--info`: Show progress and informational messages.
 * `--debug`: Show debug messages and full tracebacks.

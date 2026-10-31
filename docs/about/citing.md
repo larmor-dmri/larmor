@@ -96,6 +96,10 @@ The same information is in the repository's `CITATION.cff` file, which GitHub an
   neurite orientation dispersion and density imaging of the human brain. NeuroImage 61 (2012) 1000-1016.
   [doi:10.1016/j.neuroimage.2012.03.072](https://doi.org/10.1016/j.neuroimage.2012.03.072)
 
+- **Asymmetric FODs by filtering.** Poirier C, Descoteaux M. A unified filtering method for estimating
+  asymmetric orientation distribution functions. NeuroImage 287 (2024) 120516.
+  [doi:10.1016/j.neuroimage.2024.120516](https://doi.org/10.1016/j.neuroimage.2024.120516)
+
 ### Tractography and analysis
 
 - **Deterministic tracking.** Tournier J-D, Calamante F, Connelly A. MRtrix: diffusion tractography in crossing
