@@ -100,17 +100,19 @@ fit_noddi(const InArray<double, 2>& signals_array, const InArray<double, 2>& dir
     const auto is_b0 = flat_view(is_b0_array);
     const auto v_ic_grid = flat_view(v_ic_grid_array);
     const auto kappa_grid = flat_view(kappa_grid_array);
-    const Index n = bvals.size();
-    if (signals.cols() != n || bvecs.rows() != n || bvecs.cols() != 3 || is_b0.size() != n ||
-        directions.rows() != signals.rows() || directions.cols() != 3) {
-        throw nb::value_error(
-            ("signals must be (v, n), mu (v, 3), bvals (n,), bvecs (n, 3) and is_b0 (n,): got "
-             "signals " +
-             shape_tuple(signals.rows(), signals.cols()) + ", mu " +
-             shape_tuple(directions.rows(), directions.cols()) + ", bvals (" + std::to_string(n) +
-             ",), bvecs " + shape_tuple(bvecs.rows(), bvecs.cols()) + ", is_b0 (" +
-             std::to_string(is_b0.size()) + ",)")
-                .c_str());
+    const Index n_volumes = bvals.size();
+    if (signals.cols() != n_volumes || bvecs.rows() != n_volumes || bvecs.cols() != 3 ||
+        is_b0.size() != n_volumes || directions.rows() != signals.rows() ||
+        directions.cols() != 3) {
+        throw nb::value_error(("signals must be (v, n_volumes), mu (v, 3), bvals (n_volumes,), "
+                               "bvecs (n_volumes, 3) and is_b0 (n_volumes,): got "
+                               "signals " +
+                               shape_tuple(signals.rows(), signals.cols()) + ", mu " +
+                               shape_tuple(directions.rows(), directions.cols()) + ", bvals (" +
+                               std::to_string(n_volumes) + ",), bvecs " +
+                               shape_tuple(bvecs.rows(), bvecs.cols()) + ", is_b0 (" +
+                               std::to_string(is_b0.size()) + ",)")
+                                  .c_str());
     }
     if (v_ic_grid.size() == 0 || kappa_grid.size() == 0) {
         throw nb::value_error("the v_ic and kappa grids must not be empty");
@@ -164,7 +166,8 @@ NumpyArray<double, 1> noddi_signal(const InArray<double, 1>& bvals_array,
                                shape_tuple(bvecs.rows(), bvecs.cols()))
                                   .c_str());
     }
-    const dwi::NoddiSettings settings{.d_par = d_par, .d_iso = d_iso};
+    const dwi::NoddiSettings settings{
+        .d_par = d_par, .d_iso = d_iso, .v_ic_grid = {}, .kappa_grid = {}, .ridge = 0.0, .l1 = 0.0};
     const dwi::NoddiProtocol protocol = dwi::make_noddi_protocol(
         Vector(bvals), Matrix(bvecs), std::vector<bool>(static_cast<std::size_t>(bvals.size())),
         settings);
@@ -335,8 +338,8 @@ void register_dwi(nb::module_& module) {
                "mu (v, 3).\n"
                "\n"
                "The start comes from a dictionary of NODDI signals over v_ic_grid and\n"
-               "kappa_grid, solved with the ridge and l1 weights; the fit is the NODDI\n"
-               "Matlab Toolbox's maximum-likelihood fit with Rician noise, with its model.\n"
+               "kappa_grid, solved with the ridge and l1 weights; the fit is then by maximum\n"
+               "likelihood with Rician noise.\n"
                "d_par and d_iso are in mm^2/s and bvals in s/mm^2.\n"
                "\n"
                "Returns v_ic, kappa, v_iso and the fitted direction of each voxel (v, 6), and\n"
@@ -348,8 +351,7 @@ void register_dwi(nb::module_& module) {
     module.def("noddi_signal", &noddi_signal, nb::arg("bvals").noconvert(),
                nb::arg("bvecs").noconvert(), nb::arg("v_ic"), nb::arg("kappa"), nb::arg("v_iso"),
                nb::arg("mu"), nb::arg("d_par"), nb::arg("d_iso"),
-               "Returns the normalised NODDI signal of each volume, as the NODDI Matlab\n"
-               "Toolbox's WatsonSHStickTortIsoV_B0 model computes it, for the neurite density\n"
+               "Returns the normalised NODDI signal of each volume for the neurite density\n"
                "v_ic, Watson concentration kappa and free-water fraction v_iso about the\n"
                "direction mu. bvals (n,) are in s/mm^2, bvecs (n, 3) unit directions, and\n"
                "d_par and d_iso in mm^2/s.\n"

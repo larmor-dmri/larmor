@@ -195,7 +195,10 @@ def csd_problem(
         The problem `solve_csd` fits voxels with.
 
     Raises:
-        ValueError: As `fit_csd`.
+        ValueError: If the shell has fewer than 6 measurements, the response's l = 0
+            coefficient is not positive or it has no anisotropic degree, or
+            norm_lambda is 0 while the data or the response do not determine every
+            coefficient, which leaves the solve singular.
     """
     if len(bvecs) < 6:
         raise ValueError(

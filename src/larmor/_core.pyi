@@ -255,8 +255,8 @@ def fit_noddi(signals: Annotated[NDArray[numpy.float64], dict(shape=(None, None)
     mu (v, 3).
 
     The start comes from a dictionary of NODDI signals over v_ic_grid and
-    kappa_grid, solved with the ridge and l1 weights; the fit is the NODDI
-    Matlab Toolbox's maximum-likelihood fit with Rician noise, with its model.
+    kappa_grid, solved with the ridge and l1 weights; the fit is then by maximum
+    likelihood with Rician noise.
     d_par and d_iso are in mm^2/s and bvals in s/mm^2.
 
     Returns v_ic, kappa, v_iso and the fitted direction of each voxel (v, 6), and
@@ -269,8 +269,7 @@ def fit_noddi(signals: Annotated[NDArray[numpy.float64], dict(shape=(None, None)
 
 def noddi_signal(bvals: Annotated[NDArray[numpy.float64], dict(shape=(None,), device='cpu', writable=False)], bvecs: Annotated[NDArray[numpy.float64], dict(shape=(None, None), device='cpu', writable=False)], v_ic: float, kappa: float, v_iso: float, mu: Sequence[float], d_par: float, d_iso: float) -> Annotated[NDArray[numpy.float64], dict(shape=(None,))]:
     """
-    Returns the normalised NODDI signal of each volume, as the NODDI Matlab
-    Toolbox's WatsonSHStickTortIsoV_B0 model computes it, for the neurite density
+    Returns the normalised NODDI signal of each volume for the neurite density
     v_ic, Watson concentration kappa and free-water fraction v_iso about the
     direction mu. bvals (n,) are in s/mm^2, bvecs (n, 3) unit directions, and
     d_par and d_iso in mm^2/s.

@@ -59,7 +59,7 @@ in advance for a grid of neurite densities and concentrations about the voxel's 
 starting point quickly and without a search (Daducci et al. 2015). The second fits v_ic, kappa, v_iso and the
 direction from there by maximum likelihood with Rician noise, with the model, the noise level from the b=0
 images, and the two stages of the NODDI Matlab Toolbox: first the fractions alone, then all the parameters. The
-diffusivities are fixed at the toolbox's in vivo values, 1.7e-3 mm^2/s along the neurites and 3.0e-3 mm^2/s for
+start and the optimiser differ from the toolbox's, so a few voxels can reach another optimum. The diffusivities are fixed at the toolbox's in vivo values, 1.7e-3 mm^2/s along the neurites and 3.0e-3 mm^2/s for
 free water.
 
 ## Options and caveats
@@ -68,11 +68,13 @@ free water.
   compartments have different T2 or proton density, as free water does.
 - **Voxels of free water.** Where v_iso is high, little signal is left to measure the neurites, and v_ic is not
   reliable there; it often reaches 1. Read v_ic and OD where v_iso is low.
-- **Voxels that are not fitted.** A voxel without a positive b=0 signal, or with fewer than six positive
-  diffusion-weighted measurements, gets zeros. A voxel whose signal the first step explains with free water alone
+- **Voxels that are not fitted.** A voxel with a signal that is not finite (NaN or infinite), without a
+  positive b=0 signal, or with fewer than six positive diffusion-weighted measurements gets zeros, and a warning
+  gives their number. A voxel whose signal the first step explains with free water alone
   gets v_ic = 0 and OD = 0.
 - **Starting direction.** By default the fit starts from the principal eigenvector of a DTI fit. From Python,
-  `fit(..., mu=directions)` starts from directions of your own, one unit vector per voxel.
+  `fit(..., mu=directions)` starts from directions of your own, one vector per voxel; they are normalised, and
+  one that is zero or not finite in the mask is refused.
 - **Mask and threads.** As for [DTI](dti.md#options).
 
 ## See also

@@ -1,10 +1,11 @@
+import logging
 from pathlib import Path
 from typing import Any, cast
 
 import numpy as np
 import pytest
 
-from larmor.dwi import NoddiFit, NoddiModel, noddi
+from larmor.dwi import DTIModel, NoddiFit, NoddiModel, noddi
 from larmor.io import load_volume, read_bvals_bvecs, read_matlab
 from larmor.types import GradientTable, Volume
 
@@ -12,6 +13,8 @@ NODDI_DIR = Path(__file__).parents[1] / "data" / "noddi"
 MAPS = ("v_ic", "od", "v_iso")
 # The toolbox's names of the same maps.
 TOOLBOX_MAPS = {"v_ic": "ficvf", "od": "odi", "v_iso": "fiso"}
+# Bounds on the mean difference to the toolbox, about twice the measured ones.
+TOOLBOX_MEAN_DIFFERENCE = {"v_ic": 0.0015, "od": 0.0005, "v_iso": 0.0015}
 
 
 def _mask() -> np.ndarray:
@@ -49,6 +52,12 @@ def fits() -> dict[str, NoddiFit]:
     }
 
 
+def _along_z(volume: Volume) -> np.ndarray:
+    mu = np.zeros((*volume.data.shape[:3], 3))
+    mu[..., 2] = 1
+    return mu
+
+
 def _mean_error(
     maps: NoddiFit | dict[str, np.ndarray], truth: dict[str, np.ndarray], name: str
 ) -> float:
@@ -82,8 +91,11 @@ def test_noisy_fit_errors_are_those_of_the_toolbox(
 def test_noisy_fit_matches_the_toolbox_voxel_by_voxel(
     fits: dict[str, NoddiFit], toolbox: dict[str, dict[str, np.ndarray]], name: str
 ) -> None:
-    # Same model and likelihood, another start: a few voxels reach another optimum.
-    assert _mean_error(fits["noisy"], toolbox["noisy"], name) < 0.005
+    # Same model and likelihood, another start and optimiser: a few voxels reach
+    # another optimum.
+    difference = np.abs(getattr(fits["noisy"], name) - toolbox["noisy"][name])
+    assert difference.mean() < TOOLBOX_MEAN_DIFFERENCE[name]
+    assert (difference > 0.02).sum() <= 2
 
 
 def test_toolbox_reference_recovers_the_noise_free_phantom(
@@ -130,16 +142,60 @@ def test_free_water_voxel_has_no_neurites() -> None:
     assert fit.od[0, 0, 0] == 0
 
 
-def test_voxel_without_a_positive_b0_gets_zeros() -> None:
+@pytest.mark.parametrize("bad", ["no_b0", "nan"])
+def test_voxel_that_cannot_be_fitted_gets_zeros_and_a_warning(
+    bad: str, caplog: pytest.LogCaptureFixture
+) -> None:
     gtab = _gradients()
-    volume = Volume(np.zeros((1, 1, 1, len(gtab.bvals)), dtype=np.float32), np.eye(4))
-    mu = np.zeros((1, 1, 1, 3))
-    mu[..., 2] = 1
+    signal = 1000 * np.exp(-gtab.bvals * 1.0e-3)
+    if bad == "no_b0":
+        signal[gtab.b0_mask] = 0
+    else:
+        signal[10] = np.nan
+    volume = Volume(np.tile(signal, (1, 2, 1, 1)).astype(np.float32), np.eye(4))
+    mask = np.array([[[True], [False]]])
 
-    fit = NoddiModel().fit(volume, gtab, np.ones((1, 1, 1), dtype=bool), mu=mu)
+    with caplog.at_level(logging.WARNING, logger="larmor"):
+        fit = NoddiModel().fit(volume, gtab, mask, mu=_along_z(volume))
 
-    for name in ("v_ic", "od", "kappa", "v_iso"):
-        assert getattr(fit, name)[0, 0, 0] == 0, name
+    for name in ("v_ic", "od", "kappa", "v_iso", "mu"):
+        assert np.all(getattr(fit, name) == 0), name
+    assert "1 mask voxels have a signal that is not finite" in caplog.text
+
+
+def test_one_shell_is_refused() -> None:
+    volume = load_volume(NODDI_DIR / "dwi.nii.gz")
+    gtab = _gradients()
+    keep = gtab.b0_mask | (gtab.bvals == gtab.bvals.max())
+    one_shell = GradientTable(gtab.bvals[keep], gtab.bvecs[keep])
+
+    with pytest.raises(ValueError, match="at least two non-zero b-value shells"):
+        NoddiModel().fit(volume.with_data(volume.data[..., keep]), one_shell, _mask())
+
+
+@pytest.mark.parametrize("bad", [0.0, np.nan])
+def test_mu_that_is_zero_or_not_finite_is_refused(bad: float) -> None:
+    volume = load_volume(NODDI_DIR / "dwi.nii.gz")
+    mu = _along_z(volume)
+    mu[tuple(np.argwhere(_mask())[0])] = bad
+
+    with pytest.raises(ValueError, match="mu must be finite and nonzero"):
+        NoddiModel().fit(volume, _gradients(), _mask(), mu=mu)
+
+
+def test_mu_need_not_be_unit_length() -> None:
+    volume = load_volume(NODDI_DIR / "dwi.nii.gz")
+    mask = np.zeros(volume.data.shape[:3], dtype=bool)
+    mask[4, 2, :] = True
+    mu = DTIModel().fit(volume, _gradients(), mask).pe.astype(np.float64)
+
+    unit = NoddiModel().fit(volume, _gradients(), mask, mu=mu)
+    scaled = NoddiModel().fit(volume, _gradients(), mask, mu=3 * mu)
+
+    for name in ("v_ic", "kappa", "v_iso", "mu"):
+        np.testing.assert_allclose(
+            getattr(scaled, name), getattr(unit, name), atol=1e-6
+        )
 
 
 def test_mu_of_the_wrong_shape_is_refused() -> None:

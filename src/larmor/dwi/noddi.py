@@ -7,6 +7,7 @@ import numpy as np
 from tqdm import tqdm
 
 from larmor import _core
+from larmor._log import LarmorLogger
 from larmor._threads import n_threads
 from larmor.dwi.dti import DTIModel
 from larmor.dwi.inputs import as_mask, check_dwi, mean_b0, signal_rows
@@ -55,12 +56,9 @@ class NoddiFit:
 class NoddiModel:
     """NODDI model, which fits neurite density, dispersion and free water per voxel.
 
-    `fit` returns a `NoddiFit`. Each voxel's signal is first matched by a
-    non-negative mix of precomputed NODDI signals about its DTI direction, as in
-    AMICO; from there the parameters and the direction are fitted by maximum
-    likelihood with Rician noise, with the model, noise level and two-stage fit of
-    the NODDI Matlab Toolbox. The start differs from the toolbox, which starts from
-    a grid search.
+    `fit` returns a `NoddiFit`. The fit is that of the NODDI Matlab Toolbox, by
+    maximum likelihood with Rician noise, but it starts from a dictionary solve
+    (Daducci et al. 2015) rather than a grid search.
 
     References:
         Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC. NODDI: Practical
@@ -85,17 +83,18 @@ class NoddiModel:
         """Fits NODDI in every voxel of the mask.
 
         Each voxel is fitted on its own, so the result does not depend on n_jobs.
-        A voxel without a positive mean b0, or with fewer than six positive
-        diffusion-weighted measurements, gets zeros.
+        A voxel with a signal that is not finite, without a positive mean b0, or
+        with fewer than six positive diffusion-weighted measurements is not fitted
+        and gets zeros, and a warning gives the number of such voxels.
 
         Args:
             volume: Diffusion-weighted volume, shape (X, Y, Z, N), with b0 volumes.
-            gtab: Its gradient table.
+            gtab: Its gradient table, with at least two non-zero shells.
             mask: Voxels to fit (nonzero inside), on the volume's grid. Defaults
                 to None, which computes a brain mask from the mean b0 volume.
             mu: The starting direction of each voxel, (X, Y, Z, 3), in world
-                coordinates. Defaults to None, which takes the principal
-                eigenvector of a DTI fit.
+                coordinates; it need not be unit length. Defaults to None, which
+                takes the principal eigenvector of a DTI fit.
             n_jobs: Number of threads for the fit, at most the number of cores;
                 -1 uses every core. Defaults to -1.
             progress: Whether to show a progress bar. Defaults to False.
@@ -104,11 +103,18 @@ class NoddiModel:
             NoddiFit: The maps, zero outside the mask.
 
         Raises:
-            ValueError: If the table or the mask does not match the volume, or mu
-                does not have the shape (X, Y, Z, 3), or n_jobs is 0 or below -1.
+            ValueError: If the table or the mask does not match the volume, the
+                table has fewer than two non-zero shells, mu does not have the
+                shape (X, Y, Z, 3) or is zero or not finite in a mask voxel, or
+                n_jobs is 0 or below -1.
         """
         threads = n_threads(n_jobs)
         check_dwi(volume, gtab)
+        if gtab.count_shells() < 2:
+            raise ValueError(
+                "NODDI needs at least two non-zero b-value shells; the gradient table "
+                f"has {gtab.count_shells()}."
+            )
         shape = volume.data.shape[:3]
         if mu is not None and mu.shape != (*shape, 3):
             raise ValueError(
@@ -121,9 +127,14 @@ class NoddiModel:
         )
         if mu is None:
             mu = DTIModel().fit(volume, gtab, mask, n_jobs=n_jobs).pe
+        else:
+            norms = np.linalg.norm(mu[mask], axis=-1)
+            if not (np.isfinite(norms) & (norms > 0)).all():
+                raise ValueError("mu must be finite and nonzero in every mask voxel.")
         voxels = np.nonzero(mask)
         n_voxels = len(voxels[0])
         values = np.zeros((n_voxels, 6))
+        fitted = np.zeros(n_voxels, dtype=bool)
         bvals = np.ascontiguousarray(gtab.bvals, dtype=np.float64)
         bvecs = np.ascontiguousarray(gtab.bvecs, dtype=np.float64)
         is_b0 = np.ascontiguousarray(gtab.b0_mask)
@@ -134,7 +145,7 @@ class NoddiModel:
                 # masked image is never copied.
                 chunk = slice(start, min(start + CHUNK_VOXELS, n_voxels))
                 index = tuple(axis[chunk] for axis in voxels)
-                values[chunk], _ = _core.fit_noddi(
+                values[chunk], fitted[chunk] = _core.fit_noddi(
                     np.ascontiguousarray(signal_rows(volume, voxels, chunk)),
                     np.ascontiguousarray(mu[index], dtype=np.float64),
                     bvals,
@@ -149,6 +160,12 @@ class NoddiModel:
                     threads,
                 )
                 bar.update(chunk.stop - chunk.start)
+        if not fitted.all():
+            LarmorLogger.warning(
+                "%d mask voxels have a signal that is not finite, no positive b0 or "
+                "too few positive measurements; they are not fitted and come out as 0.",
+                int((~fitted).sum()),
+            )
 
         v_ic = np.zeros(shape, dtype=np.float32)
         kappa = np.zeros(shape, dtype=np.float32)

@@ -1,5 +1,8 @@
-// The NODDI model as the NODDI Matlab Toolbox computes it, and its fit to each voxel: a start from
-// a dictionary of NODDI signals, then the toolbox's maximum-likelihood fit with Rician noise.
+// Computes the NODDI signal and fits it to each voxel, from a start found in a dictionary of NODDI
+// signals, by maximum likelihood with Rician noise.
+//
+// References: Zhang et al., NeuroImage 61 (2012) 1000-1016; NODDI Matlab Toolbox 1.05; Daducci et
+// al., NeuroImage 105 (2015) 32-44.
 #pragma once
 
 #include <array>
@@ -16,17 +19,15 @@ constexpr int NODDI_TERMS = 7;
 using NoddiTerms = std::array<double, NODDI_TERMS>;
 
 /// Returns the coefficients of the Watson density of concentration kappa >= 0 in the even
-/// spherical harmonics, as the toolbox's WatsonSHCoeff computes them: in closed form up to
-/// kappa = 30, by its fits in ln(kappa) above, and by series up to kappa = 0.1.
+/// spherical harmonics: by series up to kappa = 0.1, in closed form up to kappa = 30, and by fits
+/// in ln(kappa) above.
 NoddiTerms watson_sh_coefficients(double kappa);
 
-/// Returns the integrals over u in [-1, 1] of exp(-x u^2) P_2i(u), i = 0 to 6, for x = b d >= 0,
-/// as the toolbox's LegendreGaussianIntegral computes them.
+/// Returns the integrals over u in [-1, 1] of exp(-x u^2) P_2i(u), i = 0 to 6, for x = b d >= 0.
 NoddiTerms legendre_gaussian_integrals(double x);
 
 /// Returns the parallel and perpendicular diffusivities of a cylindrically symmetric tensor with
-/// diffusivities d_par and d_perp, averaged over a Watson density of concentration kappa, as the
-/// toolbox's WatsonHinderedDiffusionCoeff computes them.
+/// diffusivities d_par and d_perp, averaged over a Watson density of concentration kappa.
 std::array<double, 2> watson_hindered_diffusivities(double d_par, double d_perp, double kappa);
 
 /// The fixed values of the model and of the fit.
@@ -64,8 +65,7 @@ NoddiProtocol make_noddi_protocol(const VectorView& bvals, const MatrixView& bve
                                   const std::vector<bool>& is_b0, const NoddiSettings& settings);
 
 /// Returns the normalised NODDI signal of every volume for the neurite density v_ic, Watson
-/// concentration kappa and free-water fraction v_iso about the unit direction mu, as the toolbox's
-/// WatsonSHStickTortIsoV_B0 model computes it, (N,).
+/// concentration kappa and free-water fraction v_iso about the unit direction mu, (N,).
 Vector noddi_signal(const NoddiProtocol& protocol, const NoddiSettings& settings, double v_ic,
                     double kappa, double v_iso, const Vector3& mu);
 
@@ -79,17 +79,18 @@ struct NoddiVoxelFit {
     double v_iso = 0.0;
     /// The fitted mean direction, a unit vector, or zero when the voxel is not fitted.
     Vector3 mu = Vector3::Zero();
-    /// False for a voxel without a positive mean b0 or with fewer than six positive
-    /// diffusion-weighted measurements, which is not fitted and gets zeros.
+    /// False for a voxel that is not fitted and gets zeros: one with a signal that is not finite,
+    /// without a positive mean b0, with fewer than six positive diffusion-weighted measurements,
+    /// or with a starting direction that is zero or not finite.
     bool fitted = true;
 };
 
-/// Fits one voxel's signal (N,) from the starting direction mu, a unit vector.
+/// Fits one voxel's signal (N,) from the starting direction mu, which is normalised.
 ///
-/// The start comes from the dictionary of NODDI signals about mu, solved as AMICO does; the
-/// parameters and the direction are then fitted by maximum likelihood with Rician noise, as the
-/// toolbox's two gradient-descent stages do. A voxel whose dictionary solve finds no tissue gets
-/// v_ic = kappa = 0 and the dictionary's v_iso, without the second step.
+/// The start comes from the dictionary of NODDI signals about mu; the parameters and the direction
+/// are then fitted by maximum likelihood with Rician noise, first the fractions and then all of
+/// them. A voxel whose dictionary solve finds no tissue gets v_ic = kappa = 0 and the
+/// dictionary's v_iso, without the second step.
 NoddiVoxelFit fit_noddi_voxel(const NoddiProtocol& protocol, const NoddiSettings& settings,
                               const VectorView& signal, const Vector3& mu);
 
