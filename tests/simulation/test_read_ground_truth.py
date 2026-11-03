@@ -7,6 +7,7 @@ import pytest
 
 from larmor.io import load_volume
 from larmor.simulation import (
+    BundleGeometry,
     GroundTruth,
     SimulatedDWI,
     example_phantom,
@@ -42,6 +43,18 @@ def test_the_ground_truth_reads_back_as_simulate_returned_it(
     assert read.partition is None
     assert read.tissue_names == truth.tissue_names
     assert read.bundle_names == truth.bundle_names == ("LR", "AP")
+    # The saved phantom gives the same streamlines again: same tissues and seeds.
+    assert [t.name for t in read.phantom.tissues] == [
+        t.name for t in truth.phantom.tissues
+    ]
+    assert len(read.phantom.bundles) == len(truth.phantom.bundles)
+    for read_bundle, bundle in zip(
+        read.phantom.bundles, truth.phantom.bundles, strict=True
+    ):
+        assert isinstance(read_bundle.source, BundleGeometry)
+        assert isinstance(bundle.source, BundleGeometry)
+        assert bundle.source.seed is not None
+        assert read_bundle.source.seed == bundle.source.seed
     np.testing.assert_allclose(read.grid.affine, truth.grid.affine)
     assert read.grid.shape == truth.grid.shape
     # The maps are stored as float32, fractions of at most 1.
