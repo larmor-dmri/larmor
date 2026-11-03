@@ -10,6 +10,7 @@ from larmor.simulation import (
     GroundTruthConnectome,
     Phantom,
     VoxelPartition,
+    create_bundle,
     ground_truth_connectome,
     partition_voxels,
 )
@@ -161,8 +162,8 @@ def test_a_streamline_clipping_a_corner_of_the_grid_is_left_out(
 def test_a_stray_end_in_another_bundles_end_keeps_the_nodes_apart(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    # A ends on 25 voxels at x = 16; B's stray streamline adds one of them to
-    # B's 9-voxel end, an overlap of 1/10, under the merge threshold.
+    # B's stray streamline ends inside A's end, but moves B's end centre only
+    # half a voxel, so the two ends stay farther apart than either's radius.
     spread = [(y, z) for y in (1.0, 2, 3, 4, 5) for z in (2.0, 3, 4, 5, 6)]
     a = _tractogram([_line([3, y, z], [16, y, z]) for y, z in spread])
     near = [(y, z) for y in (7.0, 8, 9) for z in (3.0, 4, 5)]
@@ -241,3 +242,76 @@ def test_bundle_names_of_the_wrong_length_are_refused(names: list[str]) -> None:
     )
     with pytest.raises(ValueError, match="must name 2 bundles"):
         ground_truth_connectome(partition, bundle_names=names)
+
+
+def _partition_on(grid: Grid, *bundles: Bundle) -> VoxelPartition:
+    return partition_voxels(Phantom(grid, bundles=bundles), seed=0, n_jobs=1)
+
+
+def test_a_drawn_loop_ending_where_it_starts_is_one_node_on_the_diagonal(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    points = [[3, 8, 4], [11, 3.5, 4], [18, 8, 4], [11, 12.5, 4], [3, 8.3, 4]]
+    geometry = BundleGeometry(np.array(points), num_streamlines=200, radius=1.5, seed=1)
+    grid = Grid((22, 16, 8), np.eye(4))
+    with caplog.at_level(logging.WARNING, logger="larmor"):
+        found = ground_truth_connectome(
+            _partition_on(grid, Bundle(geometry)), bundle_names=["U"]
+        )
+    assert found.node_names == ("U_start+U_end",)
+    np.testing.assert_array_equal(found.bundle_nodes, [[1, 1]])
+    assert "Both ends of bundle U are in node 1" in caplog.text
+
+
+@pytest.mark.parametrize("angle", [60.0, 90.0])
+def test_thick_bundles_leaving_one_hub_at_an_angle_share_their_start(
+    angle: float, caplog: pytest.LogCaptureFixture
+) -> None:
+    hub = np.array([4.0, 12.0, 5.0])
+    bundles = []
+    for k, sign in enumerate((1, -1)):
+        half = math.radians(angle / 2)
+        direction = np.array([math.cos(half), sign * math.sin(half), 0.0])
+        line = np.array([hub, hub + 7.5 * direction, hub + 15 * direction])
+        geometry = BundleGeometry(
+            line, num_streamlines=60, radius=3.0, num_points=40, seed=k
+        )
+        bundles.append(Bundle(geometry))
+    grid = Grid((24, 24, 12), np.eye(4))
+    with caplog.at_level(logging.WARNING, logger="larmor"):
+        found = ground_truth_connectome(_partition_on(grid, *bundles))
+    assert caplog.records == []
+    assert len(found.node_names) == 3
+    np.testing.assert_array_equal(found.bundle_nodes, [[1, 2], [1, 3]])
+
+
+def test_parallel_tubes_whose_discs_touch_stay_four_nodes(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    found = _quiet(
+        caplog,
+        _tube([[3, 4, 4], [16, 4, 4]], radius=2.0, seed=1),
+        _tube([[3, 8, 4], [16, 8, 4]], radius=2.0, seed=2),
+    )
+    assert len(found.node_names) == 4
+    np.testing.assert_array_equal(found.bundle_nodes, [[1, 2], [3, 4]])
+
+
+def test_a_fanned_bundle_stored_in_mixed_directions_has_two_ends(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    geometry = BundleGeometry(
+        np.array([[3.0, 6, 4], [16, 6, 4]]),
+        num_streamlines=60,
+        radius=1.0,
+        num_points=40,
+        fan_start=2.0,
+        fan_end=2.0,
+        seed=0,
+    )
+    drawn = create_bundle(geometry).points.reshape(60, 40, 3)
+    drawn[::3] = drawn[::3, ::-1]
+    tractogram = Tractogram(drawn.reshape(-1, 3), np.arange(0, 60 * 40 + 1, 40))
+    found = _quiet(caplog, Bundle(tractogram))
+    assert found.node_names == ("bundle_1_start", "bundle_1_end")
+    np.testing.assert_array_equal(found.bundle_nodes, [[1, 2]])

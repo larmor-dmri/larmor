@@ -12,9 +12,9 @@ from larmor._log import LarmorLogger
 from larmor.simulation.phantom import VoxelPartition
 from larmor.types import Grid, Tractogram, Volume
 
-# Two ends are one node when they share at least this fraction of the smaller
-# end's voxels.
-MERGE_OVERLAP: Final = 0.2
+# The percentile of its endpoints' distances from its centre that is an end's
+# radius.
+END_RADIUS_PERCENTILE: Final = 90.0
 
 
 @dataclass(frozen=True, eq=False)
@@ -24,11 +24,13 @@ class GroundTruthConnectome:
     Each bundle has two ends, the voxels its streamlines start in and the
     voxels they stop in, inside the grid: a streamline that leaves the grid ends
     where it leaves, and one whose two ends are in the same voxel is left out.
-    Ends that share at least a fifth of the smaller one's voxels are one node,
-    so bundles that start at the same place connect the same region; a voxel
-    that ends of different nodes share goes to the one with the most endpoints
-    in it. The nodes are numbered 1 to N in the order of the bundles and their
-    ends.
+    Two ends are one node when their centres, the mean of their endpoints, are
+    closer than the larger end's radius: the distance from its centre within
+    which 90% of its endpoints lie, and at least one voxel. Bundles drawn from
+    the same point therefore start in the same node, whatever their
+    directions. A voxel that ends of different nodes share goes to the one with
+    the most endpoints in it. The nodes are numbered 1 to N in the order of the
+    bundles and their ends.
 
     Attributes:
         parcellation: The node of each voxel, 0 where no bundle ends, on the
@@ -85,13 +87,14 @@ def ground_truth_connectome(
             f"bundle_names must name {count} bundles, got {len(bundle_names)}."
         )
     names = _node_names(bundle_names, count)
-    # Ends 2k and 2k + 1 are the start and the end of bundle k; each is its
-    # voxels and the number of endpoints in each.
-    regions: list[tuple[np.ndarray, np.ndarray]] = []
+    # Ends 2k and 2k + 1 are the start and the end of bundle k, as endpoints.
+    ends: list[np.ndarray] = []
     for tractogram in partition.streamlines:
-        starts, stops = _oriented_ends(*_ends_in_grid(tractogram, grid))
-        regions += [_voxels(starts, grid), _voxels(stops, grid)]
-    root = _merge_overlapping([voxels for voxels, _ in regions])
+        ends += _oriented_ends(*_ends_in_grid(tractogram, grid))
+    # Each end's voxels and the number of endpoints in each.
+    regions = [_voxels(points, grid) for points in ends]
+    voxel_size = float(np.linalg.norm(grid.affine[:3, :3], axis=0).max())
+    root = _merge_near(ends, voxel_size)
 
     node_of_root: dict[int, int] = {}
     end_node = np.zeros(2 * count, dtype=np.int64)
@@ -209,7 +212,10 @@ def _oriented_ends(
     `first` and `last` are each streamline's first and last point. A streamline
     is reversed when its ends lie closer to the other end of the bundle. The
     bundle's ends are taken first from one streamline, then from the mean of the
-    turned streamlines, so one odd streamline does not decide.
+    turned streamlines, so one odd streamline does not decide. The streamlines
+    are kept as they are unless turning them at least halves the radius of the
+    ends: a bundle that ends where it starts has one cloud of endpoints, which
+    turning would only split in two.
     """
     if len(first) == 0:
         return first, last
@@ -226,7 +232,16 @@ def _oriented_ends(
         starts = np.where(flip, last, first)
         stops = np.where(flip, first, last)
         head, tail = starts.mean(axis=0), stops.mean(axis=0)
+    stored = _radius(first) + _radius(last)
+    if _radius(starts) + _radius(stops) > 0.5 * stored:
+        return first, last
     return starts, stops
+
+
+def _radius(points: np.ndarray) -> float:
+    """Returns the distance from the points' mean within which 90% of them lie."""
+    distances = np.linalg.norm(points - points.mean(axis=0), axis=1)
+    return float(np.percentile(distances, END_RADIUS_PERCENTILE))
 
 
 def _nearest_voxels(points: np.ndarray, grid: Grid) -> tuple[np.ndarray, np.ndarray]:
@@ -250,35 +265,34 @@ def _voxels(points: np.ndarray, grid: Grid) -> tuple[np.ndarray, np.ndarray]:
     return voxels, counts
 
 
-def _merge_overlapping(regions: list[np.ndarray]) -> list[int]:
-    """Returns, for each region, the first region joined to it through overlaps.
+def _merge_near(ends: list[np.ndarray], voxel_size: float) -> list[int]:
+    """Returns, for each end, the first end joined to it by nearby centres.
 
-    Two regions are joined when they share at least MERGE_OVERLAP of the smaller
-    one's voxels, and so are regions joined through others.
+    Two ends are joined when their centres are closer than the larger one's
+    radius (at least `voxel_size`), and so are ends joined through others. An
+    end without points is joined to none.
 
     Returns:
-        One region index per region, the same for the regions of one group.
+        One end index per end, the same for the ends of one group.
     """
-    parent = list(range(len(regions)))
+    parent = list(range(len(ends)))
 
     def find(i: int) -> int:
-        """Returns the region that stands for region i's group."""
+        """Returns the end that stands for end i's group."""
         while parent[i] != i:
             parent[i] = parent[parent[i]]
             i = parent[i]
         return i
 
-    for i, first in enumerate(regions):
-        for j in range(i + 1, len(regions)):
-            second = regions[j]
-            smaller = min(len(first), len(second))
-            if smaller == 0:
-                continue
-            shared = len(np.intersect1d(first, second, assume_unique=True))
-            if shared > 0 and shared >= MERGE_OVERLAP * smaller:
+    kept = [i for i, points in enumerate(ends) if len(points)]
+    centres = {i: ends[i].mean(axis=0) for i in kept}
+    radii = {i: max(_radius(ends[i]), voxel_size) for i in kept}
+    for a, i in enumerate(kept):
+        for j in kept[a + 1 :]:
+            if np.linalg.norm(centres[i] - centres[j]) < max(radii[i], radii[j]):
                 low, high = sorted((find(i), find(j)))
                 parent[high] = low
-    return [find(i) for i in range(len(regions))]
+    return [find(i) for i in range(len(ends))]
 
 
 def _cross_sections(partition: VoxelPartition) -> np.ndarray:

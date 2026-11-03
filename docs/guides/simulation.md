@@ -174,9 +174,9 @@ coordinates, and are NaN where a voxel has fewer peaks.
 
 The ground-truth connectome records which regions the bundles join, for drawn bundles and loaded tractograms
 alike. Each bundle has two ends, the voxels where its streamlines start and the voxels where they stop, after the
-streamlines are turned to run the same way. A streamline that leaves the grid ends where it leaves. Ends of
-different bundles that share a voxel become one node, so bundles drawn from the same point start in the same
-region. A node is named after the ends it holds, such as `CST_start+AF_end`, using the bundle names of the phantom
+streamlines are turned to run the same way. A streamline that leaves the grid ends where it leaves. Two ends
+become one node when their centres are closer than the width of the wider end, so bundles drawn from the same
+point start in the same region, whatever direction they leave in. A node is named after the ends it holds, such as `CST_start+AF_end`, using the bundle names of the phantom
 file. A bundle whose two ends fall in one node joins that node to itself, on the diagonal, with a warning.
 `simulation.json` lists the two nodes of each bundle and its cross-section, the volume it fills divided by the mean
 length of its streamlines. The proportions use this cross-section rather than the number of streamlines, which for
