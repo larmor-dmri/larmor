@@ -1,5 +1,5 @@
+import logging
 import math
-import warnings
 
 import numpy as np
 import pytest
@@ -33,18 +33,31 @@ def _partition(*bundles: Bundle) -> VoxelPartition:
 
 
 def _connectome(*bundles: Bundle) -> GroundTruthConnectome:
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-        return ground_truth_connectome(_partition(*bundles))
+    return ground_truth_connectome(_partition(*bundles))
+
+
+def _quiet(caplog: pytest.LogCaptureFixture, *bundles: Bundle) -> GroundTruthConnectome:
+    with caplog.at_level(logging.WARNING, logger="larmor"):
+        found = _connectome(*bundles)
+    assert caplog.records == []
+    return found
+
+
+def _tractogram(lines: list[np.ndarray]) -> Tractogram:
+    offsets = np.cumsum([0, *(len(line) for line in lines)])
+    return Tractogram(np.concatenate(lines), offsets)
+
+
+def _line(start: list[float], stop: list[float]) -> np.ndarray:
+    return np.linspace(start, stop, 30)
 
 
 def _straight(ys: list[float], *, reverse_odd: bool = False) -> Tractogram:
-    x = np.linspace(3.0, 16.0, 30)
     lines = []
     for i, y in enumerate(ys):
-        line = np.stack([x, np.full_like(x, y), np.full_like(x, 4.0)], axis=1)
+        line = _line([3.0, y, 4.0], [16.0, y, 4.0])
         lines.append(line[::-1] if reverse_odd and i % 2 else line)
-    return Tractogram(np.concatenate(lines), np.arange(0, 30 * len(ys) + 1, 30))
+    return _tractogram(lines)
 
 
 def test_two_separate_equal_tubes_give_four_nodes_and_half_the_share_each() -> None:
@@ -82,11 +95,25 @@ def test_bundles_starting_at_one_point_share_a_node() -> None:
     assert found.connected[1, 2] == 0
 
 
-def test_a_bundle_looping_back_to_its_start_is_on_the_diagonal_with_a_warning() -> None:
+def test_a_bundle_looping_back_to_its_start_is_on_the_diagonal_with_a_warning(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     straight = _tube([[3, 2, 4], [16, 2, 4]], seed=1)
-    loop = _tube([[3, 7, 4], [15, 7, 4], [3, 7.3, 4]], seed=2)
-    with pytest.warns(UserWarning, match="Both ends of bundle bundle_2"):
-        found = ground_truth_connectome(_partition(straight, loop))
+    # Each streamline returns one voxel over from where it left, so the
+    # bundle's start and end voxels largely coincide.
+    loop = Bundle(
+        _tractogram(
+            [
+                np.concatenate(
+                    [_line([3, y, 4], [15, y, 4]), _line([15, y, 4], [3, y + 1, 4])[1:]]
+                )
+                for y in (6.0, 7, 8, 9)
+            ]
+        )
+    )
+    with caplog.at_level(logging.WARNING, logger="larmor"):
+        found = _connectome(straight, loop)
+    assert "Both ends of bundle bundle_2 are in node 3" in caplog.text
     np.testing.assert_array_equal(found.bundle_nodes, [[1, 2], [3, 3]])
     assert found.node_names[2] == "bundle_2_start+bundle_2_end"
     assert found.connected[2, 2] == 1
@@ -94,23 +121,59 @@ def test_a_bundle_looping_back_to_its_start_is_on_the_diagonal_with_a_warning() 
     assert np.triu(found.proportion).sum() == pytest.approx(1.0)
 
 
-def test_a_bundle_leaving_the_grid_ends_where_it_leaves() -> None:
-    found = _connectome(_tube([[3, 6, 4], [30, 6, 4]]))
+def test_a_bundle_leaving_the_grid_ends_where_it_leaves(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    found = _quiet(caplog, _tube([[3, 6, 4], [30, 6, 4]]))
     np.testing.assert_array_equal(found.bundle_nodes, [[1, 2]])
     ends = np.argwhere(found.parcellation.data == 2)
     assert (ends[:, 0] == GRID.shape[0] - 1).all()
 
 
-def test_a_bundle_outside_the_grid_connects_nothing_with_a_warning() -> None:
+def test_a_bundle_outside_the_grid_connects_nothing_with_a_warning(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     inside = _tube([[3, 6, 4], [16, 6, 4]])
     outside = Bundle(
         Tractogram(np.array([[50.0, 50, 50], [60, 50, 50]]), np.array([0, 2]))
     )
-    with pytest.warns(UserWarning, match="no point inside the grid"):
-        found = ground_truth_connectome(_partition(inside, outside))
+    with caplog.at_level(logging.WARNING, logger="larmor"):
+        found = _connectome(inside, outside)
+    assert "bundle_2 has no streamline inside the grid" in caplog.text
     np.testing.assert_array_equal(found.bundle_nodes, [[1, 2], [0, 0]])
     assert found.connected.shape == (2, 2)
     assert found.proportion[0, 1] == pytest.approx(1.0)
+
+
+def test_a_streamline_clipping_a_corner_of_the_grid_is_left_out(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    clean = [
+        _line([3.0, 5 + 0.1 * i, 4.0], [16.0, 5 + 0.1 * i, 4.0]) for i in range(30)
+    ]
+    corner = np.array([[-3.0, 0, 0], [0.2, 0.2, 0.2], [-3, 5, 0]])
+    found = _quiet(caplog, Bundle(_tractogram([*clean, corner])))
+    assert found.node_names == ("bundle_1_start", "bundle_1_end")
+    np.testing.assert_array_equal(found.bundle_nodes, [[1, 2]])
+    assert found.parcellation.data[0, 0, 0] == 0
+
+
+def test_a_stray_end_in_another_bundles_end_keeps_the_nodes_apart(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    # A ends on 25 voxels at x = 16; B's stray streamline adds one of them to
+    # B's 9-voxel end, an overlap of 1/10, under the merge threshold.
+    spread = [(y, z) for y in (1.0, 2, 3, 4, 5) for z in (2.0, 3, 4, 5, 6)]
+    a = _tractogram([_line([3, y, z], [16, y, z]) for y, z in spread])
+    near = [(y, z) for y in (7.0, 8, 9) for z in (3.0, 4, 5)]
+    b_lines = [_line([3, y, z], [16, y, z]) for y, z in near]
+    b = _tractogram([*b_lines, _line([3.0, 8, 4], [16.0, 3, 4])])
+    found = _quiet(caplog, Bundle(a), Bundle(b))
+    np.testing.assert_array_equal(found.bundle_nodes, [[1, 2], [3, 4]])
+    assert len(found.node_names) == 4
+    labels = found.parcellation.data
+    assert (labels[16, 1:6, 2:7] == 2).all()
+    assert (labels[16, 7:10, 3:6] == 4).all()
 
 
 def test_streamlines_stored_in_both_directions_give_one_start_and_one_end() -> None:
@@ -150,16 +213,24 @@ def test_endpoint_nodes_on_the_parcellation_give_each_bundle_its_two_nodes() -> 
         assert np.sort(assigned, axis=1).tolist() == [expected] * len(assigned)
 
 
-def test_bundle_names_are_made_safe_and_empty_ones_numbered() -> None:
+@pytest.mark.parametrize(
+    ("names", "expected"),
+    [
+        ([" CST left/1 ", "", "AF"], ["CST_left_1", "bundle_2", "AF"]),
+        (["CST", "AF", "CST"], ["CST_1", "AF", "CST_3"]),
+    ],
+)
+def test_bundle_names_are_made_safe_numbered_when_empty_and_told_apart(
+    names: list[str], expected: list[str]
+) -> None:
     partition = _partition(
-        _tube([[3, 3, 4], [16, 3, 4]]), _tube([[3, 8, 4], [16, 8, 4]])
+        _tube([[3, 2, 2], [16, 2, 2]]),
+        _tube([[3, 6, 4], [16, 6, 4]]),
+        _tube([[3, 10, 6], [16, 10, 6]]),
     )
-    found = ground_truth_connectome(partition, bundle_names=[" CST left/1 ", ""])
-    assert found.node_names == (
-        "CST_left_1_start",
-        "CST_left_1_end",
-        "bundle_2_start",
-        "bundle_2_end",
+    found = ground_truth_connectome(partition, bundle_names=names)
+    assert found.node_names == tuple(
+        f"{name}_{side}" for name in expected for side in ("start", "end")
     )
 
 

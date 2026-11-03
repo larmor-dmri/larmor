@@ -1,14 +1,20 @@
 """The ground-truth connectome of a phantom, from where its bundles end."""
 
 import re
-import warnings
+from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Final
 
 import numpy as np
 
+from larmor._log import LarmorLogger
 from larmor.simulation.phantom import VoxelPartition
 from larmor.types import Grid, Tractogram, Volume
+
+# Two ends are one node when they share at least this fraction of the smaller
+# end's voxels.
+MERGE_OVERLAP: Final = 0.2
 
 
 @dataclass(frozen=True, eq=False)
@@ -17,22 +23,26 @@ class GroundTruthConnectome:
 
     Each bundle has two ends, the voxels its streamlines start in and the
     voxels they stop in, inside the grid: a streamline that leaves the grid ends
-    where it leaves. Ends of different bundles that share a voxel are one
-    node, so bundles that start at the same place connect the same region. The
-    nodes are numbered 1 to N in the order of the bundles and their ends.
+    where it leaves, and one whose two ends are in the same voxel is left out.
+    Ends that share at least a fifth of the smaller one's voxels are one node,
+    so bundles that start at the same place connect the same region; a voxel
+    that ends of different nodes share goes to the one with the most endpoints
+    in it. The nodes are numbered 1 to N in the order of the bundles and their
+    ends.
 
     Attributes:
         parcellation: The node of each voxel, 0 where no bundle ends, on the
             phantom's grid. `lar connectome` with this image (and its default
             radial search) assigns tracked streamlines to the same nodes.
         node_names: One name per node, the ends it holds joined by "+", such as
-            "CST_start+AF_end".
+            "CST_start+AF_end". Bundles that share a name get their number
+            added, such as "CST_1" and "CST_3".
         connected: (N, N) symmetric, 1 where a bundle joins the two nodes, else 0.
         proportion: (N, N) symmetric, the share of the bundles' total
             cross-section that joins the two nodes; the upper triangle, diagonal
             included, sums to 1.
         bundle_nodes: (B, 2) int64, the nodes of each bundle's start and end; 0
-            for both ends of a bundle with no point inside the grid.
+            for both ends of a bundle with no streamline inside the grid.
         cross_section: (B,) each bundle's mean cross-section in mm^2, the
             volume it fills divided by the mean length of its streamlines.
     """
@@ -52,8 +62,9 @@ def ground_truth_connectome(
 
     A bundle's streamlines are first turned to run the same way, so that its
     start is where most of them start. A bundle whose two ends share a node
-    connects that node to itself, on the diagonal, with a warning. A bundle
-    entirely outside the grid connects nothing, with a warning.
+    connects that node to itself, on the diagonal, with a logged warning. A
+    bundle with no streamline inside the grid connects nothing, with a logged
+    warning.
 
     Args:
         partition: The voxel partition of a simulation, such as
@@ -73,21 +84,19 @@ def ground_truth_connectome(
         raise ValueError(
             f"bundle_names must name {count} bundles, got {len(bundle_names)}."
         )
-    names = [
-        _node_name(bundle_names[k] if bundle_names is not None else "", k)
-        for k in range(count)
-    ]
-    # Ends 2k and 2k + 1 are the start and the end of bundle k.
-    regions = []
+    names = _node_names(bundle_names, count)
+    # Ends 2k and 2k + 1 are the start and the end of bundle k; each is its
+    # voxels and the number of endpoints in each.
+    regions: list[tuple[np.ndarray, np.ndarray]] = []
     for tractogram in partition.streamlines:
         starts, stops = _oriented_ends(*_ends_in_grid(tractogram, grid))
         regions += [_voxels(starts, grid), _voxels(stops, grid)]
-    root = _merge_overlapping(regions, int(np.prod(grid.shape)))
+    root = _merge_overlapping([voxels for voxels, _ in regions])
 
     node_of_root: dict[int, int] = {}
     end_node = np.zeros(2 * count, dtype=np.int64)
     end_names: dict[int, list[str]] = {}
-    for end, region in enumerate(regions):
+    for end, (region, _) in enumerate(regions):
         if len(region) == 0:
             continue
         node = node_of_root.setdefault(root[end], len(node_of_root) + 1)
@@ -95,8 +104,11 @@ def ground_truth_connectome(
         side = "start" if end % 2 == 0 else "end"
         end_names.setdefault(node, []).append(f"{names[end // 2]}_{side}")
     labels = np.zeros(int(np.prod(grid.shape)), dtype=np.int32)
-    for end, region in enumerate(regions):
-        labels[region] = end_node[end]
+    most = np.zeros(int(np.prod(grid.shape)), dtype=np.int64)
+    for end, (region, counts) in enumerate(regions):
+        more = counts > most[region]
+        labels[region[more]] = end_node[end]
+        most[region[more]] = counts[more]
 
     bundle_nodes = end_node.reshape(count, 2)
     cross_section = _cross_sections(partition)
@@ -128,17 +140,18 @@ def _matrices(
     proportion = np.zeros((num_nodes, num_nodes))
     for k, (a, b) in enumerate(bundle_nodes.tolist()):
         if a == 0 or b == 0:
-            warnings.warn(
-                f"Bundle {names[k]} has no point inside the grid; it connects "
-                "nothing in the ground-truth connectome.",
-                stacklevel=3,
+            LarmorLogger.warning(
+                "Bundle %s has no streamline inside the grid; it connects nothing "
+                "in the ground-truth connectome.",
+                names[k],
             )
             continue
         if a == b:
-            warnings.warn(
-                f"Both ends of bundle {names[k]} are in node {a}; it connects the "
-                "node to itself in the ground-truth connectome.",
-                stacklevel=3,
+            LarmorLogger.warning(
+                "Both ends of bundle %s are in node %d; it connects the node to "
+                "itself in the ground-truth connectome.",
+                names[k],
+                a,
             )
         connected[a - 1, b - 1] = connected[b - 1, a - 1] = 1.0
         proportion[a - 1, b - 1] += cross_section[k]
@@ -150,20 +163,27 @@ def _matrices(
     return connected, proportion
 
 
-def _node_name(name: str, index: int) -> str:
-    """Returns bundle `index`'s name made safe for a connectome file.
+def _node_names(bundle_names: Sequence[str] | None, count: int) -> list[str]:
+    """Returns a distinct name for each bundle, safe for a connectome file.
 
-    Characters other than letters, digits, "_" and "-" become "_"; an empty
-    name becomes "bundle_<index + 1>".
+    Characters other than letters, digits, "_" and "-" become "_"; a missing or
+    empty name becomes "bundle_<number>", and a name that several bundles share
+    gets "_<number>" added.
     """
-    safe = re.sub(r"[^A-Za-z0-9_-]", "_", name.strip())
-    return safe or f"bundle_{index + 1}"
+    given = list(bundle_names) if bundle_names is not None else [""] * count
+    safe = [
+        re.sub(r"[^A-Za-z0-9_-]", "_", name.strip()) or f"bundle_{k + 1}"
+        for k, name in enumerate(given)
+    ]
+    repeated = {name for name, n in Counter(safe).items() if n > 1}
+    return [f"{n}_{k + 1}" if n in repeated else n for k, n in enumerate(safe)]
 
 
 def _ends_in_grid(tractogram: Tractogram, grid: Grid) -> tuple[np.ndarray, np.ndarray]:
     """Returns the (S, 3) first and last point of each streamline inside the grid.
 
-    Streamlines with no point inside the grid are left out.
+    Streamlines with no point inside the grid, or whose two points are in the
+    same voxel, are left out.
     """
     points = tractogram.points.astype(np.float64)
     _, inside = _nearest_voxels(points, grid)
@@ -174,7 +194,11 @@ def _ends_in_grid(tractogram: Tractogram, grid: Grid) -> tuple[np.ndarray, np.nd
     owner = np.searchsorted(tractogram.offsets, kept, side="right") - 1
     _, first = np.unique(owner, return_index=True)
     last = np.append(first[1:], len(kept)) - 1
-    return points[kept[first]], points[kept[last]]
+    starts, stops = points[kept[first]], points[kept[last]]
+    apart = np.any(
+        _nearest_voxels(starts, grid)[0] != _nearest_voxels(stops, grid)[0], axis=1
+    )
+    return starts[apart], stops[apart]
 
 
 def _oriented_ends(
@@ -214,18 +238,27 @@ def _nearest_voxels(points: np.ndarray, grid: Grid) -> tuple[np.ndarray, np.ndar
     return nearest, inside
 
 
-def _voxels(points: np.ndarray, grid: Grid) -> np.ndarray:
-    """Returns the sorted flat indices (C order) of the voxels holding the points.
+def _voxels(points: np.ndarray, grid: Grid) -> tuple[np.ndarray, np.ndarray]:
+    """Returns the voxels holding the points and the number of points in each.
 
-    Points outside the grid are left out.
+    The voxels are sorted flat indices (C order); points outside the grid are
+    left out.
     """
     nearest, inside = _nearest_voxels(points, grid)
     flat = np.ravel_multi_index(tuple(nearest[inside].T), grid.shape)
-    return np.unique(flat)
+    voxels, counts = np.unique(flat, return_counts=True)
+    return voxels, counts
 
 
-def _merge_overlapping(regions: list[np.ndarray], num_voxels: int) -> list[int]:
-    """Returns, for each region, the first region joined to it through shared voxels."""
+def _merge_overlapping(regions: list[np.ndarray]) -> list[int]:
+    """Returns, for each region, the first region joined to it through overlaps.
+
+    Two regions are joined when they share at least MERGE_OVERLAP of the smaller
+    one's voxels, and so are regions joined through others.
+
+    Returns:
+        One region index per region, the same for the regions of one group.
+    """
     parent = list(range(len(regions)))
 
     def find(i: int) -> int:
@@ -235,13 +268,16 @@ def _merge_overlapping(regions: list[np.ndarray], num_voxels: int) -> list[int]:
             i = parent[i]
         return i
 
-    owner = np.full(num_voxels, -1, dtype=np.int64)
-    for index, region in enumerate(regions):
-        for other in np.unique(owner[region]).tolist():
-            if other >= 0:
-                low, high = sorted((find(index), find(other)))
+    for i, first in enumerate(regions):
+        for j in range(i + 1, len(regions)):
+            second = regions[j]
+            smaller = min(len(first), len(second))
+            if smaller == 0:
+                continue
+            shared = len(np.intersect1d(first, second, assume_unique=True))
+            if shared > 0 and shared >= MERGE_OVERLAP * smaller:
+                low, high = sorted((find(i), find(j)))
                 parent[high] = low
-        owner[region[owner[region] < 0]] = index
     return [find(i) for i in range(len(regions))]
 
 
