@@ -587,68 +587,74 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.CompartmentSignal" title="larmor.simulation.CompartmentSignal"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CompartmentSignal</span></code></a></p></td>
 <td><p>One compartment's share of a voxel's signal, factor by factor.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.GroundTruthConnectome" title="larmor.simulation.GroundTruthConnectome"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GroundTruthConnectome</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.GroundTruth" title="larmor.simulation.GroundTruth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GroundTruth</span></code></a></p></td>
+<td><p>What a simulated phantom truly holds, to compare an analysis of its images with.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.GroundTruthConnectome" title="larmor.simulation.GroundTruthConnectome"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GroundTruthConnectome</span></code></a></p></td>
 <td><p>The regions the bundles of a phantom connect, and how strongly.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.Phantom" title="larmor.simulation.Phantom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Phantom</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.Phantom" title="larmor.simulation.Phantom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Phantom</span></code></a></p></td>
 <td><p>An object to simulate, made of tissues placed on a voxel grid.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.PhantomFile" title="larmor.simulation.PhantomFile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PhantomFile</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.PhantomFile" title="larmor.simulation.PhantomFile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PhantomFile</span></code></a></p></td>
 <td><p>What a phantom file holds, as <a class="reference internal" href="#larmor.simulation.read_phantom" title="larmor.simulation.read_phantom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_phantom</span></code></a> returns it.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.Protocol" title="larmor.simulation.Protocol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Protocol</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.Protocol" title="larmor.simulation.Protocol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Protocol</span></code></a></p></td>
 <td><p>A diffusion-weighted scan: the gradient table and the pulse timings.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.PulseSequence" title="larmor.simulation.PulseSequence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PulseSequence</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.PulseSequence" title="larmor.simulation.PulseSequence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PulseSequence</span></code></a></p></td>
 <td><p>The kind of echo, which decides whether T2 or T2* weights the signal.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.SignalBreakdown" title="larmor.simulation.SignalBreakdown"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SignalBreakdown</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.SignalBreakdown" title="larmor.simulation.SignalBreakdown"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SignalBreakdown</span></code></a></p></td>
 <td><p>The noise-free signal of one voxel in one volume, split into its factors.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.SimulatedDWI" title="larmor.simulation.SimulatedDWI"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SimulatedDWI</span></code></a></p></td>
-<td><p>Holds the images, the ground truth and the inputs that <a class="reference internal" href="#larmor.simulation.simulate" title="larmor.simulation.simulate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simulate</span></code></a> returns.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.SimulatedDWI" title="larmor.simulation.SimulatedDWI"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SimulatedDWI</span></code></a></p></td>
+<td><p>Holds the images that <a class="reference internal" href="#larmor.simulation.simulate" title="larmor.simulation.simulate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simulate</span></code></a> returns, with the scan and the noise.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.SimulationFiles" title="larmor.simulation.SimulationFiles"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SimulationFiles</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.SimulationFiles" title="larmor.simulation.SimulationFiles"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SimulationFiles</span></code></a></p></td>
 <td><p>The files <a class="reference internal" href="#larmor.simulation.save_simulation" title="larmor.simulation.save_simulation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_simulation</span></code></a> writes, all inside one folder.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.Tissue" title="larmor.simulation.Tissue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Tissue</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.Tissue" title="larmor.simulation.Tissue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Tissue</span></code></a></p></td>
 <td><p>A named tissue made of compartments whose fractions sum to 1.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.TissueMap" title="larmor.simulation.TissueMap"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TissueMap</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.TissueMap" title="larmor.simulation.TissueMap"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TissueMap</span></code></a></p></td>
 <td><p>The fraction of one tissue in each voxel, such as a grey matter probability.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.VoxelPartition" title="larmor.simulation.VoxelPartition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">VoxelPartition</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.VoxelPartition" title="larmor.simulation.VoxelPartition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">VoxelPartition</span></code></a></p></td>
 <td><p>How each voxel of a phantom is split between its tissues and fibres.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.add_noise" title="larmor.simulation.add_noise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_noise</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.add_noise" title="larmor.simulation.add_noise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_noise</span></code></a></p></td>
 <td><p>Adds complex Gaussian noise to noise-free signals and takes the magnitude.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.create_bundle" title="larmor.simulation.create_bundle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_bundle</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.create_bundle" title="larmor.simulation.create_bundle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_bundle</span></code></a></p></td>
 <td><p>Creates the streamlines of a synthetic bundle.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.create_gradient_table" title="larmor.simulation.create_gradient_table"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_gradient_table</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.create_gradient_table" title="larmor.simulation.create_gradient_table"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_gradient_table</span></code></a></p></td>
 <td><p>Creates a multi-shell gradient table with evenly spread directions.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.csf_tissue" title="larmor.simulation.csf_tissue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">csf_tissue</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.csf_tissue" title="larmor.simulation.csf_tissue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">csf_tissue</span></code></a></p></td>
 <td><p>Makes a cerebrospinal fluid tissue, <a class="reference internal" href="#larmor.simulation.free_water_tissue" title="larmor.simulation.free_water_tissue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">free_water_tissue</span></code></a> named &quot;CSF&quot;.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.default_tissues" title="larmor.simulation.default_tissues"><code class="xref py py-obj docutils literal notranslate"><span class="pre">default_tissues</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.default_tissues" title="larmor.simulation.default_tissues"><code class="xref py py-obj docutils literal notranslate"><span class="pre">default_tissues</span></code></a></p></td>
 <td><p>Returns the predefined tissues WM (standard model), GM (SANDI) and CSF.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.example_phantom" title="larmor.simulation.example_phantom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">example_phantom</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.example_phantom" title="larmor.simulation.example_phantom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">example_phantom</span></code></a></p></td>
 <td><p>Reads a phantom that ships with Larmor, with its scan.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.free_water_tissue" title="larmor.simulation.free_water_tissue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">free_water_tissue</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.free_water_tissue" title="larmor.simulation.free_water_tissue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">free_water_tissue</span></code></a></p></td>
 <td><p>Makes a free water tissue, one FREE_WATER compartment with signal exp(-b D).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.ground_truth_connectome" title="larmor.simulation.ground_truth_connectome"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ground_truth_connectome</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.ground_truth_connectome" title="larmor.simulation.ground_truth_connectome"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ground_truth_connectome</span></code></a></p></td>
 <td><p>Builds the connectome the bundles of a phantom define.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.noddi_tissue" title="larmor.simulation.noddi_tissue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">noddi_tissue</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.noddi_tissue" title="larmor.simulation.noddi_tissue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">noddi_tissue</span></code></a></p></td>
 <td><p>Makes a NODDI white matter tissue: Watson sticks, zeppelin and free water.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.partition_voxels" title="larmor.simulation.partition_voxels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">partition_voxels</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.partition_voxels" title="larmor.simulation.partition_voxels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">partition_voxels</span></code></a></p></td>
 <td><p>Splits each voxel of a phantom between its tissues, fibres and background.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.read_ground_truth" title="larmor.simulation.read_ground_truth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_ground_truth</span></code></a></p></td>
+<td><p>Reads the ground truth of a simulation from the folder <a class="reference internal" href="#larmor.simulation.save_simulation" title="larmor.simulation.save_simulation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_simulation</span></code></a> wrote.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.read_phantom" title="larmor.simulation.read_phantom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_phantom</span></code></a></p></td>
 <td><p>Reads a phantom file written by <a class="reference internal" href="#larmor.simulation.write_phantom" title="larmor.simulation.write_phantom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_phantom</span></code></a>.</p></td>
@@ -1192,6 +1198,149 @@ bundles.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="larmor.simulation.GroundTruth">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.simulation.</span></span><span class="sig-name descname"><span class="pre">GroundTruth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phantom</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tissue_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tissue_fractions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">background</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bundle_fractions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">streamlines</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peaks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">connectome</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bundle_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">partition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.GroundTruth" title="Link to this definition">#</a></dt>
+<dd><p>What a simulated phantom truly holds, to compare an analysis of its images with.</p>
+<p><a class="reference internal" href="#larmor.simulation.simulate" title="larmor.simulation.simulate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simulate</span></code></a> returns it next to the images, and <a class="reference internal" href="#larmor.simulation.read_ground_truth" title="larmor.simulation.read_ground_truth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_ground_truth</span></code></a> reads it
+back from a folder that <a class="reference internal" href="#larmor.simulation.save_simulation" title="larmor.simulation.save_simulation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_simulation</span></code></a> wrote. The maps are on the
+phantom’s grid, (X, Y, Z) with the axes and affine of <a class="reference internal" href="#larmor.simulation.GroundTruth.grid" title="larmor.simulation.GroundTruth.grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">grid</span></code></a>, and hold
+volume fractions from 0 to 1.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.simulation.GroundTruth.phantom">
+<span class="sig-name descname"><span class="pre">phantom</span></span><a class="headerlink" href="#larmor.simulation.GroundTruth.phantom" title="Link to this definition">#</a></dt>
+<dd><p>The phantom simulated, with a seed on every bundle geometry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#larmor.simulation.Phantom" title="larmor.simulation.phantom.Phantom">larmor.simulation.phantom.Phantom</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.simulation.GroundTruth.grid">
+<span class="sig-name descname"><span class="pre">grid</span></span><a class="headerlink" href="#larmor.simulation.GroundTruth.grid" title="Link to this definition">#</a></dt>
+<dd><p>The phantom’s grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="../types/#larmor.types.Grid" title="larmor.types.grid.Grid">larmor.types.grid.Grid</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.simulation.GroundTruth.tissue_names">
+<span class="sig-name descname"><span class="pre">tissue_names</span></span><a class="headerlink" href="#larmor.simulation.GroundTruth.tissue_names" title="Link to this definition">#</a></dt>
+<dd><p>The phantom’s tissues, in the order of tissue_fractions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>, …]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.simulation.GroundTruth.tissue_fractions">
+<span class="sig-name descname"><span class="pre">tissue_fractions</span></span><a class="headerlink" href="#larmor.simulation.GroundTruth.tissue_fractions" title="Link to this definition">#</a></dt>
+<dd><p>(X, Y, Z, T) the fraction of each voxel each tissue
+fills, without the background.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.simulation.GroundTruth.background">
+<span class="sig-name descname"><span class="pre">background</span></span><a class="headerlink" href="#larmor.simulation.GroundTruth.background" title="Link to this definition">#</a></dt>
+<dd><p>(X, Y, Z) the fraction no tissue fills.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.simulation.GroundTruth.bundle_fractions">
+<span class="sig-name descname"><span class="pre">bundle_fractions</span></span><a class="headerlink" href="#larmor.simulation.GroundTruth.bundle_fractions" title="Link to this definition">#</a></dt>
+<dd><p>(X, Y, Z, B) the fraction of each voxel each bundle
+fills; <code class="xref py py-obj docutils literal notranslate"><span class="pre">bundle_fractions[...,</span> <span class="pre">k]</span> <span class="pre">&gt;</span> <span class="pre">0</span></code> is bundle k’s mask.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.simulation.GroundTruth.streamlines">
+<span class="sig-name descname"><span class="pre">streamlines</span></span><a class="headerlink" href="#larmor.simulation.GroundTruth.streamlines" title="Link to this definition">#</a></dt>
+<dd><p>Each bundle’s streamlines, in world coordinates (mm).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a>[<a class="reference internal" href="../types/#larmor.types.Tractogram" title="larmor.types.tractogram.Tractogram">larmor.types.tractogram.Tractogram</a>, …]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.simulation.GroundTruth.peaks">
+<span class="sig-name descname"><span class="pre">peaks</span></span><a class="headerlink" href="#larmor.simulation.GroundTruth.peaks" title="Link to this definition">#</a></dt>
+<dd><p>(X, Y, Z, 3 P) the true fibre directions, in the layout
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">lar</span> <span class="pre">peaks</span></code> writes: each peak’s direction scaled by the share of the
+voxel its fibres fill, largest first, NaN where a voxel has fewer
+peaks. A bundle’s fibres within 20 degrees of each other make one
+peak; different bundles always make different peaks, however close
+their directions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.simulation.GroundTruth.connectome">
+<span class="sig-name descname"><span class="pre">connectome</span></span><a class="headerlink" href="#larmor.simulation.GroundTruth.connectome" title="Link to this definition">#</a></dt>
+<dd><p>The regions the bundles join (see <a class="reference internal" href="#larmor.simulation.GroundTruthConnectome" title="larmor.simulation.GroundTruthConnectome"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GroundTruthConnectome</span></code></a>);
+None if the phantom has no bundle or the folder it was read from
+holds none.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#larmor.simulation.GroundTruthConnectome" title="larmor.simulation.connectome.GroundTruthConnectome">larmor.simulation.connectome.GroundTruthConnectome</a> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.simulation.GroundTruth.bundle_names">
+<span class="sig-name descname"><span class="pre">bundle_names</span></span><a class="headerlink" href="#larmor.simulation.GroundTruth.bundle_names" title="Link to this definition">#</a></dt>
+<dd><p>A name for each bundle, or None.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>, …] | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="larmor.simulation.GroundTruth.partition">
+<span class="sig-name descname"><span class="pre">partition</span></span><a class="headerlink" href="#larmor.simulation.GroundTruth.partition" title="Link to this definition">#</a></dt>
+<dd><p>Each voxel’s fibres, which <a class="reference internal" href="#larmor.simulation.signal_breakdown" title="larmor.simulation.signal_breakdown"><code class="xref py py-obj docutils literal notranslate"><span class="pre">signal_breakdown</span></code></a> takes; None when
+read from a folder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#larmor.simulation.VoxelPartition" title="larmor.simulation.phantom.VoxelPartition">larmor.simulation.phantom.VoxelPartition</a> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="larmor.simulation.GroundTruthConnectome">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.simulation.</span></span><span class="sig-name descname"><span class="pre">GroundTruthConnectome</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parcellation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">connected</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proportion</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bundle_nodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cross_section</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.GroundTruthConnectome" title="Link to this definition">#</a></dt>
 <dd><p>The regions the bundles of a phantom connect, and how strongly.</p>
@@ -1662,8 +1811,10 @@ tissue; a tissue that fills bundles is listed once per bundle.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="larmor.simulation.SimulatedDWI">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.simulation.</span></span><span class="sig-name descname"><span class="pre">SimulatedDWI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">echoes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_free</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gradients</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">echo_times_ms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">partition</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phantom</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protocol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">snr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_reference</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'WM'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.SimulatedDWI" title="Link to this definition">#</a></dt>
-<dd><p>Holds the images, the ground truth and the inputs that <a class="reference internal" href="#larmor.simulation.simulate" title="larmor.simulation.simulate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simulate</span></code></a> returns.</p>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.simulation.</span></span><span class="sig-name descname"><span class="pre">SimulatedDWI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">echoes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_free</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gradients</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">echo_times_ms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protocol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">snr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_reference</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'WM'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.SimulatedDWI" title="Link to this definition">#</a></dt>
+<dd><p>Holds the images that <a class="reference internal" href="#larmor.simulation.simulate" title="larmor.simulation.simulate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simulate</span></code></a> returns, with the scan and the noise.</p>
+<p>The ground truth comes separately, as the <a class="reference internal" href="#larmor.simulation.GroundTruth" title="larmor.simulation.GroundTruth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GroundTruth</span></code></a> that <a class="reference internal" href="#larmor.simulation.simulate" title="larmor.simulation.simulate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simulate</span></code></a>
+returns next to it.</p>
 <dl class="field-list simple">
 </dl>
 <dl class="py attribute">
@@ -1712,36 +1863,12 @@ an SNR was given.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="larmor.simulation.SimulatedDWI.partition">
-<span class="sig-name descname"><span class="pre">partition</span></span><a class="headerlink" href="#larmor.simulation.SimulatedDWI.partition" title="Link to this definition">#</a></dt>
-<dd><p>The ground truth, with each voxel’s tissue fractions and
-fibres and the streamlines drawn for each bundle.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#larmor.simulation.VoxelPartition" title="larmor.simulation.phantom.VoxelPartition">larmor.simulation.phantom.VoxelPartition</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
 <dt class="sig sig-object py" id="larmor.simulation.SimulatedDWI.sigma">
 <span class="sig-name descname"><span class="pre">sigma</span></span><a class="headerlink" href="#larmor.simulation.SimulatedDWI.sigma" title="Link to this definition">#</a></dt>
 <dd><p>The noise standard deviation, or None without noise.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a> | None</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="larmor.simulation.SimulatedDWI.phantom">
-<span class="sig-name descname"><span class="pre">phantom</span></span><a class="headerlink" href="#larmor.simulation.SimulatedDWI.phantom" title="Link to this definition">#</a></dt>
-<dd><p>The phantom that was simulated, with a seed on every bundle
-geometry, so that it gives the same streamlines again.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#larmor.simulation.Phantom" title="larmor.simulation.phantom.Phantom">larmor.simulation.phantom.Phantom</a> | None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -2502,7 +2629,7 @@ warning.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>partition</strong> (<a class="reference internal" href="#larmor.simulation.VoxelPartition" title="larmor.simulation.phantom.VoxelPartition"><em>VoxelPartition</em></a>) – The voxel partition of a simulation, such as
-<a class="reference internal" href="#larmor.simulation.SimulatedDWI.partition" title="larmor.simulation.SimulatedDWI.partition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SimulatedDWI.partition</span></code></a>.</p></li>
+<a class="reference internal" href="#larmor.simulation.GroundTruth.partition" title="larmor.simulation.GroundTruth.partition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GroundTruth.partition</span></code></a>.</p></li>
 <li><p><strong>bundle_names</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence" title="(in Python v3.15)"><em>Sequence</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>] </em><em>| </em><em>None</em>) – A name for each bundle, used in the node names. Defaults
 to None; a missing or empty name becomes “bundle_&lt;number&gt;”.</p></li>
 </ul>
@@ -2617,6 +2744,34 @@ Defaults to None.</p></li>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="larmor.simulation.read_ground_truth">
+<span class="sig-prename descclassname"><span class="pre">larmor.simulation.</span></span><span class="sig-name descname"><span class="pre">read_ground_truth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.read_ground_truth" title="Link to this definition">#</a></dt>
+<dd><p>Reads the ground truth of a simulation from the folder <a class="reference internal" href="#larmor.simulation.save_simulation" title="larmor.simulation.save_simulation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_simulation</span></code></a> wrote.</p>
+<p>The files are found through the folder’s simulation.json. The fractions and
+peaks are float32, as they are stored, and the partition is None, since the
+folder does not keep each voxel’s fibres.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>folder</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The simulation folder.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The ground truth; its connectome is None for a folder written without
+one.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the folder holds no simulation.json, or it is not one that
+    <a class="reference internal" href="#larmor.simulation.save_simulation" title="larmor.simulation.save_simulation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_simulation</span></code></a> wrote.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#OSError" title="(in Python v3.15)"><strong>OSError</strong></a> – If a file cannot be read.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#larmor.simulation.GroundTruth" title="larmor.simulation.ground_truth.GroundTruth"><em>GroundTruth</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="larmor.simulation.read_phantom">
 <span class="sig-prename descclassname"><span class="pre">larmor.simulation.</span></span><span class="sig-name descname"><span class="pre">read_phantom</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.read_phantom" title="Link to this definition">#</a></dt>
 <dd><p>Reads a phantom file written by <a class="reference internal" href="#larmor.simulation.write_phantom" title="larmor.simulation.write_phantom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_phantom</span></code></a>.</p>
@@ -2710,22 +2865,23 @@ clinical brain MRI sequences for use at 3.0 Tesla. J Magn Reson Imaging
 
 <dl class="py function">
 <dt class="sig sig-object py" id="larmor.simulation.save_simulation">
-<span class="sig-prename descclassname"><span class="pre">larmor.simulation.</span></span><span class="sig-name descname"><span class="pre">save_simulation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simulated</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">folder</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bundle_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.save_simulation" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">larmor.simulation.</span></span><span class="sig-name descname"><span class="pre">save_simulation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simulated</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">truth</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">folder</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.save_simulation" title="Link to this definition">#</a></dt>
 <dd><p>Writes a simulation and its ground truth into one self-contained folder.</p>
 <p>The folder holds the DWI with its .bval and .bvec in the FSL frame, the
 ground truth, the bundles’ streamlines, the phantom file with the scan and
 simulation.json, as <a class="reference internal" href="#larmor.simulation.SimulationFiles" title="larmor.simulation.SimulationFiles"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SimulationFiles</span></code></a> lists them. Running the phantom file
-again with the seed recorded in simulation.json gives the same images.</p>
+again with the seed recorded in simulation.json gives the same images, and
+<a class="reference internal" href="#larmor.simulation.read_ground_truth" title="larmor.simulation.read_ground_truth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_ground_truth</span></code></a> reads the ground truth back.</p>
 <p>The folder is created if needed. If it holds an earlier simulation, the files
 that its simulation.json lists are removed first. A folder that holds other
 files is refused unless <code class="xref py py-obj docutils literal notranslate"><span class="pre">force</span></code> is True, which then writes into it and keeps
 them.</p>
-<p>The ground-truth peaks come from the voxel’s own fibres, not from a fit:
-fibres within 20 degrees of a larger one join its peak, a direction and its
-opposite counting as the same, and peaks below 10% of the voxel’s largest
-are dropped. Each peak’s direction is the weighted mean of its fibres. A
-tissue mask holds the voxels where the tissue, background
-included, fills at least half.</p>
+<p>The ground-truth peaks come from the voxel’s own fibres, not from a fit. A
+fibre within 20 degrees of a larger one of the same bundle joins its peak,
+a direction and its opposite counting as the same; different bundles never
+share a peak. Peaks below 10% of the voxel’s largest are dropped, and each
+peak’s direction is the weighted mean of its fibres. A tissue mask holds
+the voxels where the tissue, background included, fills at least half.</p>
 <p>The ground-truth connectome joins the voxels where each bundle’s
 streamlines start to those where they stop (see <a class="reference internal" href="#larmor.simulation.ground_truth_connectome" title="larmor.simulation.ground_truth_connectome"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ground_truth_connectome</span></code></a>),
 with a warning for a bundle that ends where it starts or outside the grid.</p>
@@ -2738,14 +2894,12 @@ with the signal fractions, which are written too.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>simulated</strong> (<a class="reference internal" href="#larmor.simulation.SimulatedDWI" title="larmor.simulation.instant.SimulatedDWI"><em>SimulatedDWI</em></a>) – The result of <a class="reference internal" href="#larmor.simulation.simulate" title="larmor.simulation.simulate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simulate</span></code></a>.</p></li>
+<li><p><strong>simulated</strong> (<a class="reference internal" href="#larmor.simulation.SimulatedDWI" title="larmor.simulation.instant.SimulatedDWI"><em>SimulatedDWI</em></a>) – The images <a class="reference internal" href="#larmor.simulation.simulate" title="larmor.simulation.simulate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simulate</span></code></a> returns.</p></li>
+<li><p><strong>truth</strong> (<a class="reference internal" href="#larmor.simulation.GroundTruth" title="larmor.simulation.ground_truth.GroundTruth"><em>GroundTruth</em></a>) – The ground truth <a class="reference internal" href="#larmor.simulation.simulate" title="larmor.simulation.simulate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simulate</span></code></a> returns with them; its bundle names
+go in the phantom file’s viewer block.</p></li>
 <li><p><strong>folder</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The output folder.</p></li>
 <li><p><strong>force</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether to write into a folder that is not empty and holds no
 simulation.json. Defaults to False.</p></li>
-<li><p><strong>bundle_names</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence" title="(in Python v3.15)"><em>Sequence</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>] </em><em>| </em><em>None</em>) – A name for each bundle, kept in the phantom file for the
-viewer and used in the connectome’s node names, such as
-<a class="reference internal" href="#larmor.simulation.PhantomFile.bundle_names" title="larmor.simulation.PhantomFile.bundle_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PhantomFile.bundle_names</span></code></a> of the file the phantom was read from.
-Defaults to None, which leaves the bundles numbered.</p></li>
 <li><p><strong>progress</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.15)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em><em>, </em><em>None</em><em>] </em><em>| </em><em>None</em>) – Called with (done, total, “save”) as the files are written.
 Defaults to None.</p></li>
 </ul>
@@ -2757,9 +2911,8 @@ Defaults to None.</p></li>
 <dd class="field-odd"><ul class="simple">
 <li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#FileExistsError" title="(in Python v3.15)"><strong>FileExistsError</strong></a> – If the folder is not empty, has no simulation.json and
     <code class="xref py py-obj docutils literal notranslate"><span class="pre">force</span></code> is False.</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If <code class="xref py py-obj docutils literal notranslate"><span class="pre">simulated</span></code> does not carry its phantom and protocol (it was
-    not made by <a class="reference internal" href="#larmor.simulation.simulate" title="larmor.simulation.simulate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simulate</span></code></a>), two tissue names give the same file name, or
-    bundle_names does not name every bundle.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If <code class="xref py py-obj docutils literal notranslate"><span class="pre">simulated</span></code> does not carry its protocol (it was not made by
+    <a class="reference internal" href="#larmor.simulation.simulate" title="larmor.simulation.simulate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simulate</span></code></a>), or two tissue names give the same file name.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -2814,7 +2967,7 @@ Reson Med 34 (1995) 910-914.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="larmor.simulation.simulate">
-<span class="sig-prename descclassname"><span class="pre">larmor.simulation.</span></span><span class="sig-name descname"><span class="pre">simulate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phantom</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protocol</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">snr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_reference</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'WM'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.simulate" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">larmor.simulation.</span></span><span class="sig-name descname"><span class="pre">simulate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phantom</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protocol</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">snr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_reference</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'WM'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bundle_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.simulate" title="Link to this definition">#</a></dt>
 <dd><p>Simulates the diffusion-weighted images of a phantom, voxel by voxel.</p>
 <p>The signal of each compartment in each voxel has a closed form, and the
 voxel’s signal is their sum, as if the whole acquisition happened at once:
@@ -2838,6 +2991,8 @@ the b = 0 signal, at the first echo time, of a voxel filled with the
 seed of their own (see <a class="reference internal" href="#larmor.simulation.partition_voxels" title="larmor.simulation.partition_voxels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">partition_voxels</span></code></a>); the same seed gives the
 same result. Defaults to None, which draws a seed and returns it in
 the result.</p></li>
+<li><p><strong>bundle_names</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence" title="(in Python v3.15)"><em>Sequence</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>] </em><em>| </em><em>None</em>) – A name for each bundle, used in the connectome’s node
+names and kept in the saved phantom file. Defaults to None.</p></li>
 <li><p><strong>n_jobs</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – The number of threads, -1 for all cores. Defaults to -1.</p></li>
 <li><p><strong>progress</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.15)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em><em>, </em><em>None</em><em>] </em><em>| </em><em>None</em>) – A function called with (done, total, stage) as the run goes
 on, where stage is “voxelise”, “signal” or “noise”; raise an
@@ -2845,14 +3000,15 @@ exception in it to cancel the run. Defaults to None.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>The images, the noise-free images and the ground truth.</p>
+<dd class="field-even"><p>The images with the noise-free images, and the ground truth.</p>
 </dd>
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If snr is not positive, the noise reference is not a tissue
-    of the phantom, or n_jobs is 0 or below -1.</p>
+    of the phantom, n_jobs is 0 or below -1, or bundle_names does not
+    name every bundle.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference internal" href="#larmor.simulation.SimulatedDWI" title="larmor.simulation.instant.SimulatedDWI"><em>SimulatedDWI</em></a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a>[<a class="reference internal" href="#larmor.simulation.SimulatedDWI" title="larmor.simulation.instant.SimulatedDWI"><em>SimulatedDWI</em></a>, <a class="reference internal" href="#larmor.simulation.GroundTruth" title="larmor.simulation.ground_truth.GroundTruth"><em>GroundTruth</em></a>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -3062,6 +3218,20 @@ random and written, so the file always gives the same streamlines.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.CompartmentSignal.signal"><code class="docutils literal notranslate"><span class="pre">CompartmentSignal.signal</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.GroundTruth"><code class="docutils literal notranslate"><span class="pre">GroundTruth</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.GroundTruth.phantom"><code class="docutils literal notranslate"><span class="pre">GroundTruth.phantom</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.GroundTruth.grid"><code class="docutils literal notranslate"><span class="pre">GroundTruth.grid</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.GroundTruth.tissue_names"><code class="docutils literal notranslate"><span class="pre">GroundTruth.tissue_names</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.GroundTruth.tissue_fractions"><code class="docutils literal notranslate"><span class="pre">GroundTruth.tissue_fractions</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.GroundTruth.background"><code class="docutils literal notranslate"><span class="pre">GroundTruth.background</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.GroundTruth.bundle_fractions"><code class="docutils literal notranslate"><span class="pre">GroundTruth.bundle_fractions</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.GroundTruth.streamlines"><code class="docutils literal notranslate"><span class="pre">GroundTruth.streamlines</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.GroundTruth.peaks"><code class="docutils literal notranslate"><span class="pre">GroundTruth.peaks</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.GroundTruth.connectome"><code class="docutils literal notranslate"><span class="pre">GroundTruth.connectome</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.GroundTruth.bundle_names"><code class="docutils literal notranslate"><span class="pre">GroundTruth.bundle_names</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.GroundTruth.partition"><code class="docutils literal notranslate"><span class="pre">GroundTruth.partition</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.GroundTruthConnectome"><code class="docutils literal notranslate"><span class="pre">GroundTruthConnectome</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.GroundTruthConnectome.parcellation"><code class="docutils literal notranslate"><span class="pre">GroundTruthConnectome.parcellation</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.GroundTruthConnectome.node_names"><code class="docutils literal notranslate"><span class="pre">GroundTruthConnectome.node_names</span></code></a></li>
@@ -3118,9 +3288,7 @@ random and written, so the file always gives the same streamlines.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.SimulatedDWI.noise_free"><code class="docutils literal notranslate"><span class="pre">SimulatedDWI.noise_free</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.SimulatedDWI.gradients"><code class="docutils literal notranslate"><span class="pre">SimulatedDWI.gradients</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.SimulatedDWI.echo_times_ms"><code class="docutils literal notranslate"><span class="pre">SimulatedDWI.echo_times_ms</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.SimulatedDWI.partition"><code class="docutils literal notranslate"><span class="pre">SimulatedDWI.partition</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.SimulatedDWI.sigma"><code class="docutils literal notranslate"><span class="pre">SimulatedDWI.sigma</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.SimulatedDWI.phantom"><code class="docutils literal notranslate"><span class="pre">SimulatedDWI.phantom</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.SimulatedDWI.protocol"><code class="docutils literal notranslate"><span class="pre">SimulatedDWI.protocol</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.SimulatedDWI.snr"><code class="docutils literal notranslate"><span class="pre">SimulatedDWI.snr</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.SimulatedDWI.noise_reference"><code class="docutils literal notranslate"><span class="pre">SimulatedDWI.noise_reference</span></code></a></li>
@@ -3185,6 +3353,7 @@ random and written, so the file always gives the same streamlines.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.ground_truth_connectome"><code class="docutils literal notranslate"><span class="pre">ground_truth_connectome()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.noddi_tissue"><code class="docutils literal notranslate"><span class="pre">noddi_tissue()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.partition_voxels"><code class="docutils literal notranslate"><span class="pre">partition_voxels()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.read_ground_truth"><code class="docutils literal notranslate"><span class="pre">read_ground_truth()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.read_phantom"><code class="docutils literal notranslate"><span class="pre">read_phantom()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.sandi_tissue"><code class="docutils literal notranslate"><span class="pre">sandi_tissue()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.save_simulation"><code class="docutils literal notranslate"><span class="pre">save_simulation()</span></code></a></li>

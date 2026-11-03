@@ -576,15 +576,18 @@ folder:</p>
 
 <span class="n">loaded</span> <span class="o">=</span> <span class="n">example_phantom</span><span class="p">(</span><span class="s2">"crossing"</span><span class="p">)</span>
 <span class="k">assert</span> <span class="n">loaded</span><span class="o">.</span><span class="n">protocol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>  <span class="c1"># the phantom file holds its scan</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">simulate</span><span class="p">(</span><span class="n">loaded</span><span class="o">.</span><span class="n">phantom</span><span class="p">,</span> <span class="n">loaded</span><span class="o">.</span><span class="n">protocol</span><span class="p">,</span> <span class="n">snr</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<span class="n">files</span> <span class="o">=</span> <span class="n">save_simulation</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">"crossing-python"</span><span class="p">,</span> <span class="n">bundle_names</span><span class="o">=</span><span class="n">loaded</span><span class="o">.</span><span class="n">bundle_names</span><span class="p">)</span>
+<span class="n">dwi</span><span class="p">,</span> <span class="n">truth</span> <span class="o">=</span> <span class="n">simulate</span><span class="p">(</span>
+    <span class="n">loaded</span><span class="o">.</span><span class="n">phantom</span><span class="p">,</span> <span class="n">loaded</span><span class="o">.</span><span class="n">protocol</span><span class="p">,</span> <span class="n">snr</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">bundle_names</span><span class="o">=</span><span class="n">loaded</span><span class="o">.</span><span class="n">bundle_names</span>
+<span class="p">)</span>
+<span class="n">files</span> <span class="o">=</span> <span class="n">save_simulation</span><span class="p">(</span><span class="n">dwi</span><span class="p">,</span> <span class="n">truth</span><span class="p">,</span> <span class="s2">"crossing-python"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">files</span><span class="o">.</span><span class="n">dwi</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">files</span><span class="o">.</span><span class="n">peaks</span><span class="p">)</span>
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">loaded</span></code> holds the phantom and the scan protocol stored with it. A phantom file can also be saved without a scan,
-and then <code class="docutils literal notranslate"><span class="pre">loaded.protocol</span></code> is None. <code class="docutils literal notranslate"><span class="pre">result</span></code> holds the images with and without noise, and the ground truth, which
-<code class="docutils literal notranslate"><span class="pre">save_simulation</span></code> writes next to the images. Passing <code class="docutils literal notranslate"><span class="pre">bundle_names</span></code> saves the names of the bundles, Left-right and
-Front-back, in the folder’s phantom file, so that the viewer shows the bundles by these names. The
+and then <code class="docutils literal notranslate"><span class="pre">loaded.protocol</span></code> is None. <code class="docutils literal notranslate"><span class="pre">simulate</span></code> returns two things: <code class="docutils literal notranslate"><span class="pre">dwi</span></code> holds the images with and without noise,
+and <code class="docutils literal notranslate"><span class="pre">truth</span></code> holds the ground truth, which <code class="docutils literal notranslate"><span class="pre">save_simulation</span></code> writes next to the images. Passing <code class="docutils literal notranslate"><span class="pre">bundle_names</span></code>
+names the nodes of the ground-truth connectome after the bundles, Left-right and Front-back, and saves the names in
+the folder’s phantom file, so that the viewer shows the bundles by these names. The
 <a class="reference internal" href="../guides/simulation/"><span class="std std-doc">simulation guide</span></a> shows how to build a phantom with your own tissues, bundles and scan.</p>
 </section>
 <section id="in-the-phantom-editor-of-brainviewer">
