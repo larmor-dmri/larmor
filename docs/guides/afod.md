@@ -63,10 +63,23 @@ The output has the SH coefficients of every degree up to the input's lmax, in th
 
 ## How it works
 
-Each direction of a voxel's FOD gets a new amplitude: the weighted mean of the amplitude along that direction in
-the voxel itself and in its 26 neighbours. A neighbour counts for the directions that point at it, and not for
-those that point away, so the two halves of a lobe average different voxels. Its weight also falls with its
-distance, as a Gaussian of width `sigma` in mm. The new amplitudes are then fitted with the SH of every degree.
+The filter gives every direction of a voxel's FOD a new amplitude by looking at the neighbouring voxels that the
+direction points to. It averages the amplitude along that direction in the voxel itself with the amplitude along the
+same direction in those neighbours. The two halves of a lobe point to opposite sides of the voxel, so each half is
+averaged with a different set of neighbours, and the halves can end up different.
+
+Take a voxel at the end of a bundle that runs along x. Its FOD has a lobe along x, with one half pointing to +x
+and the other to -x. The voxels on its +x side lie past the end of the bundle and have no fibres along x, so the
++x half is averaged with their small amplitudes and shrinks. The voxels on its -x side lie inside the bundle, so
+the -x half is averaged with amplitudes like its own and stays. In the middle of the bundle, both sides hold the
+bundle, so both halves stay and the FOD remains symmetric.
+
+The neighbours are the 26 voxels around the voxel, and the voxel itself always counts with weight 1. How much a
+neighbour counts for a direction depends on how straight the direction points at it and on how far away it is. A
+neighbour straight ahead counts most, one off to the side counts less (`sharpness` sets how quickly), and one
+behind does not count at all. Farther neighbours, such as the diagonal ones, count less than the nearest six
+(`sigma` sets how much less). Finally, the new amplitudes are turned back into an FOD with spherical harmonics of
+every degree, since only the odd degrees can make the two halves differ.
 
 ## Options and caveats
 
