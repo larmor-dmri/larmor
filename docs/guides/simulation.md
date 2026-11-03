@@ -166,8 +166,9 @@ of the images that were fitted.
 
 The ground-truth peaks give the true fibre directions, to compare with the peaks of a fit, such as `lar fod`
 followed by `lar peaks`. They are built from the streamlines, not fitted to the images. In each voxel, the
-streamline directions are grouped, from the largest down, into peaks: each joins the first peak within 20 degrees
-of it, or else starts a new one. A peak's direction is the weighted mean of its fibres, and its amplitude is the
+streamline directions of each bundle are grouped, from the largest down, into peaks: each joins the first peak of
+the same bundle within 20 degrees of it, or else starts a new one. Different bundles always give different peaks,
+even where they cross at a small angle that no fit could resolve, since they are different fibres. A peak's direction is the weighted mean of its fibres, and its amplitude is the
 share of the voxel they fill. Peaks below a tenth of the voxel's largest are dropped, and a bundle whose tissue has
 no fibre direction, such as one filled with CSF, gives none. `peaks.nii.gz` has 3 volumes
 per peak, largest peak first, which hold the x, y and z of the direction scaled by the amplitude, in world

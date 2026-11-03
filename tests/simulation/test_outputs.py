@@ -30,13 +30,14 @@ from larmor.simulation import (
     create_gradient_table,
     csf_tissue,
     example_phantom,
+    partition_voxels,
     read_phantom,
     save_simulation,
     simulate,
     simulation_files,
     standard_model_tissue,
 )
-from larmor.simulation.ground_truth import _voxel_peaks
+from larmor.simulation.ground_truth import _voxel_peaks, build_ground_truth
 from larmor.types import Grid, Tractogram, Volume
 
 ANGLE = math.radians(25)
@@ -175,6 +176,19 @@ def test_a_crossing_of_two_bundles_at_90_degrees_has_two_peaks_90_degrees_apart(
     # Far from the crossing one bundle remains: a single peak along x, and no second.
     single = peaks[2, 2, 3]
     assert np.isfinite(single).sum() in (0, 3)
+
+
+def test_two_bundles_crossing_at_15_degrees_stay_two_peaks() -> None:
+    # A straight bundle's fibres all point one way, so any merging at the crossing
+    # would join the two bundles, not one bundle's own spread.
+    phantom = crossing(15.0)
+    truth = build_ground_truth(phantom, partition_voxels(phantom, seed=3))
+    voxel = truth.peaks[7, 7, 3]
+    found = int(np.isfinite(voxel).sum()) // 3
+    assert found == 2, f"the two bundles gave {found} peak(s) at the crossing"
+    first, second = voxel[:3], voxel[3:6]
+    cosine = abs(first @ second) / np.linalg.norm(first) / np.linalg.norm(second)
+    assert math.degrees(math.acos(min(cosine, 1.0))) == pytest.approx(15.0, abs=3.0)
 
 
 def test_peaks_have_the_amplitude_of_the_fibres_share_of_the_voxel(

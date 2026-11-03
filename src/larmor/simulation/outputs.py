@@ -261,12 +261,12 @@ def save_simulation(
     files is refused unless `force` is True, which then writes into it and keeps
     them.
 
-    The ground-truth peaks come from the voxel's own fibres, not from a fit:
-    fibres within 20 degrees of a larger one join its peak, a direction and its
-    opposite counting as the same, and peaks below 10% of the voxel's largest
-    are dropped. Each peak's direction is the weighted mean of its fibres. A
-    tissue mask holds the voxels where the tissue, background
-    included, fills at least half.
+    The ground-truth peaks come from the voxel's own fibres, not from a fit. A
+    fibre within 20 degrees of a larger one of the same bundle joins its peak,
+    a direction and its opposite counting as the same; different bundles never
+    share a peak. Peaks below 10% of the voxel's largest are dropped, and each
+    peak's direction is the weighted mean of its fibres. A tissue mask holds
+    the voxels where the tissue, background included, fills at least half.
 
     The ground-truth connectome joins the voxels where each bundle's
     streamlines start to those where they stop (see `ground_truth_connectome`),

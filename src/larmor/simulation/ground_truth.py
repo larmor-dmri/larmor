@@ -11,7 +11,8 @@ from larmor.simulation.connectome import GroundTruthConnectome, ground_truth_con
 from larmor.simulation.phantom import Phantom, VoxelPartition
 from larmor.types import Grid, Tractogram
 
-# Angle in degrees within which a fibre joins a larger one's ground-truth peak.
+# Angle in degrees within which a fibre joins a larger one's ground-truth peak, of
+# the same bundle.
 PEAK_MERGE_ANGLE: Final = 20.0
 # Fraction of the voxel's largest peak below which a ground-truth peak is dropped.
 PEAK_RELATIVE_THRESHOLD: Final = 0.1
@@ -39,7 +40,9 @@ class GroundTruth:
         peaks: (X, Y, Z, 3 P) the true fibre directions, in the layout
             `lar peaks` writes: each peak's direction scaled by the share of the
             voxel its fibres fill, largest first, NaN where a voxel has fewer
-            peaks.
+            peaks. A bundle's fibres within 20 degrees of each other make one
+            peak; different bundles always make different peaks, however close
+            their directions.
         connectome: The regions the bundles join (see `GroundTruthConnectome`);
             None if the phantom has no bundle or the folder it was read from
             holds none.
@@ -116,10 +119,21 @@ def _peaks(partition: VoxelPartition, oriented: np.ndarray) -> np.ndarray:
         span = slice(offsets[index], offsets[index + 1])
         if not kept[span].any():
             continue
-        per_voxel[int(index)] = _voxel_peaks(
-            partition.fibre_direction[span][kept[span]],
-            partition.fibre_weight[span][kept[span]],
-        )
+        directions = partition.fibre_direction[span][kept[span]]
+        weights = partition.fibre_weight[span][kept[span]]
+        bundles = partition.fibre_bundle[span][kept[span]]
+        found = [
+            peak
+            for bundle in np.unique(bundles)
+            for peak in _voxel_peaks(
+                directions[bundles == bundle], weights[bundles == bundle]
+            )
+        ]
+        found.sort(key=lambda peak: -peak[1])
+        largest = found[0][1]
+        per_voxel[int(index)] = [
+            peak for peak in found if peak[1] >= PEAK_RELATIVE_THRESHOLD * largest
+        ]
     most = max((len(p) for p in per_voxel.values()), default=1)
     out = np.full((int(np.prod(partition.grid.shape)), 3 * most), np.nan, np.float32)
     for voxel, found in per_voxel.items():
@@ -131,10 +145,10 @@ def _peaks(partition: VoxelPartition, oriented: np.ndarray) -> np.ndarray:
 def _voxel_peaks(
     directions: np.ndarray, weights: np.ndarray
 ) -> list[tuple[np.ndarray, float]]:
-    """Returns one voxel's peaks, largest first, as (direction, amplitude) pairs.
+    """Returns the peaks of one bundle's fibres in a voxel, as (direction, amplitude).
 
     A peak's direction is the weighted mean of its fibres, and its amplitude
-    their summed weight.
+    their summed weight. The peaks are not yet sorted or thresholded.
     """
     cos_merge = math.cos(math.radians(PEAK_MERGE_ANGLE))
     sums: list[np.ndarray] = []
@@ -151,10 +165,7 @@ def _voxel_peaks(
                 continue
         sums.append(w * d)
         amplitudes.append(w)
-    order = np.argsort(-np.array(amplitudes), kind="stable")
-    largest = max(amplitudes)
     return [
-        (sums[j] / np.linalg.norm(sums[j]), amplitudes[j])
-        for j in order
-        if amplitudes[j] >= PEAK_RELATIVE_THRESHOLD * largest
+        (total / np.linalg.norm(total), amplitude)
+        for total, amplitude in zip(sums, amplitudes, strict=True)
     ]
