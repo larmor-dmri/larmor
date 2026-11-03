@@ -18,14 +18,26 @@ from larmor.viewer.model.viewer import Viewer
 
 # Opens files as items of a category, such as the loader's `open`.
 type OpenFiles = Callable[[list[Path], Category], None]
+# Opens a parcellation as an overlay shown as labels, with its lookup table.
+type OpenLabels = Callable[[Path, Path], None]
 
 
-def open_outputs(files: SimulationOutputs, open_files: OpenFiles) -> None:
-    """Opens a simulation's DWI as volumes, masks as overlays and peaks."""
+def open_outputs(
+    files: SimulationOutputs,
+    open_files: OpenFiles,
+    open_labels: OpenLabels | None = None,
+) -> None:
+    """Opens a simulation's DWI as volumes, masks as overlays, peaks and nodes.
+
+    The connectome's nodes open through open_labels, if given.
+    """
     open_files(list(files.dwi), Category.VOLUMES)
     open_files(list(files.masks), Category.OVERLAYS)
     if files.peaks is not None:
         open_files([files.peaks], Category.PEAKS)
+    nodes, table = files.connectome_nodes, files.connectome_lookup_table
+    if open_labels is not None and nodes is not None and table is not None:
+        open_labels(nodes, table)
 
 
 def start_run(
@@ -34,6 +46,7 @@ def start_run(
     folder: str | Path,
     open_files: OpenFiles,
     *,
+    open_labels: OpenLabels | None = None,
     overwrite: bool = False,
     on_done: Callable[[RunOutputs], None] | None = None,
     on_failed: Callable[[str], None] | None = None,
@@ -49,6 +62,7 @@ def start_run(
         jobs: The job runner.
         folder: The output folder.
         open_files: Opens files as items of a category.
+        open_labels: Opens the connectome's nodes as labels; None leaves them.
         overwrite: Replace outputs already in the folder, and write into a
             folder that holds other files.
         on_done: Told the files written, after they are opened.
@@ -65,7 +79,7 @@ def start_run(
     def done(outputs: RunOutputs) -> None:
         """Opens the run's outputs and records the run in the viewer."""
         if viewer.is_current_run(outputs):
-            open_outputs(outputs.files, open_files)
+            open_outputs(outputs.files, open_files, open_labels)
         viewer.finish_run(outputs)
         if on_done is not None:
             on_done(outputs)
@@ -111,6 +125,7 @@ def start_open_simulation(
     folder: str | Path,
     open_files: OpenFiles,
     *,
+    open_labels: OpenLabels | None = None,
     on_done: Callable[[SimulationOutputs], object] | None = None,
     on_failed: Callable[[str], None] | None = None,
 ) -> None:
@@ -124,6 +139,7 @@ def start_open_simulation(
         jobs: The job runner.
         folder: The simulation folder, holding simulation.json.
         open_files: Opens files as items of a category.
+        open_labels: Opens the connectome's nodes as labels; None leaves them.
         on_done: Told the folder's files, once they are queued.
         on_failed: Told why it could not be read; the runner's error box if None.
 
@@ -142,7 +158,7 @@ def start_open_simulation(
         """Shows the phantom, links it to the folder and opens the folder's files."""
         viewer.apply_phantom(loaded)
         viewer.link_simulation(files)
-        open_outputs(files, open_files)
+        open_outputs(files, open_files, open_labels)
         if on_done is not None:
             on_done(files)
 
