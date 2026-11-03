@@ -100,13 +100,14 @@ geometry without a seed gets a random one, written to the file, so that the file
 from larmor.simulation import read_phantom, save_simulation, simulate
 
 loaded = read_phantom("straight.phantom.json")
-result = simulate(loaded.phantom, loaded.protocol, snr=30, seed=1)
-files = save_simulation(result, "sim")
+dwi, truth = simulate(loaded.phantom, loaded.protocol, snr=30, seed=1)
+files = save_simulation(dwi, truth, "sim")
 print(files.dwi[0])
 ```
 
-`result.echoes` holds one 4D volume per echo time, with Rician noise when `snr` is given, and `result.noise_free`
-holds the same without noise. `result.partition` is the ground truth. The noise level is the same in every voxel,
+`dwi.echoes` holds one 4D volume per echo time, with Rician noise when `snr` is given, and `dwi.noise_free` holds
+the same without noise. `truth` is the ground truth, a {py:class}`~larmor.simulation.GroundTruth`, described below.
+The noise level is the same in every voxel,
 with a standard deviation equal to the b = 0 signal of a voxel filled with the `noise_reference` tissue ("WM" by
 default), divided by the SNR. The same `seed` gives the same images on any number of threads (`n_jobs`).
 :::
@@ -186,6 +187,19 @@ tracked streamlines on the same nodes:
 <!-- not run: needs a tractogram tracked on the simulated images -->
 ```bash
 lar connectome tracks.tck sim/connectome_nodes.nii.gz tracked.csv --lut sim/connectome_nodes.txt
+```
+
+In Python, the `truth` that `simulate` returns holds the same ground truth as these files. Its maps are NumPy arrays
+on the phantom's grid: `tissue_fractions`, `background` and `bundle_fractions`, in which `bundle_fractions[..., k] >
+0` is the mask of bundle k. It also holds each bundle's `streamlines`, the `peaks` and the `connectome`.
+{py:func}`~larmor.simulation.read_ground_truth` reads the same object back from a saved folder, so that an analysis
+of the images can be scored against the ground truth long after the simulation ran:
+
+```python
+from larmor.simulation import read_ground_truth
+
+truth = read_ground_truth("sim")
+print(truth.bundle_fractions.shape, truth.connectome is not None)
 ```
 
 Running `phantom.json` again with the same seed gives the same images. Without `--seed`, a seed is drawn and

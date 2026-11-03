@@ -68,7 +68,7 @@ def test_the_breakdown_is_the_signal_a_run_simulates(viewer: Viewer) -> None:
     state = viewer.breakdown
     assert state is not None and state.breakdown is not None
     inputs = viewer._phantom.run_inputs()
-    result = sim.simulate(inputs.phantom, inputs.protocol, seed=0)
+    result, _ = sim.simulate(inputs.phantom, inputs.protocol, seed=0)
     expected = result.noise_free[0].data[state.breakdown.voxel][9]
     assert state.breakdown.signal == pytest.approx(expected, rel=1e-6)
     assert len(state.breakdown.bundles) == 2

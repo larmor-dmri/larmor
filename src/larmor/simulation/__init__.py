@@ -12,10 +12,12 @@ from larmor.simulation.connectome import (
     ground_truth_connectome,
 )
 from larmor.simulation.examples import EXAMPLE_PHANTOMS, example_phantom
+from larmor.simulation.ground_truth import GroundTruth
 from larmor.simulation.instant import SimulatedDWI, simulate
 from larmor.simulation.noise import add_noise
 from larmor.simulation.outputs import (
     SimulationFiles,
+    read_ground_truth,
     save_simulation,
     simulation_files,
 )
@@ -50,6 +52,7 @@ __all__ = [
     "Compartment",
     "CompartmentModel",
     "CompartmentSignal",
+    "GroundTruth",
     "GroundTruthConnectome",
     "Phantom",
     "PhantomFile",
@@ -71,6 +74,7 @@ __all__ = [
     "ground_truth_connectome",
     "noddi_tissue",
     "partition_voxels",
+    "read_ground_truth",
     "read_phantom",
     "sandi_tissue",
     "save_simulation",

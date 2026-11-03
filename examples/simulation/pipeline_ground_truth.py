@@ -34,7 +34,7 @@ from larmor.simulation import example_phantom, save_simulation, simulate
 
 loaded = example_phantom("crossing")
 assert loaded.protocol is not None  # the phantom file holds its scan
-result = simulate(loaded.phantom, loaded.protocol, snr=30, seed=1)
+result, ground_truth = simulate(loaded.phantom, loaded.protocol, snr=30, seed=1)
 
 # %%
 # The pipeline
@@ -45,7 +45,7 @@ result = simulate(loaded.phantom, loaded.protocol, snr=30, seed=1)
 # The true directions are read from the same folder.
 
 with tempfile.TemporaryDirectory() as folder:
-    files = save_simulation(result, folder)
+    files = save_simulation(result, ground_truth, folder)
     dwi, gtab = load_dwi(files.dwi[0], files.bvals, files.bvecs)
     assert files.bundle_mask is not None
     mask = load_volume(files.bundle_mask).data > 0

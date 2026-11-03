@@ -66,16 +66,16 @@ def test_full_voxel_in_a_straight_bundle_is_exactly_the_tissue_signal() -> None:
     tissue = standard_model_tissue(free_water_fraction=0.1)
     direction = np.array([1.0, 0.3, -0.2]) / np.linalg.norm([1.0, 0.3, -0.2])
     phantom = Phantom(GRID, tissues=(tissue,), bundles=(bundle_along(direction),))
-    signal = simulate(phantom, PROTOCOL).noise_free[0].data[2, 2, 2]
+    signal = simulate(phantom, PROTOCOL)[0].noise_free[0].data[2, 2, 2]
     np.testing.assert_allclose(signal, wm_signal(direction, tissue), rtol=1e-5)
 
 
 def test_unoriented_tissue_in_a_bundle_fills_the_bundle_core() -> None:
     phantom = Phantom(GRID, bundles=(bundle_along(np.array([1.0, 0, 0]), tissue="GM"),))
-    signal = simulate(phantom, PROTOCOL).noise_free[0].data[2, 2, 2]
+    signal = simulate(phantom, PROTOCOL)[0].noise_free[0].data[2, 2, 2]
     full = Phantom(GRID, background="GM")
     np.testing.assert_allclose(
-        signal, simulate(full, PROTOCOL).noise_free[0].data[2, 2, 2]
+        signal, simulate(full, PROTOCOL)[0].noise_free[0].data[2, 2, 2]
     )
     assert signal[0] > 0.25
 
@@ -91,19 +91,23 @@ def test_voxel_signal_is_the_fraction_weighted_sum_of_tissues() -> None:
     )
     direction = np.array([0.0, 0.0, 1.0])
     phantom = Phantom(GRID, bundles=(bundle_along(direction),), tissue_maps=maps)
-    data = simulate(phantom, PROTOCOL).noise_free[0].data
+    data = simulate(phantom, PROTOCOL)[0].noise_free[0].data
     pure_gm = (
-        simulate(Phantom(GRID, background="GM"), PROTOCOL).noise_free[0].data[0, 0, 0]
+        simulate(Phantom(GRID, background="GM"), PROTOCOL)[0]
+        .noise_free[0]
+        .data[0, 0, 0]
     )
     pure_csf = (
-        simulate(Phantom(GRID, background="CSF"), PROTOCOL).noise_free[0].data[0, 0, 0]
+        simulate(Phantom(GRID, background="CSF"), PROTOCOL)[0]
+        .noise_free[0]
+        .data[0, 0, 0]
     )
     np.testing.assert_allclose(data[0, 0, 0], 0.3 * pure_gm + 0.2 * pure_csf, rtol=1e-5)
     np.testing.assert_allclose(data[4, 4, 4], 0.05 * pure_gm, rtol=1e-5)
     # With CSF as the background, the rest of that voxel is CSF.
     with_csf = Phantom(GRID, tissue_maps=maps, background="CSF")
     np.testing.assert_allclose(
-        simulate(with_csf, PROTOCOL).noise_free[0].data[4, 4, 4],
+        simulate(with_csf, PROTOCOL)[0].noise_free[0].data[4, 4, 4],
         0.05 * pure_gm + 0.95 * pure_csf,
         rtol=1e-5,
     )
@@ -131,15 +135,15 @@ def test_partly_filled_bundle_voxel_keeps_the_tissue_proportions() -> None:
         bundles=(line_through_centre(x, 0.4),),
         background="GM",
     )
-    result = simulate(phantom, PROTOCOL)
+    result, truth = simulate(phantom, PROTOCOL)
     signal = result.noise_free[0].data[2, 2, 2]
     # The line holds 1 mm of streamline in the voxel, up to float32 rounding.
-    fill = result.partition.bundle_fractions[2, 2, 2, 0]
+    fill = truth.bundle_fractions[2, 2, 2, 0]
     assert fill == pytest.approx(0.4, rel=1e-4)
     pure_gm = (
         simulate(
             Phantom(GRID, tissues=(tissue, sandi_tissue()), background="GM"), PROTOCOL
-        )
+        )[0]
         .noise_free[0]
         .data[2, 2, 2]
     )
@@ -151,7 +155,7 @@ def test_crossing_voxel_is_half_of_each_direction() -> None:
     x, y = np.array([1.0, 0, 0]), np.array([0.0, 1, 0])
     bundles = (line_through_centre(x, 0.8), line_through_centre(y, 0.8))
     phantom = Phantom(GRID, bundles=bundles)
-    signal = simulate(phantom, PROTOCOL).noise_free[0].data[2, 2, 2]
+    signal = simulate(phantom, PROTOCOL)[0].noise_free[0].data[2, 2, 2]
     tissue = phantom.tissue("WM")
     expected = 0.5 * wm_signal(x, tissue) + 0.5 * wm_signal(y, tissue)
     np.testing.assert_allclose(signal, expected, rtol=1e-5)
@@ -160,12 +164,12 @@ def test_crossing_voxel_is_half_of_each_direction() -> None:
 def test_seed_fixes_bundles_without_their_own_seed() -> None:
     geometry = BundleGeometry(np.array([[0.0, 1, 2], [4.0, 3, 2]]), radius=1.0)
     phantom = Phantom(GRID, bundles=(Bundle(geometry),))
-    first = simulate(phantom, PROTOCOL, seed=5)
-    second = simulate(phantom, PROTOCOL, seed=5)
+    first, first_truth = simulate(phantom, PROTOCOL, seed=5)
+    second, second_truth = simulate(phantom, PROTOCOL, seed=5)
     np.testing.assert_array_equal(first.noise_free[0].data, second.noise_free[0].data)
-    (drawn,) = first.partition.streamlines
-    np.testing.assert_array_equal(drawn.points, second.partition.streamlines[0].points)
-    other = simulate(phantom, PROTOCOL, seed=6).partition.streamlines[0]
+    (drawn,) = first_truth.streamlines
+    np.testing.assert_array_equal(drawn.points, second_truth.streamlines[0].points)
+    other = simulate(phantom, PROTOCOL, seed=6)[1].streamlines[0]
     assert not np.array_equal(drawn.points, other.points)
 
 
@@ -175,7 +179,7 @@ def test_gradient_echo_runs_with_the_predefined_tissues_and_uses_t2star() -> Non
     )
     direction = np.array([0.0, 1.0, 0.0])
     phantom = Phantom(GRID, bundles=(bundle_along(direction),), background="CSF")
-    result = simulate(phantom, gradient_echo)
+    result, _ = simulate(phantom, gradient_echo)
     assert len(result.noise_free) == 2
     tissue = phantom.tissue("WM")
     for echo, te in zip(result.noise_free, (50.0, 70.0), strict=True):
@@ -190,8 +194,8 @@ def test_one_thread_and_many_give_the_same_signal() -> None:
         np.array([[0.0, 0, 0], [2.0, 4, 3], [4.0, 4, 4]]), radius=1.5, seed=0
     )
     phantom = Phantom(GRID, bundles=(Bundle(geometry),), background="CSF")
-    one = simulate(phantom, PROTOCOL, snr=20, seed=3, n_jobs=1)
-    many = simulate(phantom, PROTOCOL, snr=20, seed=3, n_jobs=4)
+    one, _ = simulate(phantom, PROTOCOL, snr=20, seed=3, n_jobs=1)
+    many, _ = simulate(phantom, PROTOCOL, snr=20, seed=3, n_jobs=4)
     np.testing.assert_array_equal(one.noise_free[0].data, many.noise_free[0].data)
     np.testing.assert_array_equal(one.echoes[0].data, many.echoes[0].data)
 

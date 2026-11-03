@@ -111,9 +111,9 @@ protocol = Protocol(gradients, 15.0, 30.0, 80.0, 3000.0)
 # ----------
 # With an SNR of 30 the noise level is a thirtieth of the b = 0 signal of a voxel
 # filled with WM1, and it is the same in every voxel. The same seed gives the same
-# images.
+# images. `simulate` returns the images and, separately, the ground truth.
 
-result = simulate(phantom, protocol, snr=30, noise_reference="WM1", seed=0)
+result, truth = simulate(phantom, protocol, snr=30, noise_reference="WM1", seed=0)
 dwi = result.echoes[0].data
 print(f"DWI: {dwi.shape}, noise sigma {result.sigma:.4f}")
 
@@ -130,7 +130,7 @@ for name, voxel in (("first bundle only", (8, 10, 10)), ("crossing", (17, 10, 10
 # amplitude.
 
 with tempfile.TemporaryDirectory() as folder:
-    files = save_simulation(result, folder)
+    files = save_simulation(result, truth, folder)
     print(sorted(path.name for path in Path(folder).iterdir()))
     peaks = load_volume(files.peaks).data
 
@@ -153,7 +153,7 @@ along_x = int(np.argmax(np.abs(gradients.bvecs[1:, 0]))) + 1
 planes = [
     dwi[:, :, 10, 0],
     dwi[:, :, 10, along_x],
-    result.partition.tissue_fractions[:, :, 10].sum(axis=-1),
+    truth.tissue_fractions[:, :, 10].sum(axis=-1),
 ]
 titles = ["b = 0", "b = 1000, along x", "Ground-truth peaks"]
 figure = Figure(figsize=(9, 3.2), layout="constrained")

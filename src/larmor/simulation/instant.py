@@ -1,12 +1,14 @@
 """The instant engine, which sums closed-form compartment signals in each voxel."""
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass, replace
 
 import numpy as np
 
 from larmor import _core
 from larmor._threads import n_threads
+from larmor.simulation.ground_truth import GroundTruth, build_ground_truth
 from larmor.simulation.noise import add_noise
 from larmor.simulation.phantom import (
     Phantom,
@@ -25,7 +27,10 @@ CHUNK_VOXELS = 16_384
 
 @dataclass(frozen=True, eq=False)
 class SimulatedDWI:
-    """Holds the images, the ground truth and the inputs that `simulate` returns.
+    """Holds the images that `simulate` returns, with the scan and the noise.
+
+    The ground truth comes separately, as the `GroundTruth` that `simulate`
+    returns next to it.
 
     Attributes:
         echoes: One 4D float32 volume (X, Y, Z, N) per echo time, with noise if
@@ -33,11 +38,7 @@ class SimulatedDWI:
         noise_free: The same without noise.
         gradients: The gradient table of the N volumes.
         echo_times_ms: The echo time of each volume in `echoes`, ms.
-        partition: The ground truth, with each voxel's tissue fractions and
-            fibres and the streamlines drawn for each bundle.
         sigma: The noise standard deviation, or None without noise.
-        phantom: The phantom that was simulated, with a seed on every bundle
-            geometry, so that it gives the same streamlines again.
         protocol: The scan that was simulated.
         snr: The signal-to-noise ratio asked for, or None without noise.
         noise_reference: The name of the tissue that defines the noise level.
@@ -49,9 +50,7 @@ class SimulatedDWI:
     noise_free: tuple[Volume, ...]
     gradients: GradientTable
     echo_times_ms: tuple[float, ...]
-    partition: VoxelPartition
     sigma: float | None
-    phantom: Phantom | None = None
     protocol: Protocol | None = None
     snr: float | None = None
     noise_reference: str = "WM"
@@ -165,9 +164,10 @@ def simulate(
     snr: float | None = None,
     noise_reference: str = "WM",
     seed: int | None = None,
+    bundle_names: Sequence[str] | None = None,
     n_jobs: int = -1,
     progress: Progress | None = None,
-) -> SimulatedDWI:
+) -> tuple[SimulatedDWI, GroundTruth]:
     """Simulates the diffusion-weighted images of a phantom, voxel by voxel.
 
     The signal of each compartment in each voxel has a closed form, and the
@@ -192,19 +192,27 @@ def simulate(
             seed of their own (see `partition_voxels`); the same seed gives the
             same result. Defaults to None, which draws a seed and returns it in
             the result.
+        bundle_names: A name for each bundle, used in the connectome's node
+            names and kept in the saved phantom file. Defaults to None.
         n_jobs: The number of threads, -1 for all cores. Defaults to -1.
         progress: A function called with (done, total, stage) as the run goes
             on, where stage is "voxelise", "signal" or "noise"; raise an
             exception in it to cancel the run. Defaults to None.
 
     Returns:
-        The images, the noise-free images and the ground truth.
+        The images with the noise-free images, and the ground truth.
 
     Raises:
         ValueError: If snr is not positive, the noise reference is not a tissue
-            of the phantom, or n_jobs is 0 or below -1.
+            of the phantom, n_jobs is 0 or below -1, or bundle_names does not
+            name every bundle.
     """
     threads = n_threads(n_jobs)
+    if bundle_names is not None and len(bundle_names) != len(phantom.bundles):
+        raise ValueError(
+            f"bundle_names must name {len(phantom.bundles)} bundles, got "
+            f"{len(bundle_names)}."
+        )
     sigma = None
     if snr is not None:
         if not (math.isfinite(snr) and snr > 0):
@@ -258,16 +266,15 @@ def simulate(
         echoes = add_noise(noise_free, sigma, seed=seed)
         if progress is not None:
             progress(1, 1, "noise")
-    return SimulatedDWI(
+    simulated = SimulatedDWI(
         echoes=echoes,
         noise_free=noise_free,
         gradients=gradients,
         echo_times_ms=protocol.te_ms,
-        partition=partition,
         sigma=sigma,
-        phantom=phantom,
         protocol=protocol,
         snr=snr,
         noise_reference=noise_reference,
         seed=seed,
     )
+    return simulated, build_ground_truth(phantom, partition, bundle_names=bundle_names)
