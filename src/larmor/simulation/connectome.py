@@ -21,30 +21,39 @@ END_RADIUS_PERCENTILE: Final = 90.0
 class GroundTruthConnectome:
     """The regions the bundles of a phantom connect, and how strongly.
 
-    Each bundle has two ends, the voxels its streamlines start in and the
-    voxels they stop in, inside the grid: a streamline that leaves the grid ends
-    where it leaves, and one whose two ends are in the same voxel is left out.
-    Two ends are one node when their centres, the mean of their endpoints, are
-    closer than the larger end's radius: the distance from its centre within
-    which 90% of its endpoints lie, and at least one voxel. Bundles drawn from
-    the same point therefore start in the same node, whatever their
-    directions. A voxel that ends of different nodes share goes to the one with
-    the most endpoints in it. The nodes are numbered 1 to N in the order of the
-    bundles and their ends.
+    Each bundle has two ends, where its streamlines start and where they stop.
+    Only points inside the grid count, so a streamline that leaves the grid
+    ends where it leaves. Streamlines whose two ends fall in the same voxel are
+    left out.
+
+    Ends that lie in the same place become one node, so bundles drawn from the
+    same point share a node, whatever direction they leave in. To decide this,
+    each end gets a centre, the mean of its endpoints, and a radius, the
+    distance from the centre within which 90% of its endpoints lie (at least
+    one voxel). Two ends are in the same place when their centres are closer
+    than the larger of the two radii. If the ends of two different nodes share
+    a voxel, the voxel goes to the end with more endpoints in it.
+
+    The nodes are numbered from 1, in the order of the bundles and their ends.
+    In the matrices, row and column i stand for node i + 1. A connection has no
+    direction, so both matrices are symmetric.
 
     Attributes:
         parcellation: The node of each voxel, 0 where no bundle ends, on the
             phantom's grid. `lar connectome` with this image (and its default
             radial search) assigns tracked streamlines to the same nodes.
-        node_names: One name per node, the ends it holds joined by "+", such as
-            "CST_start+AF_end". Bundles that share a name get their number
-            added, such as "CST_1" and "CST_3".
-        connected: (N, N) symmetric, 1 where a bundle joins the two nodes, else 0.
-        proportion: (N, N) symmetric, the share of the bundles' total
-            cross-section that joins the two nodes; the upper triangle, diagonal
-            included, sums to 1.
-        bundle_nodes: (B, 2) int64, the nodes of each bundle's start and end; 0
-            for both ends of a bundle with no streamline inside the grid.
+        node_names: The name of each node, made of the ends it holds joined by
+            "+", such as "CST_start+AF_end". Bundles that share a name get their
+            number added, such as "CST_1" and "CST_3".
+        connected: (N, N) 1 where a bundle joins the two nodes, and 0 where
+            none does.
+        proportion: (N, N) the share of the bundles' total cross-section that
+            joins the two nodes, from 0 to 1. Each connection is counted once
+            in the upper triangle (diagonal included), so those entries add up
+            to 1.
+        bundle_nodes: (B, 2) the two nodes each bundle joins, numbered 1 to N;
+            both 0 for a bundle with no streamline inside the grid. Which of
+            the two counts as the start is arbitrary.
         cross_section: (B,) each bundle's mean cross-section in mm^2, the
             volume it fills divided by the mean length of its streamlines.
     """
