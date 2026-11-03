@@ -26,13 +26,13 @@ class GroundTruthConnectome:
     ends where it leaves. Streamlines whose two ends fall in the same voxel are
     left out.
 
-    Ends that lie in the same place become one node, so bundles drawn from the
-    same point share a node, whatever direction they leave in. To decide this,
-    each end gets a centre, the mean of its endpoints, and a radius, the
-    distance from the centre within which 90% of its endpoints lie (at least
-    one voxel). Two ends are in the same place when their centres are closer
-    than the larger of the two radii. If the ends of two different nodes share
-    a voxel, the voxel goes to the end with more endpoints in it.
+    Ends that lie close together become one node, so bundles drawn from the
+    same point share a node, whatever direction they leave in. The centre of an
+    end is the mean of its endpoints. The radius of an end is the distance from
+    its centre within which 90% of its endpoints lie, and it is at least one
+    voxel. Two ends lie close together when their centres are closer than the
+    larger of their two radii. If the ends of two different nodes share a
+    voxel, the voxel goes to the end with more endpoints in it.
 
     The nodes are numbered from 1, in the order of the bundles and their ends.
     In the matrices, row and column i stand for node i + 1. A connection has no
@@ -45,12 +45,13 @@ class GroundTruthConnectome:
         node_names: The name of each node, made of the ends it holds joined by
             "+", such as "CST_start+AF_end". Bundles that share a name get their
             number added, such as "CST_1" and "CST_3".
-        connected: (N, N) 1 where a bundle joins the two nodes, and 0 where
-            none does.
-        proportion: (N, N) the share of the bundles' total cross-section that
-            joins the two nodes, from 0 to 1. Each connection is counted once
-            in the upper triangle (diagonal included), so those entries add up
-            to 1.
+        connected: (N, N) whether a bundle joins two nodes. The entry for two
+            nodes is 1 if a bundle runs between them, and 0 if none does.
+        proportion: (N, N) how large each connection is compared with all of
+            them. The entry for two nodes is the cross-section of the bundles
+            that join them, divided by the cross-section of all the bundles. It
+            is 0 where connected is 0. Counting each connection once, in the
+            upper triangle with the diagonal, the entries add up to 1.
         bundle_nodes: (B, 2) the two nodes each bundle joins, numbered 1 to N;
             both 0 for a bundle with no streamline inside the grid. Which of
             the two counts as the start is arbitrary.
