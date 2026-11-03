@@ -1574,12 +1574,17 @@ def run_simulation(
     import larmor.simulation as sim
 
     scan = inputs.scan
-    simulated = sim.simulate(
+    bundles = inputs.viewer_block.get("bundles")
+    names = (
+        [str(b.get("name", "")) for b in bundles] if isinstance(bundles, list) else None
+    )
+    simulated, truth = sim.simulate(
         inputs.phantom,
         inputs.protocol,
         snr=scan.snr,
         noise_reference=scan.noise_reference,
         seed=scan.seed,
+        bundle_names=names,
         progress=report,
     )
     # The last chance to cancel, as saving runs to the end once it starts.
@@ -1592,12 +1597,8 @@ def run_simulation(
         except JobCancelledError:
             pass
 
-    bundles = inputs.viewer_block.get("bundles")
-    names = (
-        [str(b.get("name", "")) for b in bundles] if isinstance(bundles, list) else None
-    )
     written = sim.save_simulation(
-        simulated, folder, force=force, bundle_names=names, progress=saving
+        simulated, truth, folder, force=force, progress=saving
     )
     data = json.loads(written.phantom.read_text(encoding="utf-8"))
     data["viewer"] = dict(inputs.viewer_block)

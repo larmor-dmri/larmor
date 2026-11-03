@@ -206,7 +206,7 @@ def test_the_expected_b0_is_the_noise_free_b0_of_a_run(viewer: Viewer) -> None:
     expected = viewer.show_proxy(ProxyMap.EXPECTED_B0)
     assert expected is not None
     inputs = viewer.prepare_run("unused")
-    result = sim.simulate(inputs.phantom, inputs.protocol)
+    result, _ = sim.simulate(inputs.phantom, inputs.protocol)
     b0 = result.noise_free[0].data[..., 0]
     assert np.allclose(expected.data.data, b0, rtol=1e-5, atol=1e-7)  # type: ignore[attr-defined]
 
@@ -382,12 +382,12 @@ def test_a_session_keeps_the_grid_box_hidden(viewer: Viewer, tmp_path: Path) -> 
 
 def test_a_simulation_folder_opens_with_its_phantom(tmp_path: Path) -> None:
     phantom = sim.example_phantom("crossing")
-    simulated = sim.simulate(
+    simulated, truth = sim.simulate(
         phantom.phantom,
         phantom.protocol,  # type: ignore[arg-type]
         seed=1,
     )
-    sim.save_simulation(simulated, tmp_path / "sim")
+    sim.save_simulation(simulated, truth, tmp_path / "sim")
     viewer = Viewer()
     items = viewer.open_simulation(tmp_path / "sim")
     categories = [i.category for i in items]
@@ -417,7 +417,7 @@ def test_a_run_of_a_phantom_file_gives_the_images_of_lar_simulate(
     viewer.run_phantom(tmp_path / "viewer")
     read = sim.read_phantom(path)
     assert read.protocol is not None
-    expected = sim.simulate(read.phantom, read.protocol, snr=20.0, seed=0)
+    expected, _ = sim.simulate(read.phantom, read.protocol, snr=20.0, seed=0)
     images = sim.read_phantom(tmp_path / "viewer" / "phantom.json")
     assert images.protocol is not None
     np.testing.assert_array_equal(images.protocol.gradients.bvecs, table.bvecs)

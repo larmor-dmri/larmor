@@ -100,13 +100,14 @@ geometry without a seed gets a random one, written to the file, so that the file
 from larmor.simulation import read_phantom, save_simulation, simulate
 
 loaded = read_phantom("straight.phantom.json")
-result = simulate(loaded.phantom, loaded.protocol, snr=30, seed=1)
-files = save_simulation(result, "sim")
+dwi, truth = simulate(loaded.phantom, loaded.protocol, snr=30, seed=1)
+files = save_simulation(dwi, truth, "sim")
 print(files.dwi[0])
 ```
 
-`result.echoes` holds one 4D volume per echo time, with Rician noise when `snr` is given, and `result.noise_free`
-holds the same without noise. `result.partition` is the ground truth. The noise level is the same in every voxel,
+`dwi.echoes` holds one 4D volume per echo time, with Rician noise when `snr` is given, and `dwi.noise_free` holds
+the same without noise. `truth` is the ground truth, a {py:class}`~larmor.simulation.GroundTruth`, described below.
+The noise level is the same in every voxel,
 with a standard deviation equal to the b = 0 signal of a voxel filled with the `noise_reference` tissue ("WM" by
 default), divided by the SNR. The same `seed` gives the same images on any number of threads (`n_jobs`).
 :::
@@ -165,8 +166,9 @@ of the images that were fitted.
 
 The ground-truth peaks give the true fibre directions, to compare with the peaks of a fit, such as `lar fod`
 followed by `lar peaks`. They are built from the streamlines, not fitted to the images. In each voxel, the
-streamline directions are grouped, from the largest down, into peaks: each joins the first peak within 20 degrees
-of it, or else starts a new one. A peak's direction is the weighted mean of its fibres, and its amplitude is the
+streamline directions of each bundle are grouped, from the largest down, into peaks: each joins the first peak of
+the same bundle within 20 degrees of it, or else starts a new one. Different bundles always give different peaks,
+even where they cross at a small angle that no fit could resolve, since they are different fibres. A peak's direction is the weighted mean of its fibres, and its amplitude is the
 share of the voxel they fill. Peaks below a tenth of the voxel's largest are dropped, and a bundle whose tissue has
 no fibre direction, such as one filled with CSF, gives none. `peaks.nii.gz` has 3 volumes
 per peak, largest peak first, which hold the x, y and z of the direction scaled by the amplitude, in world
@@ -186,6 +188,19 @@ tracked streamlines on the same nodes:
 <!-- not run: needs a tractogram tracked on the simulated images -->
 ```bash
 lar connectome tracks.tck sim/connectome_nodes.nii.gz tracked.csv --lut sim/connectome_nodes.txt
+```
+
+In Python, the `truth` that `simulate` returns holds the same ground truth as these files. Its maps are NumPy arrays
+on the phantom's grid: `tissue_fractions`, `background` and `bundle_fractions`, in which `bundle_fractions[..., k] >
+0` is the mask of bundle k. It also holds each bundle's `streamlines`, the `peaks` and the `connectome`.
+{py:func}`~larmor.simulation.read_ground_truth` reads the same object back from a saved folder, so that an analysis
+of the images can be scored against the ground truth long after the simulation ran:
+
+```python
+from larmor.simulation import read_ground_truth
+
+truth = read_ground_truth("sim")
+print(truth.bundle_fractions.shape, truth.connectome is not None)
 ```
 
 Running `phantom.json` again with the same seed gives the same images. Without `--seed`, a seed is drawn and

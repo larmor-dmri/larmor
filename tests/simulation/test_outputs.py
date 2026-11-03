@@ -20,6 +20,7 @@ from larmor.simulation import (
     Bundle,
     BundleGeometry,
     CompartmentModel,
+    GroundTruth,
     Phantom,
     Protocol,
     PulseSequence,
@@ -29,13 +30,14 @@ from larmor.simulation import (
     create_gradient_table,
     csf_tissue,
     example_phantom,
+    partition_voxels,
     read_phantom,
     save_simulation,
     simulate,
     simulation_files,
     standard_model_tissue,
 )
-from larmor.simulation.outputs import _voxel_peaks
+from larmor.simulation.ground_truth import _voxel_peaks, build_ground_truth
 from larmor.types import Grid, Tractogram, Volume
 
 ANGLE = math.radians(25)
@@ -72,14 +74,28 @@ def crossing(angle_deg: float = 90.0) -> Phantom:
 
 
 @pytest.fixture(scope="module")
-def simulated() -> SimulatedDWI:
+def run() -> tuple[SimulatedDWI, GroundTruth]:
     return simulate(crossing(), PROTOCOL, snr=25, seed=3)
 
 
 @pytest.fixture(scope="module")
-def saved(simulated: SimulatedDWI, tmp_path_factory: pytest.TempPathFactory) -> Path:
+def simulated(run: tuple[SimulatedDWI, GroundTruth]) -> SimulatedDWI:
+    return run[0]
+
+
+@pytest.fixture(scope="module")
+def truth(run: tuple[SimulatedDWI, GroundTruth]) -> GroundTruth:
+    return run[1]
+
+
+@pytest.fixture(scope="module")
+def saved(
+    simulated: SimulatedDWI,
+    truth: GroundTruth,
+    tmp_path_factory: pytest.TempPathFactory,
+) -> Path:
     folder = tmp_path_factory.mktemp("sim") / "out"
-    save_simulation(simulated, folder)
+    save_simulation(simulated, truth, folder)
     return folder
 
 
@@ -119,9 +135,10 @@ def test_the_bvecs_are_the_world_directions_in_the_fsl_frame(
 
 
 def test_the_fractions_masks_and_bundles_are_the_partition(
-    simulated: SimulatedDWI, saved: Path
+    truth: GroundTruth, saved: Path
 ) -> None:
-    partition = simulated.partition
+    partition = truth.partition
+    assert partition is not None
     np.testing.assert_allclose(
         _load(saved / "tissue_fractions.nii.gz"),
         partition.tissue_fractions,
@@ -161,14 +178,27 @@ def test_a_crossing_of_two_bundles_at_90_degrees_has_two_peaks_90_degrees_apart(
     assert np.isfinite(single).sum() in (0, 3)
 
 
+def test_two_bundles_crossing_at_15_degrees_stay_two_peaks() -> None:
+    # A straight bundle's fibres all point one way, so any merging at the crossing
+    # would join the two bundles, not one bundle's own spread.
+    phantom = crossing(15.0)
+    truth = build_ground_truth(phantom, partition_voxels(phantom, seed=3))
+    voxel = truth.peaks[7, 7, 3]
+    found = int(np.isfinite(voxel).sum()) // 3
+    assert found == 2, f"the two bundles gave {found} peak(s) at the crossing"
+    first, second = voxel[:3], voxel[3:6]
+    cosine = abs(first @ second) / np.linalg.norm(first) / np.linalg.norm(second)
+    assert math.degrees(math.acos(min(cosine, 1.0))) == pytest.approx(15.0, abs=3.0)
+
+
 def test_peaks_have_the_amplitude_of_the_fibres_share_of_the_voxel(
-    simulated: SimulatedDWI, saved: Path
+    truth: GroundTruth, saved: Path
 ) -> None:
     peaks = _load(saved / "peaks.nii.gz")
     amplitudes = np.nansum(
         np.linalg.norm(peaks.reshape(*peaks.shape[:3], -1, 3), axis=-1), axis=-1
     )
-    occupied = simulated.partition.tissue_fractions.sum(axis=-1)
+    occupied = truth.tissue_fractions.sum(axis=-1)
     inside = occupied > 0.2
     # Peaks below 10% of the largest are dropped, so the sum cannot exceed the share.
     assert (amplitudes[inside] <= occupied[inside] + 1e-5).all()
@@ -194,10 +224,10 @@ def test_the_info_file_names_the_protocol_noise_seed_and_files(
 
 
 def test_the_files_returned_are_the_files_written(
-    simulated: SimulatedDWI, saved: Path, tmp_path: Path
+    simulated: SimulatedDWI, truth: GroundTruth, saved: Path
 ) -> None:
-    assert simulated.phantom is not None and simulated.protocol is not None
-    planned = simulation_files(simulated.phantom, simulated.protocol, saved, noise=True)
+    assert simulated.protocol is not None
+    planned = simulation_files(truth.phantom, simulated.protocol, saved, noise=True)
     on_disk = {p for p in saved.iterdir()}
     assert set(planned.all_paths()) == on_disk
 
@@ -209,7 +239,7 @@ def test_running_the_saved_phantom_file_again_gives_the_same_images(
     shutil.copytree(saved, moved)
     loaded = read_phantom(moved / "phantom.json")
     assert loaded.protocol is not None
-    again = simulate(loaded.phantom, loaded.protocol, snr=25, seed=3)
+    again, _ = simulate(loaded.phantom, loaded.protocol, snr=25, seed=3)
     np.testing.assert_array_equal(again.echoes[0].data, simulated.echoes[0].data)
 
 
@@ -219,11 +249,11 @@ def test_a_phantom_without_geometry_seeds_is_rerun_exactly(tmp_path: Path) -> No
     phantom = Phantom(
         GRID, bundles=(Bundle(BundleGeometry(line, num_streamlines=40, radius=2.0)),)
     )
-    first = simulate(phantom, PROTOCOL, seed=11)
-    save_simulation(first, tmp_path / "out")
+    first, truth = simulate(phantom, PROTOCOL, seed=11)
+    save_simulation(first, truth, tmp_path / "out")
     loaded = read_phantom(tmp_path / "out" / "phantom.json")
     assert loaded.protocol is not None
-    second = simulate(loaded.phantom, loaded.protocol, seed=99)
+    second, _ = simulate(loaded.phantom, loaded.protocol, seed=99)
     np.testing.assert_array_equal(second.echoes[0].data, first.echoes[0].data)
 
 
@@ -244,20 +274,20 @@ def test_tractogram_bundles_and_tissue_maps_are_copied_into_the_folder(
         bundles=(Bundle(tractogram),),
         tissue_maps=(TissueMap("GM", Volume(gm, AFFINE)),),
     )
-    first = simulate(phantom, PROTOCOL, seed=1)
-    save_simulation(first, tmp_path / "out")
+    first, truth = simulate(phantom, PROTOCOL, seed=1)
+    save_simulation(first, truth, tmp_path / "out")
     assert (tmp_path / "out" / "tissue_map_GM.nii.gz").is_file()
     moved = tmp_path / "elsewhere"
     shutil.move(tmp_path / "out", moved)
     loaded = read_phantom(moved / "phantom.json")
-    second = simulate(loaded.phantom, loaded.protocol or PROTOCOL, seed=1)
+    second, _ = simulate(loaded.phantom, loaded.protocol or PROTOCOL, seed=1)
     np.testing.assert_allclose(second.echoes[0].data, first.echoes[0].data, rtol=1e-4)
 
 
 def test_each_echo_has_its_own_file_and_shares_the_gradients(tmp_path: Path) -> None:
     protocol = Protocol(PROTOCOL.gradients, 15.0, 30.0, [60.0, 90.0], 3000.0)
-    result = simulate(crossing(), protocol, seed=0)
-    files = save_simulation(result, tmp_path / "multi")
+    result, truth = simulate(crossing(), protocol, seed=0)
+    files = save_simulation(result, truth, tmp_path / "multi")
     assert [p.name for p in files.dwi] == ["dwi_te60ms.nii.gz", "dwi_te90ms.nii.gz"]
     assert files.noise_free == ()
     for path, echo in zip(files.dwi, result.echoes, strict=True):
@@ -265,27 +295,27 @@ def test_each_echo_has_its_own_file_and_shares_the_gradients(tmp_path: Path) -> 
 
 
 def test_a_result_that_did_not_come_from_simulate_is_refused(
-    simulated: SimulatedDWI, tmp_path: Path
+    simulated: SimulatedDWI, truth: GroundTruth, tmp_path: Path
 ) -> None:
     bare = SimulatedDWI(
         simulated.echoes,
         simulated.noise_free,
         simulated.gradients,
         simulated.echo_times_ms,
-        simulated.partition,
-        None,
+        simulated.sigma,
     )
-    with pytest.raises(ValueError, match="no phantom or protocol"):
-        save_simulation(bare, tmp_path / "out")
+    with pytest.raises(ValueError, match="no protocol"):
+        save_simulation(bare, truth, tmp_path / "out")
+    assert not (tmp_path / "out").exists()
 
 
 def test_tissue_names_that_give_one_file_name_are_refused(
-    simulated: SimulatedDWI,
+    simulated: SimulatedDWI, truth: GroundTruth
 ) -> None:
-    assert simulated.phantom is not None and simulated.protocol is not None
-    first, second, third = simulated.phantom.tissues
+    assert simulated.protocol is not None
+    first, second, third = truth.phantom.tissues
     phantom = replace(
-        simulated.phantom,
+        truth.phantom,
         tissues=(replace(first, name="a b"), replace(second, name="a_b"), third),
         bundles=(),
     )
@@ -313,49 +343,48 @@ def test_without_a_seed_the_drawn_seed_reruns_the_images_exactly(
     phantom = Phantom(
         GRID, bundles=(Bundle(BundleGeometry(line, num_streamlines=40, radius=2.0)),)
     )
-    first = simulate(phantom, PROTOCOL, snr=20)
-    save_simulation(first, tmp_path / "out")
+    first, truth = simulate(phantom, PROTOCOL, snr=20)
+    save_simulation(first, truth, tmp_path / "out")
     info = json.loads((tmp_path / "out" / "simulation.json").read_text())
     assert info["seed"] == first.seed is not None
     loaded = read_phantom(tmp_path / "out" / "phantom.json")
     assert loaded.protocol is not None
-    second = simulate(loaded.phantom, loaded.protocol, snr=20, seed=info["seed"])
+    second, _ = simulate(loaded.phantom, loaded.protocol, snr=20, seed=info["seed"])
     np.testing.assert_array_equal(second.echoes[0].data, first.echoes[0].data)
 
 
 def test_a_new_simulation_removes_the_files_of_the_one_before(
-    simulated: SimulatedDWI, tmp_path: Path
+    simulated: SimulatedDWI, truth: GroundTruth, tmp_path: Path
 ) -> None:
     folder = tmp_path / "out"
-    save_simulation(simulated, folder)
+    save_simulation(simulated, truth, folder)
     (folder / "notes.txt").write_text("mine")
     assert (folder / "dwi_noise_free.nii.gz").exists()
-    save_simulation(simulate(crossing(), PROTOCOL, seed=3), folder)
+    save_simulation(*simulate(crossing(), PROTOCOL, seed=3), folder)
     assert not (folder / "dwi_noise_free.nii.gz").exists()
     assert (folder / "notes.txt").read_text() == "mine"
 
 
 def test_a_folder_of_other_files_is_refused_unless_forced(
-    simulated: SimulatedDWI, tmp_path: Path
+    simulated: SimulatedDWI, truth: GroundTruth, tmp_path: Path
 ) -> None:
     folder = tmp_path / "out"
     folder.mkdir()
     (folder / "notes.txt").write_text("mine")
     with pytest.raises(FileExistsError, match="not empty"):
-        save_simulation(simulated, folder)
+        save_simulation(simulated, truth, folder)
     assert not (folder / "dwi.nii.gz").exists()
-    save_simulation(simulated, folder, force=True)
+    save_simulation(simulated, truth, folder, force=True)
     assert (folder / "dwi.nii.gz").exists() and (folder / "notes.txt").exists()
 
 
 def test_compartment_fractions_are_the_tissue_fraction_times_the_share(
-    simulated: SimulatedDWI, saved: Path
+    truth: GroundTruth, saved: Path
 ) -> None:
-    assert simulated.phantom is not None
     maps = _load(saved / "compartment_fractions.nii.gz")
-    shares = [c.fraction for t in simulated.phantom.tissues for c in t.compartments]
+    shares = [c.fraction for t in truth.phantom.tissues for c in t.compartments]
     assert maps.shape[3] == len(shares)
-    tissues = simulated.partition.tissue_fractions
+    tissues = truth.tissue_fractions
     np.testing.assert_allclose(maps[..., 0], tissues[..., 0] * shares[0], atol=1e-6)
     np.testing.assert_allclose(maps.sum(axis=-1), tissues.sum(axis=-1), atol=1e-5)
     info = json.loads((saved / "simulation.json").read_text())
@@ -372,12 +401,11 @@ def test_the_free_water_fraction_counts_free_water_in_tissues_and_background(
     mixed = Tissue("BG", (replace(water, fraction=0.5), ball))
     tissues = (standard_model_tissue(free_water_fraction=0.1), mixed)
     phantom = replace(crossing(), tissues=tissues, background="BG")
-    simulated = simulate(phantom, PROTOCOL, seed=3)
-    save_simulation(simulated, tmp_path / "out")
+    simulated, truth = simulate(phantom, PROTOCOL, seed=3)
+    save_simulation(simulated, truth, tmp_path / "out")
     found = _load(tmp_path / "out" / "free_water_fraction.nii.gz")
-    partition = simulated.partition
-    wm, bg = np.moveaxis(partition.tissue_fractions, -1, 0)
-    expected = 0.1 * wm + 0.5 * (bg + partition.background)
+    wm, bg = np.moveaxis(truth.tissue_fractions, -1, 0)
+    expected = 0.1 * wm + 0.5 * (bg + truth.background)
     np.testing.assert_allclose(found, expected, atol=1e-6)
     assert found.max() == pytest.approx(0.5, abs=1e-6)
 
@@ -396,15 +424,14 @@ def test_signal_fractions_weight_each_compartment_by_its_relaxation(
     protocol = Protocol(
         PROTOCOL.gradients, 15.0, 30.0, [60.0, 120.0], 3000.0, sequence=sequence
     )
-    simulated = simulate(_free_water_phantom(), protocol, seed=0)
-    files = save_simulation(simulated, tmp_path / "out")
+    simulated, truth = simulate(_free_water_phantom(), protocol, seed=0)
+    files = save_simulation(simulated, truth, tmp_path / "out")
     assert [p.name for p in files.signal_fractions] == [
         "signal_fractions_te60ms.nii.gz",
         "signal_fractions_te120ms.nii.gz",
     ]
     volume = _load(files.compartment_fractions).astype(np.float64)
-    assert simulated.phantom is not None
-    compartments = [c for t in simulated.phantom.tissues for c in t.compartments]
+    compartments = [c for t in truth.phantom.tissues for c in t.compartments]
     free = [c.model == CompartmentModel.FREE_WATER for c in compartments]
     seen = []
     for te, path, water in zip(
@@ -457,12 +484,10 @@ def test_the_background_fraction_is_in_the_mask_of_the_background_tissue(
     tmp_path: Path,
 ) -> None:
     phantom = replace(crossing(), background="CSF")
-    result = simulate(phantom, PROTOCOL, seed=1)
-    save_simulation(result, tmp_path / "out")
+    result, truth = simulate(phantom, PROTOCOL, seed=1)
+    save_simulation(result, truth, tmp_path / "out")
     csf = _load(tmp_path / "out" / "mask_CSF.nii.gz")
-    expected = (
-        result.partition.background + result.partition.tissue_fractions[..., 2]
-    ) >= 0.5
+    expected = (truth.background + truth.tissue_fractions[..., 2]) >= 0.5
     np.testing.assert_array_equal(csf, expected)
     assert csf.sum() > 0.5 * csf.size
 
@@ -475,7 +500,7 @@ def test_a_peak_points_along_the_bundle_in_world_coordinates(tmp_path: Path) -> 
         GRID,
         bundles=(Bundle(BundleGeometry(line, num_streamlines=60, radius=1.0, seed=1)),),
     )
-    save_simulation(simulate(phantom, PROTOCOL, seed=1), tmp_path / "out")
+    save_simulation(*simulate(phantom, PROTOCOL, seed=1), tmp_path / "out")
     peak = _load(tmp_path / "out" / "peaks.nii.gz")[7, 7, 3, :3]
     assert abs(peak @ direction) / np.linalg.norm(peak) == pytest.approx(1.0, abs=1e-3)
 
@@ -485,24 +510,22 @@ def test_the_bundle_mask_holds_a_crossing_that_neither_tissue_mask_fills(
 ) -> None:
     example = example_phantom()
     assert example.protocol is not None
-    result = simulate(example.phantom, example.protocol, seed=1)
-    save_simulation(result, tmp_path / "out")
+    result, truth = simulate(example.phantom, example.protocol, seed=1)
+    save_simulation(result, truth, tmp_path / "out")
     wm, wm2, both = (
         _load(tmp_path / "out" / f"mask_{n}.nii.gz")
         for n in ("WM", "WM-sparse", "bundles")
     )
-    filled = result.partition.bundle_fractions.sum(axis=-1) >= 0.5
+    filled = truth.bundle_fractions.sum(axis=-1) >= 0.5
     hole = filled & ~(wm | wm2).astype(bool)
     assert hole.any()
     assert both[hole].all()
 
 
-def test_bundle_names_must_name_every_bundle(tmp_path: Path) -> None:
-    example = example_phantom()
-    assert example.protocol is not None
-    result = simulate(example.phantom, example.protocol, seed=1)
+@pytest.mark.parametrize("names", [["only one"], ["a", "b", "c"]])
+def test_bundle_names_must_name_every_bundle(names: list[str]) -> None:
     with pytest.raises(ValueError, match="must name 2 bundles"):
-        save_simulation(result, tmp_path / "out", bundle_names=["only one"])
+        simulate(crossing(), PROTOCOL, seed=1, bundle_names=names)
 
 
 def test_a_bundle_of_csf_gives_no_peaks_and_the_bundle_mask_skips_the_background(
@@ -512,13 +535,11 @@ def test_a_bundle_of_csf_gives_no_peaks_and_the_bundle_mask_skips_the_background
     line = np.array([centre - 12 * X, centre + 12 * X])
     bundle = Bundle(BundleGeometry(line, num_streamlines=60, seed=0), tissue="CSF")
     phantom = Phantom(GRID, bundles=(bundle,), background="CSF")
-    result = simulate(phantom, PROTOCOL, seed=1)
-    save_simulation(result, tmp_path / "out")
+    result, truth = simulate(phantom, PROTOCOL, seed=1)
+    save_simulation(result, truth, tmp_path / "out")
     assert np.isnan(_load(tmp_path / "out" / "peaks.nii.gz")).all()
     mask = _load(tmp_path / "out" / "mask_bundles.nii.gz").astype(bool)
-    np.testing.assert_array_equal(
-        mask, result.partition.bundle_fractions.sum(axis=-1) >= 0.5
-    )
+    np.testing.assert_array_equal(mask, truth.bundle_fractions.sum(axis=-1) >= 0.5)
 
 
 def test_echo_times_that_round_alike_get_files_of_their_own() -> None:
@@ -530,18 +551,21 @@ def test_echo_times_that_round_alike_get_files_of_their_own() -> None:
 
 
 def test_saving_reports_its_progress_to_the_end(
-    simulated: SimulatedDWI, tmp_path: Path
+    simulated: SimulatedDWI, truth: GroundTruth, tmp_path: Path
 ) -> None:
     seen: list[tuple[int, int, str]] = []
-    save_simulation(simulated, tmp_path / "out", progress=lambda *a: seen.append(a))
+    save_simulation(
+        simulated, truth, tmp_path / "out", progress=lambda *a: seen.append(a)
+    )
     assert [done for done, _, _ in seen] == list(range(1, seen[-1][1] + 1))
     assert seen[-1][0] == seen[-1][1] and seen[-1][2] == "save"
 
 
 def test_the_ground_truth_connectome_is_saved_only_for_a_phantom_with_bundles(
-    simulated: SimulatedDWI, tmp_path: Path
+    tmp_path: Path,
 ) -> None:
-    files = save_simulation(simulated, tmp_path / "out", bundle_names=["LR", "AP"])
+    named = simulate(crossing(), PROTOCOL, seed=3, bundle_names=["LR", "AP"])
+    files = save_simulation(*named, tmp_path / "out")
     names = ["LR_start", "LR_end", "AP_start", "AP_end"]
     lookup = read_lookup_table(tmp_path / "out" / "connectome_nodes.txt")
     assert {k: v.name for k, v in lookup.items()} == dict(enumerate(names, 1))
@@ -568,7 +592,7 @@ def test_the_ground_truth_connectome_is_saved_only_for_a_phantom_with_bundles(
     gm = np.zeros(GRID.shape)
     gm[:3] = 0.5
     bare = Phantom(GRID, tissue_maps=(TissueMap("GM", Volume(gm, AFFINE)),))
-    empty = save_simulation(simulate(bare, PROTOCOL, seed=1), tmp_path / "bare")
+    empty = save_simulation(*simulate(bare, PROTOCOL, seed=1), tmp_path / "bare")
     assert empty.connectome is None and empty.connectome_parcellation is None
     assert not list((tmp_path / "bare").glob("connectome*"))
     info = json.loads((tmp_path / "bare" / "simulation.json").read_text())

@@ -9,12 +9,14 @@ from larmor.simulation import (
     BundleGeometry,
     Compartment,
     CompartmentModel,
+    GroundTruth,
     Phantom,
     Protocol,
     PulseSequence,
     SimulatedDWI,
     Tissue,
     TissueMap,
+    VoxelPartition,
     create_gradient_table,
     noddi_tissue,
     signal_breakdown,
@@ -61,23 +63,31 @@ def phantom() -> Phantom:
     )
 
 
+def _partition(truth: GroundTruth) -> VoxelPartition:
+    assert truth.partition is not None
+    return truth.partition
+
+
 @pytest.fixture(scope="module", params=list(PulseSequence))
-def simulated(request: pytest.FixtureRequest, phantom: Phantom) -> SimulatedDWI:
+def simulated(
+    request: pytest.FixtureRequest, phantom: Phantom
+) -> tuple[SimulatedDWI, GroundTruth]:
     return simulate(phantom, protocol(request.param), seed=0)
 
 
 @pytest.mark.parametrize("voxel", VOXELS.values(), ids=VOXELS.keys())
 def test_final_signal_is_simulates_noise_free_signal(
-    simulated: SimulatedDWI, voxel: tuple[int, int, int]
+    simulated: tuple[SimulatedDWI, GroundTruth], voxel: tuple[int, int, int]
 ) -> None:
-    assert simulated.protocol is not None and simulated.phantom is not None
+    result, truth = simulated
+    assert result.protocol is not None
     for echo in range(2):
-        expected = simulated.noise_free[echo].data[voxel]
+        expected = result.noise_free[echo].data[voxel]
         found = [
             signal_breakdown(
-                simulated.phantom,
-                simulated.protocol,
-                simulated.partition,
+                truth.phantom,
+                result.protocol,
+                _partition(truth),
                 voxel,
                 n,
                 echo=echo,
@@ -115,12 +125,12 @@ def test_new_compartments_are_named_and_give_simulates_signal(
         background="BG",
     )
     scan = protocol(PulseSequence.SPIN_ECHO)
-    simulated = simulate(mixed, scan, seed=0)
+    simulated, truth = simulate(mixed, scan, seed=0)
     labels = set()
     for voxel in (VOXELS["crossing"], VOXELS["CSF"]):
         found = []
         for n in range(len(GTAB.bvals)):
-            breakdown = signal_breakdown(mixed, scan, simulated.partition, voxel, n)
+            breakdown = signal_breakdown(mixed, scan, _partition(truth), voxel, n)
             found.append(breakdown.signal)
             labels |= {c.label for c in breakdown.compartments}
         expected = simulated.noise_free[0].data[voxel]
@@ -136,14 +146,18 @@ def test_new_compartments_are_named_and_give_simulates_signal(
     }
 
 
-def test_voxels_hold_what_their_names_say(simulated: SimulatedDWI) -> None:
-    assert simulated.protocol is not None and simulated.phantom is not None
+def test_voxels_hold_what_their_names_say(
+    simulated: tuple[SimulatedDWI, GroundTruth],
+) -> None:
+    result, truth = simulated
+    scan = result.protocol
+    assert scan is not None
 
     def shares(voxel: tuple[int, int, int]) -> set[tuple[str, int | None]]:
         breakdown = signal_breakdown(
-            simulated.phantom,  # type: ignore[arg-type]
-            simulated.protocol,  # type: ignore[arg-type]
-            simulated.partition,
+            truth.phantom,
+            scan,
+            _partition(truth),
             voxel,
             1,
         )
@@ -155,12 +169,15 @@ def test_voxels_hold_what_their_names_say(simulated: SimulatedDWI) -> None:
     assert shares(VOXELS["CSF"]) == {("CSF", None)}
 
 
-def test_the_bundles_of_a_tissue_add_up_to_its_share(simulated: SimulatedDWI) -> None:
-    assert simulated.protocol is not None and simulated.phantom is not None
+def test_the_bundles_of_a_tissue_add_up_to_its_share(
+    simulated: tuple[SimulatedDWI, GroundTruth],
+) -> None:
+    result, truth = simulated
+    assert result.protocol is not None
     breakdown = signal_breakdown(
-        simulated.phantom,
-        simulated.protocol,
-        simulated.partition,
+        truth.phantom,
+        result.protocol,
+        _partition(truth),
         VOXELS["crossing"],
         1,
     )
@@ -171,9 +188,9 @@ def test_the_bundles_of_a_tissue_add_up_to_its_share(simulated: SimulatedDWI) ->
 
 def test_each_factor_follows_its_formula(phantom: Phantom) -> None:
     scan = protocol(PulseSequence.GRADIENT_ECHO)
-    result = simulate(phantom, scan, seed=0)
+    result, truth = simulate(phantom, scan, seed=0)
     voxel = VOXELS["partial bundle over GM"]
-    breakdown = signal_breakdown(phantom, scan, result.partition, voxel, 3, echo=1)
+    breakdown = signal_breakdown(phantom, scan, _partition(truth), voxel, 3, echo=1)
     fractions = dict(breakdown.tissue_fractions)
     gm = phantom.tissue("GM")
     for c, settings in zip(
@@ -193,7 +210,7 @@ def test_each_factor_follows_its_formula(phantom: Phantom) -> None:
         math.exp(-breakdown.b_value * diffusivity.diffusivity)
     )
     stick = next(c for c in breakdown.compartments if c.label == "WM axons")
-    weight = result.partition.bundle_fractions[voxel][0]
+    weight = truth.bundle_fractions[voxel][0]
     assert stick.partial_volume == pytest.approx(weight)
     assert {c.label for c in breakdown.compartments} >= {
         "GM soma",
@@ -233,7 +250,7 @@ def test_the_echo_time_changes_only_the_t2_factor(phantom: Phantom) -> None:
         protocol(PulseSequence.SPIN_ECHO, 60.0),
         protocol(PulseSequence.SPIN_ECHO, 100.0),
     )
-    partition = simulate(phantom, short, seed=0).partition
+    partition = _partition(simulate(phantom, short, seed=0)[1])
     voxel = VOXELS["crossing"]
     a = signal_breakdown(phantom, short, partition, voxel, 4)
     b = signal_breakdown(phantom, long, partition, voxel, 4)
@@ -242,7 +259,7 @@ def test_the_echo_time_changes_only_the_t2_factor(phantom: Phantom) -> None:
 
 def test_the_b_value_changes_only_the_attenuations(phantom: Phantom) -> None:
     scan = protocol(PulseSequence.SPIN_ECHO)
-    partition = simulate(phantom, scan, seed=0).partition
+    partition = _partition(simulate(phantom, scan, seed=0)[1])
     stronger = Protocol(
         replace(GTAB, bvals=GTAB.bvals * 2), 15.0, 30.0, [70.0, 90.0], 3000.0
     )
@@ -256,9 +273,9 @@ def test_noise_gives_the_floor_and_the_mean_rician_magnitude(
     phantom: Phantom,
 ) -> None:
     scan = protocol(PulseSequence.SPIN_ECHO)
-    result = simulate(phantom, scan, snr=10, seed=0)
+    result, truth = simulate(phantom, scan, snr=10, seed=0)
     breakdown = signal_breakdown(
-        phantom, scan, result.partition, VOXELS["crossing"], 7, snr=10
+        phantom, scan, _partition(truth), VOXELS["crossing"], 7, snr=10
     )
     assert breakdown.sigma == pytest.approx(result.sigma)
     sigma = breakdown.sigma
@@ -272,6 +289,6 @@ def test_noise_gives_the_floor_and_the_mean_rician_magnitude(
 
 def test_a_voxel_outside_the_grid_is_refused(phantom: Phantom) -> None:
     scan = protocol(PulseSequence.SPIN_ECHO)
-    partition = simulate(phantom, scan, seed=0).partition
+    partition = _partition(simulate(phantom, scan, seed=0)[1])
     with pytest.raises(ValueError, match="outside the grid"):
         signal_breakdown(phantom, scan, partition, (16, 0, 0), 0)

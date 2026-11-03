@@ -135,7 +135,7 @@ def test_full_voxel_of_a_preset_gives_the_closed_form_s0(tissue: Tissue) -> None
         phantom = Phantom(grid, tissues=(tissue,), bundles=bundles)
     else:
         phantom = Phantom(grid, tissues=(tissue,), background=tissue.name)
-    result = simulate(phantom, protocol)
+    result, _ = simulate(phantom, protocol)
     for echo, te in zip(result.noise_free, (60.0, 90.0), strict=True):
         assert echo.data[1, 1, 1, 0] == pytest.approx(
             closed_form_s0(tissue, te, 2000.0), rel=1e-6
@@ -150,7 +150,7 @@ def test_sandi_signal_is_the_sum_of_its_compartments() -> None:
     phantom = Phantom(
         Grid((1, 1, 1), np.eye(4)), tissues=(tissue,), background=tissue.name
     )
-    signal = simulate(phantom, protocol).noise_free[0].data[0, 0, 0]
+    signal = simulate(phantom, protocol)[0].noise_free[0].data[0, 0, 0]
     soma, neurite, extra = tissue.compartments
     weight = (
         0.8 * (1 - np.exp(-3000 / tissue.compartments[0].t1_ms)) * np.exp(-80 / 88.0)
@@ -204,7 +204,7 @@ def test_noddi_signal_in_a_bundle_is_the_sum_of_its_compartments() -> None:
     line = BundleGeometry(np.array([[-1.0, 0, 0], [1.0, 0, 0]]), radius=0.0)
     bundle = Bundle(line, tissue=tissue.name, streamline_area=10.0)
     phantom = Phantom(Grid((1, 1, 1), np.eye(4)), tissues=(tissue,), bundles=(bundle,))
-    signal = simulate(phantom, protocol).noise_free[0].data[0, 0, 0]
+    signal = simulate(phantom, protocol)[0].noise_free[0].data[0, 0, 0]
     cosines = np.ascontiguousarray(bvecs[:, 0])
     expected = sum(
         c.fraction

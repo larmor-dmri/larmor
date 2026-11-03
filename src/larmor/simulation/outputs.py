@@ -1,44 +1,45 @@
-"""Saving a simulation with its ground truth, bundles and phantom file."""
+"""Saving a simulation with its ground truth, and reading the ground truth back."""
 
 import colorsys
 import json
-import math
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
-from typing import Final
+from typing import Any, Final
 
 import numpy as np
 
-from larmor.io import save_tractogram, save_volume, write_bvals_bvecs
+from larmor.io import (
+    load_tractogram,
+    load_volume,
+    save_tractogram,
+    save_volume,
+    write_bvals_bvecs,
+)
 from larmor.simulation.bundles import BundleGeometry
-from larmor.simulation.connectome import (
-    GroundTruthConnectome,
-    ground_truth_connectome,
+from larmor.simulation.connectome import GroundTruthConnectome, connectome_matrices
+from larmor.simulation.ground_truth import (
+    PEAK_MERGE_ANGLE,
+    PEAK_RELATIVE_THRESHOLD,
+    GroundTruth,
 )
 from larmor.simulation.instant import SimulatedDWI, relaxation_weights
 from larmor.simulation.phantom import (
     Bundle,
     Phantom,
     Progress,
-    VoxelPartition,
 )
-from larmor.simulation.phantom_file import write_phantom
+from larmor.simulation.phantom_file import read_phantom, write_phantom
 from larmor.simulation.protocol import Protocol
 from larmor.simulation.tissues import CompartmentModel
 from larmor.tractography import write_connectome
-from larmor.types import Tractogram, Volume
+from larmor.types import Grid, Tractogram, Volume
 
 # The format name and version written to simulation.json.
 FORMAT: Final = "larmor-simulation"
 VERSION: Final = 1
-
-# Angle in degrees within which a fibre joins a larger one's ground-truth peak.
-PEAK_MERGE_ANGLE: Final = 20.0
-# Fraction of the voxel's largest peak below which a ground-truth peak is dropped.
-PEAK_RELATIVE_THRESHOLD: Final = 0.1
 
 # A tissue mask holds the voxels where the tissue fills at least this fraction.
 MASK_FRACTION: Final = 0.5
@@ -241,10 +242,10 @@ def _echo_names(te_ms: Sequence[float]) -> list[str]:
 
 def save_simulation(
     simulated: SimulatedDWI,
+    truth: GroundTruth,
     folder: str | Path,
     *,
     force: bool = False,
-    bundle_names: Sequence[str] | None = None,
     progress: Progress | None = None,
 ) -> SimulationFiles:
     """Writes a simulation and its ground truth into one self-contained folder.
@@ -252,19 +253,20 @@ def save_simulation(
     The folder holds the DWI with its .bval and .bvec in the FSL frame, the
     ground truth, the bundles' streamlines, the phantom file with the scan and
     simulation.json, as `SimulationFiles` lists them. Running the phantom file
-    again with the seed recorded in simulation.json gives the same images.
+    again with the seed recorded in simulation.json gives the same images, and
+    `read_ground_truth` reads the ground truth back.
 
     The folder is created if needed. If it holds an earlier simulation, the files
     that its simulation.json lists are removed first. A folder that holds other
     files is refused unless `force` is True, which then writes into it and keeps
     them.
 
-    The ground-truth peaks come from the voxel's own fibres, not from a fit:
-    fibres within 20 degrees of a larger one join its peak, a direction and its
-    opposite counting as the same, and peaks below 10% of the voxel's largest
-    are dropped. Each peak's direction is the weighted mean of its fibres. A
-    tissue mask holds the voxels where the tissue, background
-    included, fills at least half.
+    The ground-truth peaks come from the voxel's own fibres, not from a fit. A
+    fibre within 20 degrees of a larger one of the same bundle joins its peak,
+    a direction and its opposite counting as the same; different bundles never
+    share a peak. Peaks below 10% of the voxel's largest are dropped, and each
+    peak's direction is the weighted mean of its fibres. A tissue mask holds
+    the voxels where the tissue, background included, fills at least half.
 
     The ground-truth connectome joins the voxels where each bundle's
     streamlines start to those where they stop (see `ground_truth_connectome`),
@@ -278,14 +280,12 @@ def save_simulation(
     with the signal fractions, which are written too.
 
     Args:
-        simulated: The result of `simulate`.
+        simulated: The images `simulate` returns.
+        truth: The ground truth `simulate` returns with them; its bundle names
+            go in the phantom file's viewer block.
         folder: The output folder.
         force: Whether to write into a folder that is not empty and holds no
             simulation.json. Defaults to False.
-        bundle_names: A name for each bundle, kept in the phantom file for the
-            viewer and used in the connectome's node names, such as
-            `PhantomFile.bundle_names` of the file the phantom was read from.
-            Defaults to None, which leaves the bundles numbered.
         progress: Called with (done, total, "save") as the files are written.
             Defaults to None.
 
@@ -295,26 +295,17 @@ def save_simulation(
     Raises:
         FileExistsError: If the folder is not empty, has no simulation.json and
             `force` is False.
-        ValueError: If `simulated` does not carry its phantom and protocol (it was
-            not made by `simulate`), two tissue names give the same file name, or
-            bundle_names does not name every bundle.
+        ValueError: If `simulated` does not carry its protocol (it was not made by
+            `simulate`), or two tissue names give the same file name.
     """
-    phantom, protocol = simulated.phantom, simulated.protocol
-    if phantom is None or protocol is None:
-        raise ValueError(
-            "The simulation has no phantom or protocol; save the result of simulate."
-        )
-    if bundle_names is not None and len(bundle_names) != len(phantom.bundles):
-        raise ValueError(
-            f"bundle_names must name {len(phantom.bundles)} bundles, got "
-            f"{len(bundle_names)}."
-        )
+    phantom, protocol = truth.phantom, simulated.protocol
+    if protocol is None:
+        raise ValueError("The simulation has no protocol; save the result of simulate.")
     files = simulation_files(
         phantom, protocol, folder, noise=simulated.sigma is not None
     )
     _clear_previous(files.folder, force)
     files.folder.mkdir(parents=True, exist_ok=True)
-    partition = simulated.partition
     steps = len(files.dwi) + len(files.noise_free) + 4
     done = 0
 
@@ -335,28 +326,25 @@ def save_simulation(
         simulated.gradients, files.bvals, files.bvecs, ref_path=files.dwi[0]
     )
 
-    _write_ground_truth(phantom, protocol, partition, files, tick)
+    _write_ground_truth(truth, protocol, files, tick)
 
-    for streamlines, path in zip(partition.streamlines, files.bundles, strict=True):
+    for streamlines, path in zip(truth.streamlines, files.bundles, strict=True):
         save_tractogram(Tractogram(streamlines.points, streamlines.offsets), path)
     for tissue_map in phantom.tissue_maps:
         save_volume(tissue_map.volume, files.tissue_maps[tissue_map.tissue])
-    connectome = None
-    if phantom.bundles:
-        connectome = ground_truth_connectome(partition, bundle_names=bundle_names)
-        _write_connectome(connectome, files)
+    if truth.connectome is not None:
+        _write_connectome(truth.connectome, files)
     tick()
 
-    _write_phantom_copy(phantom, protocol, files, bundle_names)
-    _write_info(simulated, phantom, protocol, files, connectome)
+    _write_phantom_copy(phantom, protocol, files, truth.bundle_names)
+    _write_info(simulated, truth, protocol, files)
     tick()
     return files
 
 
 def _write_ground_truth(
-    phantom: Phantom,
+    truth: GroundTruth,
     protocol: Protocol,
-    partition: VoxelPartition,
     files: SimulationFiles,
     tick: Callable[[], None],
 ) -> None:
@@ -364,25 +352,22 @@ def _write_ground_truth(
 
     `tick` is called once after the fractions and peaks, and once at the end.
     """
-    affine = partition.grid.affine
-    save_volume(
-        _float_volume(partition.tissue_fractions, affine), files.tissue_fractions
-    )
-    save_volume(_float_volume(partition.background, affine), files.background_fraction)
+    affine = truth.grid.affine
+    save_volume(_float_volume(truth.tissue_fractions, affine), files.tissue_fractions)
+    save_volume(_float_volume(truth.background, affine), files.background_fraction)
     if files.bundle_fractions is not None:
         save_volume(
-            _float_volume(partition.bundle_fractions, affine), files.bundle_fractions
+            _float_volume(truth.bundle_fractions, affine), files.bundle_fractions
         )
-    oriented = np.array([t.is_oriented for t in phantom.tissues], dtype=bool)
-    save_volume(_float_volume(_peaks(partition, oriented), affine), files.peaks)
+    save_volume(_float_volume(truth.peaks, affine), files.peaks)
     tick()
 
-    fractions = partition.tissue_fractions.copy()
-    if phantom.background is not None:
-        column = partition.tissue_names.index(phantom.background)
-        fractions[..., column] += partition.background
-    _write_masks(partition, fractions, files)
-    _write_compartment_fractions(phantom, protocol, fractions, affine, files)
+    fractions = truth.tissue_fractions.copy()
+    if truth.phantom.background is not None:
+        column = truth.tissue_names.index(truth.phantom.background)
+        fractions[..., column] += truth.background
+    _write_masks(truth, fractions, files)
+    _write_compartment_fractions(truth.phantom, protocol, fractions, affine, files)
     tick()
 
 
@@ -414,7 +399,7 @@ def _float_volume(data: np.ndarray, affine: np.ndarray) -> Volume:
 
 
 def _write_masks(
-    partition: VoxelPartition,
+    truth: GroundTruth,
     fractions: np.ndarray,
     files: SimulationFiles,
 ) -> None:
@@ -423,12 +408,12 @@ def _write_masks(
     `fractions` holds each tissue's fraction with the background added to its
     tissue.
     """
-    affine = partition.grid.affine
-    for index, name in enumerate(partition.tissue_names):
+    affine = truth.grid.affine
+    for index, name in enumerate(truth.tissue_names):
         mask = fractions[..., index] >= MASK_FRACTION
         save_volume(Volume(mask.astype(np.uint8), affine.copy()), files.masks[name])
     if files.bundle_mask is not None:
-        union = partition.bundle_fractions.sum(axis=-1) >= MASK_FRACTION
+        union = truth.bundle_fractions.sum(axis=-1) >= MASK_FRACTION
         save_volume(Volume(union.astype(np.uint8), affine.copy()), files.bundle_mask)
 
 
@@ -563,12 +548,12 @@ def _write_phantom_copy(
 
 def _write_info(
     simulated: SimulatedDWI,
-    phantom: Phantom,
+    truth: GroundTruth,
     protocol: Protocol,
     files: SimulationFiles,
-    connectome: GroundTruthConnectome | None,
 ) -> None:
     """Writes simulation.json."""
+    phantom, connectome = truth.phantom, truth.connectome
 
     def name(path: Path) -> str:
         return path.relative_to(files.folder).as_posix()
@@ -587,7 +572,7 @@ def _write_info(
         "sigma": simulated.sigma,
         "noise_reference": simulated.noise_reference,
         "seed": simulated.seed,
-        "tissues": list(simulated.partition.tissue_names),
+        "tissues": list(truth.tissue_names),
         "compartments": [
             {"tissue": t.name, "model": c.model.value, "fraction": c.fraction}
             for t in phantom.tissues
@@ -647,60 +632,88 @@ def _write_info(
     )
 
 
-def _peaks(partition: VoxelPartition, oriented: np.ndarray) -> np.ndarray:
-    """Returns the peak directions scaled by amplitude, (X, Y, Z, 3 P), NaN if none.
+def read_ground_truth(folder: str | Path) -> GroundTruth:
+    """Reads the ground truth of a simulation from the folder `save_simulation` wrote.
+
+    The files are found through the folder's simulation.json. The fractions and
+    peaks are float32, as they are stored, and the partition is None, since the
+    folder does not keep each voxel's fibres.
 
     Args:
-        partition: The voxel partition.
-        oriented: Whether each tissue has a fibre direction, (T,); the fibres of
-            the others give no peaks.
+        folder: The simulation folder.
+
+    Returns:
+        The ground truth; its connectome is None for a folder written without
+        one.
+
+    Raises:
+        ValueError: If the folder holds no simulation.json, or it is not one that
+            `save_simulation` wrote.
+        OSError: If a file cannot be read.
     """
-    per_voxel: dict[int, list[tuple[np.ndarray, float]]] = {}
-    offsets = partition.offsets
-    kept = oriented[partition.fibre_tissue]
-    for index in np.flatnonzero(np.diff(offsets)):
-        span = slice(offsets[index], offsets[index + 1])
-        if not kept[span].any():
-            continue
-        per_voxel[int(index)] = _voxel_peaks(
-            partition.fibre_direction[span][kept[span]],
-            partition.fibre_weight[span][kept[span]],
+    folder = Path(folder)
+    info_path = folder / "simulation.json"
+    if not info_path.is_file():
+        raise ValueError(f"{folder} holds no simulation.json; it is not a simulation.")
+    try:
+        info = json.loads(info_path.read_text(encoding="utf-8"))
+    except ValueError as e:
+        raise ValueError(f"{info_path} cannot be read: {e}") from e
+    if not isinstance(info, dict) or info.get("format") != FORMAT:
+        raise ValueError(f"{info_path} is not a Larmor simulation file.")
+    try:
+        files = info["files"]
+        tissues = load_volume(folder / files["tissue_fractions"])
+        grid = Grid(tissues.data.shape[:3], tissues.affine.copy())
+        loaded = read_phantom(folder / files["phantom"])
+        bundles = files.get("bundles", [])
+        bundle_fractions = (
+            load_volume(folder / files["bundle_fractions"]).data
+            if files.get("bundle_fractions") is not None
+            else np.zeros((*grid.shape, 0), dtype=np.float32)
         )
-    most = max((len(p) for p in per_voxel.values()), default=1)
-    out = np.full((int(np.prod(partition.grid.shape)), 3 * most), np.nan, np.float32)
-    for voxel, found in per_voxel.items():
-        for k, (direction, amplitude) in enumerate(found):
-            out[voxel, 3 * k : 3 * k + 3] = direction * amplitude
-    return out.reshape(*partition.grid.shape, 3 * most)
+        return GroundTruth(
+            phantom=loaded.phantom,
+            grid=grid,
+            tissue_names=tuple(info["tissues"]),
+            tissue_fractions=tissues.data.reshape(*grid.shape, -1),
+            background=load_volume(folder / files["background_fraction"]).data,
+            bundle_fractions=bundle_fractions.reshape(*grid.shape, len(bundles)),
+            streamlines=tuple(load_tractogram(folder / p) for p in bundles),
+            peaks=load_volume(folder / files["peaks"]).data,
+            connectome=_read_connectome(folder, files, info.get("connectome")),
+            bundle_names=(
+                None if loaded.bundle_names is None else tuple(loaded.bundle_names)
+            ),
+        )
+    except (KeyError, TypeError) as e:
+        raise ValueError(f"{info_path} does not list the ground truth: {e!r}.") from e
 
 
-def _voxel_peaks(
-    directions: np.ndarray, weights: np.ndarray
-) -> list[tuple[np.ndarray, float]]:
-    """Returns one voxel's peaks, largest first, as (direction, amplitude) pairs.
+def _read_connectome(
+    folder: Path, files: dict[str, Any], block: object
+) -> GroundTruthConnectome | None:
+    """Reads the connectome's nodes and rebuilds its matrices from simulation.json.
 
-    A peak's direction is the weighted mean of its fibres, and its amplitude
-    their summed weight.
+    Returns:
+        The connectome, or None if the folder holds none.
     """
-    cos_merge = math.cos(math.radians(PEAK_MERGE_ANGLE))
-    sums: list[np.ndarray] = []
-    amplitudes: list[float] = []
-    for i in np.argsort(-weights, kind="stable"):
-        d, w = directions[i], float(weights[i])
-        if sums:
-            axes = np.array([s / np.linalg.norm(s) for s in sums])
-            dots = axes @ d
-            j = int(np.argmax(np.abs(dots)))
-            if abs(dots[j]) >= cos_merge:
-                sums[j] = sums[j] + w * d * (1.0 if dots[j] >= 0 else -1.0)
-                amplitudes[j] += w
-                continue
-        sums.append(w * d)
-        amplitudes.append(w)
-    order = np.argsort(-np.array(amplitudes), kind="stable")
-    largest = max(amplitudes)
-    return [
-        (sums[j] / np.linalg.norm(sums[j]), amplitudes[j])
-        for j in order
-        if amplitudes[j] >= PEAK_RELATIVE_THRESHOLD * largest
-    ]
+    nodes_file = files.get("connectome_parcellation")
+    if nodes_file is None or not isinstance(block, dict):
+        return None
+    nodes = load_volume(folder / nodes_file)
+    names = tuple(str(n) for n in block["nodes"])
+    bundles = block["bundles"]
+    bundle_nodes = np.array([b["nodes"] for b in bundles], dtype=np.int64).reshape(
+        -1, 2
+    )
+    cross_section = np.array([b["cross_section_mm2"] for b in bundles], dtype=float)
+    connected, proportion = connectome_matrices(bundle_nodes, cross_section, len(names))
+    return GroundTruthConnectome(
+        parcellation=Volume(nodes.data.astype(np.int32), nodes.affine.copy()),
+        node_names=names,
+        connected=connected,
+        proportion=proportion,
+        bundle_nodes=bundle_nodes,
+        cross_section=cross_section,
+    )

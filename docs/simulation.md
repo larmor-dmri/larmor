@@ -56,15 +56,18 @@ from larmor.simulation import example_phantom, save_simulation, simulate
 
 loaded = example_phantom("crossing")
 assert loaded.protocol is not None  # the phantom file holds its scan
-result = simulate(loaded.phantom, loaded.protocol, snr=30, seed=1)
-files = save_simulation(result, "crossing-python", bundle_names=loaded.bundle_names)
+dwi, truth = simulate(
+    loaded.phantom, loaded.protocol, snr=30, seed=1, bundle_names=loaded.bundle_names
+)
+files = save_simulation(dwi, truth, "crossing-python")
 print(files.dwi[0], files.peaks)
 ```
 
 `loaded` holds the phantom and the scan protocol stored with it. A phantom file can also be saved without a scan,
-and then `loaded.protocol` is None. `result` holds the images with and without noise, and the ground truth, which
-`save_simulation` writes next to the images. Passing `bundle_names` saves the names of the bundles, Left-right and
-Front-back, in the folder's phantom file, so that the viewer shows the bundles by these names. The
+and then `loaded.protocol` is None. `simulate` returns two things: `dwi` holds the images with and without noise,
+and `truth` holds the ground truth, which `save_simulation` writes next to the images. Passing `bundle_names`
+names the nodes of the ground-truth connectome after the bundles, Left-right and Front-back, and saves the names in
+the folder's phantom file, so that the viewer shows the bundles by these names. The
 [simulation guide](guides/simulation.md) shows how to build a phantom with your own tissues, bundles and scan.
 
 ## In the phantom editor of BrainViewer

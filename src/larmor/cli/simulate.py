@@ -133,17 +133,16 @@ def simulate(
     )
     _check_output_folder(output_path, force)
 
-    simulated = simulation.simulate(
+    simulated, truth = simulation.simulate(
         phantom,
         protocol,
         snr=snr,
         noise_reference=noise_reference,
         seed=seed,
+        bundle_names=loaded.bundle_names,
         n_jobs=jobs,
     )
-    simulation.save_simulation(
-        simulated, output_path, force=force, bundle_names=loaded.bundle_names
-    )
+    simulation.save_simulation(simulated, truth, output_path, force=force)
     LarmorLogger.info("Wrote the simulation to %s", output_path)
 
 

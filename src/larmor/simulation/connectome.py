@@ -70,7 +70,7 @@ def ground_truth_connectome(
 
     Args:
         partition: The voxel partition of a simulation, such as
-            `SimulatedDWI.partition`.
+            `GroundTruth.partition`.
         bundle_names: A name for each bundle, used in the node names. Defaults
             to None; a missing or empty name becomes "bundle_<number>".
 
@@ -115,8 +115,9 @@ def ground_truth_connectome(
 
     bundle_nodes = end_node.reshape(count, 2)
     cross_section = _cross_sections(partition)
-    connected, proportion = _matrices(
-        bundle_nodes, cross_section, names, len(node_of_root)
+    _warn_about(bundle_nodes, names)
+    connected, proportion = connectome_matrices(
+        bundle_nodes, cross_section, len(node_of_root)
     )
     return GroundTruthConnectome(
         parcellation=Volume(labels.reshape(grid.shape), grid.affine.copy()),
@@ -128,34 +129,25 @@ def ground_truth_connectome(
     )
 
 
-def _matrices(
-    bundle_nodes: np.ndarray,
-    cross_section: np.ndarray,
-    names: Sequence[str],
-    num_nodes: int,
+def connectome_matrices(
+    bundle_nodes: np.ndarray, cross_section: np.ndarray, num_nodes: int
 ) -> tuple[np.ndarray, np.ndarray]:
     """Returns the (N, N) connected and proportion matrices of the bundles' nodes.
 
-    Warns about a bundle outside the grid, which is left out, and about one
-    whose two ends are one node.
+    Args:
+        bundle_nodes: (B, 2) the nodes of each bundle's ends, 0 for none; a
+            bundle with an end in no node is left out.
+        cross_section: (B,) each bundle's cross-section.
+        num_nodes: N.
+
+    Returns:
+        The connected (0/1) and proportion matrices, both symmetric.
     """
     connected = np.zeros((num_nodes, num_nodes))
     proportion = np.zeros((num_nodes, num_nodes))
     for k, (a, b) in enumerate(bundle_nodes.tolist()):
         if a == 0 or b == 0:
-            LarmorLogger.warning(
-                "Bundle %s has no streamline inside the grid; it connects nothing "
-                "in the ground-truth connectome.",
-                names[k],
-            )
             continue
-        if a == b:
-            LarmorLogger.warning(
-                "Both ends of bundle %s are in node %d; it connects the node to "
-                "itself in the ground-truth connectome.",
-                names[k],
-                a,
-            )
         connected[a - 1, b - 1] = connected[b - 1, a - 1] = 1.0
         proportion[a - 1, b - 1] += cross_section[k]
         if a != b:
@@ -164,6 +156,24 @@ def _matrices(
     if total > 0:
         proportion /= total
     return connected, proportion
+
+
+def _warn_about(bundle_nodes: np.ndarray, names: Sequence[str]) -> None:
+    """Logs the bundles that connect nothing, and those that end where they start."""
+    for k, (a, b) in enumerate(bundle_nodes.tolist()):
+        if a == 0 or b == 0:
+            LarmorLogger.warning(
+                "Bundle %s has no streamline inside the grid; it connects nothing "
+                "in the ground-truth connectome.",
+                names[k],
+            )
+        elif a == b:
+            LarmorLogger.warning(
+                "Both ends of bundle %s are in node %d; it connects the node to "
+                "itself in the ground-truth connectome.",
+                names[k],
+                a,
+            )
 
 
 def _node_names(bundle_names: Sequence[str] | None, count: int) -> list[str]:

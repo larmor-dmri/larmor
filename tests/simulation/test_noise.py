@@ -26,7 +26,7 @@ def test_one_sigma_for_every_tissue_and_echo() -> None:
     )
     gtab = GradientTable(np.zeros(8), np.zeros((8, 3)))
     protocol = Protocol(gtab, 15.0, 30.0, [60.0, 120.0], 3000.0)
-    result = simulate(Phantom(grid, tissue_maps=maps), protocol, snr=50, seed=1)
+    result, _ = simulate(Phantom(grid, tissue_maps=maps), protocol, snr=50, seed=1)
     assert result.sigma is not None
     for echo in result.echoes:
         for region in (slice(0, 10), slice(10, 20)):
