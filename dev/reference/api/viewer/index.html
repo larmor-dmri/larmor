@@ -2987,7 +2987,8 @@ thread, then calls this; a script uses <a class="reference internal" href="#larm
 <dd><p>Simulates the phantom, saves the simulation folder and opens it.</p>
 <p>The folder is the one <a class="reference internal" href="../simulation/#larmor.simulation.save_simulation" title="larmor.simulation.save_simulation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">larmor.simulation.save_simulation</span></code></a> writes. The
 DWI (with its .bval and .bvec) opens as a volume, the tissue masks as
-overlays and the ground-truth fibre directions as peaks; the bundles’
+overlays, the ground-truth fibre directions as peaks and the connectome’s
+nodes as an overlay shown as labels; the bundles’
 items then refer to the streamline files written, so a session keeps
 everything. In the window, Run (Ctrl+R) does this in the background,
 with a Cancel button.</p>
@@ -3020,14 +3021,16 @@ with a Cancel button.</p>
 <p>The folder is one <code class="xref py py-obj docutils literal notranslate"><span class="pre">lar</span> <span class="pre">simulate</span></code> or Run writes. Its phantom file opens
 in the phantom editor, replacing the phantom open, with each bundle as
 a tractogram item referring to the bundle’s streamline file; the DWI
-opens as a volume, the tissue masks as overlays and the ground-truth
-fibre directions as peaks.</p>
+opens as a volume, the tissue masks as overlays, the ground-truth
+fibre directions as peaks and the connectome’s nodes, if the folder has
+them, as an overlay shown as labels.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>folder</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – The simulation folder, holding simulation.json.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><em>The items opened</em> – the bundles, the DWI, the masks and the peaks.</p>
+<dd class="field-even"><p><em>The items opened</em> – the bundles, the DWI, the masks, the peaks and the
+nodes.</p>
 </dd>
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">

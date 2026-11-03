@@ -716,13 +716,22 @@ Larmor, such as <code class="docutils literal notranslate"><span class="pre">cro
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bundle_&lt;n&gt;.tck</span></code></p></td>
 <td><p>The streamlines of each bundle</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tissue_map_&lt;tissue&gt;.nii.gz</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">connectome_nodes.nii.gz</span></code>, <code class="docutils literal notranslate"><span class="pre">connectome_nodes.txt</span></code></p></td>
+<td><p>The nodes of the ground-truth connectome, the voxels where the bundles end, and a lookup table with their names and colours (below)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">connectome.csv</span></code></p></td>
+<td><p>The ground-truth connectome, 1 where a bundle joins two nodes and 0 elsewhere</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">connectome_proportion.csv</span></code></p></td>
+<td><p>The share of the bundles’ total cross-section that joins each pair of nodes</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tissue_map_&lt;tissue&gt;.nii.gz</span></code></p></td>
 <td><p>A copy of each tissue map of the phantom</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">phantom.json</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">phantom.json</span></code></p></td>
 <td><p>The phantom file, with the protocol; its bundles are the geometry with the seed that was used, or the <code class="docutils literal notranslate"><span class="pre">.tck</span></code> of the folder</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">simulation.json</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">simulation.json</span></code></p></td>
 <td><p>The protocol, SNR, noise level, seed, tissue order and the name of every file</p></td>
 </tr>
 </tbody>
@@ -748,6 +757,20 @@ share of the voxel they fill. Peaks below a tenth of the voxel’s largest are d
 no fibre direction, such as one filled with CSF, gives none. <code class="docutils literal notranslate"><span class="pre">peaks.nii.gz</span></code> has 3 volumes
 per peak, largest peak first, which hold the x, y and z of the direction scaled by the amplitude, in world
 coordinates, and are NaN where a voxel has fewer peaks.</p>
+<p>The ground-truth connectome records which regions the bundles join, for drawn bundles and loaded tractograms
+alike. Each bundle has two ends, the voxels where its streamlines start and the voxels where they stop, after the
+streamlines are turned to run the same way. A streamline that leaves the grid ends where it leaves. Two ends
+become one node when their centres are closer than the width of the wider end, so bundles drawn from the same
+point start in the same region, whatever direction they leave in. A node is named after the ends it holds, such as <code class="docutils literal notranslate"><span class="pre">CST_start+AF_end</span></code>, using the bundle names of the phantom
+file. A bundle whose two ends fall in one node joins that node to itself, on the diagonal, with a warning.
+<code class="docutils literal notranslate"><span class="pre">simulation.json</span></code> lists the two nodes of each bundle and its cross-section, the volume it fills divided by the mean
+length of its streamlines. The proportions use this cross-section rather than the number of streamlines, which for
+a loaded tractogram depends only on the file. To compare tracking with the ground truth, build the connectome of the
+tracked streamlines on the same nodes:</p>
+<!-- not run: needs a tractogram tracked on the simulated images -->
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>lar<span class="w"> </span>connectome<span class="w"> </span>tracks.tck<span class="w"> </span>sim/connectome_nodes.nii.gz<span class="w"> </span>tracked.csv<span class="w"> </span>--lut<span class="w"> </span>sim/connectome_nodes.txt
+</pre></div>
+</div>
 <p>Running <code class="docutils literal notranslate"><span class="pre">phantom.json</span></code> again with the same seed gives the same images. Without <code class="docutils literal notranslate"><span class="pre">--seed</span></code>, a seed is drawn and
 written to <code class="docutils literal notranslate"><span class="pre">simulation.json</span></code>; give it to <code class="docutils literal notranslate"><span class="pre">--seed</span></code> to repeat the run.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>lar<span class="w"> </span>simulate<span class="w"> </span>sim/phantom.json<span class="w"> </span>again<span class="w"> </span>--snr<span class="w"> </span><span class="m">30</span><span class="w"> </span>--seed<span class="w"> </span><span class="m">1</span>
