@@ -222,6 +222,10 @@ fn fs_main(varyings: Varyings) -> FragmentOutput {
 
     let lamp = lamp_direction();
 
+    // Past a cell's face on every axis. A step along the ray would not do: a ray
+    // nearly parallel to a face would move too little to change the coordinate,
+    // and stay in its cell, testing the same capsules until MAX_STEPS.
+    let past_face = select(vec3<f32>(-1e-3), vec3<f32>(1e-3), inv_rd > vec3<f32>(0.0));
     let top = min(u_material.levels - 1u, 5u);
     var t = 0.0;
     var colour = vec3<f32>(0.0);
@@ -231,7 +235,7 @@ fn fs_main(varyings: Varyings) -> FragmentOutput {
     loop {
         if (t > t_end || steps >= MAX_STEPS || alpha > 0.995) { break; }
         steps++;
-        let p = ro + rd * (t + 1e-3);
+        let p = ro + rd * t + past_face;
         // The coarsest block that no segment touches is skipped whole.
         var skipped = false;
         for (var level = top; level >= 1u; level--) {
