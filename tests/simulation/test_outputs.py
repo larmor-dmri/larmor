@@ -583,10 +583,24 @@ def _small_bundle_phantom(tissue_name: str) -> tuple[Phantom, Protocol]:
     )
 
 
-def test_a_tissue_whose_mask_would_take_the_bundles_mask_file_is_refused(
+def test_tissue_names_that_differ_only_by_case_are_refused_and_masks_keep_the_case(
     tmp_path: Path,
 ) -> None:
-    phantom, protocol = _small_bundle_phantom("bundles")
+    phantom, protocol = _small_bundle_phantom("WM")
+    files = simulation_files(phantom, protocol, tmp_path, noise=False)
+    assert files.masks["WM"].name == "mask_WM.nii.gz"
+    tissues = (*phantom.tissues, standard_model_tissue(name="wm"))
+    with pytest.raises(ValueError, match="same file names"):
+        simulation_files(
+            replace(phantom, tissues=tissues), protocol, tmp_path, noise=False
+        )
+
+
+@pytest.mark.parametrize("name", ["bundles", "Bundles"])
+def test_a_tissue_whose_mask_would_take_the_bundles_mask_file_is_refused(
+    tmp_path: Path, name: str
+) -> None:
+    phantom, protocol = _small_bundle_phantom(name)
     with pytest.raises(ValueError, match="rename the tissue"):
         simulation_files(phantom, protocol, tmp_path, noise=False)
 

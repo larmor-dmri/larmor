@@ -177,6 +177,28 @@ def test_a_phantom_file_without_a_scan_is_an_error(tmp_path: Path) -> None:
     assert "has no scan" in result.output
 
 
+def test_a_tissue_that_cannot_be_saved_is_refused_before_the_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    loaded = example_phantom()
+    phantom = loaded.phantom
+    renamed = replace(
+        phantom,
+        tissues=(replace(phantom.tissues[0], name="bundles"), *phantom.tissues[1:]),
+        bundles=tuple(replace(b, tissue="bundles") for b in phantom.bundles),
+    )
+    path = tmp_path / "named.phantom.json"
+    write_phantom(renamed, path, protocol=loaded.protocol)
+
+    def no_run(*args: object, **kwargs: object) -> None:
+        raise AssertionError("the simulation ran")
+
+    monkeypatch.setattr("larmor.simulation.simulate", no_run)
+    result = _run(path, tmp_path / "out")
+    assert result.exit_code == 1
+    assert "rename the tissue" in result.output
+
+
 def test_force_replaces_the_files_of_the_earlier_run(tmp_path: Path) -> None:
     out = tmp_path / "out"
     assert _run("crossing", out, "--snr", "20", "--seed", "1").exit_code == 0

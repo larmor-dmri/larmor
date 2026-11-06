@@ -146,12 +146,14 @@ def simulation_files(
     """
     folder = Path(folder)
     names = [_file_name(t.name) for t in phantom.tissues]
-    if len(set(names)) != len(names):
+    # File systems on macOS and Windows take names that differ by case as one name.
+    folded = [name.lower() for name in names]
+    if len(set(folded)) != len(names):
         raise ValueError(
             f"Tissue names {[t.name for t in phantom.tissues]} give the same file "
             "names; rename a tissue."
         )
-    if phantom.bundles and "bundles" in names:
+    if phantom.bundles and "bundles" in folded:
         raise ValueError(
             'A tissue named "bundles" would share its mask file with the bundles; '
             "rename the tissue."

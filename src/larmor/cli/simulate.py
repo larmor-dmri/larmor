@@ -132,6 +132,8 @@ def simulate(
         protocol, phantom, shells, num_b0, bvals, bvecs, bvec_frame, seed
     )
     _check_output_folder(output_path, force)
+    # Refuses tissue names that cannot be saved before the run rather than after it.
+    simulation.simulation_files(phantom, protocol, output_path, noise=snr is not None)
 
     simulated, truth = simulation.simulate(
         phantom,
