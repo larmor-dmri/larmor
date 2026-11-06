@@ -329,24 +329,32 @@ def _in_tissue(water: Compartment, fraction: float, t2_prime_ms: float) -> Compa
 def standard_model_tissue(
     *,
     name: str = "WM",
-    intra_fraction: float = 0.7,
+    intra_fraction: float = 0.45,
     free_water_fraction: float = 0.0,
     intra_diffusivity: float = 2.3e-3,
-    extra_parallel_diffusivity: float = 1.7e-3,
+    extra_parallel_diffusivity: float = 2.0e-3,
     extra_perpendicular_diffusivity: float = 0.5e-3,
     free_water_diffusivity: float = 3.0e-3,
-    intra_t2_ms: float = 80.0,
-    extra_t2_ms: float = 45.0,
+    kappa: float | None = 15.0,
+    intra_t2_ms: float = 90.0,
+    extra_t2_ms: float = 60.0,
     t1_ms: float = WM_T1_MS,
     t2star_ms: float = WM_T2STAR_MS,
     proton_density: float = 0.7,
 ) -> Tissue:
-    """Makes a standard model tissue: stick, zeppelin and optional free water.
+    """Makes a standard model tissue of Watson sticks, a zeppelin and free water.
 
-    The water inside the axons is a stick, and the water around them a zeppelin
-    with the fraction 1 - intra_fraction - free_water_fraction. Free water is an
-    optional FREE_WATER compartment with the parameters of `csf_tissue` apart
+    The water inside the axons is a Watson stick, and the water around them a
+    zeppelin with the fraction 1 - intra_fraction - free_water_fraction. Free water
+    is an optional FREE_WATER compartment with the parameters of `csf_tissue` apart
     from T2*. The relaxation defaults assume 3 T.
+
+    This differs slightly from the usual stick, zeppelin and ball model. By using a
+    Watson stick, the simulated signal more closely resembles a real acquisition,
+    because it drops the assumption that all fibres in a voxel have exactly the same
+    direction. The zeppelin's diffusivities are averaged over the same Watson density
+    (Zhang et al. 2012, Eqs. 5 to 7), so the two arguments that set them describe the
+    water around perfectly aligned axons.
 
     `t2star_ms` is the tissue's T2*, not each compartment's. Every compartment
     shares the tissue's T2' = 1 / (1/T2* - 1/T2_mean), where T2_mean is the mean
@@ -358,14 +366,12 @@ def standard_model_tissue(
     - intra_diffusivity 2.3e-3 mm^2/s: a choice close to the in vivo
       intra-axonal diffusivity of 2.25 um^2/ms measured by Dhital et al. (2019);
       NODDI fixes 1.7e-3.
-    - extra-axonal diffusivities 1.7e-3 and 0.5e-3 mm^2/s: they follow the NODDI
-      constraints listed by Novikov et al. (2019, Sec. 3.4.2), D_e_par = D_a =
-      1.7 um^2/ms and the tortuosity D_e_perp = (1 - f) D_e_par, about
-      0.5 um^2/ms at f = 0.7.
-    - intra_fraction 0.7: a choice.
-    - T2 of 80 ms (intra) and 45 ms (extra): choices around the T2 of 69 ms of
-      frontal white matter at 3 T in vivo (Lu et al. 2005, Table 1); that the
-      intra-axonal T2 is the longer agrees with Veraart et al. (2018).
+    - intra_fraction 0.45, extra-axonal diffusivities 2.0e-3 and 0.5e-3 mm^2/s, and
+      T2 of 90 ms (intra) and 60 ms (extra): the values of Veraart et al. (2018),
+      chosen there to agree with in vivo data.
+    - kappa 15, about 14 degrees between a stick and the fibre on average: a choice
+      that matches the most coherent white matter of one in vivo subject at b = 1000
+      to 3000 s/mm^2; bundle geometry adds any further spread.
     - T1 832 ms: white matter at 3 T in vivo (Wansapura et al. 1999).
     - t2star_ms 46.6 ms: white matter at 3 T in vivo, the mean of the frontal
       and occipital values of Wansapura et al. (1999).
@@ -374,17 +380,20 @@ def standard_model_tissue(
 
     Args:
         name: The tissue's name. Defaults to "WM".
-        intra_fraction: The stick fraction. Defaults to 0.7.
+        intra_fraction: The stick fraction. Defaults to 0.45.
         free_water_fraction: The free-water fraction. Defaults to 0.0, no free
             water.
         intra_diffusivity: The stick's D, mm^2/s. Defaults to 2.3e-3.
-        extra_parallel_diffusivity: The zeppelin's D along the fibre, mm^2/s.
-            Defaults to 1.7e-3.
-        extra_perpendicular_diffusivity: The zeppelin's D across the fibre,
+        extra_parallel_diffusivity: The zeppelin's D along the axons, mm^2/s.
+            Defaults to 2.0e-3.
+        extra_perpendicular_diffusivity: The zeppelin's D across the axons,
             mm^2/s. Defaults to 0.5e-3.
         free_water_diffusivity: The free water's D, mm^2/s. Defaults to 3.0e-3.
-        intra_t2_ms: The stick's T2, ms. Defaults to 80.
-        extra_t2_ms: The zeppelin's T2, ms. Defaults to 45.
+        kappa: The Watson concentration, which sets how tightly the sticks follow
+            the fibre direction, >= 0; None gives a plain stick and zeppelin.
+            Defaults to 15.
+        intra_t2_ms: The stick's T2, ms. Defaults to 90.
+        extra_t2_ms: The zeppelin's T2, ms. Defaults to 60.
         t1_ms: T1 of the stick and the zeppelin, ms. Defaults to 832.
         t2star_ms: The tissue's T2*, ms, at most T2_mean. Defaults to 46.6.
         proton_density: The proton density of the stick and the zeppelin.
@@ -394,13 +403,16 @@ def standard_model_tissue(
         The tissue.
 
     Raises:
-        ValueError: If the fractions are negative or exceed 1 together, or
-            t2star_ms is not positive or exceeds T2_mean.
+        ValueError: If the fractions are negative or exceed 1 together, t2star_ms
+            is not positive or exceeds T2_mean, or kappa is negative.
 
     References:
         Novikov DS, Fieremans E, Jespersen SN, Kiselev VG. Quantifying brain
         microstructure with diffusion MRI: Theory and parameter estimation. NMR
         Biomed 32 (2019) e3998.
+        Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC. NODDI: Practical
+        in vivo neurite orientation dispersion and density imaging of the human
+        brain. NeuroImage 61 (2012) 1000-1016.
         Dhital B, Reisert M, Kellner E, Kiselev VG. Intra-axonal diffusivity in
         brain white matter. NeuroImage 189 (2019) 543-550.
         Veraart J, Novikov DS, Fieremans E. TE dependent Diffusion Imaging (TEdDI)
@@ -408,9 +420,6 @@ def standard_model_tissue(
         (2018) 360-369.
         Wansapura JP, Holland SK, Dunn RS, Ball WS. NMR relaxation times in the
         human brain at 3.0 tesla. J Magn Reson Imaging 9 (1999) 531-538.
-        Lu H, Nagae-Poetscher LM, Golay X, Lin D, Pomper M, van Zijl PCM. Routine
-        clinical brain MRI sequences for use at 3.0 Tesla. J Magn Reson Imaging
-        22 (2005) 13-22. doi:10.1002/jmri.20356
     """
     extra_fraction = _rest(1 - intra_fraction - free_water_fraction)
     if min(intra_fraction, free_water_fraction, extra_fraction) < 0:
@@ -429,21 +438,31 @@ def standard_model_tissue(
             f"got {t2star_ms}."
         )
     t2_prime_ms = _t2_prime(t2_mean, t2star_ms)
+    zeppelin_parallel = extra_parallel_diffusivity
+    zeppelin_perpendicular = extra_perpendicular_diffusivity
+    if kappa is not None:
+        tau = _watson_tau(kappa)
+        anisotropy = extra_parallel_diffusivity - extra_perpendicular_diffusivity
+        zeppelin_parallel = extra_perpendicular_diffusivity + anisotropy * tau
+        zeppelin_perpendicular = (
+            extra_perpendicular_diffusivity + anisotropy * (1 - tau) / 2
+        )
     compartments = [
         Compartment(
-            CompartmentModel.STICK,
+            CompartmentModel.STICK if kappa is None else CompartmentModel.WATSON_STICK,
             intra_fraction,
             intra_diffusivity,
             t1_ms=t1_ms,
             t2_ms=intra_t2_ms,
             t2star_ms=_t2star_from_prime(intra_t2_ms, t2_prime_ms),
             proton_density=proton_density,
+            kappa=0.0 if kappa is None else kappa,
         ),
         Compartment(
             CompartmentModel.ZEPPELIN,
             extra_fraction,
-            extra_parallel_diffusivity,
-            perpendicular_diffusivity=extra_perpendicular_diffusivity,
+            zeppelin_parallel,
+            perpendicular_diffusivity=zeppelin_perpendicular,
             t1_ms=t1_ms,
             t2_ms=extra_t2_ms,
             t2star_ms=_t2star_from_prime(extra_t2_ms, t2_prime_ms),

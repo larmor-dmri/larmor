@@ -26,6 +26,7 @@ from larmor.viewer import (
 from larmor.viewer.jobs import SAVING, JobCancelledError, JobRunner, Report
 from larmor.viewer.model.phantom import (
     build_tissue,
+    preset_defaults,
     run_simulation,
 )
 from larmor.viewer.model.shortcuts import Command, run
@@ -81,6 +82,18 @@ def test_a_saved_phantom_loads_back_the_same(viewer: Viewer, tmp_path: Path) -> 
     assert [b.geometry for b in loaded.bundles] == [b.geometry for b in saved.bundles]
     names = [other.scene.item(b.item_id).name for b in loaded.bundles]
     assert names == ["Bundle 1", "Bundle 2"]
+
+
+def test_the_standard_model_preset_builds_watson_sticks_from_its_kappa(
+    viewer: Viewer,
+) -> None:
+    assert preset_defaults(TissuePreset.STANDARD_MODEL)["kappa"] == 15.0
+    viewer.set_tissue("WM", TissuePreset.STANDARD_MODEL, {"kappa": 5.0})
+    state = viewer.phantom
+    assert state is not None
+    stick = build_tissue(state.tissue("WM")).compartments[0]
+    assert stick.model == sim.CompartmentModel.WATSON_STICK
+    assert stick.kappa == 5.0
 
 
 def test_the_new_compartments_build_tissues_and_only_unoriented_fill_the_background(

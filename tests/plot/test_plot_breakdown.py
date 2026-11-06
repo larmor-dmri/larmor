@@ -65,7 +65,7 @@ def test_three_bars_stack_the_compartments_at_each_step(
         assert sum(heights) == pytest.approx(total)
     labels = ax.get_legend_handles_labels()[1]
     assert labels == ["Noise floor"] + [c.label for c in shown]
-    assert "GM soma" in labels and "WM axons" in labels
+    assert "GM soma" in labels and "WM neurites" in labels
     ticks = [t.get_text() for t in ax.get_xticklabels()]
     assert ticks == ["No decay", "T1/T2 decay\nTE 80 ms", "Diffusion\nb 3000"]
     # Only the totals are written on the chart, above their bars.

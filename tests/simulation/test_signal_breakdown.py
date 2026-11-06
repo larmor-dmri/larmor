@@ -209,13 +209,13 @@ def test_each_factor_follows_its_formula(phantom: Phantom) -> None:
     assert ball.attenuation == pytest.approx(
         math.exp(-breakdown.b_value * diffusivity.diffusivity)
     )
-    stick = next(c for c in breakdown.compartments if c.label == "WM axons")
+    stick = next(c for c in breakdown.compartments if c.label == "WM neurites")
     weight = truth.bundle_fractions[voxel][0]
     assert stick.partial_volume == pytest.approx(weight)
     assert {c.label for c in breakdown.compartments} >= {
         "GM soma",
         "GM neurites",
-        "WM outside axons",
+        "WM outside neurites",
     }
 
 

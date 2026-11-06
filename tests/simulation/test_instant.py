@@ -40,11 +40,27 @@ def relaxation(
     return float(pd * (1 - np.exp(-tr / t1)) * np.exp(-te / decay))
 
 
+def watson_stick(
+    b: np.ndarray, diffusivity: float, kappa: float, cosines: np.ndarray
+) -> np.ndarray:
+    # The stick averaged over the Watson density by brute force.
+    u, weights = np.polynomial.legendre.leggauss(256)
+    angles = np.linspace(0, 2 * np.pi, 256, endpoint=False)
+    density = weights * np.exp(kappa * u**2)
+    density /= density.sum()
+    sines = np.sqrt(np.clip(1 - cosines**2, 0, None))
+    along = np.outer(cosines, u)[:, :, None]
+    across = np.outer(sines, np.sqrt(1 - u**2))[:, :, None] * np.cos(angles)
+    decay = np.exp(-b[:, None, None] * diffusivity * (along + across) ** 2)
+    return decay.mean(axis=2) @ density
+
+
 def wm_signal(
     direction: np.ndarray, tissue: object, protocol: Protocol = PROTOCOL
 ) -> np.ndarray:
     b = protocol.gradients.bvals
-    cos2 = (protocol.gradients.bvecs @ direction) ** 2
+    cosines = protocol.gradients.bvecs @ direction
+    cos2 = cosines**2
     signal = np.zeros(len(b))
     for c in tissue.compartments:  # type: ignore[attr-defined]
         decay = (
@@ -55,6 +71,8 @@ def wm_signal(
         )
         if c.model == "stick":
             a = np.exp(-b * c.diffusivity * cos2)
+        elif c.model == "watson_stick":
+            a = watson_stick(b, c.diffusivity, c.kappa, cosines)
         elif c.model == "zeppelin":
             perp = c.perpendicular_diffusivity
             a = np.exp(-b * (perp + (c.diffusivity - perp) * cos2))
@@ -64,13 +82,34 @@ def wm_signal(
     return signal
 
 
-def test_full_voxel_in_a_straight_bundle_is_exactly_the_tissue_signal() -> None:
+@pytest.mark.parametrize("kappa", [15.0, None])
+def test_full_voxel_in_a_straight_bundle_is_exactly_the_tissue_signal(
+    kappa: float | None,
+) -> None:
     # The tissue keeps its own fractions, the ball included, in a full voxel.
-    tissue = standard_model_tissue(free_water_fraction=0.1)
+    tissue = standard_model_tissue(free_water_fraction=0.1, kappa=kappa)
     direction = np.array([1.0, 0.3, -0.2]) / np.linalg.norm([1.0, 0.3, -0.2])
     phantom = Phantom(GRID, tissues=(tissue,), bundles=(bundle_along(direction),))
     signal = simulate(phantom, PROTOCOL)[0].noise_free[0].data[2, 2, 2]
     np.testing.assert_allclose(signal, wm_signal(direction, tissue), rtol=1e-5)
+
+
+def test_a_huge_kappa_gives_the_signal_of_a_plain_stick() -> None:
+    direction = np.array([1.0, 0.3, -0.2]) / np.linalg.norm([1.0, 0.3, -0.2])
+    signals = [
+        simulate(
+            Phantom(
+                GRID,
+                tissues=(standard_model_tissue(kappa=kappa),),
+                bundles=(bundle_along(direction),),
+            ),
+            PROTOCOL,
+        )[0]
+        .noise_free[0]
+        .data[2, 2, 2]
+        for kappa in (1e6, None)
+    ]
+    np.testing.assert_allclose(signals[0], signals[1], rtol=1e-4)
 
 
 def test_unoriented_tissue_in_a_bundle_fills_the_bundle_core() -> None:
@@ -231,12 +270,12 @@ def test_flat_arrays_of_a_small_phantom() -> None:
         tissue_maps=(TissueMap("GM", Volume(gm, np.eye(4))),),
     )
     arrays = flatten(phantom, protocol, partition_voxels(phantom))
-    assert arrays.models.tolist() == [0, 1, 4, 3, 2]
+    assert arrays.models.tolist() == [5, 1, 4, 3, 2]
     assert arrays.tissue.tolist() == [0, 0, 1, 1, 1]
-    np.testing.assert_allclose(arrays.fraction, [0.7, 0.3, 0.15, 0.5, 0.35])
-    np.testing.assert_allclose(arrays.parameters[1], [1.7e-3, 0.5e-3, 0.0, 0.0])
+    np.testing.assert_allclose(arrays.fraction, [0.45, 0.55, 0.15, 0.5, 0.35])
+    np.testing.assert_allclose(arrays.parameters[0], [2.3e-3, 0.0, 0.0, 15.0])
     np.testing.assert_allclose(arrays.parameters[2], [3e-3, 0.0, 6.0, 0.0])
-    assert arrays.relaxation[0, 0] == pytest.approx(relaxation(0.7, 832.0, 80.0))
+    assert arrays.relaxation[0, 0] == pytest.approx(relaxation(0.7, 832.0, 90.0))
     assert arrays.tissue_fractions[0].tolist() == [0.0, 0.4]
     centre = np.ravel_multi_index((2, 2, 2), GRID.shape)
     assert arrays.tissue_fractions[centre].tolist() == [1.0, 0.0]

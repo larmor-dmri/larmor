@@ -387,7 +387,10 @@ def test_compartment_fractions_are_the_tissue_fraction_times_the_share(
     np.testing.assert_allclose(maps[..., 0], tissues[..., 0] * shares[0], atol=1e-6)
     np.testing.assert_allclose(maps.sum(axis=-1), tissues.sum(axis=-1), atol=1e-5)
     info = json.loads((saved / "simulation.json").read_text())
-    assert [c["model"] for c in info["compartments"][:2]] == ["stick", "zeppelin"]
+    assert [c["model"] for c in info["compartments"][:2]] == [
+        "watson_stick",
+        "zeppelin",
+    ]
 
 
 def test_the_free_water_fraction_counts_free_water_in_tissues_and_background(
@@ -465,7 +468,7 @@ def test_signal_fractions_weight_each_compartment_by_its_relaxation(
         seen.append(found)
     # In a voxel of WM only, free water fills 0.1 of the volume but gives more of
     # the signal, and more at the longer echo time.
-    wm_only = volume[..., 0] > 0.7 - 1e-6
+    wm_only = volume[..., 0] > compartments[0].fraction - 1e-6
     assert wm_only.any()
     water_index = free.index(True)
     assert np.all(seen[0][wm_only, water_index] > 0.15)

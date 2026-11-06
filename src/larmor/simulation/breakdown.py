@@ -42,7 +42,7 @@ class CompartmentSignal:
     The compartment's signal is the product of its factors.
 
     Attributes:
-        label: The compartment in plain words, such as "WM axons".
+        label: The compartment in plain words, such as "GM soma".
         tissue: The name of its tissue.
         model: Its diffusion model.
         bundle: The index of the bundle whose share of the voxel this is, or

@@ -55,13 +55,16 @@ The phantom starts with three tissues: white matter (WM), grey matter (GM) and c
 tissue is either a preset whose parameters you can change, or a list of compartments that you build yourself. A
 compartment is one pool of water with its own diffusion model, such as the water inside axons or the water
 around them. The presets are the standard model and NODDI (neurite orientation dispersion and density imaging)
-for white matter, SANDI (soma and neurite density imaging) for grey matter, and free water for CSF. NODDI spreads
-its neurites around the fibre direction, and its kappa parameter sets how tightly they follow it.
+for white matter, SANDI (soma and neurite density imaging) for grey matter, and free water for CSF. The standard
+model here differs slightly from the usual stick, zeppelin and ball model. By using a Watson stick, the simulated
+signal more closely resembles a real acquisition, because it drops the assumption that all fibres in a voxel have
+exactly the same direction. The standard model and NODDI both spread their sticks around the fibre direction, and
+their kappa parameter sets how tightly the sticks follow it.
 
 In the compartment table, each row picks one of these models:
 
 - the stick, the zeppelin, the ball, the powder-averaged stick and the sphere;
-- the Watson-dispersed sticks of NODDI, which use the kappa column;
+- the Watson-dispersed sticks, which use the kappa column;
 - the cylinder, which uses the radius column;
 - the dot, whose water does not move;
 - free water, whose share a run reports as the free-water fraction of its ground truth.

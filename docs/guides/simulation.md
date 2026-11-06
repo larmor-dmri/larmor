@@ -60,8 +60,11 @@ A phantom has four parts.
 
 - **Tissues.** Each tissue has a name, by which bundles and maps refer to it. The following functions make the
   predefined tissues, and their arguments set the fractions, diffusivities and relaxation times.
-  - {py:func}`~larmor.simulation.standard_model_tissue` makes white matter as a stick and a zeppelin, with
-    optional free water.
+  - {py:func}`~larmor.simulation.standard_model_tissue` makes white matter as a Watson stick and a zeppelin, with
+    optional free water. This differs slightly from the usual stick, zeppelin and ball model. By using a Watson
+    stick, the simulated signal more closely resembles a real acquisition, because it drops the assumption that
+    all fibres in a voxel have exactly the same direction. Its `kappa` argument sets how tightly the sticks follow
+    the fibre direction, and `kappa=None` gives a plain stick and zeppelin.
   - {py:func}`~larmor.simulation.noddi_tissue` makes white or grey matter in the NODDI model, with
     Watson-dispersed sticks, a zeppelin whose diffusivities follow the neurite density and dispersion, and free
     water.
