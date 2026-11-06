@@ -7,7 +7,6 @@ from typing import Final
 
 import numpy as np
 
-from larmor.simulation.connectome import GroundTruthConnectome, ground_truth_connectome
 from larmor.simulation.phantom import Phantom, VoxelPartition
 from larmor.types import Grid, Tractogram
 
@@ -43,9 +42,6 @@ class GroundTruth:
             peaks. A bundle's fibres within 20 degrees of each other make one
             peak; different bundles always make different peaks, however close
             their directions.
-        connectome: The regions the bundles join (see `GroundTruthConnectome`);
-            None if the phantom has no bundle or the folder it was read from
-            holds none.
         bundle_names: A name for each bundle, or None.
         partition: Each voxel's fibres, which `signal_breakdown` takes; None when
             read from a folder.
@@ -59,7 +55,6 @@ class GroundTruth:
     bundle_fractions: np.ndarray
     streamlines: tuple[Tractogram, ...]
     peaks: np.ndarray
-    connectome: GroundTruthConnectome | None
     bundle_names: tuple[str, ...] | None = None
     partition: VoxelPartition | None = None
 
@@ -84,11 +79,11 @@ def build_ground_truth(
         ValueError: If bundle_names does not name every bundle.
     """
     oriented = np.array([t.is_oriented for t in phantom.tissues], dtype=bool)
-    connectome = (
-        ground_truth_connectome(partition, bundle_names=bundle_names)
-        if phantom.bundles
-        else None
-    )
+    if bundle_names is not None and len(bundle_names) != len(phantom.bundles):
+        raise ValueError(
+            f"bundle_names must name {len(phantom.bundles)} bundles, got "
+            f"{len(bundle_names)}."
+        )
     return GroundTruth(
         phantom=phantom,
         grid=partition.grid,
@@ -98,7 +93,6 @@ def build_ground_truth(
         bundle_fractions=partition.bundle_fractions,
         streamlines=partition.streamlines,
         peaks=_peaks(partition, oriented),
-        connectome=connectome,
         bundle_names=None if bundle_names is None else tuple(bundle_names),
         partition=partition,
     )

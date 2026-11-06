@@ -66,8 +66,7 @@ print(files.dwi[0], files.peaks)
 `loaded` holds the phantom and the scan protocol stored with it. A phantom file can also be saved without a scan,
 and then `loaded.protocol` is None. `simulate` returns two things: `dwi` holds the images with and without noise,
 and `truth` holds the ground truth, which `save_simulation` writes next to the images. Passing `bundle_names`
-names the nodes of the ground-truth connectome after the bundles, Left-right and Front-back, and saves the names in
-the folder's phantom file, so that the viewer shows the bundles by these names. The
+saves the bundles' names, Left-right and Front-back, in the folder's phantom file, so that the viewer shows the bundles by these names. The
 [simulation guide](guides/simulation.md) shows how to build a phantom with your own tissues, bundles and scan.
 
 ## In the phantom editor of BrainViewer

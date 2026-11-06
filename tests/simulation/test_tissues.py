@@ -222,3 +222,18 @@ def test_noddi_signal_in_a_bundle_is_the_sum_of_its_compartments() -> None:
         for c in tissue.compartments
     )
     np.testing.assert_allclose(signal, expected, rtol=1e-6)
+
+
+@pytest.mark.parametrize(("first", "second"), [(0.8, 0.2), (0.9, 0.1)])
+def test_fractions_that_sum_to_one_are_accepted_despite_rounding(
+    first: float, second: float
+) -> None:
+    water = standard_model_tissue(intra_fraction=first, free_water_fraction=second)
+    grey = sandi_tissue(neurite_fraction=first, soma_fraction=second)
+    assert water.compartments[1].fraction == 0
+    assert grey.compartments[2].fraction == 0
+
+
+def test_t2star_equal_to_t2_is_accepted_despite_rounding() -> None:
+    tissue = standard_model_tissue(intra_t2_ms=49.0, extra_t2_ms=49.0, t2star_ms=49.0)
+    assert all(c.t2star_ms == 49.0 for c in tissue.compartments)

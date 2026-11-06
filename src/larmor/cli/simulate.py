@@ -172,12 +172,12 @@ def _load_phantom(phantom_path: str) -> PhantomFile:
     from larmor import simulation
 
     path = Path(phantom_path)
-    if path.exists():
+    if path.is_file():
         return simulation.read_phantom(path)
     if phantom_path in simulation.EXAMPLE_PHANTOMS:
         return simulation.example_phantom(phantom_path)
     raise FileNotFoundError(
-        f"{phantom_path} does not exist and is not the name of an example "
+        f"{phantom_path} is not a file and is not the name of an example "
         f"phantom ({', '.join(simulation.EXAMPLE_PHANTOMS)})."
     )
 

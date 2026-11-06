@@ -1456,10 +1456,6 @@ class SimulationOutputs:
         peaks: The ground-truth fibre directions, opened as peaks.
         bundles: Each bundle's streamlines, in the phantom's bundle order.
         phantom: The phantom file, opened in the phantom editor.
-        connectome_nodes: The ground-truth connectome's nodes, opened as an
-            overlay shown as labels; None in a folder written without them.
-        connectome_lookup_table: The nodes' names and colours; None with no
-            nodes.
     """
 
     folder: Path
@@ -1468,8 +1464,6 @@ class SimulationOutputs:
     peaks: Path | None
     bundles: tuple[Path, ...]
     phantom: Path
-    connectome_nodes: Path | None = None
-    connectome_lookup_table: Path | None = None
 
 
 def simulation_outputs(folder: Path) -> SimulationOutputs:
@@ -1495,8 +1489,6 @@ def simulation_outputs(folder: Path) -> SimulationOutputs:
             raise ValueError(f"{info_path} is not a Larmor simulation file.")
         files = info["files"]
         peaks = files.get("peaks")
-        nodes = files.get("connectome_parcellation")
-        table = files.get("connectome_lookup_table")
         masks = list(files.get("masks", {}).values())
         if files.get("bundle_mask") is not None:
             masks.append(files["bundle_mask"])
@@ -1507,8 +1499,6 @@ def simulation_outputs(folder: Path) -> SimulationOutputs:
             None if peaks is None else folder / peaks,
             tuple(folder / p for p in files.get("bundles", [])),
             folder / files["phantom"],
-            None if nodes is None or table is None else folder / nodes,
-            None if nodes is None or table is None else folder / table,
         )
     except (AttributeError, KeyError, TypeError, json.JSONDecodeError) as e:
         raise ValueError(f"{info_path} cannot be read: {e!r}.") from e

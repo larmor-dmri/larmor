@@ -1051,7 +1051,6 @@ class MainWindow(QMainWindow):
                 self.jobs,
                 folder,
                 self.loader.open,
-                open_labels=self._open_labels,
                 on_done=lambda files: self.show_phantom(),
             )
         except (JobBusyError, OSError, ValueError) as e:
@@ -1118,25 +1117,12 @@ class MainWindow(QMainWindow):
                 self.jobs,
                 folder,
                 self.loader.open,
-                open_labels=self._open_labels,
                 overwrite=overwrite,
                 on_done=self._run_finished,
                 on_failed=lambda message: self._message("Simulation failed", message),
             )
         except (JobBusyError, ValueError) as e:
             self._message("Cannot run the phantom", str(e))
-
-    def _open_labels(self, path: Path, lookup_table: Path) -> None:
-        """Opens a parcellation as an overlay shown as labels, named by the table."""
-
-        def done(item: Item | None, error: str | None) -> None:
-            if item is None:
-                self._message("Cannot open parcellation", error or str(path))
-                return
-            self.viewer.set(item.id, OptionName.LABELS, True)
-            self.viewer.set(item.id, OptionName.LOOKUP_TABLE, str(lookup_table))
-
-        self.loader.load(path, Category.OVERLAYS, then=done)
 
     def _run_finished(self, outputs: RunOutputs) -> None:
         """Says that a run finished, where it saved its files and what opened."""

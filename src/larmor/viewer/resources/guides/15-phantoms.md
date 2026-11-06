@@ -173,9 +173,7 @@ status bar and on the Run step. Once the files are being saved, the run can no l
 says when the run has finished or failed; a cancelled run opens nothing.
 
 The output folder has the same contents as the one that `lar simulate` writes. When the run ends, the diffusion
-images open as the main volume, the tissue masks as overlays and the true fibre directions as peaks. The nodes of
-the ground-truth connectome, the voxels where the bundles end, open as an overlay shown as labels, named after the
-bundles' ends; tick them in the inspector's Cursor tab to see them in 3D. The bundles
+images open as the main volume, the tissue masks as overlays and the true fibre directions as peaks. The bundles
 then refer to the streamline files in the folder, so a session saved afterwards keeps everything.
 
 **Save** above the steps writes the phantom to a phantom file, and **Open** reads it back. A loaded tractogram or

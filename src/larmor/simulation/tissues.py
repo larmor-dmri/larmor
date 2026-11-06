@@ -11,6 +11,9 @@ from scipy.special import dawsn
 # How far from 1 the compartment fractions of a tissue may sum.
 _FRACTION_TOLERANCE = 1e-6
 
+# A remainder of 1 minus some fractions this close to 0 is rounding.
+_ROUNDING = 1e-12
+
 # Relaxation of brain tissue at 3 T, in ms. T1: in vivo, Wansapura et al. 1999.
 # T2: frontal white and grey matter in vivo, Lu et al. 2005, Table 1. T2*: in vivo,
 # the mean of the frontal and occipital values of Wansapura et al. 1999.
@@ -298,8 +301,13 @@ class Tissue:
 
 
 def _t2star_from_prime(t2_ms: float, t2_prime_ms: float) -> float:
-    """Returns T2* from T2 and T2', 1/T2* = 1/T2 + 1/T2'."""
-    return 1 / (1 / t2_ms + 1 / t2_prime_ms)
+    """Returns T2* from T2 and T2', 1/T2* = 1/T2 + 1/T2', at most T2."""
+    return min(t2_ms, 1 / (1 / t2_ms + 1 / t2_prime_ms))
+
+
+def _rest(remainder: float) -> float:
+    """Returns what the named fractions of a tissue leave of it, 0 if only rounding."""
+    return 0.0 if abs(remainder) < _ROUNDING else remainder
 
 
 def _t2_prime(t2_ms: float, t2star_ms: float) -> float:
@@ -404,7 +412,7 @@ def standard_model_tissue(
         clinical brain MRI sequences for use at 3.0 Tesla. J Magn Reson Imaging
         22 (2005) 13-22. doi:10.1002/jmri.20356
     """
-    extra_fraction = 1 - intra_fraction - free_water_fraction
+    extra_fraction = _rest(1 - intra_fraction - free_water_fraction)
     if min(intra_fraction, free_water_fraction, extra_fraction) < 0:
         raise ValueError(
             "intra_fraction and free_water_fraction must be >= 0 and sum to at most 1."
@@ -519,7 +527,7 @@ def sandi_tissue(
         clinical brain MRI sequences for use at 3.0 Tesla. J Magn Reson Imaging
         22 (2005) 13-22. doi:10.1002/jmri.20356
     """
-    extracellular_fraction = 1 - neurite_fraction - soma_fraction
+    extracellular_fraction = _rest(1 - neurite_fraction - soma_fraction)
     if min(neurite_fraction, soma_fraction, extracellular_fraction) < 0:
         raise ValueError(
             "neurite_fraction and soma_fraction must be >= 0 and sum to at most 1."

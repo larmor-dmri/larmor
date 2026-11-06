@@ -4,9 +4,12 @@ import pytest
 from larmor.simulation import (
     Bundle,
     BundleGeometry,
+    Compartment,
+    CompartmentModel,
     Phantom,
     Protocol,
     PulseSequence,
+    Tissue,
     TissueMap,
     create_gradient_table,
     partition_voxels,
@@ -243,3 +246,33 @@ def test_flat_arrays_of_a_small_phantom() -> None:
     np.testing.assert_allclose(
         np.abs(arrays.fibre_direction[fibres][:, 0]), 1.0, atol=1e-9
     )
+
+
+def test_whole_numbers_for_t1_and_proton_density_give_the_same_images() -> None:
+    grid = Grid((3, 3, 3), np.eye(4))
+    gradients = GradientTable(
+        np.array([0.0, 1000.0]), np.array([[0, 0, 0], [0, 0, 1.0]])
+    )
+    protocol = Protocol(gradients, 15.0, 30.0, 80.0, 3000.0)
+    fill = Volume(np.ones(grid.shape, np.float32), grid.affine.copy())
+
+    def images(t1_ms: float, proton_density: float) -> np.ndarray:
+        tissue = Tissue(
+            "T",
+            (
+                Compartment(
+                    CompartmentModel.BALL,
+                    1.0,
+                    1e-3,
+                    t1_ms=t1_ms,
+                    t2_ms=80.0,
+                    t2star_ms=50.0,
+                    proton_density=proton_density,
+                ),
+            ),
+        )
+        phantom = Phantom(grid, tissues=(tissue,), tissue_maps=(TissueMap("T", fill),))
+        simulated, _ = simulate(phantom, protocol, snr=20, noise_reference="T", seed=1)
+        return np.asarray(simulated.echoes[0].data)
+
+    np.testing.assert_array_equal(images(1000, 1), images(1000.0, 1.0))

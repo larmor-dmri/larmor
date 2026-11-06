@@ -1,13 +1,12 @@
 """Saving a simulation with its ground truth, and reading the ground truth back."""
 
-import colorsys
 import json
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
-from typing import Any, Final
+from typing import Final
 
 import numpy as np
 
@@ -19,7 +18,6 @@ from larmor.io import (
     write_bvals_bvecs,
 )
 from larmor.simulation.bundles import BundleGeometry
-from larmor.simulation.connectome import GroundTruthConnectome, connectome_matrices
 from larmor.simulation.ground_truth import (
     PEAK_MERGE_ANGLE,
     PEAK_RELATIVE_THRESHOLD,
@@ -34,7 +32,6 @@ from larmor.simulation.phantom import (
 from larmor.simulation.phantom_file import read_phantom, write_phantom
 from larmor.simulation.protocol import Protocol
 from larmor.simulation.tissues import CompartmentModel
-from larmor.tractography import write_connectome
 from larmor.types import Grid, Tractogram, Volume
 
 # The format name and version written to simulation.json.
@@ -83,17 +80,6 @@ class SimulationFiles:
         bundle_mask: One 3D mask of the voxels the bundles fill together; None
             if the phantom has no bundle.
         bundles: One .tck per bundle, in the order of the phantom's bundles.
-        connectome_parcellation: The nodes of the ground-truth connectome, the
-            voxels where the bundles end (see `GroundTruthConnectome`); None if
-            the phantom has no bundle. simulation.json lists each bundle's two
-            nodes and cross-section.
-        connectome_lookup_table: The name and colour of each node, in
-            FreeSurfer's layout; None if the phantom has no bundle.
-        connectome: The ground-truth connectome as a .csv, 1 where a bundle
-            joins two nodes; None if the phantom has no bundle.
-        connectome_proportion: The share of the bundles' cross-section that
-            joins each pair of nodes, as a .csv; None if the phantom has no
-            bundle.
         tissue_maps: A copy of each tissue map of the phantom, by tissue name.
         phantom: The phantom file, with the scan, which `lar simulate` can run
             again.
@@ -117,10 +103,6 @@ class SimulationFiles:
     masks: dict[str, Path]
     bundle_mask: Path | None
     bundles: tuple[Path, ...]
-    connectome_parcellation: Path | None
-    connectome_lookup_table: Path | None
-    connectome: Path | None
-    connectome_proportion: Path | None
     tissue_maps: dict[str, Path]
     phantom: Path
     info: Path
@@ -141,16 +123,6 @@ class SimulationFiles:
         if self.bundle_mask is not None:
             found.append(self.bundle_mask)
         found += list(self.bundles)
-        found += [
-            p
-            for p in (
-                self.connectome_parcellation,
-                self.connectome_lookup_table,
-                self.connectome,
-                self.connectome_proportion,
-            )
-            if p is not None
-        ]
         return [*found, *self.tissue_maps.values(), self.phantom, self.info]
 
 
@@ -169,7 +141,8 @@ def simulation_files(
         The paths; nothing is written.
 
     Raises:
-        ValueError: If two tissues have names that give the same file name.
+        ValueError: If two tissues have names that give the same file name, or a
+            tissue's mask would take the file of the bundles' mask.
     """
     folder = Path(folder)
     names = [_file_name(t.name) for t in phantom.tissues]
@@ -177,6 +150,11 @@ def simulation_files(
         raise ValueError(
             f"Tissue names {[t.name for t in phantom.tissues]} give the same file "
             "names; rename a tissue."
+        )
+    if phantom.bundles and "bundles" in names:
+        raise ValueError(
+            'A tissue named "bundles" would share its mask file with the bundles; '
+            "rename the tissue."
         )
     echoes = [""] if protocol.num_echoes == 1 else _echo_names(protocol.te_ms)
     stems = [f"dwi{e}" for e in echoes]
@@ -207,16 +185,6 @@ def simulation_files(
         bundle_mask=folder / "mask_bundles.nii.gz" if phantom.bundles else None,
         bundles=tuple(
             folder / f"bundle_{i}.tck" for i in range(1, len(phantom.bundles) + 1)
-        ),
-        connectome_parcellation=(
-            folder / "connectome_nodes.nii.gz" if phantom.bundles else None
-        ),
-        connectome_lookup_table=(
-            folder / "connectome_nodes.txt" if phantom.bundles else None
-        ),
-        connectome=folder / "connectome.csv" if phantom.bundles else None,
-        connectome_proportion=(
-            folder / "connectome_proportion.csv" if phantom.bundles else None
         ),
         tissue_maps={
             m.tissue: folder / f"tissue_map_{_file_name(m.tissue)}.nii.gz"
@@ -267,10 +235,6 @@ def save_simulation(
     share a peak. Peaks below 10% of the voxel's largest are dropped, and each
     peak's direction is the weighted mean of its fibres. A tissue mask holds
     the voxels where the tissue, background included, fills at least half.
-
-    The ground-truth connectome joins the voxels where each bundle's
-    streamlines start to those where they stop (see `ground_truth_connectome`),
-    with a warning for a bundle that ends where it starts or outside the grid.
 
     The tissue, bundle, compartment and free-water fractions are volume
     fractions. A model fitted to the images recovers signal fractions, which
@@ -332,8 +296,6 @@ def save_simulation(
         save_tractogram(Tractogram(streamlines.points, streamlines.offsets), path)
     for tissue_map in phantom.tissue_maps:
         save_volume(tissue_map.volume, files.tissue_maps[tissue_map.tissue])
-    if truth.connectome is not None:
-        _write_connectome(truth.connectome, files)
     tick()
 
     _write_phantom_copy(phantom, protocol, files, truth.bundle_names)
@@ -369,28 +331,6 @@ def _write_ground_truth(
     _write_masks(truth, fractions, files)
     _write_compartment_fractions(truth.phantom, protocol, fractions, affine, files)
     tick()
-
-
-def _write_connectome(
-    connectome: GroundTruthConnectome, files: SimulationFiles
-) -> None:
-    """Writes the connectome's nodes, their lookup table and its two matrices."""
-    assert files.connectome_parcellation is not None
-    assert files.connectome_lookup_table is not None
-    assert files.connectome is not None and files.connectome_proportion is not None
-    save_volume(connectome.parcellation, files.connectome_parcellation)
-    lines = ["# index name R G B A"]
-    for index, name in enumerate(connectome.node_names, start=1):
-        # Hues a golden-ratio turn apart, so neighbouring nodes differ.
-        hue = (index * 0.618033988749895) % 1.0
-        red, green, blue = (round(255 * c) for c in colorsys.hsv_to_rgb(hue, 0.7, 1.0))
-        lines.append(f"{index} {name} {red} {green} {blue} 0")
-    files.connectome_lookup_table.write_text(
-        "\n".join(lines) + "\n", encoding="utf-8", newline="\n"
-    )
-    names = list(connectome.node_names)
-    write_connectome(connectome.connected, files.connectome, names=names)
-    write_connectome(connectome.proportion, files.connectome_proportion, names=names)
 
 
 def _float_volume(data: np.ndarray, affine: np.ndarray) -> Volume:
@@ -553,13 +493,10 @@ def _write_info(
     files: SimulationFiles,
 ) -> None:
     """Writes simulation.json."""
-    phantom, connectome = truth.phantom, truth.connectome
+    phantom = truth.phantom
 
     def name(path: Path) -> str:
         return path.relative_to(files.folder).as_posix()
-
-    def optional(path: Path | None) -> str | None:
-        return None if path is None else name(path)
 
     info = {
         "format": FORMAT,
@@ -584,19 +521,6 @@ def _write_info(
             "relative_threshold": PEAK_RELATIVE_THRESHOLD,
         },
         "mask_fraction": MASK_FRACTION,
-        "connectome": None
-        if connectome is None
-        else {
-            "nodes": list(connectome.node_names),
-            "bundles": [
-                {"nodes": nodes, "cross_section_mm2": area}
-                for nodes, area in zip(
-                    connectome.bundle_nodes.tolist(),
-                    connectome.cross_section.tolist(),
-                    strict=True,
-                )
-            ],
-        },
         "files": {
             "dwi": [name(p) for p in files.dwi],
             "bvals": name(files.bvals),
@@ -619,10 +543,6 @@ def _write_info(
             if files.bundle_mask is None
             else name(files.bundle_mask),
             "bundles": [name(p) for p in files.bundles],
-            "connectome_parcellation": optional(files.connectome_parcellation),
-            "connectome_lookup_table": optional(files.connectome_lookup_table),
-            "connectome": optional(files.connectome),
-            "connectome_proportion": optional(files.connectome_proportion),
             "tissue_maps": {k: name(p) for k, p in files.tissue_maps.items()},
             "phantom": name(files.phantom),
         },
@@ -643,8 +563,7 @@ def read_ground_truth(folder: str | Path) -> GroundTruth:
         folder: The simulation folder.
 
     Returns:
-        The ground truth; its connectome is None for a folder written without
-        one.
+        The ground truth.
 
     Raises:
         ValueError: If the folder holds no simulation.json, or it is not one that
@@ -681,39 +600,9 @@ def read_ground_truth(folder: str | Path) -> GroundTruth:
             bundle_fractions=bundle_fractions.reshape(*grid.shape, len(bundles)),
             streamlines=tuple(load_tractogram(folder / p) for p in bundles),
             peaks=load_volume(folder / files["peaks"]).data,
-            connectome=_read_connectome(folder, files, info.get("connectome")),
             bundle_names=(
                 None if loaded.bundle_names is None else tuple(loaded.bundle_names)
             ),
         )
     except (KeyError, TypeError) as e:
         raise ValueError(f"{info_path} does not list the ground truth: {e!r}.") from e
-
-
-def _read_connectome(
-    folder: Path, files: dict[str, Any], block: object
-) -> GroundTruthConnectome | None:
-    """Reads the connectome's nodes and rebuilds its matrices from simulation.json.
-
-    Returns:
-        The connectome, or None if the folder holds none.
-    """
-    nodes_file = files.get("connectome_parcellation")
-    if nodes_file is None or not isinstance(block, dict):
-        return None
-    nodes = load_volume(folder / nodes_file)
-    names = tuple(str(n) for n in block["nodes"])
-    bundles = block["bundles"]
-    bundle_nodes = np.array([b["nodes"] for b in bundles], dtype=np.int64).reshape(
-        -1, 2
-    )
-    cross_section = np.array([b["cross_section_mm2"] for b in bundles], dtype=float)
-    connected, proportion = connectome_matrices(bundle_nodes, cross_section, len(names))
-    return GroundTruthConnectome(
-        parcellation=Volume(nodes.data.astype(np.int32), nodes.affine.copy()),
-        node_names=names,
-        connected=connected,
-        proportion=proportion,
-        bundle_nodes=bundle_nodes,
-        cross_section=cross_section,
-    )

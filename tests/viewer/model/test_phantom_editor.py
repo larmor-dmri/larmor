@@ -1,6 +1,5 @@
 """The phantom editor through the Viewer's actions, without a window."""
 
-import json
 import subprocess
 import sys
 import threading
@@ -25,14 +24,12 @@ from larmor.viewer import (
     Viewer,
 )
 from larmor.viewer.jobs import SAVING, JobCancelledError, JobRunner, Report
-from larmor.viewer.model.options import OverlayOptions
 from larmor.viewer.model.phantom import (
     build_tissue,
     run_simulation,
-    simulation_outputs,
 )
 from larmor.viewer.model.shortcuts import Command, run
-from larmor.viewer.phantom_jobs import open_outputs, start_run
+from larmor.viewer.phantom_jobs import start_run
 
 LINE_A = [(-12.0, 0.0, 0.0), (0.0, 2.0, 0.0), (12.0, 0.0, 0.0)]
 LINE_B = [(0.0, -12.0, 0.0), (0.0, 0.0, 2.0), (0.0, 12.0, 0.0)]
@@ -616,59 +613,3 @@ def test_a_radius_of_0_is_refused_and_a_tube_too_thin_stops_a_run(
     viewer.set_bundle(bundle, BundleField.RADIUS, 0.05)
     [problem] = viewer.check_phantom()
     assert "too thin" in problem
-
-
-def _nodes_items(viewer: Viewer) -> list[OverlayOptions]:
-    return [
-        i.options
-        for i in viewer.scene.in_category(Category.OVERLAYS)
-        if i.name == "connectome_nodes.nii.gz" and isinstance(i.options, OverlayOptions)
-    ]
-
-
-def test_a_run_opens_the_connectome_nodes_as_labels_named_after_the_bundles(
-    viewer: Viewer, tmp_path: Path
-) -> None:
-    folder = tmp_path / "sim"
-    viewer.run_phantom(folder)
-    table = folder / "connectome_nodes.txt"
-    (nodes,) = _nodes_items(viewer)
-    assert nodes.labels and nodes.lookup_table == str(table)
-    assert "1 Bundle_1_start " in table.read_text()
-    opened: list[tuple[Path, Path]] = []
-    files = simulation_outputs(folder)
-    open_outputs(files, lambda paths, category: None, lambda *a: opened.append(a))
-    assert opened == [(folder / "connectome_nodes.nii.gz", table)]
-    again = Viewer()
-    again.open_simulation(folder)
-    (reopened,) = _nodes_items(again)
-    assert reopened.labels and reopened.lookup_table == str(table)
-
-
-def test_a_simulation_folder_without_a_connectome_still_opens(
-    viewer: Viewer, tmp_path: Path
-) -> None:
-    folder = tmp_path / "sim"
-    viewer.run_phantom(folder)
-    info_path = folder / "simulation.json"
-    info = json.loads(info_path.read_text())
-    del info["connectome"]
-    for key in (
-        "connectome_parcellation",
-        "connectome_lookup_table",
-        "connectome",
-        "connectome_proportion",
-    ):
-        (folder / info["files"].pop(key)).unlink()
-    info_path.write_text(json.dumps(info))
-    opened: list[tuple[Path, Path]] = []
-    files = simulation_outputs(folder)
-    assert files.connectome_nodes is None and files.connectome_lookup_table is None
-    open_outputs(files, lambda paths, category: None, lambda *a: opened.append(a))
-    assert opened == []
-    other = Viewer()
-    items = other.open_simulation(folder)
-    assert {Category.VOLUMES, Category.OVERLAYS, Category.PEAKS} <= {
-        i.category for i in items
-    }
-    assert _nodes_items(other) == []

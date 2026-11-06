@@ -143,9 +143,6 @@ The folder is self-contained. It holds the images, the ground truth, and what is
 | `mask_<tissue>.nii.gz` | One mask per tissue: the voxels the tissue fills by at least half, background included |
 | `mask_bundles.nii.gz` | The voxels that the bundles fill by at least half together, so that a crossing of bundles of different tissues is not left out |
 | `bundle_<n>.tck` | The streamlines of each bundle |
-| `connectome_nodes.nii.gz`, `connectome_nodes.txt` | The nodes of the ground-truth connectome, the voxels where the bundles end, and a lookup table with their names and colours (below) |
-| `connectome.csv` | The ground-truth connectome, 1 where a bundle joins two nodes and 0 elsewhere |
-| `connectome_proportion.csv` | The share of the bundles' total cross-section that joins each pair of nodes |
 | `tissue_map_<tissue>.nii.gz` | A copy of each tissue map of the phantom |
 | `phantom.json` | The phantom file, with the protocol; its bundles are the geometry with the seed that was used, or the `.tck` of the folder |
 | `simulation.json` | The protocol, SNR, noise level, seed, tissue order and the name of every file |
@@ -174,25 +171,9 @@ no fibre direction, such as one filled with CSF, gives none. `peaks.nii.gz` has 
 per peak, largest peak first, which hold the x, y and z of the direction scaled by the amplitude, in world
 coordinates, and are NaN where a voxel has fewer peaks.
 
-The ground-truth connectome records which regions the bundles join, for drawn bundles and loaded tractograms
-alike. Each bundle has two ends, the voxels where its streamlines start and the voxels where they stop, after the
-streamlines are turned to run the same way. A streamline that leaves the grid ends where it leaves. Two ends
-become one node when their centres are closer than the width of the wider end, so bundles drawn from the same
-point start in the same region, whatever direction they leave in. A node is named after the ends it holds, such as `CST_start+AF_end`, using the bundle names of the phantom
-file. A bundle whose two ends fall in one node joins that node to itself, on the diagonal, with a warning.
-`simulation.json` lists the two nodes of each bundle and its cross-section, the volume it fills divided by the mean
-length of its streamlines. The proportions use this cross-section rather than the number of streamlines, which for
-a loaded tractogram depends only on the file. To compare tracking with the ground truth, build the connectome of the
-tracked streamlines on the same nodes:
-
-<!-- not run: needs a tractogram tracked on the simulated images -->
-```bash
-lar connectome tracks.tck sim/connectome_nodes.nii.gz tracked.csv --lut sim/connectome_nodes.txt
-```
-
 In Python, the `truth` that `simulate` returns holds the same ground truth as these files. Its maps are NumPy arrays
 on the phantom's grid: `tissue_fractions`, `background` and `bundle_fractions`, in which `bundle_fractions[..., k] >
-0` is the mask of bundle k. It also holds each bundle's `streamlines`, the `peaks` and the `connectome`.
+0` is the mask of bundle k. It also holds each bundle's `streamlines` and the `peaks`.
 {py:func}`~larmor.simulation.read_ground_truth` reads the same object back from a saved folder, so that an analysis
 of the images can be scored against the ground truth long after the simulation ran:
 
@@ -200,7 +181,7 @@ of the images can be scored against the ground truth long after the simulation r
 from larmor.simulation import read_ground_truth
 
 truth = read_ground_truth("sim")
-print(truth.bundle_fractions.shape, truth.connectome is not None)
+print(truth.bundle_fractions.shape, len(truth.streamlines))
 ```
 
 Running `phantom.json` again with the same seed gives the same images. Without `--seed`, a seed is drawn and

@@ -230,3 +230,12 @@ def test_the_bundle_names_of_the_example_reach_the_viewer(tmp_path: Path) -> Non
         assert state is not None
         names = [viewer.scene.item(b.item_id).name for b in state.bundles]
         assert names == ["Left-right", "Front-back"]
+
+
+def test_a_folder_named_like_a_shipped_phantom_does_not_hide_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "crossing").mkdir()
+    result = _run("crossing", tmp_path / "out", "--seed", "1")
+    assert result.exit_code == 0, result.output

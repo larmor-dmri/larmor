@@ -175,8 +175,10 @@ def _fibre_sums(
     offsets = fine.offsets
 
     # which points belong to the same streamline
-    real = np.ones(len(points) - 1, dtype=bool)
-    real[offsets[1:-1] - 1] = False
+    real = np.ones(max(len(points) - 1, 0), dtype=bool)
+    # Empty streamlines at either end of the tractogram point outside these pairs.
+    joins = offsets[1:-1] - 1
+    real[joins[(joins >= 0) & (joins < len(real))]] = False
     start, end = points[:-1][real], points[1:][real]
 
     length = np.linalg.norm((end - start), axis=1)
@@ -369,8 +371,7 @@ def _sample_tube(
     tangent = spline.derivative()(u)
     tangent /= np.linalg.norm(tangent, axis=1, keepdims=True)
     reach = radius * (1 + fan_start * (1 - u) ** sharpness + fan_end * u**sharpness)
-    widest = radius * (1 + max(fan_start, fan_end))
-    return _Tube(centre, tangent, reach, widest, cKDTree(centre))
+    return _Tube(centre, tangent, reach, float(reach.max()), cKDTree(centre))
 
 
 def _sampled_fill(

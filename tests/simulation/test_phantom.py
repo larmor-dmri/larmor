@@ -401,3 +401,49 @@ def test_moved_folder_is_found_through_the_relative_paths(tmp_path: Path) -> Non
     first.rename(moved)
     read = read_phantom(moved / "scene.phantom.json")
     assert read.phantom.tissue_maps[0].path == moved / "gm.nii"
+
+
+@pytest.mark.parametrize(
+    "affine",
+    [
+        np.eye(4),
+        np.array([[1, -1, 0, 3.0], [1, 1, 0, -2.0], [0, 0, 1.5, 1.0], [0, 0, 0, 1.0]]),
+    ],
+    ids=["straight", "oblique_tie"],
+)
+@pytest.mark.parametrize(
+    ("flips", "order"),
+    [((0,), (0, 1, 2)), ((1, 2), (0, 1, 2)), ((), (1, 0, 2)), ((0,), (2, 1, 0))],
+)
+def test_a_tissue_map_in_another_orientation_keeps_its_world_positions(
+    affine: np.ndarray, flips: tuple[int, ...], order: tuple[int, int, int]
+) -> None:
+    grid = Grid((6, 6, 4) if order == (1, 0, 2) else (6, 8, 6), affine)
+    values = np.random.default_rng(0).random(grid.shape, dtype=np.float32)
+    stored = Volume(values, grid.affine.copy())
+    for axis in flips:
+        stored.flip_axis(axis)
+    stored.permute_axes(order)
+    expected = Volume(values, grid.affine.copy())
+
+    def fractions(volume: Volume) -> np.ndarray:
+        phantom = Phantom(grid, tissue_maps=(TissueMap("GM", volume),))
+        result: np.ndarray = partition_voxels(phantom, seed=0).tissue_fractions
+        return result
+
+    np.testing.assert_array_equal(fractions(stored), fractions(expected))
+
+
+def test_a_fan_wider_in_its_middle_than_at_its_ends_is_filled_to_its_edge() -> None:
+    radius, fan, sharpness, length = 2.0, 3.0, 0.1, 30.0
+    grid = Grid(
+        (36, 40, 40),
+        np.array([[1, 0, 0, -3.0], [0, 1, 0, -19.5], [0, 0, 1, -19.5], [0, 0, 0, 1.0]]),
+    )
+    ends = np.array([[0, 0, 0], [length, 0, 0]])
+    fill, _ = tube_fill(ends, radius, (fan, fan, sharpness), grid)
+    u = np.linspace(0, 1, 2001)
+    reach = radius * (1 + fan * (1 - u) ** sharpness + fan * u**sharpness)
+    assert fill.sum() == pytest.approx(
+        np.trapezoid(np.pi * reach**2, u) * length, rel=0.02
+    )

@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from scipy.spatial import cKDTree
 
 from larmor.simulation import BundleGeometry, create_bundle
@@ -154,3 +155,20 @@ def test_each_direction_in_a_voxel_gives_its_own_fibre() -> None:
     assert np.all(along_x | along_y)
     np.testing.assert_allclose(voxels.length[along_x].sum(), 0.8, rtol=1e-4)
     np.testing.assert_allclose(voxels.length[along_y].sum(), 0.8, rtol=1e-4)
+
+
+@pytest.mark.parametrize(
+    "offsets", [[0, 0, 40], [0, 40, 40], [0, 0, 40, 40]], ids=["first", "last", "both"]
+)
+def test_empty_streamlines_change_nothing_in_the_voxelisation(
+    offsets: list[int],
+) -> None:
+    line = straight([0.0, 7.0, 3.0], [19.0, 7.0, 3.0], 40)
+    alone = voxelise([line], GRID)
+    with_empty = voxelise([Tractogram(line.points, np.array(offsets))], GRID)
+    np.testing.assert_allclose(with_empty.length, alone.length)
+
+
+def test_a_bundle_of_empty_streamlines_reaches_no_voxel() -> None:
+    empty = Tractogram(np.zeros((0, 3), np.float32), np.array([0, 0, 0]))
+    assert len(voxelise([empty], GRID).voxel) == 0
