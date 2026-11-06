@@ -13,7 +13,6 @@ from larmor.io import (
     load_tractogram,
     load_volume,
     read_bvals_bvecs,
-    read_lookup_table,
 )
 from larmor.simulation import (
     EXAMPLE_PHANTOMS,
@@ -388,7 +387,10 @@ def test_compartment_fractions_are_the_tissue_fraction_times_the_share(
     np.testing.assert_allclose(maps[..., 0], tissues[..., 0] * shares[0], atol=1e-6)
     np.testing.assert_allclose(maps.sum(axis=-1), tissues.sum(axis=-1), atol=1e-5)
     info = json.loads((saved / "simulation.json").read_text())
-    assert [c["model"] for c in info["compartments"][:2]] == ["stick", "zeppelin"]
+    assert [c["model"] for c in info["compartments"][:2]] == [
+        "watson_stick",
+        "zeppelin",
+    ]
 
 
 def test_the_free_water_fraction_counts_free_water_in_tissues_and_background(
@@ -466,7 +468,7 @@ def test_signal_fractions_weight_each_compartment_by_its_relaxation(
         seen.append(found)
     # In a voxel of WM only, free water fills 0.1 of the volume but gives more of
     # the signal, and more at the longer echo time.
-    wm_only = volume[..., 0] > 0.7 - 1e-6
+    wm_only = volume[..., 0] > compartments[0].fraction - 1e-6
     assert wm_only.any()
     water_index = free.index(True)
     assert np.all(seen[0][wm_only, water_index] > 0.15)
@@ -561,39 +563,56 @@ def test_saving_reports_its_progress_to_the_end(
     assert seen[-1][0] == seen[-1][1] and seen[-1][2] == "save"
 
 
-def test_the_ground_truth_connectome_is_saved_only_for_a_phantom_with_bundles(
+def test_the_ground_truth_checks_that_bundle_names_name_every_bundle() -> None:
+    phantom = crossing()
+    partition = partition_voxels(phantom, seed=1)
+    with pytest.raises(ValueError, match="must name 2 bundles"):
+        build_ground_truth(phantom, partition, bundle_names=["only one"])
+
+
+def _small_bundle_phantom(tissue_name: str) -> tuple[Phantom, Protocol]:
+    grid = Grid((8, 8, 4), np.eye(4))
+    gradients = create_gradient_table([(1000.0, 6)], seed=1)
+    geometry = BundleGeometry(
+        np.array([[1.0, 4.0, 2.0], [6.0, 4.0, 2.0]]), num_streamlines=20, seed=1
+    )
+    tissue = standard_model_tissue(name=tissue_name)
+    bundle = Bundle(geometry, tissue=tissue_name)
+    return Phantom(grid, tissues=(tissue,), bundles=(bundle,)), Protocol(
+        gradients, 15.0, 30.0, 80.0, 3000.0
+    )
+
+
+def test_tissue_names_that_differ_only_by_case_are_refused_and_masks_keep_the_case(
     tmp_path: Path,
 ) -> None:
-    named = simulate(crossing(), PROTOCOL, seed=3, bundle_names=["LR", "AP"])
-    files = save_simulation(*named, tmp_path / "out")
-    names = ["LR_start", "LR_end", "AP_start", "AP_end"]
-    lookup = read_lookup_table(tmp_path / "out" / "connectome_nodes.txt")
-    assert {k: v.name for k, v in lookup.items()} == dict(enumerate(names, 1))
-    nodes = _load(tmp_path / "out" / "connectome_nodes.nii.gz")
-    assert set(np.unique(nodes).tolist()) == {0, 1, 2, 3, 4}
-    for path in (files.connectome, files.connectome_proportion):
-        assert path is not None
-        header = path.read_text().splitlines()[0]
-        assert header.split(",") == ["", *names]
-    connected = np.loadtxt(
-        tmp_path / "out" / "connectome.csv",
-        delimiter=",",
-        skiprows=1,
-        usecols=range(1, 5),
-    )
-    np.testing.assert_array_equal(connected[[0, 2], [1, 3]], [1, 1])
-    info = json.loads((tmp_path / "out" / "simulation.json").read_text())
-    block = info["connectome"]
-    assert block["nodes"] == names
-    assert [b["nodes"] for b in block["bundles"]] == [[1, 2], [3, 4]]
-    assert all(b["cross_section_mm2"] > 0 for b in block["bundles"])
-    assert info["files"]["connectome_parcellation"] == "connectome_nodes.nii.gz"
+    phantom, protocol = _small_bundle_phantom("WM")
+    files = simulation_files(phantom, protocol, tmp_path, noise=False)
+    assert files.masks["WM"].name == "mask_WM.nii.gz"
+    tissues = (*phantom.tissues, standard_model_tissue(name="wm"))
+    with pytest.raises(ValueError, match="same file names"):
+        simulation_files(
+            replace(phantom, tissues=tissues), protocol, tmp_path, noise=False
+        )
 
-    gm = np.zeros(GRID.shape)
-    gm[:3] = 0.5
-    bare = Phantom(GRID, tissue_maps=(TissueMap("GM", Volume(gm, AFFINE)),))
-    empty = save_simulation(*simulate(bare, PROTOCOL, seed=1), tmp_path / "bare")
-    assert empty.connectome is None and empty.connectome_parcellation is None
-    assert not list((tmp_path / "bare").glob("connectome*"))
-    info = json.loads((tmp_path / "bare" / "simulation.json").read_text())
-    assert info["connectome"] is None
+
+@pytest.mark.parametrize("name", ["bundles", "Bundles"])
+def test_a_tissue_whose_mask_would_take_the_bundles_mask_file_is_refused(
+    tmp_path: Path, name: str
+) -> None:
+    phantom, protocol = _small_bundle_phantom(name)
+    with pytest.raises(ValueError, match="rename the tissue"):
+        simulation_files(phantom, protocol, tmp_path, noise=False)
+
+
+def test_a_numpy_seed_and_snr_are_saved_as_plain_numbers(tmp_path: Path) -> None:
+    phantom, protocol = _small_bundle_phantom("WM")
+    simulated, truth = simulate(
+        phantom,
+        protocol,
+        snr=np.float32(20),  # type: ignore[arg-type]
+        seed=np.int64(3),  # type: ignore[arg-type]
+    )
+    save_simulation(simulated, truth, tmp_path)
+    info = json.loads((tmp_path / "simulation.json").read_text())
+    assert info["seed"] == 3 and info["snr"] == 20

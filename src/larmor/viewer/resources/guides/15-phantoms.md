@@ -55,13 +55,16 @@ The phantom starts with three tissues: white matter (WM), grey matter (GM) and c
 tissue is either a preset whose parameters you can change, or a list of compartments that you build yourself. A
 compartment is one pool of water with its own diffusion model, such as the water inside axons or the water
 around them. The presets are the standard model and NODDI (neurite orientation dispersion and density imaging)
-for white matter, SANDI (soma and neurite density imaging) for grey matter, and free water for CSF. NODDI spreads
-its neurites around the fibre direction, and its kappa parameter sets how tightly they follow it.
+for white matter, SANDI (soma and neurite density imaging) for grey matter, and free water for CSF. The standard
+model here differs slightly from the usual stick, zeppelin and ball model. By using a Watson stick, the simulated
+signal more closely resembles a real acquisition, because it drops the assumption that all fibres in a voxel have
+exactly the same direction. The standard model and NODDI both spread their sticks around the fibre direction, and
+their kappa parameter sets how tightly the sticks follow it.
 
 In the compartment table, each row picks one of these models:
 
 - the stick, the zeppelin, the ball, the powder-averaged stick and the sphere;
-- the Watson-dispersed sticks of NODDI, which use the kappa column;
+- the Watson-dispersed sticks, which use the kappa column;
 - the cylinder, which uses the radius column;
 - the dot, whose water does not move;
 - free water, whose share a run reports as the free-water fraction of its ground truth.
@@ -130,8 +133,8 @@ with the total of each bar above it.
 - The third bar, labelled Diffusion with the b-value, is the signal after the diffusion weighting of the chosen
   volume.
 
-Each bar is split into the voxel's compartments, named in plain words such as WM axons, GM soma, WM neurites,
-still water or CSF, and each bundle has colours of its own. When the scan has noise, a dashed line marks the
+Each bar is split into the voxel's compartments, named in plain words such as WM neurites, GM soma, still
+water or CSF, and each bundle has colours of its own. When the scan has noise, a dashed line marks the
 noise floor, the mean magnitude of pure noise. The legend below the chart names the compartments, and when two
 bundles cross, each of its two columns lists one bundle.
 
@@ -173,9 +176,7 @@ status bar and on the Run step. Once the files are being saved, the run can no l
 says when the run has finished or failed; a cancelled run opens nothing.
 
 The output folder has the same contents as the one that `lar simulate` writes. When the run ends, the diffusion
-images open as the main volume, the tissue masks as overlays and the true fibre directions as peaks. The nodes of
-the ground-truth connectome, the voxels where the bundles end, open as an overlay shown as labels, named after the
-bundles' ends; tick them in the inspector's Cursor tab to see them in 3D. The bundles
+images open as the main volume, the tissue masks as overlays and the true fibre directions as peaks. The bundles
 then refer to the streamline files in the folder, so a session saved afterwards keeps everything.
 
 **Save** above the steps writes the phantom to a phantom file, and **Open** reads it back. A loaded tractogram or

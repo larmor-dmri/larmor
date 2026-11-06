@@ -67,17 +67,6 @@ def test_the_ground_truth_reads_back_as_simulate_returned_it(
     for got, expected in zip(read.streamlines, truth.streamlines, strict=True):
         np.testing.assert_allclose(got.points, expected.points, atol=1e-4)
         np.testing.assert_array_equal(got.offsets, expected.offsets)
-    assert read.connectome is not None and truth.connectome is not None
-    got_c, expected_c = read.connectome, truth.connectome
-    np.testing.assert_array_equal(got_c.parcellation.data, expected_c.parcellation.data)
-    np.testing.assert_allclose(
-        got_c.parcellation.affine, expected_c.parcellation.affine
-    )
-    assert got_c.node_names == expected_c.node_names
-    np.testing.assert_array_equal(got_c.bundle_nodes, expected_c.bundle_nodes)
-    np.testing.assert_array_equal(got_c.connected, expected_c.connected)
-    np.testing.assert_allclose(got_c.cross_section, expected_c.cross_section)
-    np.testing.assert_allclose(got_c.proportion, expected_c.proportion)
 
 
 def test_the_peaks_of_simulate_are_the_saved_peaks(
@@ -90,26 +79,29 @@ def test_the_peaks_of_simulate_are_the_saved_peaks(
     np.testing.assert_allclose(saved, truth.peaks, atol=1e-7)
 
 
-def test_a_folder_saved_without_a_connectome_reads_back_without_one(
-    folder: Path, tmp_path: Path
+def test_a_folder_saved_with_a_connectome_reads_and_loses_it_when_saved_over(
+    run: tuple[SimulatedDWI, GroundTruth], folder: Path, tmp_path: Path
 ) -> None:
     old = tmp_path / "old"
     shutil.copytree(folder, old)
-    folder = old
-    info_path = folder / "simulation.json"
-    info = json.loads(info_path.read_text())
-    del info["connectome"]
-    for key in (
-        "connectome_parcellation",
-        "connectome_lookup_table",
-        "connectome",
-        "connectome_proportion",
-    ):
-        (folder / info["files"].pop(key)).unlink()
-    info_path.write_text(json.dumps(info))
-    read = read_ground_truth(folder)
-    assert read.connectome is None
-    assert read.bundle_fractions.shape[-1] == 2
+    info = json.loads((old / "simulation.json").read_text())
+    names = {
+        "connectome_parcellation": "connectome_nodes.nii.gz",
+        "connectome_lookup_table": "connectome_nodes.txt",
+        "connectome": "connectome.csv",
+        "connectome_proportion": "connectome_proportion.csv",
+    }
+    info["files"].update(names)
+    info["connectome"] = {"nodes": ["LR start", "LR end"]}
+    (old / "simulation.json").write_text(json.dumps(info))
+    for name in names.values():
+        (old / name).write_text("old")
+
+    assert len(read_ground_truth(old).streamlines) == len(run[1].streamlines)
+
+    save_simulation(*run, old)
+    assert not [name for name in names.values() if (old / name).exists()]
+    assert "connectome" not in json.loads((old / "simulation.json").read_text())
 
 
 @pytest.mark.parametrize("broken", ["missing", "format"])

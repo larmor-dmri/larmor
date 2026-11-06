@@ -7,10 +7,6 @@ from larmor.simulation.breakdown import (
     signal_breakdown,
 )
 from larmor.simulation.bundles import BundleGeometry, create_bundle
-from larmor.simulation.connectome import (
-    GroundTruthConnectome,
-    ground_truth_connectome,
-)
 from larmor.simulation.examples import EXAMPLE_PHANTOMS, example_phantom
 from larmor.simulation.ground_truth import GroundTruth
 from larmor.simulation.instant import SimulatedDWI, simulate
@@ -53,7 +49,6 @@ __all__ = [
     "CompartmentModel",
     "CompartmentSignal",
     "GroundTruth",
-    "GroundTruthConnectome",
     "Phantom",
     "PhantomFile",
     "Protocol",
@@ -71,7 +66,6 @@ __all__ = [
     "default_tissues",
     "example_phantom",
     "free_water_tissue",
-    "ground_truth_connectome",
     "noddi_tissue",
     "partition_voxels",
     "read_ground_truth",

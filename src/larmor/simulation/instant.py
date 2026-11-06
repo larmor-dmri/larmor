@@ -103,8 +103,8 @@ def flatten(
         for _, c in compartments
     ]
     relaxation = _core.relaxation_weights(
-        np.array([c.proton_density for _, c in compartments]),
-        np.array([c.t1_ms for _, c in compartments]),
+        np.array([c.proton_density for _, c in compartments], dtype=np.float64),
+        np.array([c.t1_ms for _, c in compartments], dtype=np.float64),
         np.array(decay, dtype=np.float64),
         protocol.tr_ms,
         np.array(protocol.te_ms),
@@ -141,8 +141,8 @@ def relaxation_weights(tissue: Tissue, protocol: Protocol) -> np.ndarray:
         for c in tissue.compartments
     ]
     weights: np.ndarray = _core.relaxation_weights(
-        np.array([c.proton_density for c in tissue.compartments]),
-        np.array([c.t1_ms for c in tissue.compartments]),
+        np.array([c.proton_density for c in tissue.compartments], dtype=np.float64),
+        np.array([c.t1_ms for c in tissue.compartments], dtype=np.float64),
         np.array(decay, dtype=np.float64),
         protocol.tr_ms,
         np.array(protocol.te_ms),
@@ -192,8 +192,8 @@ def simulate(
             seed of their own (see `partition_voxels`); the same seed gives the
             same result. Defaults to None, which draws a seed and returns it in
             the result.
-        bundle_names: A name for each bundle, used in the connectome's node
-            names and kept in the saved phantom file. Defaults to None.
+        bundle_names: A name for each bundle, kept in the saved phantom file.
+            Defaults to None.
         n_jobs: The number of threads, -1 for all cores. Defaults to -1.
         progress: A function called with (done, total, stage) as the run goes
             on, where stage is "voxelise", "signal" or "noise"; raise an
@@ -217,10 +217,12 @@ def simulate(
     if snr is not None:
         if not (math.isfinite(snr) and snr > 0):
             raise ValueError(f"snr must be positive, got {snr}.")
+        snr = float(snr)
         sigma = float(reference_s0(phantom.tissue(noise_reference), protocol)[0]) / snr
 
     if seed is None:
         seed = int(np.random.SeedSequence().entropy)  # type: ignore[arg-type]
+    seed = int(seed)
     phantom = replace(phantom, bundles=resolve_bundle_seeds(phantom, seed))
     partition = partition_voxels(phantom, seed=seed, n_jobs=n_jobs, progress=progress)
     arrays = flatten(phantom, protocol, partition)

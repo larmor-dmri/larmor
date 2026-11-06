@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
+from larmor._log import LarmorLogger
 from larmor.simulation.bundles import BundleGeometry, create_bundle
 from larmor.simulation.tissues import Tissue, default_tissues
 from larmor.simulation.voxelise import Voxelisation, tube_fill, voxelise
@@ -110,7 +111,9 @@ class TissueMap:
     Args:
         tissue: The tissue's name. Its compartments must not need a fibre
             direction, as a map gives none.
-        volume: 3D values in [0, 1] on the phantom's grid.
+        volume: 3D values in [0, 1] on the phantom's grid. A map stored in another
+            orientation of that grid (axes permuted or flipped) is reoriented to
+            it, with a warning, so each value stays at its world position.
         path: The file the map was read from; `write_phantom` stores it.
             Defaults to None.
     """
@@ -313,10 +316,7 @@ def partition_voxels(
     remainder = np.clip(1 - occupancy.sum(axis=1), 0, None)
     if phantom.tissue_maps:
         maps = np.stack(
-            [
-                np.clip(m.volume.as_float(dtype=np.float64).ravel(), 0, 1)
-                for m in phantom.tissue_maps
-            ],
+            [np.clip(_map_values(m, grid).ravel(), 0, 1) for m in phantom.tissue_maps],
             axis=1,
         )
         mapped = maps.sum(axis=1)
@@ -358,6 +358,33 @@ def partition_voxels(
         fibre_direction=np.ascontiguousarray(voxels.direction[order]),
         streamlines=tuple(streamlines),
     )
+
+
+def _map_values(tissue_map: TissueMap, grid: Grid) -> np.ndarray:
+    """Returns a tissue map's values in the grid's voxel order, as float64.
+
+    Args:
+        tissue_map: The map, in any orientation of the grid.
+        grid: The phantom's grid.
+
+    Returns:
+        The values, with the grid's shape.
+    """
+    volume = tissue_map.volume
+    # A signed permutation for the same voxels. Read directly rather than through the
+    # orientation codes, which can tie for oblique affines.
+    to_grid = np.linalg.solve(grid.affine, volume.affine)[:3, :3]
+    order = np.argmax(np.abs(to_grid), axis=1)
+    flips = np.flatnonzero(to_grid[np.arange(3), order] < 0)
+    if len(flips) or not np.array_equal(order, np.arange(3)):
+        LarmorLogger.warning(
+            "The map of %r is stored %s, the phantom's grid %s; reorienting the map.",
+            tissue_map.tissue,
+            "".join(volume.orientation),
+            "".join(grid.orientation),
+        )
+    values = np.transpose(volume.as_float(dtype=np.float64), order)
+    return np.flip(values, axis=tuple(flips.tolist()))
 
 
 def _occupancy(

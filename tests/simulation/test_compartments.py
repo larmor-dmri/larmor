@@ -296,6 +296,17 @@ def test_watson_stick_tends_to_the_stick_and_to_the_powder_stick() -> None:
     np.testing.assert_allclose(flat, powder, rtol=1e-9)
 
 
+@pytest.mark.parametrize("kappa", [1e12, 1e16, 1e17, 1e155, 1e300])
+def test_watson_stick_stays_the_stick_at_a_huge_kappa(kappa: float) -> None:
+    cosines = np.array([1.0, 0.8, 0.5, 0.2, 0.0])
+    bvals = np.array([0.0, 1000.0, 3000.0, 5000.0, 10000.0])
+    stick = attenuation(CompartmentModel.STICK, bvals, cosines, 1.7e-3)
+    sharp = attenuation(
+        CompartmentModel.WATSON_STICK, bvals, cosines, 1.7e-3, kappa=kappa
+    )
+    np.testing.assert_allclose(sharp, stick, rtol=1e-9)
+
+
 def test_cylinder_roots_solve_j1_prime_and_satisfy_the_sum_rule() -> None:
     x = _core.cylinder_roots()
     np.testing.assert_allclose(x[:100], jnp_zeros(1, 100), rtol=1e-12)

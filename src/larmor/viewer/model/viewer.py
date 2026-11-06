@@ -1247,8 +1247,8 @@ class Viewer:
 
         Args:
             name: The tissue's name, such as "WM".
-            preset: `TissuePreset.STANDARD_MODEL` (stick, zeppelin, free water),
-                `SANDI` (sphere, powder-averaged stick, ball), `NODDI`
+            preset: `TissuePreset.STANDARD_MODEL` (Watson stick, zeppelin, free
+                water), `SANDI` (sphere, powder-averaged stick, ball), `NODDI`
                 (Watson-dispersed sticks, zeppelin, free water), `FREE_WATER`
                 (free water alone) or `CUSTOM` (its compartments, see
                 `set_compartments`; a preset tissue turned custom keeps its
@@ -1716,8 +1716,7 @@ class Viewer:
 
         The folder is the one `larmor.simulation.save_simulation` writes. The
         DWI (with its .bval and .bvec) opens as a volume, the tissue masks as
-        overlays, the ground-truth fibre directions as peaks and the connectome's
-        nodes as an overlay shown as labels; the bundles'
+        overlays and the ground-truth fibre directions as peaks; the bundles'
         items then refer to the streamline files written, so a session keeps
         everything. In the window, Run (Ctrl+R) does this in the background,
         with a Cancel button.
@@ -1748,9 +1747,8 @@ class Viewer:
         The folder is one `lar simulate` or Run writes. Its phantom file opens
         in the phantom editor, replacing the phantom open, with each bundle as
         a tractogram item referring to the bundle's streamline file; the DWI
-        opens as a volume, the tissue masks as overlays, the ground-truth
-        fibre directions as peaks and the connectome's nodes, if the folder has
-        them, as an overlay shown as labels.
+        opens as a volume, the tissue masks as overlays and the ground-truth
+        fibre directions as peaks.
 
         Args:
             folder: The simulation folder, holding simulation.json.
@@ -1784,17 +1782,11 @@ class Viewer:
         self._phantom.link(files)
 
     def _open_outputs(self, files: SimulationOutputs) -> list[Item]:
-        """Loads a simulation's DWI, masks, peaks and connectome nodes as items."""
+        """Loads a simulation's DWI, masks and peaks as items."""
         items = [self.load(p, Category.VOLUMES) for p in files.dwi]
         items += [self.load(p, Category.OVERLAYS) for p in files.masks]
         if files.peaks is not None:
             items.append(self.load(files.peaks, Category.PEAKS))
-        nodes, table = files.connectome_nodes, files.connectome_lookup_table
-        if nodes is not None and table is not None:
-            item = self.load(nodes, Category.OVERLAYS)
-            self.set(item.id, OptionName.LABELS, True)
-            self.set(item.id, OptionName.LOOKUP_TABLE, str(table))
-            items.append(self.scene.item(item.id))
         return items
 
     def prepare_run(self, folder: str | Path, *, overwrite: bool = False) -> RunInputs:

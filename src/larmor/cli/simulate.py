@@ -132,6 +132,8 @@ def simulate(
         protocol, phantom, shells, num_b0, bvals, bvecs, bvec_frame, seed
     )
     _check_output_folder(output_path, force)
+    # Refuses tissue names that cannot be saved before the run rather than after it.
+    simulation.simulation_files(phantom, protocol, output_path, noise=snr is not None)
 
     simulated, truth = simulation.simulate(
         phantom,
@@ -172,12 +174,12 @@ def _load_phantom(phantom_path: str) -> PhantomFile:
     from larmor import simulation
 
     path = Path(phantom_path)
-    if path.exists():
+    if path.is_file():
         return simulation.read_phantom(path)
     if phantom_path in simulation.EXAMPLE_PHANTOMS:
         return simulation.example_phantom(phantom_path)
     raise FileNotFoundError(
-        f"{phantom_path} does not exist and is not the name of an example "
+        f"{phantom_path} is not a file and is not the name of an example "
         f"phantom ({', '.join(simulation.EXAMPLE_PHANTOMS)})."
     )
 

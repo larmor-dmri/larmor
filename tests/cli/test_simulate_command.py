@@ -177,6 +177,28 @@ def test_a_phantom_file_without_a_scan_is_an_error(tmp_path: Path) -> None:
     assert "has no scan" in result.output
 
 
+def test_a_tissue_that_cannot_be_saved_is_refused_before_the_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    loaded = example_phantom()
+    phantom = loaded.phantom
+    renamed = replace(
+        phantom,
+        tissues=(replace(phantom.tissues[0], name="bundles"), *phantom.tissues[1:]),
+        bundles=tuple(replace(b, tissue="bundles") for b in phantom.bundles),
+    )
+    path = tmp_path / "named.phantom.json"
+    write_phantom(renamed, path, protocol=loaded.protocol)
+
+    def no_run(*args: object, **kwargs: object) -> None:
+        raise AssertionError("the simulation ran")
+
+    monkeypatch.setattr("larmor.simulation.simulate", no_run)
+    result = _run(path, tmp_path / "out")
+    assert result.exit_code == 1
+    assert "rename the tissue" in result.output
+
+
 def test_force_replaces_the_files_of_the_earlier_run(tmp_path: Path) -> None:
     out = tmp_path / "out"
     assert _run("crossing", out, "--snr", "20", "--seed", "1").exit_code == 0
@@ -230,3 +252,12 @@ def test_the_bundle_names_of_the_example_reach_the_viewer(tmp_path: Path) -> Non
         assert state is not None
         names = [viewer.scene.item(b.item_id).name for b in state.bundles]
         assert names == ["Left-right", "Front-back"]
+
+
+def test_a_folder_named_like_a_shipped_phantom_does_not_hide_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "crossing").mkdir()
+    result = _run("crossing", tmp_path / "out", "--seed", "1")
+    assert result.exit_code == 0, result.output

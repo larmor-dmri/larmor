@@ -79,8 +79,13 @@ the quantity that free-water imaging estimates (Pasternak et al. 2009).
 A tissue is a set of compartments with fractions that sum to 1, and each compartment has its own relaxation.
 Three are predefined, with defaults for 3 T:
 
-- **White matter** follows the standard model, with a stick for the intra-axonal water, a zeppelin for the
-  extra-axonal water, and optionally a ball of free water (Novikov et al. 2019).
+- **White matter** follows the standard model, with a Watson stick for the intra-axonal water, a zeppelin for the
+  extra-axonal water, and optionally a ball of free water (Novikov et al. 2019). This differs slightly from the
+  usual stick, zeppelin and ball model. By using a Watson stick, the simulated signal more closely resembles a real
+  acquisition, because it drops the assumption that all fibres in a voxel have exactly the same direction. The
+  zeppelin is averaged over the same Watson density, which gives `d_par = D_perp + (D - D_perp) tau1` and
+  `d_perp = D_perp + (D - D_perp) (1 - tau1) / 2`, where tau1 is the mean squared cosine between a stick and the
+  fibre direction (Zhang et al. 2012, Eqs. 5 to 7). Without a kappa, the tissue is a plain stick and zeppelin.
 - **Grey matter** follows SANDI, with a sphere for the somas, a powder-averaged stick for the neurites and a ball
   for the extracellular space (Palombo et al. 2020). It does not depend on the gradient direction.
 - **CSF** is free water alone (Pasternak et al. 2009).
@@ -96,10 +101,9 @@ the neurites and the space around them. The diffusivities default to the values 
 the neurites and 3e-3 mm^2/s for free water. **Free water** is one free-water compartment, a tissue of its own.
 
 The docstrings of `standard_model_tissue`, `sandi_tissue`, `noddi_tissue`, `free_water_tissue` and `csf_tissue`
-give the source or the reason for each default. The standard model's extra-axonal diffusivities follow the NODDI
-constraints listed by Novikov et al. (2019, Sec. 3.4.2), which are 1.7e-3 mm^2/s along the fibre and the
-tortuosity `(1 - f) 1.7e-3`, about 0.5e-3 mm^2/s, across it at the intra-axonal fraction f = 0.7. A few defaults
-are choices without a source, namely the intra-axonal fraction and the SANDI fractions and radius.
+give the source or the reason for each default. The standard model's intra-axonal fraction, extra-axonal
+diffusivities and T2 are the values of Veraart et al. (2018). A few defaults are choices without a source, namely
+the standard model's kappa and the SANDI fractions and radius.
 
 ## Bundles
 
@@ -114,9 +118,10 @@ towards the ends, and dispersion adds a smooth random wander that is zero at bot
 
 A voxel is shared between tissues in three steps, and a fraction is never scaled up.
 
-1. Each bundle fills a fraction of the voxel, its occupancy, which is the length of its streamlines in the voxel
-   times the cross-section each streamline stands for, divided by the voxel's volume, and at most 1. Where bundles
-   together fill more than 1, as in a crossing, their occupancies are scaled down to sum to 1.
+1. Each bundle fills a fraction of the voxel, its occupancy. For a geometry this is the share of the voxel inside
+   its tube. For a tractogram, or a geometry given a `streamline_area`, it is the length of its streamlines in the
+   voxel times the cross-section each streamline stands for, divided by the voxel's volume, and at most 1. Where
+   bundles together fill more than 1, as in a crossing, their occupancies are scaled down to sum to 1.
 2. The tissue maps share what the bundles leave. Where their values add up to more than that, they are scaled down.
 3. What remains goes to the background tissue, or gives no signal.
 
@@ -148,9 +153,8 @@ T2* follows from its own T2. This includes the free water of the white matter ti
 shorter inside a tissue than in CSF. The T2* of a tissue cannot exceed its mean T2.
 
 The defaults are in vivo values at 3 T: T1 and T2* from Wansapura et al. (1999), and T2 from frontal white and
-grey matter in Lu et al. (2005, Table 1).
-The longer intra-axonal than extra-axonal T2 of white matter agrees with Veraart et al. (2018). The T1, T2 and T2*
-of CSF are choices.
+grey matter in Lu et al. (2005, Table 1), apart from the two T2 of the standard model, which come from Veraart et
+al. (2018). The T1, T2 and T2* of CSF are choices.
 
 Several echo times share one diffusion block: the attenuation is the same at every echo, and only the relaxation
 weight changes.

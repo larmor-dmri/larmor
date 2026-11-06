@@ -36,8 +36,8 @@ from larmor.types import Grid, Volume
 # The phantom is a 20 x 20 x 20 grid of 1 mm voxels. Grey matter fills 0.6 of each
 # voxel and CSF the rest. A straight bundle of radius 2.8 mm runs along x, so the
 # voxel at its edge is partly white matter and partly grey matter. The phantom uses
-# the default tissues. White matter (WM) is a stick for the water inside the axons
-# and a zeppelin for the water outside them. Grey matter (GM) follows SANDI, with
+# the default tissues. White matter (WM) is a Watson stick for the water inside the
+# axons and a zeppelin for the water outside them. Grey matter (GM) follows SANDI, with
 # compartments for the soma, the neurites and the space outside the cells. CSF is
 # free water.
 

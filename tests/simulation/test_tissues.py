@@ -87,9 +87,72 @@ def test_standard_model_with_one_t2_gives_each_compartment_the_tissue_t2star() -
         assert compartment.t2star_ms == pytest.approx(40.0, rel=1e-12)
 
 
+def test_standard_model_defaults_to_watson_sticks() -> None:
+    stick, zeppelin = standard_model_tissue().compartments
+    assert stick.model == CompartmentModel.WATSON_STICK
+    assert stick.kappa == 15.0
+    assert zeppelin.model == CompartmentModel.ZEPPELIN
+
+
+def test_standard_model_without_kappa_is_a_plain_stick_and_zeppelin() -> None:
+    stick, zeppelin = standard_model_tissue(
+        kappa=None,
+        extra_parallel_diffusivity=1.7e-3,
+        extra_perpendicular_diffusivity=0.4e-3,
+    ).compartments
+    assert stick.model == CompartmentModel.STICK
+    assert zeppelin.diffusivity == 1.7e-3
+    assert zeppelin.perpendicular_diffusivity == 0.4e-3
+
+
+@pytest.mark.parametrize("kappa", [0.0, 6.0, 15.0, 200.0])
+def test_standard_model_zeppelin_is_averaged_over_the_watson_density(
+    kappa: float,
+) -> None:
+    def moment(power: int) -> float:
+        return quad(lambda u: u**power * np.exp(kappa * (u**2 - 1)), 0, 1)[0]
+
+    tau = moment(2) / moment(0)
+    _, zeppelin = standard_model_tissue(
+        kappa=kappa,
+        extra_parallel_diffusivity=2.0e-3,
+        extra_perpendicular_diffusivity=0.5e-3,
+    ).compartments
+    assert zeppelin.diffusivity == pytest.approx(0.5e-3 + 1.5e-3 * tau)
+    assert zeppelin.perpendicular_diffusivity == pytest.approx(
+        0.5e-3 + 1.5e-3 * (1 - tau) / 2
+    )
+
+
+def test_standard_model_zeppelin_matches_noddi_given_the_same_constraints() -> None:
+    fraction, diffusivity = 0.6, 1.7e-3
+    _, standard = standard_model_tissue(
+        intra_fraction=fraction,
+        extra_parallel_diffusivity=diffusivity,
+        extra_perpendicular_diffusivity=diffusivity * (1 - fraction),
+        kappa=8.0,
+    ).compartments
+    _, noddi = noddi_tissue(
+        intra_fraction=fraction,
+        free_water_fraction=0.0,
+        diffusivity=diffusivity,
+        kappa=8.0,
+    ).compartments
+    assert standard.diffusivity == pytest.approx(noddi.diffusivity)
+    assert standard.perpendicular_diffusivity == pytest.approx(
+        noddi.perpendicular_diffusivity
+    )
+
+
+@pytest.mark.parametrize("kappa", [-1.0, float("nan"), float("inf")])
+def test_standard_model_refuses_a_kappa_out_of_range(kappa: float) -> None:
+    with pytest.raises(ValueError, match="kappa"):
+        standard_model_tissue(kappa=kappa)
+
+
 def test_standard_model_shares_one_t2_prime_between_its_compartments() -> None:
     stick, zeppelin = standard_model_tissue().compartments
-    mean_t2 = 0.7 * 80.0 + 0.3 * 45.0
+    mean_t2 = 0.45 * 90.0 + 0.55 * 60.0
     t2_prime = 1 / (1 / 46.55 - 1 / mean_t2)
     for c in (stick, zeppelin):
         assert 1 / c.t2star_ms - 1 / c.t2_ms == pytest.approx(1 / t2_prime)
@@ -222,3 +285,26 @@ def test_noddi_signal_in_a_bundle_is_the_sum_of_its_compartments() -> None:
         for c in tissue.compartments
     )
     np.testing.assert_allclose(signal, expected, rtol=1e-6)
+
+
+@pytest.mark.parametrize(("first", "second"), [(0.8, 0.2), (0.9, 0.1)])
+def test_fractions_that_sum_to_one_are_accepted_despite_rounding(
+    first: float, second: float
+) -> None:
+    water = standard_model_tissue(intra_fraction=first, free_water_fraction=second)
+    grey = sandi_tissue(neurite_fraction=first, soma_fraction=second)
+    assert water.compartments[1].fraction == 0
+    assert grey.compartments[2].fraction == 0
+
+
+@pytest.mark.parametrize(
+    ("fraction", "t2_ms"), [(0.45, 49.0), (0.3, 46.6), (0.05, 46.6), (0.02, 49.0)]
+)
+def test_t2star_equal_to_t2_is_accepted_despite_rounding(
+    fraction: float, t2_ms: float
+) -> None:
+    tissue = standard_model_tissue(
+        intra_fraction=fraction, intra_t2_ms=t2_ms, extra_t2_ms=t2_ms, t2star_ms=t2_ms
+    )
+    for c in tissue.compartments:
+        assert c.t2star_ms == pytest.approx(t2_ms, rel=1e-12)

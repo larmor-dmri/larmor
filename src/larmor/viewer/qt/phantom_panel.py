@@ -220,6 +220,11 @@ PARAMETER_TEXT: dict[tuple[TissuePreset, str], tuple[str, str]] = {
         "Around axons, across (um^2/ms)",
         "How fast the water around the axons diffuses across them.",
     ),
+    (TissuePreset.STANDARD_MODEL, "kappa"): (
+        "kappa",
+        "How tightly the axons follow the fibre direction: 0 spreads them evenly, "
+        "larger values keep them close to it.",
+    ),
     (TissuePreset.STANDARD_MODEL, "intra_t2_ms"): (
         "T2 inside axons (ms)",
         "The T2 of the water inside the axons, which a spin echo uses.",

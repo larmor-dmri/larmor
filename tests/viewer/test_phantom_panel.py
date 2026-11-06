@@ -273,6 +273,7 @@ def test_each_fraction_names_its_compartment(qtbot: QtBot) -> None:
     standard = labels()
     assert standard["intra_fraction"][0].startswith("Inside axons")
     assert "free" in standard["free_water_fraction"][1].lower()
+    assert "axons" in standard["kappa"][1]
     viewer.set_tissue("WM", TissuePreset.NODDI)
     noddi = labels()
     assert noddi["intra_fraction"][0].startswith("Neurites")

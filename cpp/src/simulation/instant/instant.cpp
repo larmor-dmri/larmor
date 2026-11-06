@@ -1,6 +1,7 @@
 #include "simulation/instant/instant.hpp"
 
 #include <cstddef>
+#include <map>
 #include <utility>
 #include <vector>
 
@@ -32,11 +33,20 @@ InstantModel make_instant_model(const TissueCompartments& tissues, const Acquisi
         const Index tissue = tissues.tissue(row);
         const Vector coefficient = tissues.fraction(row) * tissues.relaxation.row(row).transpose();
         if (is_oriented(compartment.model)) {
+            // Volumes of one b-value share a profile, which is slow to build for Watson sticks.
+            std::map<double, AngularProfile> by_bval;
             std::vector<AngularProfile> profiles;
             profiles.reserve(static_cast<std::size_t>(n_volumes));
             for (Index volume = 0; volume < n_volumes; ++volume) {
-                profiles.push_back(
-                    angular_profile(compartment, acquisition.bvals(volume), acquisition.timing));
+                const double bval = acquisition.bvals(volume);
+                auto found = by_bval.find(bval);
+                if (found == by_bval.end()) {
+                    found =
+                        by_bval
+                            .emplace(bval, angular_profile(compartment, bval, acquisition.timing))
+                            .first;
+                }
+                profiles.push_back(found->second);
             }
             model.oriented[static_cast<std::size_t>(tissue)].push_back(
                 {.compartment = compartment,

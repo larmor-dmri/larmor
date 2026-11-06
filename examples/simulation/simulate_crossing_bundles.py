@@ -68,7 +68,7 @@ second = BundleGeometry(
 # %%
 # The tissues
 # -----------
-# Each bundle is filled by a white matter tissue made of a stick (intra-axonal
+# Each bundle is filled by a white matter tissue made of a Watson stick (intra-axonal
 # water) and a zeppelin (extra-axonal water). The second has a lower axial and a
 # higher radial diffusivity, and shorter T2 times, so it is darker at b = 0.
 
