@@ -291,17 +291,22 @@ double watson_stick(double b_value, double diffusivity, double kappa, double cos
     // -kappa x (1 - c^2); each eigenvalue comes from the root that does not cancel.
     const double trace = kappa - x;
     const double determinant = -kappa * x * (1.0 - c2);
-    const double root = std::sqrt(trace * trace - 4.0 * determinant);
+    const double root = std::hypot(trace, 2.0 * std::sqrt(-determinant));
     double upper = 0.0;
     double lower = 0.0;
+    // upper - kappa, written with whichever of kappa and x is smaller, since it cancels at a huge
+    // kappa otherwise.
+    double exponent = 0.0;
     if (trace >= 0.0) {
         upper = 0.5 * (trace + root);
         lower = upper > 0.0 ? determinant / upper : 0.0;
+        exponent = -x - lower;
     } else {
         lower = 0.5 * (trace - root);
         upper = determinant / lower;
+        exponent = upper - kappa;
     }
-    return std::exp(upper - kappa) * watson_integral(upper, -lower) / watson_integral(kappa, 0.0);
+    return std::exp(exponent) * watson_integral(upper, -lower) / watson_integral(kappa, 0.0);
 }
 
 const std::array<double, N_CYLINDER_ROOTS>& cylinder_roots() {

@@ -88,8 +88,10 @@ TEST_CASE("compartments: the dot is 1 and the Watson sticks span the powder stic
     for (const double cosine : {0.0, 0.5, 1.0}) {
         CHECK(larmor::simulation::watson_stick(2000.0, 1.7e-3, 0.0, cosine) ==
               doctest::Approx(larmor::simulation::powder_stick(2000.0, 1.7e-3)).epsilon(1e-10));
-        CHECK(larmor::simulation::watson_stick(2000.0, 1.7e-3, 1e6, cosine) ==
-              doctest::Approx(larmor::simulation::stick(2000.0, 1.7e-3, cosine)).epsilon(1e-4));
+        for (const double kappa : {1e6, 1e16, 1e17, 1e155, 1e300}) {
+            CHECK(larmor::simulation::watson_stick(2000.0, 1.7e-3, kappa, cosine) ==
+                  doctest::Approx(larmor::simulation::stick(2000.0, 1.7e-3, cosine)).epsilon(1e-4));
+        }
     }
 }
 
