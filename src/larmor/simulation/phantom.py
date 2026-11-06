@@ -47,7 +47,8 @@ class Bundle:
             in mm^2. Defaults to None, with which a geometry fills its tube and
             a tractogram gets the value that gives the bundle's dense voxels an
             occupancy of `densest_fill`. With a value, a geometry's occupancy
-            dips at random where fewer streamlines happen to pass.
+            falls towards its edge, where its streamlines are sparse, and dips at
+            random where fewer happen to pass.
         densest_fill: The occupancy of a tractogram bundle's dense voxels when
             streamline_area is None, in (0, 1]. A voxel is dense when the
             bundle's streamline length in it reaches the 95th percentile of that

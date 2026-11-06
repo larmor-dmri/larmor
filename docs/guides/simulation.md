@@ -20,9 +20,9 @@ For a first run with no code, see the [quick start](../quick-start.md).
 
 The phantom below is one straight bundle on a grid of 24 x 24 x 24 voxels of 1 mm. The bundle's
 {py:class}`~larmor.simulation.BundleGeometry` is a smooth curve through control points in world coordinates (mm), with
-`num_streamlines` streamlines spread over a disc of the given `radius` around it, and its seed makes the
-streamlines the same on every run. A phantom has the tissues WM, GM and CSF by default, and a bundle is filled
-with WM unless you name another tissue.
+`num_streamlines` streamlines around it. Their density across the bundle is a Gaussian cut at the given `radius`,
+which is 2.5 standard deviations, and the seed makes the streamlines the same on every run. A phantom has the tissues
+WM, GM and CSF by default, and a bundle is filled with WM unless you name another tissue.
 
 ```python
 import numpy as np
@@ -78,10 +78,10 @@ A phantom has four parts.
   only. Other tissues can also fill tissue maps and the background.
 - **Bundles.** A bundle's shape is a {py:class}`~larmor.simulation.BundleGeometry` or a tractogram of your own,
   such as one from `load_tractogram`. The fraction of a voxel that a bundle fills is its occupancy. A geometry
-  fills each voxel by the share of the voxel inside its tube. In a tractogram, or a geometry given a
-  `streamline_area`, each streamline stands for a piece of the bundle's cross-section, so the occupancy follows the
-  length of streamline in the voxel. Where bundles cross and their occupancies add up to more than the voxel, they
-  are scaled down to fit.
+  fills each voxel by the share of the voxel inside its tube, however dense its streamlines are there. In a
+  tractogram, or a geometry given a `streamline_area`, each streamline stands for a piece of the bundle's
+  cross-section, so the occupancy follows the length of streamline in the voxel. Where bundles cross and their
+  occupancies add up to more than the voxel, they are scaled down to fit.
 - **Tissue maps.** A {py:class}`~larmor.simulation.TissueMap` is a volume of fractions in [0, 1] on the grid,
   such as a grey matter probability. The maps share what the bundles leave of each voxel.
 - **Background.** What is left after the bundles and maps goes to the tissue named by `background`, or gives no
