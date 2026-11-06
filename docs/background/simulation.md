@@ -118,9 +118,10 @@ towards the ends, and dispersion adds a smooth random wander that is zero at bot
 
 A voxel is shared between tissues in three steps, and a fraction is never scaled up.
 
-1. Each bundle fills a fraction of the voxel, its occupancy, which is the length of its streamlines in the voxel
-   times the cross-section each streamline stands for, divided by the voxel's volume, and at most 1. Where bundles
-   together fill more than 1, as in a crossing, their occupancies are scaled down to sum to 1.
+1. Each bundle fills a fraction of the voxel, its occupancy. For a geometry this is the share of the voxel inside
+   its tube. For a tractogram, or a geometry given a `streamline_area`, it is the length of its streamlines in the
+   voxel times the cross-section each streamline stands for, divided by the voxel's volume, and at most 1. Where
+   bundles together fill more than 1, as in a crossing, their occupancies are scaled down to sum to 1.
 2. The tissue maps share what the bundles leave. Where their values add up to more than that, they are scaled down.
 3. What remains goes to the background tissue, or gives no signal.
 
