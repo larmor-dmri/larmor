@@ -23,6 +23,26 @@ def test_create_bundle_is_deterministic_for_a_seed() -> None:
     assert (first.streamline_data["bundle"] == 2).all()
 
 
+def test_density_across_a_bundle_is_a_gaussian_cut_at_the_radius() -> None:
+    radius = 5.0
+    geometry = BundleGeometry(
+        np.array([[0.0, 0, 0], [30, 0, 0]]),
+        num_streamlines=20000,
+        radius=radius,
+        num_points=2,
+        seed=0,
+    )
+    across = create_bundle(geometry).points[::2, 1:]
+    distance = np.hypot(*across.T)
+    assert distance.max() <= radius + 1e-5
+    sd = radius / 2.5
+    for inside in (1.0, 2.0, 2.4):
+        expected = (1 - np.exp(-(inside**2) / 2)) / (1 - np.exp(-(2.5**2) / 2))
+        assert np.mean(distance < inside * sd) == pytest.approx(expected, abs=0.01)
+    # Round, not stretched along either axis.
+    assert across[:, 0].std() == pytest.approx(across[:, 1].std(), rel=0.02)
+
+
 def test_streamlines_stay_within_the_fanned_radius_of_a_straight_bundle() -> None:
     geometry = BundleGeometry(
         np.array([[0.0, 0, 0], [10, 0, 0], [20, 0, 0], [30, 0, 0]]),
@@ -92,7 +112,7 @@ def test_streamlines_keep_their_distance_to_the_centreline_round_a_sharp_bend() 
     centreline, _ = centreline_spline(control)
     tree = cKDTree(centreline(np.linspace(0, 1, 20000)))
     distance = tree.query(streamlines.reshape(-1, 3))[0].reshape(200, 100)
-    # Each streamline's distance is its offset in the disc, the same all along.
+    # Each streamline's distance is its offset, the same all along.
     assert np.abs(distance - distance[:, :1]).max() < 0.03 * 2.0
     assert distance.max() > 0.95 * 2.0
 

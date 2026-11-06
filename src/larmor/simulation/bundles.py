@@ -9,6 +9,9 @@ from scipy.interpolate import PchipInterpolator
 
 from larmor.types import Tractogram
 
+# A bundle's radius, in standard deviations of the Gaussian across it.
+EDGE_SD = 2.5
+
 
 @dataclass(frozen=True, eq=False)
 class BundleGeometry:
@@ -17,7 +20,8 @@ class BundleGeometry:
     A geometry describes a bundle by a few control points along its centreline,
     a radius, and how much the bundle fans out at its ends. Each streamline
     follows the centreline (see `centreline_spline`) at a fixed offset across
-    it, drawn uniformly in a disc of `radius`. The offset is scaled by
+    it, drawn from a Gaussian around the centreline that is cut at `radius`, so
+    the streamlines are densest at the centre. The offset is scaled by
     1 + fan_start (1 - u)^p + fan_end u^p, where u in [0, 1] is the position
     along the centreline and p is fan_sharpness. A smooth random wander of
     standard deviation `dispersion`, zero at both ends, is added along the way.
@@ -26,9 +30,10 @@ class BundleGeometry:
         control_points: (K, 3) points the centreline passes through, K >= 2, in
             world coordinates (RAS+) in mm.
         num_streamlines: The number of streamlines. Defaults to 1000.
-        radius: The bundle's radius in mm. Defaults to 2.0.
+        radius: The bundle's radius in mm, 2.5 standard deviations of the
+            Gaussian. Defaults to 2.0.
         num_points: Points per streamline. Defaults to 100.
-        fan_start: Extra spread at the first control point, where the disc has
+        fan_start: Extra spread at the first control point, where the bundle has
             the radius radius (1 + fan_start). Defaults to 0.0.
         fan_end: Extra spread at the last control point, in the same way.
             Defaults to 0.0.
@@ -230,16 +235,14 @@ def create_bundle(geometry: BundleGeometry, *, index: int = 0) -> Tractogram:
     p = geometry.fan_sharpness
     fan = 1 + geometry.fan_start * (1 - u) ** p + geometry.fan_end * u**p
     num = geometry.num_streamlines
-    radius = geometry.radius * np.sqrt(rng.random(num))
-    angle = 2 * np.pi * rng.random(num)
-    # Each streamline's place in the disc, (S, N, 2) in the frames' coordinates.
-    across = np.stack([radius * np.cos(angle), radius * np.sin(angle)], axis=1)
-    disc = fan[None, :, None] * across[:, None, :]
+    across = geometry.radius * _gaussian_places(rng, num)
+    # Each streamline's place across the bundle, (S, N, 2) in the frames' coordinates.
+    place = fan[None, :, None] * across[:, None, :]
     if geometry.dispersion > 0:
         wander = geometry.dispersion * rng.standard_normal((len(u_control), num, 2))
         wander[[0, -1]] = 0.0
-        disc += np.moveaxis(PchipInterpolator(u_control, wander, axis=0)(u), 0, 1)
-    offsets = disc[..., :1] * normals[None] + disc[..., 1:] * binormals[None]
+        place += np.moveaxis(PchipInterpolator(u_control, wander, axis=0)(u), 0, 1)
+    offsets = place[..., :1] * normals[None] + place[..., 1:] * binormals[None]
     points = (centre[None] + offsets).reshape(-1, 3)  # (S * num_points, 3)
     offsets_index = np.arange(num + 1, dtype=np.int64) * geometry.num_points
     return Tractogram(
@@ -247,6 +250,28 @@ def create_bundle(geometry: BundleGeometry, *, index: int = 0) -> Tractogram:
         offsets_index,
         streamline_data={"bundle": np.full(num, index, dtype=np.int64)},
     )
+
+
+def _gaussian_places(rng: np.random.Generator, count: int) -> np.ndarray:
+    """Draws places across a bundle from a 2D Gaussian cut at the bundle's edge.
+
+    The distance from the centre comes from the inverse of its cumulative
+    distribution, so each place takes the same number of random values.
+
+    Args:
+        rng: The random generator.
+        count: The number of places.
+
+    Returns:
+        The (count, 2) places, as shares of the radius, at most 1 from the centre.
+    """
+    kept = 1 - np.exp(-(EDGE_SD**2) / 2)
+    distance = np.sqrt(-2 * np.log1p(-kept * rng.random(count))) / EDGE_SD
+    angle = 2 * np.pi * rng.random(count)
+    places: np.ndarray = distance[:, None] * np.stack(
+        [np.cos(angle), np.sin(angle)], axis=1
+    )
+    return places
 
 
 def _transported_frames(tangents: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
