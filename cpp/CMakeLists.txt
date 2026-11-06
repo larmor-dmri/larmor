@@ -16,6 +16,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # clang-tidy reads compile_commands.json
+# Nothing here uses C++20 modules. Scanning for them adds GCC's flags to those commands, which
+# clang-tidy refuses.
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
@@ -66,6 +69,11 @@ else()
         -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wshadow)
     if(LARMOR_WARNINGS_AS_ERRORS)
         target_compile_options(larmor_options INTERFACE -Werror)
+        # GCC 15 warns inside Eigen's aligned free once that is inlined into our code, where the
+        # warning cannot be fixed, so array-bounds stays a warning there.
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            target_compile_options(larmor_options INTERFACE -Wno-error=array-bounds)
+        endif()
     endif()
 endif()
 
