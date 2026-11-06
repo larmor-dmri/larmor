@@ -635,8 +635,8 @@ diffusion weighting.</p>
 <p>The phantom is a 20 x 20 x 20 grid of 1 mm voxels. Grey matter fills 0.6 of each
 voxel and CSF the rest. A straight bundle of radius 2.8 mm runs along x, so the
 voxel at its edge is partly white matter and partly grey matter. The phantom uses
-the default tissues. White matter (WM) is a stick for the water inside the axons
-and a zeppelin for the water outside them. Grey matter (GM) follows SANDI, with
+the default tissues. White matter (WM) is a Watson stick for the water inside the
+axons and a zeppelin for the water outside them. Grey matter (GM) follows SANDI, with
 compartments for the soma, the neurites and the space outside the cells. CSF is
 free water.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-larmor sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../reference/api/types/#larmor.types.Grid" title="larmor.Grid"><span class="n">grid</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-larmor sphx-glr-backref-type-py-class reference internal" href="../../../reference/api/types/#larmor.types.Grid" title="larmor.Grid"><span class="n">Grid</span></a><span class="p">(</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.eye.html#numpy.eye" title="numpy.eye"><span class="n">np</span><span class="o">.</span><span class="n">eye</span></a><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="p">)</span><span class="w">
@@ -677,13 +677,13 @@ gives the noise floor, the mean magnitude of pure noise.</p>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>WM: 20% of the voxel
 GM: 60% of the voxel
 CSF: 20% of the voxel
-WM axons           water 0.098  T1 x1.00  T2 x0.37  diffusion x0.99  -&gt; 0.0357
-WM outside axons   water 0.042  T1 x1.00  T2 x0.17  diffusion x0.22  -&gt; 0.0016
+WM neurites        water 0.063  T1 x1.00  T2 x0.41  diffusion x0.82  -&gt; 0.0212
+WM outside neurites water 0.077  T1 x1.00  T2 x0.26  diffusion x0.19  -&gt; 0.0038
 GM soma            water 0.072  T1 x0.98  T2 x0.40  diffusion x0.81  -&gt; 0.0229
 GM neurites        water 0.240  T1 x0.98  T2 x0.40  diffusion x0.34  -&gt; 0.0319
 GM outside cells   water 0.168  T1 x0.98  T2 x0.40  diffusion x0.01  -&gt; 0.0007
 CSF                water 0.200  T1 x0.71  T2 x0.96  diffusion x0.00  -&gt; 0.0000
-Signal 0.0928, noise floor 0.0135
+Signal 0.0805, noise floor 0.0144
 </pre></div>
 </div>
 </section>
@@ -707,7 +707,7 @@ the noise floor drops too.</p>
 </span><span class="n">figure</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">signal_breakdown.png</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">150</span><span class="p">)</span><span class="w">
 </span></pre></div></div>
 <img alt="Two charts of three stacked bars each, for a voxel of white matter, grey matter and CSF. The bars show the water with no decay, the signal after the T1 and T2 decay, and the signal after the diffusion weighting, each split by compartment. The right chart, at a longer echo time, is lower after the decay" class="sphx-glr-single-img" src="../../../_images/sphx_glr_signal_breakdown_001.webp" />
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>TE 80 ms: 0.0928, TE 120 ms: 0.0575
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>TE 80 ms: 0.0805, TE 120 ms: 0.0508
 </pre></div>
 </div>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-gallery-simulation-signal-breakdown-py">

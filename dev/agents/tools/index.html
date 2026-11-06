@@ -1359,9 +1359,8 @@ to none.</p></li>
 <p>The folder is one <code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">simulate</span></code> or Run writes. Its phantom file opens
 in the phantom editor, replacing the phantom open, with each bundle as
 a tractogram item referring to the bundle’s streamline file; the DWI
-opens as a volume, the tissue masks as overlays, the ground-truth
-fibre directions as peaks and the connectome’s nodes, if the folder has
-them, as an overlay shown as labels.</p>
+opens as a volume, the tissue masks as overlays and the ground-truth
+fibre directions as peaks.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>folder</strong> – The simulation folder, holding simulation.json.</p>
@@ -1570,8 +1569,7 @@ right axis).</p></li>
 <dd><p>Simulates the phantom, saves the simulation folder and opens it.</p>
 <p>The folder is the one <code class="docutils literal notranslate"><span class="pre">larmor.simulation.save_simulation</span></code> writes. The
 DWI (with its .bval and .bvec) opens as a volume, the tissue masks as
-overlays, the ground-truth fibre directions as peaks and the connectome’s
-nodes as an overlay shown as labels; the bundles’
+overlays and the ground-truth fibre directions as peaks; the bundles’
 items then refer to the streamline files written, so a session keeps
 everything. In the window, Run (Ctrl+R) does this in the background,
 with a Cancel button.</p>
@@ -2193,8 +2191,8 @@ file.</p></li>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>name</strong> – The tissue’s name, such as “WM”.</p></li>
-<li><p><strong>preset</strong> – <code class="docutils literal notranslate"><span class="pre">TissuePreset.STANDARD_MODEL</span></code> (stick, zeppelin, free water),
-<code class="docutils literal notranslate"><span class="pre">SANDI</span></code> (sphere, powder-averaged stick, ball), <code class="docutils literal notranslate"><span class="pre">NODDI</span></code>
+<li><p><strong>preset</strong> – <code class="docutils literal notranslate"><span class="pre">TissuePreset.STANDARD_MODEL</span></code> (Watson stick, zeppelin, free
+water), <code class="docutils literal notranslate"><span class="pre">SANDI</span></code> (sphere, powder-averaged stick, ball), <code class="docutils literal notranslate"><span class="pre">NODDI</span></code>
 (Watson-dispersed sticks, zeppelin, free water), <code class="docutils literal notranslate"><span class="pre">FREE_WATER</span></code>
 (free water alone) or <code class="docutils literal notranslate"><span class="pre">CUSTOM</span></code> (its compartments, see
 <code class="docutils literal notranslate"><span class="pre">set_compartments</span></code>; a preset tissue turned custom keeps its
