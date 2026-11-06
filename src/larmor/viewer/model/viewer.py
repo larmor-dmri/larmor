@@ -1247,8 +1247,8 @@ class Viewer:
 
         Args:
             name: The tissue's name, such as "WM".
-            preset: `TissuePreset.STANDARD_MODEL` (stick, zeppelin, free water),
-                `SANDI` (sphere, powder-averaged stick, ball), `NODDI`
+            preset: `TissuePreset.STANDARD_MODEL` (Watson stick, zeppelin, free
+                water), `SANDI` (sphere, powder-averaged stick, ball), `NODDI`
                 (Watson-dispersed sticks, zeppelin, free water), `FREE_WATER`
                 (free water alone) or `CUSTOM` (its compartments, see
                 `set_compartments`; a preset tissue turned custom keeps its

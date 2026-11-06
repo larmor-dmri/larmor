@@ -297,6 +297,14 @@ def test_fractions_that_sum_to_one_are_accepted_despite_rounding(
     assert grey.compartments[2].fraction == 0
 
 
-def test_t2star_equal_to_t2_is_accepted_despite_rounding() -> None:
-    tissue = standard_model_tissue(intra_t2_ms=49.0, extra_t2_ms=49.0, t2star_ms=49.0)
-    assert all(c.t2star_ms == 49.0 for c in tissue.compartments)
+@pytest.mark.parametrize(
+    ("fraction", "t2_ms"), [(0.45, 49.0), (0.3, 46.6), (0.05, 46.6), (0.02, 49.0)]
+)
+def test_t2star_equal_to_t2_is_accepted_despite_rounding(
+    fraction: float, t2_ms: float
+) -> None:
+    tissue = standard_model_tissue(
+        intra_fraction=fraction, intra_t2_ms=t2_ms, extra_t2_ms=t2_ms, t2star_ms=t2_ms
+    )
+    for c in tissue.compartments:
+        assert c.t2star_ms == pytest.approx(t2_ms, rel=1e-12)

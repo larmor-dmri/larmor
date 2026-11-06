@@ -1,5 +1,6 @@
 """The phantom editor through the Viewer's actions, without a window."""
 
+import json
 import subprocess
 import sys
 import threading
@@ -25,9 +26,11 @@ from larmor.viewer import (
 )
 from larmor.viewer.jobs import SAVING, JobCancelledError, JobRunner, Report
 from larmor.viewer.model.phantom import (
+    SIMULATION_FORMAT,
     build_tissue,
     preset_defaults,
     run_simulation,
+    simulation_outputs,
 )
 from larmor.viewer.model.shortcuts import Command, run
 from larmor.viewer.phantom_jobs import start_run
@@ -82,6 +85,23 @@ def test_a_saved_phantom_loads_back_the_same(viewer: Viewer, tmp_path: Path) -> 
     assert [b.geometry for b in loaded.bundles] == [b.geometry for b in saved.bundles]
     names = [other.scene.item(b.item_id).name for b in loaded.bundles]
     assert names == ["Bundle 1", "Bundle 2"]
+
+
+def test_a_folder_saved_with_a_connectome_still_opens(tmp_path: Path) -> None:
+    info = {
+        "format": SIMULATION_FORMAT,
+        "connectome": {"nodes": ["start", "end"]},
+        "files": {
+            "dwi": ["dwi.nii.gz"],
+            "phantom": "phantom.json",
+            "connectome": "connectome.csv",
+            "connectome_parcellation": "connectome_nodes.nii.gz",
+        },
+    }
+    (tmp_path / "simulation.json").write_text(json.dumps(info))
+    files = simulation_outputs(tmp_path)
+    assert files.dwi == (tmp_path.absolute() / "dwi.nii.gz",)
+    assert files.phantom == tmp_path.absolute() / "phantom.json"
 
 
 def test_the_standard_model_preset_builds_watson_sticks_from_its_kappa(

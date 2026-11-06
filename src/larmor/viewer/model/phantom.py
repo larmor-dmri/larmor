@@ -53,7 +53,7 @@ _SERIALS = itertools.count(1)
 class TissuePreset(StrEnum):
     """How a tissue is made, from a preset's parameters or by compartments."""
 
-    STANDARD_MODEL = "standard_model"  # white matter: stick, zeppelin, free water
+    STANDARD_MODEL = "standard_model"  # Watson stick, zeppelin, free water
     SANDI = "sandi"  # grey matter: sphere, powder-averaged stick, ball
     NODDI = "noddi"  # Watson-dispersed sticks, zeppelin, free water
     FREE_WATER = "free_water"  # CSF: free water alone

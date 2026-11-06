@@ -1,4 +1,5 @@
 import json
+import logging
 from pathlib import Path
 
 import numpy as np
@@ -416,7 +417,10 @@ def test_moved_folder_is_found_through_the_relative_paths(tmp_path: Path) -> Non
     [((0,), (0, 1, 2)), ((1, 2), (0, 1, 2)), ((), (1, 0, 2)), ((0,), (2, 1, 0))],
 )
 def test_a_tissue_map_in_another_orientation_keeps_its_world_positions(
-    affine: np.ndarray, flips: tuple[int, ...], order: tuple[int, int, int]
+    affine: np.ndarray,
+    flips: tuple[int, ...],
+    order: tuple[int, int, int],
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     grid = Grid((6, 6, 4) if order == (1, 0, 2) else (6, 8, 6), affine)
     values = np.random.default_rng(0).random(grid.shape, dtype=np.float32)
@@ -431,7 +435,13 @@ def test_a_tissue_map_in_another_orientation_keeps_its_world_positions(
         result: np.ndarray = partition_voxels(phantom, seed=0).tissue_fractions
         return result
 
-    np.testing.assert_array_equal(fractions(stored), fractions(expected))
+    with caplog.at_level(logging.WARNING, logger="larmor"):
+        found = fractions(stored)
+        assert "reorienting the map" in caplog.text
+        caplog.clear()
+        wanted = fractions(expected)
+        assert not caplog.text
+    np.testing.assert_array_equal(found, wanted)
 
 
 def test_a_fan_wider_in_its_middle_than_at_its_ends_is_filled_to_its_edge() -> None:

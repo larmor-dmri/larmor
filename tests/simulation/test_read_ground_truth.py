@@ -79,6 +79,31 @@ def test_the_peaks_of_simulate_are_the_saved_peaks(
     np.testing.assert_allclose(saved, truth.peaks, atol=1e-7)
 
 
+def test_a_folder_saved_with_a_connectome_reads_and_loses_it_when_saved_over(
+    run: tuple[SimulatedDWI, GroundTruth], folder: Path, tmp_path: Path
+) -> None:
+    old = tmp_path / "old"
+    shutil.copytree(folder, old)
+    info = json.loads((old / "simulation.json").read_text())
+    names = {
+        "connectome_parcellation": "connectome_nodes.nii.gz",
+        "connectome_lookup_table": "connectome_nodes.txt",
+        "connectome": "connectome.csv",
+        "connectome_proportion": "connectome_proportion.csv",
+    }
+    info["files"].update(names)
+    info["connectome"] = {"nodes": ["LR start", "LR end"]}
+    (old / "simulation.json").write_text(json.dumps(info))
+    for name in names.values():
+        (old / name).write_text("old")
+
+    assert len(read_ground_truth(old).streamlines) == len(run[1].streamlines)
+
+    save_simulation(*run, old)
+    assert not [name for name in names.values() if (old / name).exists()]
+    assert "connectome" not in json.loads((old / "simulation.json").read_text())
+
+
 @pytest.mark.parametrize("broken", ["missing", "format"])
 def test_a_folder_that_is_not_a_simulation_is_refused(
     folder: Path, tmp_path: Path, broken: str

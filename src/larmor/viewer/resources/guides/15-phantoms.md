@@ -133,8 +133,8 @@ with the total of each bar above it.
 - The third bar, labelled Diffusion with the b-value, is the signal after the diffusion weighting of the chosen
   volume.
 
-Each bar is split into the voxel's compartments, named in plain words such as WM axons, GM soma, WM neurites,
-still water or CSF, and each bundle has colours of its own. When the scan has noise, a dashed line marks the
+Each bar is split into the voxel's compartments, named in plain words such as WM neurites, GM soma, still
+water or CSF, and each bundle has colours of its own. When the scan has noise, a dashed line marks the
 noise floor, the mean magnitude of pure noise. The legend below the chart names the compartments, and when two
 bundles cross, each of its two columns lists one bundle.
 

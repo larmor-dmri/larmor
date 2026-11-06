@@ -432,7 +432,7 @@ def standard_model_tissue(
         if weights > 0
         else max(intra_t2_ms, extra_t2_ms)
     )
-    if not 0 < t2star_ms <= t2_mean:
+    if not 0 < t2star_ms <= t2_mean + _ROUNDING:
         raise ValueError(
             f"t2star_ms must be positive and at most the mean T2 {t2_mean:.1f} ms, "
             f"got {t2star_ms}."
