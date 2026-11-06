@@ -214,5 +214,10 @@ jobs:
       # Installing the project builds the C++ module (scikit-build-core, CMake).
       - name: Install the project and its development tools
         run: uv sync --locked
+      # pygfx writes its font cache on the first import. On Windows, a test worker that opens the file
+      # while another replaces it gets a PermissionError, so one process fills it first.
+      - name: Fill pygfx's font cache
+        if: runner.os == 'Windows'
+        run: uv run python -c "import pygfx"
       - name: pytest
         run: uv run pytest -n auto -rfE --timeout 120 -m "${{ matrix.select }}" ${{ matrix.ignore }}
