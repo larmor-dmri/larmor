@@ -596,7 +596,7 @@ def test_a_numpy_seed_and_snr_are_saved_as_plain_numbers(tmp_path: Path) -> None
     simulated, truth = simulate(
         phantom,
         protocol,
-        snr=np.float32(20),
+        snr=np.float32(20),  # type: ignore[arg-type]
         seed=np.int64(3),  # type: ignore[arg-type]
     )
     save_simulation(simulated, truth, tmp_path)

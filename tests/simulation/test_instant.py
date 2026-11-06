@@ -52,7 +52,8 @@ def watson_stick(
     along = np.outer(cosines, u)[:, :, None]
     across = np.outer(sines, np.sqrt(1 - u**2))[:, :, None] * np.cos(angles)
     decay = np.exp(-b[:, None, None] * diffusivity * (along + across) ** 2)
-    return decay.mean(axis=2) @ density
+    average: np.ndarray = decay.mean(axis=2) @ density
+    return average
 
 
 def wm_signal(
