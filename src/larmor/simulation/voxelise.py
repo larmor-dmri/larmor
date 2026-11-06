@@ -277,7 +277,6 @@ TUBE_POINTS_PER_BATCH = 1_000_000
 def tube_fill(
     control_points: np.ndarray,
     radius: float,
-    fan: tuple[float, float, float],
     grid: Grid,
     *,
     subdivisions: int | None = None,
@@ -285,14 +284,13 @@ def tube_fill(
     """Returns the fraction of each voxel inside a bundle's tube, and its direction.
 
     The tube follows the centreline that `create_bundle` uses, with the radius
-    and fan of `BundleGeometry`, and ends at the planes across the centreline
-    through its end points. A voxel's fill is the share of its subdivisions^3
-    sample points inside the tube.
+    of `BundleGeometry`, and ends at the planes across the centreline through its
+    end points. A voxel's fill is the share of its subdivisions^3 sample points
+    inside the tube.
 
     Args:
         control_points: The centreline's control points, (K, 3), in world mm.
         radius: The tube's radius, mm.
-        fan: (fan_start, fan_end, fan_sharpness).
         grid: The voxel grid.
         subdivisions: Number of sample points per voxel along each axis.
             Defaults to None, which spaces them at most a quarter of the radius
@@ -319,7 +317,7 @@ def tube_fill(
     num_voxels = int(np.prod(grid.shape))
     fill = np.zeros(num_voxels)
     direction = np.zeros((num_voxels, 3))
-    tube = _sample_tube(np.asarray(control_points, dtype=np.float64), radius, fan, grid)
+    tube = _sample_tube(np.asarray(control_points, dtype=np.float64), radius, grid)
 
     # Only the voxels whose centre is within reach of the tube are sampled.
     axes = grid.affine[:3, :3]
@@ -327,7 +325,7 @@ def tube_fill(
     centres = indices @ axes.T + grid.affine[:3, 3]
     half_diagonal = 0.5 * float(np.abs(axes).sum(axis=1) @ np.ones(3))
     distance, closest = tube.tree.query(
-        centres, distance_upper_bound=tube.widest + half_diagonal
+        centres, distance_upper_bound=radius + half_diagonal
     )
     near = np.flatnonzero(np.isfinite(distance))
     direction[near] = tube.tangent[closest[near]]
@@ -338,19 +336,16 @@ def tube_fill(
 
 @dataclass(frozen=True)
 class _Tube:
-    """Points along a tube's centreline, with the tangent and radius at each."""
+    """A tube's radius, and points along its centreline with the tangent at each."""
 
     centre: np.ndarray
     tangent: np.ndarray
-    reach: np.ndarray
-    widest: float
+    radius: float
     tree: Any
 
 
-def _sample_tube(
-    control: np.ndarray, radius: float, fan: tuple[float, float, float], grid: Grid
-) -> _Tube:
-    """Samples a tube's centreline densely, with its tangent and radius there.
+def _sample_tube(control: np.ndarray, radius: float, grid: Grid) -> _Tube:
+    """Samples a tube's centreline densely, with its tangent there.
 
     The samples are close enough that the distance to the nearest one is the
     distance to the curve.
@@ -363,15 +358,13 @@ def _sample_tube(
     # The same centreline as the streamlines', so they stay inside the tube.
     spline, _ = centreline_spline(control)
     voxel_sizes = np.linalg.norm(grid.affine[:3, :3], axis=0)
-    fan_start, fan_end, sharpness = fan
     step = min(float(voxel_sizes.min()), radius) / 20
     count = max(int(np.ceil(spline.length / step)) + 1, 50)
     u = np.linspace(0.0, 1.0, count)
     centre = spline(u)
     tangent = spline.derivative()(u)
     tangent /= np.linalg.norm(tangent, axis=1, keepdims=True)
-    reach = radius * (1 + fan_start * (1 - u) ** sharpness + fan_end * u**sharpness)
-    return _Tube(centre, tangent, reach, float(reach.max()), cKDTree(centre))
+    return _Tube(centre, tangent, radius, cKDTree(centre))
 
 
 def _sampled_fill(
@@ -400,7 +393,7 @@ def _sampled_fill(
     for start in range(0, len(centres), batch):
         points = (centres[start : start + batch, None, :] + sub[None]).reshape(-1, 3)
         gap, nearest = tube.tree.query(points)
-        inside = (gap <= tube.reach[nearest]).astype(np.float64)
+        inside = (gap <= tube.radius).astype(np.float64)
         # Past an end, the nearest centreline point is that end point.
         first, last = nearest == 0, nearest == last_sample
         inside[first] *= _end_weight(
