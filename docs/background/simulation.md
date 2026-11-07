@@ -110,11 +110,13 @@ the standard model's kappa and the SANDI fractions and radius.
 A synthetic bundle is built around its centreline, a centripetal Catmull-Rom spline through the control points
 (Yuksel et al. 2011). This curve passes through every point and does not loop or form a cusp between two of them,
 even when the points are unevenly spaced, as they are when a bundle is drawn freehand. Each streamline keeps a fixed
-offset from the centreline, carried along without twisting, so the bundle keeps its width round a bend as long as the
-bend is not tighter than the radius. The offsets follow a Gaussian around the centreline, cut at the bundle's radius,
-which is 2.5 standard deviations. Fanning widens the bundle towards the ends, so the same streamlines spread over a
-larger section and fill less of each voxel there, and dispersion adds a smooth random wander that is zero at both
-ends.
+offset from the centreline, carried along without twisting, so the bundle keeps its width round a bend. Where a bend's
+radius is less than about twice the bundle's, streamlines on its inside are held back and squeeze together, which makes
+their folds much smaller, although they can still turn sharply there. A corner that turns within a few per cent of the
+centreline's length is too short for this, and its inner streamlines fold back as they would otherwise. The offsets
+follow a Gaussian around the centreline, cut at the bundle's radius, which is 2.5 standard deviations. Fanning widens
+the bundle towards the ends, so the same streamlines spread over a larger section and fill less of each voxel there,
+and dispersion adds a smooth random wander that is zero at both ends.
 
 ## Tissues in a voxel
 
