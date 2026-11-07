@@ -87,6 +87,23 @@ def test_a_saved_phantom_loads_back_the_same(viewer: Viewer, tmp_path: Path) -> 
     assert names == ["Bundle 1", "Bundle 2"]
 
 
+def test_a_file_with_rings_opens_as_a_round_bundle(tmp_path: Path) -> None:
+    rings = np.array([[0.0, 2.0, 2.0, 0.0], [1.0, 6.0, 1.0, 90.0]])
+    ends = np.array([[3.0, 12, 12], [21.0, 12, 12]])
+    geometry = sim.BundleGeometry(ends, num_streamlines=20, seed=1, rings=rings)
+    phantom = sim.Phantom(
+        Grid((24, 24, 24), np.eye(4)), bundles=(sim.Bundle(geometry),)
+    )
+    sim.write_phantom(phantom, tmp_path / "rings.phantom.json")
+    viewer = Viewer()
+    viewer.load_phantom(tmp_path / "rings.phantom.json")
+    state = viewer.phantom
+    assert state is not None
+    drawn = state.bundles[0].geometry
+    assert drawn is not None and drawn.is_tube
+    assert viewer.check_phantom() == []
+
+
 def test_a_folder_saved_with_a_connectome_still_opens(tmp_path: Path) -> None:
     info = {
         "format": SIMULATION_FORMAT,
