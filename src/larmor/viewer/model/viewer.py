@@ -1522,9 +1522,9 @@ class Viewer:
             name: `BundleField.TISSUE` (a tissue's name), `NUM_STREAMLINES`,
                 `RADIUS` (mm), `NUM_POINTS`, `FAN_START`, `FAN_END`,
                 `FAN_SHARPNESS`, `DISPERSION` (mm), `SEED`, `STREAMLINE_AREA`
-                (mm^2 per streamline, None for the default: the bundle's
-                cross-section shared by its streamlines) or `DENSEST_FILL` (the
-                fill of a loaded tractogram's dense voxels, in (0, 1]).
+                (mm^2 per streamline, None for the default, set by the tube or by
+                the densest fill) or `DENSEST_FILL` (the fill of the dense voxels
+                of a loaded tractogram or a fanned bundle, in (0, 1]).
             value: The new value.
 
         Raises:

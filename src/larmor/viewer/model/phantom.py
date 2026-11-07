@@ -267,6 +267,11 @@ class GeometrySettings:
     dispersion: float = 0.0  # mm
     seed: int = 0
 
+    @property
+    def is_tube(self) -> bool:
+        """Tells whether the bundle is a round tube of one radius all along."""
+        return self.fan_start == 0 and self.fan_end == 0
+
     def to_json(self) -> dict[str, object]:
         """Returns the geometry as the JSON values `BundleGeometry.to_dict` writes."""
         values = {f.name: getattr(self, f.name) for f in fields(self)}
@@ -967,7 +972,7 @@ def build_phantom(
     Args:
         state: The editor's state, for the grid, tissues and background.
         bundles: Each bundle with the streamlines its item shows and its file;
-            a drawn bundle is given as its geometry, which fills its tube.
+            a drawn bundle is given as its geometry.
         maps: Each tissue map's tissue, volume and file.
 
     Returns:
@@ -1187,7 +1192,7 @@ def _bundle_item_problems(
 
 
 def _thin_bundle_problems(state: PhantomState) -> list[Problem]:
-    """Returns a problem for each drawn bundle too thin to fill on the grid."""
+    """Returns a problem for each drawn tube too thin to fill on the grid."""
     from larmor.simulation.voxelise import MIN_TUBE_RADIUS
 
     largest = float(np.linalg.norm(state.grid.affine[:3, :3], axis=0).max())
@@ -1201,6 +1206,7 @@ def _thin_bundle_problems(state: PhantomState) -> list[Problem]:
         )
         for b in state.bundles
         if b.geometry is not None
+        and b.geometry.is_tube
         and b.streamline_area is None
         and b.geometry.radius < least
     ]

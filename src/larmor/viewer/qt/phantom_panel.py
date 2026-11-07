@@ -141,9 +141,10 @@ HELP = {
     "Seed": "The seed of the bundle's random streamlines. The same seed always gives "
     "the same streamlines.",
     "Streamline area": "The cross-section in mm^2 that each streamline stands for. "
-    "With default, a drawn bundle fills the voxels inside its tube.",
-    "Densest fill": "For a loaded tractogram, the share of its densest voxels that "
-    "the bundle fills, from 0 to 1. A tractogram carries no density of its own.",
+    "With default, a drawn bundle fills the voxels inside its tube, and a fanned one "
+    "follows the length of its streamlines.",
+    "Densest fill": "For a loaded tractogram or a fanned bundle, the share of its "
+    "densest voxels that the bundle fills, from 0 to 1.",
     "Sequence": "A spin echo weights the signal with T2; a gradient echo weights it "
     "with T2*.",
     "TE (ms)": "The echo time in ms. Several times separated by commas give one image "
@@ -996,8 +997,8 @@ class PhantomPanel(QWidget):
         self.area_box = _spin(0, 1000, 4)
         self.area_box.setSpecialValueText("default")
         self.area_box.setToolTip(
-            "mm^2 each streamline stands for; default: the bundle's cross-section "
-            "shared by its streamlines"
+            "mm^2 each streamline stands for; default: set by the tube or by the "
+            "densest fill"
         )
         self.area_box.valueChanged.connect(
             lambda value: self._edit_bundle_value(
@@ -1008,7 +1009,7 @@ class PhantomPanel(QWidget):
             more, "Streamline area", HELP["Streamline area"], self.area_box, self
         )
         self.fill_box = _spin(0.01, 1, 2)
-        self.fill_box.setToolTip("The fill of a loaded tractogram's dense voxels")
+        self.fill_box.setToolTip("The fill of the bundle's dense voxels")
         self.fill_box.valueChanged.connect(
             lambda value: self._edit_bundle_value(BundleField.DENSEST_FILL, value)
         )
@@ -1459,7 +1460,8 @@ class PhantomPanel(QWidget):
         settings = bundle if bundle is not None else (draft.editing if draft else None)
         self._set_row_visible(self.area_box, settings is not None)
         self._set_row_visible(
-            self.fill_box, settings is not None and settings.geometry is None
+            self.fill_box,
+            settings is not None and (geometry is None or not geometry.is_tube),
         )
         self._set_row_visible(self.points, draft is not None)
         self._set_row_visible(self._point_buttons, draft is not None)
