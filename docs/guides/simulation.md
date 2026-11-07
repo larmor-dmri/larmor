@@ -79,8 +79,8 @@ A phantom has four parts.
 - **Bundles.** A bundle's shape is a {py:class}`~larmor.simulation.BundleGeometry` or a tractogram of your own,
   such as one from `load_tractogram`. The fraction of a voxel that a bundle fills is its occupancy. A geometry of
   one radius fills each voxel by the share of the voxel inside its tube, however dense its streamlines are there. In
-  a tractogram, a geometry with a fan, or a geometry given a `streamline_area`, each streamline stands for a piece of
-  the bundle's cross-section, so the occupancy follows the length of streamline in the voxel. Without a
+  a tractogram, a geometry with a fan or rings, or a geometry given a `streamline_area`, each streamline stands for a
+  piece of the bundle's cross-section, so the occupancy follows the length of streamline in the voxel. Without a
   `streamline_area`, that piece is set so that the bundle's dense voxels have an occupancy of `densest_fill`, 0.7 by
   default, and a fan thins out where it widens. Where bundles cross and their occupancies add up to more than the
   voxel, they are scaled down to fit.
@@ -88,6 +88,30 @@ A phantom has four parts.
   such as a grey matter probability. The maps share what the bundles leave of each voxel.
 - **Background.** What is left after the bundles and maps goes to the tissue named by `background`, or gives no
   signal when there is none.
+
+## Changing the section along a bundle
+
+A round bundle has one `radius` all along. `rings` set the section along the bundle instead, so that it can widen,
+flatten and turn. Each row holds a position `u` along the centreline, from 0 at the start to 1 at the end, the
+section's two radii in mm, and the angle of the first radius in degrees. Between rows each value follows a monotone
+curve, so it stays between its neighbours.
+
+```python
+ribbon = BundleGeometry(
+    np.array([[3.0, 12.0, 12.0], [21.0, 12.0, 12.0]]),
+    num_streamlines=300,
+    seed=1,
+    rings=np.array([[0.0, 2.0, 2.0, 0.0], [0.5, 6.0, 2.0, 0.0], [1.0, 6.0, 1.5, 45.0]]),
+)
+```
+
+The rings replace `radius`, and a bundle cannot have both rings and a fan. The angle is measured in a frame carried
+along the centreline without twist, described in {py:class}`~larmor.simulation.BundleGeometry`. The density across
+the section is the same Gaussian, stretched to the two radii. A bundle with rings fills by streamline length, so its
+fill falls towards its edges and where it widens. With the default `densest_fill` it fills about a quarter to a third
+of what a tube of the same size does. A `streamline_area` of about 3 pi r^2 / N, for N streamlines of radius r, brings
+that to more than 90%, whatever N is. The viewer does not read rings yet: it opens such a bundle as a round one with
+its `radius`, runs that, and leaves the rings out when it saves.
 
 ## The phantom file
 
