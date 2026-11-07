@@ -761,7 +761,11 @@ it, drawn from a Gaussian around the centreline that is cut at <code class="xref
 the streamlines are densest at the centre. The offset is scaled by
 1 + fan_start (1 - u)^p + fan_end u^p, where u in [0, 1] is the position
 along the centreline and p is fan_sharpness. A smooth random wander of
-standard deviation <code class="xref py py-obj docutils literal notranslate"><span class="pre">dispersion</span></code>, zero at both ends, is added along the way.</p>
+standard deviation <code class="xref py py-obj docutils literal notranslate"><span class="pre">dispersion</span></code>, zero at both ends, is added along the way.
+Streamlines on the inside of a bend whose radius is below about twice the
+bundle’s are held back, so they squeeze together and fold far less, though
+they can still turn sharply. A corner that turns within a few per cent of the
+centreline’s length folds as it would without this.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
