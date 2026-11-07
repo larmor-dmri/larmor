@@ -567,9 +567,9 @@ is not.</p>
 <h2>Building a phantom<a class="headerlink" href="#building-a-phantom" title="Link to this heading">#</a></h2>
 <p>The phantom below is one straight bundle on a grid of 24 x 24 x 24 voxels of 1 mm. The bundle’s
 <a class="reference internal" href="../../reference/api/simulation/#larmor.simulation.BundleGeometry" title="larmor.simulation.BundleGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">BundleGeometry</span></code></a> is a smooth curve through control points in world coordinates (mm), with
-<code class="docutils literal notranslate"><span class="pre">num_streamlines</span></code> streamlines spread over a disc of the given <code class="docutils literal notranslate"><span class="pre">radius</span></code> around it, and its seed makes the
-streamlines the same on every run. A phantom has the tissues WM, GM and CSF by default, and a bundle is filled
-with WM unless you name another tissue.</p>
+<code class="docutils literal notranslate"><span class="pre">num_streamlines</span></code> streamlines around it. Their density across the bundle is a Gaussian cut at the given <code class="docutils literal notranslate"><span class="pre">radius</span></code>,
+which is 2.5 standard deviations, and the seed makes the streamlines the same on every run. A phantom has the tissues
+WM, GM and CSF by default, and a bundle is filled with WM unless you name another tissue.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">larmor.simulation</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -624,10 +624,10 @@ only. Other tissues can also fill tissue maps and the background.</p>
 </li>
 <li><p><strong>Bundles.</strong> A bundle’s shape is a <a class="reference internal" href="../../reference/api/simulation/#larmor.simulation.BundleGeometry" title="larmor.simulation.BundleGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">BundleGeometry</span></code></a> or a tractogram of your own,
 such as one from <code class="docutils literal notranslate"><span class="pre">load_tractogram</span></code>. The fraction of a voxel that a bundle fills is its occupancy. A geometry
-fills each voxel by the share of the voxel inside its tube. In a tractogram, or a geometry given a
-<code class="docutils literal notranslate"><span class="pre">streamline_area</span></code>, each streamline stands for a piece of the bundle’s cross-section, so the occupancy follows the
-length of streamline in the voxel. Where bundles cross and their occupancies add up to more than the voxel, they
-are scaled down to fit.</p></li>
+fills each voxel by the share of the voxel inside its tube, however dense its streamlines are there. In a
+tractogram, or a geometry given a <code class="docutils literal notranslate"><span class="pre">streamline_area</span></code>, each streamline stands for a piece of the bundle’s
+cross-section, so the occupancy follows the length of streamline in the voxel. Where bundles cross and their
+occupancies add up to more than the voxel, they are scaled down to fit.</p></li>
 <li><p><strong>Tissue maps.</strong> A <a class="reference internal" href="../../reference/api/simulation/#larmor.simulation.TissueMap" title="larmor.simulation.TissueMap"><code class="xref py py-class docutils literal notranslate"><span class="pre">TissueMap</span></code></a> is a volume of fractions in [0, 1] on the grid,
 such as a grey matter probability. The maps share what the bundles leave of each voxel.</p></li>
 <li><p><strong>Background.</strong> What is left after the bundles and maps goes to the tissue named by <code class="docutils literal notranslate"><span class="pre">background</span></code>, or gives no

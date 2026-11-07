@@ -713,7 +713,8 @@ it. Defaults to None.</p></li>
 in mm^2. Defaults to None, with which a geometry fills its tube and
 a tractogram gets the value that gives the bundle’s dense voxels an
 occupancy of <code class="xref py py-obj docutils literal notranslate"><span class="pre">densest_fill</span></code>. With a value, a geometry’s occupancy
-dips at random where fewer streamlines happen to pass.</p></li>
+falls towards its edge, where its streamlines are sparse, and dips at
+random where fewer happen to pass.</p></li>
 <li><p><strong>densest_fill</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The occupancy of a tractogram bundle’s dense voxels when
 streamline_area is None, in (0, 1]. A voxel is dense when the
 bundle’s streamline length in it reaches the 95th percentile of that
@@ -754,7 +755,8 @@ the streamlines drawn from a geometry. Defaults to 0.</p>
 <p>A geometry describes a bundle by a few control points along its centreline,
 a radius, and how much the bundle fans out at its ends. Each streamline
 follows the centreline (see <code class="xref py py-obj docutils literal notranslate"><span class="pre">centreline_spline</span></code>) at a fixed offset across
-it, drawn uniformly in a disc of <code class="xref py py-obj docutils literal notranslate"><span class="pre">radius</span></code>. The offset is scaled by
+it, drawn from a Gaussian around the centreline that is cut at <code class="xref py py-obj docutils literal notranslate"><span class="pre">radius</span></code>, so
+the streamlines are densest at the centre. The offset is scaled by
 1 + fan_start (1 - u)^p + fan_end u^p, where u in [0, 1] is the position
 along the centreline and p is fan_sharpness. A smooth random wander of
 standard deviation <code class="xref py py-obj docutils literal notranslate"><span class="pre">dispersion</span></code>, zero at both ends, is added along the way.</p>
@@ -764,9 +766,10 @@ standard deviation <code class="xref py py-obj docutils literal notranslate"><sp
 <li><p><strong>control_points</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – (K, 3) points the centreline passes through, K &gt;= 2, in
 world coordinates (RAS+) in mm.</p></li>
 <li><p><strong>num_streamlines</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – The number of streamlines. Defaults to 1000.</p></li>
-<li><p><strong>radius</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The bundle’s radius in mm. Defaults to 2.0.</p></li>
+<li><p><strong>radius</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The bundle’s radius in mm, 2.5 standard deviations of the
+Gaussian. Defaults to 2.0.</p></li>
 <li><p><strong>num_points</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Points per streamline. Defaults to 100.</p></li>
-<li><p><strong>fan_start</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Extra spread at the first control point, where the disc has
+<li><p><strong>fan_start</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Extra spread at the first control point, where the bundle has
 the radius radius (1 + fan_start). Defaults to 0.0.</p></li>
 <li><p><strong>fan_end</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Extra spread at the last control point, in the same way.
 Defaults to 0.0.</p></li>
