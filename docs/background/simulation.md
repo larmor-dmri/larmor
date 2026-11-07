@@ -126,7 +126,8 @@ A voxel is shared between tissues in three steps, and a fraction is never scaled
 1. Each bundle fills a fraction of the voxel, its occupancy. For a geometry of one radius this is the share of the
    voxel inside its tube. For a tractogram, a geometry with a fan or rings, or a geometry given a `streamline_area`, it
    is the length of its streamlines in the voxel times the cross-section each streamline stands for, divided by the
-   voxel's volume, and at most 1. Without a `streamline_area`, the cross-section is set so that the bundle's dense
+   voxel's volume, and at most 1. Without a `streamline_area`, the cross-section of a geometry with rings is 3 times
+   its median section divided by its number of streamlines, and that of any other bundle is set so that its dense
    voxels have an occupancy of `densest_fill`. Where bundles together fill more than 1, as in a crossing, their
    occupancies are scaled down to sum to 1.
 2. The tissue maps share what the bundles leave. Where their values add up to more than that, they are scaled down.

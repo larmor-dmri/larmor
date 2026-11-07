@@ -81,9 +81,9 @@ A phantom has four parts.
   one radius fills each voxel by the share of the voxel inside its tube, however dense its streamlines are there. In
   a tractogram, a geometry with a fan or rings, or a geometry given a `streamline_area`, each streamline stands for a
   piece of the bundle's cross-section, so the occupancy follows the length of streamline in the voxel. Without a
-  `streamline_area`, that piece is set so that the bundle's dense voxels have an occupancy of `densest_fill`, 0.7 by
-  default, and a fan thins out where it widens. Where bundles cross and their occupancies add up to more than the
-  voxel, they are scaled down to fit.
+  `streamline_area`, that piece is set so that a tractogram's or a fan's dense voxels have an occupancy of
+  `densest_fill`, 0.7 by default, and a fan thins out where it widens. Where bundles cross and their occupancies add
+  up to more than the voxel, they are scaled down to fit.
 - **Tissue maps.** A {py:class}`~larmor.simulation.TissueMap` is a volume of fractions in [0, 1] on the grid,
   such as a grey matter probability. The maps share what the bundles leave of each voxel.
 - **Background.** What is left after the bundles and maps goes to the tissue named by `background`, or gives no
@@ -107,11 +107,18 @@ ribbon = BundleGeometry(
 
 The rings replace `radius`, and a bundle cannot have both rings and a fan. The angle is measured in a frame carried
 along the centreline without twist, described in {py:class}`~larmor.simulation.BundleGeometry`. The density across
-the section is the same Gaussian, stretched to the two radii. A bundle with rings fills by streamline length, so its
-fill falls towards its edges and where it widens. With the default `densest_fill` it fills about a quarter to a third
-of what a tube of the same size does. A `streamline_area` of about 3 pi r^2 / N, for N streamlines of radius r, brings
-that to more than 90%, whatever N is. The viewer does not read rings yet: it opens such a bundle as a round one with
-its `radius`, runs that, and leaves the rings out when it saves.
+the section is the same Gaussian, stretched to the two radii.
+
+A bundle with rings fills by streamline length. By default its streamlines together stand for 3 times its median
+section, the size it has over most of its length, so its core is full and its edge is soft. Its total fill is about 85
+to 95% of a tube's when its radius is at least 3 voxels, and about 110 to 115% at 1.5 voxels, where every voxel it
+touches can fill up. A change of width over less than half of its length leaves the median alone, so the same
+streamlines thin out where the bundle widens: widening a 3 mm bundle to 6 mm over a short stretch fills about 8 mm of
+its 12 mm width at least half, with a faint edge beyond. A larger `streamline_area` fills more of it, and a smaller one
+makes the whole bundle sparser. `densest_fill` does not apply to rings.
+
+The viewer does not read rings yet: it opens such a bundle as a round one with its `radius`, runs that, and leaves the
+rings out when it saves.
 
 ## The phantom file
 
