@@ -549,6 +549,35 @@ def test_rings_are_saved_and_read_back_and_need_no_radius(tmp_path: Path) -> Non
     )
 
 
+def test_a_tangled_bundle_of_one_radius_fills_the_same_tube() -> None:
+    grid = Grid((20, 20, 20), np.eye(4))
+    ends = np.array([[-1.0, 10, 10], [21.0, 10, 10]])
+
+    def fill(tangle_mm: float) -> np.ndarray:
+        geometry = BundleGeometry(
+            ends, num_streamlines=500, radius=3.0, seed=0, tangle_mm=tangle_mm
+        )
+        assert geometry.is_tube
+        partition = partition_voxels(Phantom(grid, bundles=(Bundle(geometry),)))
+        result: np.ndarray = partition.bundle_fractions
+        return result
+
+    np.testing.assert_array_equal(fill(5.0), fill(0.0))
+
+
+def test_a_tangle_is_saved_and_read_back(tmp_path: Path) -> None:
+    ends = np.array([[-1.0, 3, 3], [7.0, 3, 3]])
+    geometry = BundleGeometry(ends, radius=1.0, seed=0, tangle_mm=4.0)
+    written = Phantom(GRID, bundles=(Bundle(geometry),))
+    path = tmp_path / "tangle.phantom.json"
+    write_phantom(written, path)
+    source = read_phantom(path).phantom.bundles[0].source
+    assert isinstance(source, BundleGeometry) and source.tangle_mm == 4.0
+    np.testing.assert_array_equal(
+        create_bundle(source).points, create_bundle(geometry).points
+    )
+
+
 def test_a_fan_of_radius_0_fills_the_voxels_of_its_centreline() -> None:
     ends = np.array([[-1.0, 3, 3], [7.0, 3, 3]])
     fan = BundleGeometry(ends, radius=0.0, fan_end=1.0, num_streamlines=10, seed=0)
