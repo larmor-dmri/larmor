@@ -542,3 +542,51 @@ def test_undo_draws_the_views_again_and_keeps_the_pen(window: MainWindow) -> Non
     QTest.keyClick(window, Qt.Key.Key_Z, CTRL | Qt.KeyboardModifier.ShiftModifier)
     assert item in window.renderer.adapters
     assert len(_state(viewer).bundles) == 1
+
+
+def test_a_changed_bundle_keeps_showing_until_its_new_lines_come(
+    window: MainWindow,
+) -> None:
+    viewer = window.viewer
+    item = _bundle(viewer)
+    flush_all()
+    adapter = _adapter(window, item)
+    shown = adapter.lines[ViewKind.AXIAL].geometry
+    assert shown.positions.nitems > 0
+    viewer.set_bundle(item, BundleField.RADIUS, 4.0)
+    # A frame drawn before the background work is back draws the old lines.
+    now = _adapter(window, item)
+    assert now.lines[ViewKind.AXIAL].geometry is shown
+    assert now.lines[ViewKind.AXIAL].visible
+    flush_all()
+    assert now.lines[ViewKind.AXIAL].geometry is not shown
+    assert now.lines[ViewKind.AXIAL].geometry.positions.nitems > 0
+
+
+def test_a_changed_bundle_keeps_its_tubes_until_the_new_ones_come(
+    window: MainWindow,
+) -> None:
+    viewer = window.viewer
+    item = _bundle(viewer)
+    viewer.set(item, OptionName.STYLE, TractStyle.TUBES)
+    flush_all()
+    adapter = _adapter(window, item)
+    assert adapter.tubes is not None
+    made = adapter.tubes.geometry
+    viewer.set_bundle(item, BundleField.RADIUS, 4.0)
+    assert adapter.tubes is not None and adapter.tubes.geometry is made
+    assert adapter.tubes.visible
+    flush_all()
+    assert adapter.tubes is not None and adapter.tubes.geometry is not made
+    assert _adapter(window, item) is adapter
+
+
+def test_new_data_with_fewer_streamlines_draws_them_all(window: MainWindow) -> None:
+    viewer = window.viewer
+    item = _bundle(viewer)
+    flush_all()
+    viewer.set_bundle(item, BundleField.NUM_STREAMLINES, 7)
+    flush_all()
+    adapter = _adapter(window, item)
+    assert len(adapter.drawn.offsets) - 1 == 7
+    assert adapter.selection is None

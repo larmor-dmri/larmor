@@ -34,6 +34,7 @@ from larmor.viewer.render.view import Vec3, ViewRenderer
 from larmor.viewer.render.volume_adapter import (
     VolumeAdapter,
 )
+from larmor.viewer.render.worker import flush_all
 
 pytestmark = pytest.mark.usefixtures("fresh_slab_budget")
 
@@ -285,8 +286,7 @@ def test_replacing_data_rebuilds_that_items_adapter_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     viewer, renderer = scene_renderer
-    viewer.add(_volume(), Category.VOLUMES)
-    item = viewer.add(_tractogram(), Category.TRACTOGRAMS)
+    item = viewer.add(_volume(), Category.VOLUMES)
     viewer.add(_tractogram(), Category.TRACTOGRAMS)
     before = dict(renderer.adapters)
     built: list[Item] = []
@@ -297,11 +297,25 @@ def test_replacing_data_rebuilds_that_items_adapter_only(
         add(i)
 
     monkeypatch.setattr(renderer, "_add", counted)
-    viewer.replace_data(item.id, Tractogram(np.zeros((3, 3)), np.array([0, 3])))
+    viewer.replace_data(item.id, _volume())
     assert built == [item]
     assert renderer.adapters[item.id] is not before[item.id]
     others = {k: v for k, v in renderer.adapters.items() if k != item.id}
     assert others == {k: v for k, v in before.items() if k != item.id}
+
+
+def test_replacing_a_tractograms_data_keeps_its_drawing(
+    scene_renderer: tuple[Viewer, SceneRenderer],
+) -> None:
+    viewer, renderer = scene_renderer
+    item = viewer.add(_tractogram(), Category.TRACTOGRAMS)
+    before = renderer.adapters[item.id]
+    assert isinstance(before, TractogramAdapter)
+    new = Tractogram(np.zeros((3, 3)), np.array([0, 3]))
+    viewer.replace_data(item.id, new)
+    flush_all()
+    assert renderer.adapters[item.id] is before
+    assert len(before.drawn.offsets) - 1 == 1
 
 
 def test_replacing_a_mask_refilters_the_tractograms_using_it(

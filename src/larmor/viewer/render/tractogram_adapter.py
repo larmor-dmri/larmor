@@ -393,6 +393,26 @@ class TractogramAdapter(Adapter):
         self._voxels = self._voxels_of = self._light_of = self.light = None
         self._traced_colours = None
 
+    def take_data(self) -> None:
+        """Draws the item's new data; what shows stays until the new lines are made.
+
+        Starting again from no lines would leave a frame with nothing in it each
+        time, which flickers when a bundle being edited changes at every frame.
+        """
+        t = self.item.data
+        assert isinstance(t, Tractogram)
+        self._selection_worker.cancel()
+        self._full_order = random_order(t.num_streamlines, SUBSET_SEED)
+        self._order = self._full_order
+        self.selection = None
+        self._selection_version += 1  # what is drawn is of the old data
+        self._request_lines()
+        if not self._tubes_fit():
+            self._drop_tubes()
+        if region_filter(self.viewer.scene, self.item) is not None:
+            self._request_selection()
+        self._show()
+
     def reshape(self) -> None:
         """Makes the lines again after a change of the drawing cap, if it counts."""
         if self._drawn_count() != self._count:
