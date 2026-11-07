@@ -130,7 +130,7 @@ def test_a_tube_ending_at_a_voxel_centre_fills_half_of_that_voxel(axis: int) -> 
     # The ends at voxel centres 2 and 8; the radius covers the voxels across.
     ends = np.full((2, 3), 5.0)
     ends[:, axis] = [2.0, 8.0]
-    fill, _ = tube_fill(ends, 3.0, (0.0, 0.0, 1.0), Grid((11, 11, 11), np.eye(4)))
+    fill, _ = tube_fill(ends, 3.0, Grid((11, 11, 11), np.eye(4)))
     line = np.moveaxis(fill.reshape(11, 11, 11), axis, 0)[:, 5, 5]
     np.testing.assert_allclose(line, [0, 0, 0.5, 1, 1, 1, 1, 1, 0.5, 0, 0])
 
@@ -204,7 +204,7 @@ def test_unknown_tissue_and_bad_map_values_are_rejected() -> None:
 def test_a_thin_tube_fills_its_true_volume(offset: float) -> None:
     grid = Grid((21, 21, 21), np.diag([2.0, 2.0, 2.0, 1.0]))
     ends = np.array([[10.0, 20 + offset, 20.2], [30.0, 20 + offset, 20.0]])
-    fill, _ = tube_fill(ends, 0.2, (0.0, 0.0, 2.0), grid)
+    fill, _ = tube_fill(ends, 0.2, grid)
     length = float(np.linalg.norm(ends[1] - ends[0]))
     assert fill.sum() * 8.0 == pytest.approx(np.pi * 0.2**2 * length, rel=0.1)
 
@@ -212,7 +212,7 @@ def test_a_thin_tube_fills_its_true_volume(offset: float) -> None:
 def test_a_tube_too_thin_for_the_grid_and_an_empty_tube_are_refused() -> None:
     ends = np.array([[1.0, 3, 3], [5.0, 3, 3]])
     with pytest.raises(ValueError, match="too thin"):
-        tube_fill(ends, 0.01, (0.0, 0.0, 2.0), GRID)
+        tube_fill(ends, 0.01, GRID)
     with pytest.raises(ValueError, match="radius 0"):
         Bundle(BundleGeometry(ends, radius=0.0))
 
@@ -444,16 +444,40 @@ def test_a_tissue_map_in_another_orientation_keeps_its_world_positions(
     np.testing.assert_array_equal(found, wanted)
 
 
-def test_a_fan_wider_in_its_middle_than_at_its_ends_is_filled_to_its_edge() -> None:
-    radius, fan, sharpness, length = 2.0, 3.0, 0.1, 30.0
-    grid = Grid(
-        (36, 40, 40),
-        np.array([[1, 0, 0, -3.0], [0, 1, 0, -19.5], [0, 0, 1, -19.5], [0, 0, 0, 1.0]]),
-    )
-    ends = np.array([[0, 0, 0], [length, 0, 0]])
-    fill, _ = tube_fill(ends, radius, (fan, fan, sharpness), grid)
-    u = np.linspace(0, 1, 2001)
-    reach = radius * (1 + fan * (1 - u) ** sharpness + fan * u**sharpness)
-    assert fill.sum() == pytest.approx(
-        np.trapezoid(np.pi * reach**2, u) * length, rel=0.02
+def test_a_fan_fills_like_a_tractogram_of_its_streamlines() -> None:
+    grid = Grid((20, 20, 20), np.eye(4))
+    ends = np.array([[-1.0, 10, 10], [21.0, 10, 10]])
+    fan = BundleGeometry(ends, num_streamlines=2000, radius=2.0, fan_end=2.0, seed=0)
+    for fill in (0.7, 0.35):
+        drawn, given = (
+            partition_voxels(Phantom(grid, bundles=(Bundle(s, densest_fill=fill),)))
+            for s in (fan, create_bundle(fan))
+        )
+        np.testing.assert_array_equal(drawn.bundle_fractions, given.bundle_fractions)
+        np.testing.assert_array_equal(drawn.fibre_weight, given.fibre_weight)
+        reached = drawn.bundle_fractions[drawn.bundle_fractions > 0]
+        assert np.percentile(reached, 95) == pytest.approx(fill, rel=1e-6)
+        # The same streamlines spread over a wider section thin out.
+        fractions = drawn.bundle_fractions[..., 0]
+        assert fractions[1, 10, 10] > 2 * fractions[18, 10, 10]
+
+
+def test_a_fan_of_radius_0_fills_the_voxels_of_its_centreline() -> None:
+    ends = np.array([[-1.0, 3, 3], [7.0, 3, 3]])
+    fan = BundleGeometry(ends, radius=0.0, fan_end=1.0, num_streamlines=10, seed=0)
+    fractions = partition_voxels(Phantom(GRID, bundles=(Bundle(fan),))).bundle_fractions
+    np.testing.assert_allclose(fractions[:, 3, 3, 0], 0.7, rtol=1e-3)
+    assert fractions.sum() == pytest.approx(6 * 0.7, rel=1e-3)
+
+
+def test_a_fans_densest_fill_is_saved_and_read_back(tmp_path: Path) -> None:
+    fan = BundleGeometry(np.array([[-1.0, 3, 3], [7.0, 3, 3]]), fan_end=1.0, seed=0)
+    path = tmp_path / "fan.phantom.json"
+    written = Phantom(GRID, bundles=(Bundle(fan, densest_fill=0.4),))
+    write_phantom(written, path)
+    read = read_phantom(path).phantom
+    assert read.bundles[0].densest_fill == 0.4
+    np.testing.assert_array_equal(
+        partition_voxels(read).bundle_fractions,
+        partition_voxels(written).bundle_fractions,
     )

@@ -646,3 +646,6 @@ def test_a_radius_of_0_is_refused_and_a_tube_too_thin_stops_a_run(
     viewer.set_bundle(bundle, BundleField.RADIUS, 0.05)
     [problem] = viewer.check_phantom()
     assert "too thin" in problem
+    # A fanned bundle has no tube to measure.
+    viewer.set_bundle(bundle, BundleField.FAN_END, 1.0)
+    assert viewer.check_phantom() == []

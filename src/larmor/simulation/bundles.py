@@ -80,6 +80,11 @@ class BundleGeometry:
         if not self.fan_sharpness > 0:
             raise ValueError("fan_sharpness must be positive.")
 
+    @property
+    def is_tube(self) -> bool:
+        """Tells whether the bundle is a round tube of one radius all along."""
+        return self.fan_start == 0 and self.fan_end == 0
+
     def to_dict(self) -> dict[str, object]:
         """Returns the geometry as plain values that can be saved as JSON.
 

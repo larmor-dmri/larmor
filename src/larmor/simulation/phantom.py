@@ -17,7 +17,7 @@ from larmor.types import Grid, Tractogram, Volume
 _MAP_TOLERANCE = 1e-6
 
 
-# The percentile of a tractogram bundle's voxel lengths that `densest_fill` sets.
+# The percentile of a bundle's voxel lengths that `densest_fill` sets.
 DENSE_PERCENTILE = 95.0
 
 #: Called with (done, total, stage) as a simulation runs; raise in it to cancel.
@@ -31,11 +31,12 @@ class Bundle:
     A bundle places its tissue in the voxels it passes through, and its
     streamlines give the fibre directions there. The share of a voxel that a
     bundle fills is its occupancy, between 0 and 1. A bundle drawn from a
-    geometry fills each voxel by the share of the voxel inside its tube. A
-    tractogram, or a geometry with a `streamline_area`, fills each voxel with
-    L a / V, capped at 1, where L is the length of its streamlines in the voxel
-    (mm), a the cross-section each streamline stands for (mm^2) and V the voxel
-    volume (mm^3).
+    geometry of one radius fills each voxel by the share of the voxel inside its
+    tube. A tractogram, a geometry with a fan, or a geometry with a
+    `streamline_area` fills each voxel with L a / V, capped at 1, where L is the
+    length of its streamlines in the voxel (mm), a the cross-section each
+    streamline stands for (mm^2) and V the voxel volume (mm^3). A fan keeps its
+    streamlines as it widens, so it thins out towards its wide end.
 
     Args:
         source: A geometry to draw the streamlines from, or a tractogram (for
@@ -44,21 +45,22 @@ class Bundle:
         path: The file a tractogram source was read from; `write_phantom` stores
             it. Defaults to None.
         streamline_area: The cross-section a that each streamline stands for,
-            in mm^2. Defaults to None, with which a geometry fills its tube and
-            a tractogram gets the value that gives the bundle's dense voxels an
-            occupancy of `densest_fill`. With a value, a geometry's occupancy
+            in mm^2. Defaults to None, with which a geometry of one radius fills
+            its tube, and any other bundle gets the value that gives its dense
+            voxels an occupancy of `densest_fill`. With a value, a geometry's occupancy
             falls towards its edge, where its streamlines are sparse, and dips at
             random where fewer happen to pass.
-        densest_fill: The occupancy of a tractogram bundle's dense voxels when
+        densest_fill: The occupancy of the bundle's dense voxels when
             streamline_area is None, in (0, 1]. A voxel is dense when the
             bundle's streamline length in it reaches the 95th percentile of that
             length over the voxels the bundle reaches; denser voxels are capped
-            at 1. Not used for a geometry. Defaults to 0.7.
+            at 1. Not used for a geometry of one radius, which fills its tube.
+            Defaults to 0.7.
 
     Raises:
         ValueError: If streamline_area is not positive, densest_fill is not in
-            (0, 1], or a geometry of radius 0 has no streamline_area, so it would
-            fill nothing.
+            (0, 1], or a tube of radius 0 has no streamline_area, so it would fill
+            nothing.
     """
 
     source: BundleGeometry | Tractogram
@@ -82,6 +84,7 @@ class Bundle:
         source = self.source
         if (
             isinstance(source, BundleGeometry)
+            and source.is_tube
             and source.radius == 0
             and self.streamline_area is None
         ):
@@ -301,9 +304,12 @@ def partition_voxels(
     for index, bundle in enumerate(resolve_bundle_seeds(phantom, seed)):
         streamlines.append(bundle.streamlines(index))
         source = bundle.source
-        if isinstance(source, BundleGeometry) and bundle.streamline_area is None:
-            fan = (source.fan_start, source.fan_end, source.fan_sharpness)
-            tubes[index] = tube_fill(source.control_points, source.radius, fan, grid)
+        if (
+            isinstance(source, BundleGeometry)
+            and source.is_tube
+            and bundle.streamline_area is None
+        ):
+            tubes[index] = tube_fill(source.control_points, source.radius, grid)
         if progress is not None:
             progress(index + 1, len(phantom.bundles) + 1, "voxelise")
     voxels = _with_tube_fibres(voxelise(streamlines, grid, n_jobs=n_jobs), tubes)
@@ -475,9 +481,6 @@ def _streamline_area(
     """Returns the cross-section each streamline of a bundle stands for, in mm^2."""
     if bundle.streamline_area is not None:
         return bundle.streamline_area
-    if isinstance(bundle.source, BundleGeometry):
-        geometry = bundle.source
-        return math.pi * geometry.radius**2 / geometry.num_streamlines
     reached = lengths[lengths > 0]
     if len(reached) == 0:
         return 0.0

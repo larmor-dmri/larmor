@@ -106,10 +106,11 @@ dropped.
 A finished bundle is an ordinary tractogram in the scene tree, so all the tractogram options apply to it. Its row in
 the bundles table chooses the tissue that fills it. When you select a bundle, the editor shows its shape (the number
 of streamlines, the radius, the fanning, the dispersion and the seed) so that you can change it, and **Edit** brings
-its points back into draw mode. The bundle keeps its place in the scene tree and its options while you edit it. You
-can also make a loaded tractogram a bundle of the phantom with **Use a tractogram...**. To remove bundles, select
-their rows in the bundles table and click **Remove** or press **Delete**; several rows can be selected at once, as
-in the scene tree.
+its points back into draw mode. The bundle keeps its place in the scene tree and its options while you edit it. A
+bundle with fanning fills the voxels by the length of its streamlines, so it thins out where it widens, and its
+**Densest fill** sets how full its densest voxels are. You can also make a loaded tractogram a bundle of the phantom
+with **Use a tractogram...**. To remove bundles, select their rows in the bundles table and click **Remove** or press
+**Delete**; several rows can be selected at once, as in the scene tree.
 
 ## Proxy maps
 
