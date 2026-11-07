@@ -113,6 +113,32 @@ of what a tube of the same size does. A `streamline_area` of about 3 pi r^2 / N,
 that to more than 90%, whatever N is. The viewer does not read rings yet: it opens such a bundle as a round one with
 its `radius`, runs that, and leaves the rings out when it saves.
 
+## Tangling a bundle
+
+`tangle_mm` makes the streamlines lose their places across the bundle. Each one slides between two places drawn from
+the same Gaussian, reaching the second after `tangle_mm` mm along the centreline, so that a value of 10 means a
+streamline has moved to an unrelated place every 10 mm. It works with a plain radius, a fan or rings. The slide is a
+regular wave, not a random walk: all streamlines share one wavelength of 4 `tangle_mm`, and the whole section repeats
+after that distance.
+
+The spread across the bundle keeps its standard deviation, but halfway through a slide about 2% of the streamlines
+pass the edge, by up to about a third of the radius. A bundle of one radius still fills its tube, exactly as without
+a tangle. A bundle that fills by streamline length fills up to about 5% more, as the streamlines are longer and reach
+further.
+
+What matters is the bundle's radius against `tangle_mm`. In a straight round bundle, the streamlines lie about 40
+radius / `tangle_mm` degrees from the centreline on average, up to about 25 degrees. In a test with the default white
+matter, with no noise, a radius / `tangle_mm` of 0.15 lowers the FA from 0.86 to 0.85, 0.3 to 0.83, 0.6 to 0.72 and
+1.2 to 0.37. How well a crossing is resolved depends strongly on the response. At 90 degrees and SNR 30, with a
+response estimated from an equally tangled bundle, 99% of the voxels show exactly two peaks up to a ratio of 0.4, 92%
+at 0.6 and 65% at 0.86. With a response from an untangled bundle that is 68% at 0.4 and 2% at 0.6.
+
+A `tangle_mm` under twice the distance between a streamline's points is refused, because the points cannot show the
+slide. Above that, streamlines turn sharply at each point below about 2 sqrt(spacing radius), where spacing is that
+distance, and more `num_points` cures this. A tangle shorter than the radius makes streamlines more than a quarter
+longer than the centreline. The viewer does not read a tangle yet: it opens such a bundle without one, runs that, and
+leaves it out when it saves.
+
 ## The phantom file
 
 `write_phantom` stores the grid, the tissues, the bundles (their geometry, or the path of their tractogram), the
