@@ -104,6 +104,22 @@ def test_a_file_with_rings_opens_as_a_round_bundle(tmp_path: Path) -> None:
     assert viewer.check_phantom() == []
 
 
+def test_a_file_with_a_tangle_opens_without_it(tmp_path: Path) -> None:
+    ends = np.array([[3.0, 12, 12], [21.0, 12, 12]])
+    geometry = sim.BundleGeometry(ends, num_streamlines=20, seed=1, tangle_mm=5.0)
+    phantom = sim.Phantom(
+        Grid((24, 24, 24), np.eye(4)), bundles=(sim.Bundle(geometry),)
+    )
+    sim.write_phantom(phantom, tmp_path / "tangle.phantom.json")
+    viewer = Viewer()
+    viewer.load_phantom(tmp_path / "tangle.phantom.json")
+    state = viewer.phantom
+    assert state is not None
+    drawn = state.bundles[0].geometry
+    assert drawn is not None and not hasattr(drawn, "tangle_mm")
+    assert viewer.check_phantom() == []
+
+
 def test_a_folder_saved_with_a_connectome_still_opens(tmp_path: Path) -> None:
     info = {
         "format": SIMULATION_FORMAT,
