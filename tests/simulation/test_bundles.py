@@ -2,8 +2,13 @@ import numpy as np
 import pytest
 from scipy.spatial import cKDTree
 
+import larmor.simulation.bundles as bundles
 from larmor.simulation import BundleGeometry, create_bundle
-from larmor.simulation.bundles import centreline_spline
+from larmor.simulation.bundles import (
+    _bend_limits,
+    _squeeze_inside_bends,
+    centreline_spline,
+)
 from larmor.simulation.voxelise import voxelise
 from larmor.tractography import resample, streamline_lengths
 from larmor.types import Grid, Tractogram
@@ -115,6 +120,80 @@ def test_streamlines_keep_their_distance_to_the_centreline_round_a_sharp_bend() 
     # Each streamline's distance is its offset, the same all along.
     assert np.abs(distance - distance[:, :1]).max() < 0.03 * 2.0
     assert distance.max() > 0.95 * 2.0
+
+
+def _quarter_circle(bend: float) -> np.ndarray:
+    angle = np.linspace(0, np.pi / 2, 40)
+    return bend * np.stack([np.cos(angle), np.sin(angle), np.zeros(40)], axis=1)
+
+
+def test_the_fold_guard_moves_nothing_until_a_bend_is_tight(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def streamlines(bend: float) -> np.ndarray:
+        arc = _quarter_circle(bend)
+        geometry = BundleGeometry(arc, num_streamlines=5000, radius=5.0, seed=1)
+        points: np.ndarray = create_bundle(geometry).points
+        return points
+
+    gentle, tight = streamlines(10.5), streamlines(7.0)
+    monkeypatch.setattr(bundles, "FOLD_LIMIT", 1e6)
+    np.testing.assert_array_equal(gentle, streamlines(10.5))
+    assert not np.array_equal(tight, streamlines(7.0))
+
+
+def _deepest_fold(points: np.ndarray, control: np.ndarray) -> float:
+    centreline, _ = centreline_spline(control)
+    u = np.linspace(0, 1, points.shape[1])
+    tangents = centreline.derivative()((u[:-1] + u[1:]) / 2)
+    tangents /= np.linalg.norm(tangents, axis=1, keepdims=True)
+    along = np.cumsum(np.sum(np.diff(points, axis=1) * tangents, axis=2), axis=1)
+    return float((np.maximum.accumulate(along, axis=1) - along).max())
+
+
+def test_the_fold_guard_shrinks_folds_at_a_tight_bend(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    corner = np.array([[-25.0, -15, 0], [15, -15, 0], [15, 25, 0]])
+    geometry = BundleGeometry(
+        corner, num_streamlines=2000, radius=10.0, num_points=400, seed=1
+    )
+    guarded = create_bundle(geometry).points.reshape(2000, 400, 3).astype(np.float64)
+    assert _deepest_fold(guarded, corner) < 0.1
+    # Held back, and so still within the bundle's radius of the centreline.
+    centreline, _ = centreline_spline(corner)
+    tree = cKDTree(centreline(np.linspace(0, 1, 20000)))
+    assert tree.query(guarded[::4].reshape(-1, 3))[0].max() <= 10.0 + 1e-3
+    monkeypatch.setattr(bundles, "FOLD_LIMIT", 1e6)
+    unguarded = create_bundle(geometry).points.reshape(2000, 400, 3).astype(np.float64)
+    assert _deepest_fold(unguarded, corner) > 1.0
+
+
+def test_squeezing_stays_inside_the_limit_and_keeps_the_streamlines_in_order() -> None:
+    reach = np.linspace(-20.0, 20.0, 401)
+    offsets = np.stack([np.ones(401), reach, np.zeros(401)], axis=1)[:, None]
+    towards, limit = np.array([[0.0, 1.0, 0.0]]), np.array([5.0])
+    squeezed = _squeeze_inside_bends(offsets, towards, limit)[:, 0]
+    left_alone = reach <= bundles.FOLD_KNEE * 5.0
+    np.testing.assert_array_equal(squeezed[left_alone], offsets[left_alone, 0])
+    assert squeezed[:, 1].max() < 5.0
+    assert np.all(np.diff(squeezed[:, 1]) > 0)
+    np.testing.assert_array_equal(squeezed[:, [0, 2]], offsets[:, 0, [0, 2]])
+
+
+@pytest.mark.parametrize("num_points", [100, 400])
+def test_a_bends_limit_follows_its_radius_at_any_number_of_points(
+    num_points: int,
+) -> None:
+    centreline, _ = centreline_spline(_quarter_circle(20.0))
+    u = np.linspace(0, 1, num_points)
+    tangents = centreline.derivative()(u)
+    tangents /= np.linalg.norm(tangents, axis=1, keepdims=True)
+    towards, limit = _bend_limits(tangents, centreline.length / (num_points - 1))
+    middle = num_points // 2
+    assert limit[middle] == pytest.approx(bundles.FOLD_LIMIT * 20.0, rel=0.07)
+    to_centre = -centreline(u)[middle] / 20.0
+    np.testing.assert_allclose(towards[middle], to_centre, atol=0.02)
 
 
 def test_dispersion_wanders_inside_and_not_at_the_ends() -> None:

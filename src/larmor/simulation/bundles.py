@@ -12,6 +12,13 @@ from larmor.types import Tractogram
 # A bundle's radius, in standard deviations of the Gaussian across it.
 EDGE_SD = 2.5
 
+# How far a streamline may go towards a bend's centre, as a share of the bend's radius.
+FOLD_LIMIT = 0.85
+# The share of that limit up to which a streamline is left where it is.
+FOLD_KNEE = 0.6
+# How far a bend is averaged on each side of a point, as a share of the centreline.
+FOLD_WINDOW = 0.03
+
 
 @dataclass(frozen=True, eq=False)
 class BundleGeometry:
@@ -25,6 +32,10 @@ class BundleGeometry:
     1 + fan_start (1 - u)^p + fan_end u^p, where u in [0, 1] is the position
     along the centreline and p is fan_sharpness. A smooth random wander of
     standard deviation `dispersion`, zero at both ends, is added along the way.
+    Streamlines on the inside of a bend whose radius is below about twice the
+    bundle's are held back, so they squeeze together and fold far less, though
+    they can still turn sharply. A corner that turns within a few per cent of the
+    centreline's length folds as it would without this.
 
     Args:
         control_points: (K, 3) points the centreline passes through, K >= 2, in
@@ -248,6 +259,8 @@ def create_bundle(geometry: BundleGeometry, *, index: int = 0) -> Tractogram:
         wander[[0, -1]] = 0.0
         place += np.moveaxis(PchipInterpolator(u_control, wander, axis=0)(u), 0, 1)
     offsets = place[..., :1] * normals[None] + place[..., 1:] * binormals[None]
+    step = centreline.length / (geometry.num_points - 1)
+    offsets = _squeeze_inside_bends(offsets, *_bend_limits(tangents, step))
     points = (centre[None] + offsets).reshape(-1, 3)  # (S * num_points, 3)
     offsets_index = np.arange(num + 1, dtype=np.int64) * geometry.num_points
     return Tractogram(
@@ -277,6 +290,57 @@ def _gaussian_places(rng: np.random.Generator, count: int) -> np.ndarray:
         [np.cos(angle), np.sin(angle)], axis=1
     )
     return places
+
+
+def _bend_limits(tangents: np.ndarray, step: float) -> tuple[np.ndarray, np.ndarray]:
+    """Returns the way to each bend's centre, and how far a streamline may go along it.
+
+    Args:
+        tangents: The (N, 3) unit tangents, in order along the curve.
+        step: The distance between neighbouring tangents, mm.
+
+    Returns:
+        The (N, 3) unit directions to the centre of the bend at each point, and
+        the (N,) limits along them in mm.
+    """
+    half = round(FOLD_WINDOW * (len(tangents) - 1))
+    curvature = _moving_mean(np.gradient(tangents, step, axis=0), half)
+    size = np.maximum(np.linalg.norm(curvature, axis=1, keepdims=True), 1e-12)
+    return curvature / size, FOLD_LIMIT / size[:, 0]
+
+
+def _moving_mean(values: np.ndarray, half: int) -> np.ndarray:
+    """Returns the mean of each row and `half` rows on each side, fewer at the ends."""
+    total = np.vstack([np.zeros(values.shape[1]), np.cumsum(values, axis=0)])
+    row = np.arange(len(values))
+    low, high = np.maximum(row - half, 0), np.minimum(row + half + 1, len(values))
+    mean: np.ndarray = (total[high] - total[low]) / (high - low)[:, None]
+    return mean
+
+
+def _squeeze_inside_bends(
+    offsets: np.ndarray, towards: np.ndarray, limit: np.ndarray
+) -> np.ndarray:
+    """Holds streamlines back on the inside of tight bends, so they fold far less.
+
+    A streamline stays where it is up to FOLD_KNEE of the limit. Beyond that it
+    approaches the limit smoothly without reaching it, so streamlines keep their
+    order across the bundle.
+
+    Args:
+        offsets: Each streamline's offset from the centreline, (S, N, 3).
+        towards: The directions to the bends' centres, (N, 3).
+        limit: How far a streamline may go along them, (N,) in mm.
+
+    Returns:
+        The offsets, (S, N, 3).
+    """
+    reach = np.sum(offsets * towards[None], axis=2)
+    past = np.maximum(reach - FOLD_KNEE * limit, 0.0)
+    rest = (1 - FOLD_KNEE) * limit
+    change = -rest * np.expm1(-past / rest) - past
+    result: np.ndarray = offsets + change[..., None] * towards[None]
+    return result
 
 
 def _transported_frames(tangents: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
