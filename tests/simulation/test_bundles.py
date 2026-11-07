@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 import numpy as np
 import pytest
@@ -316,6 +317,117 @@ def test_rings_round_trip_through_plain_values() -> None:
     assert read.rings is not None
     np.testing.assert_array_equal(read.rings, rings)
     assert "rings" not in BundleGeometry(STRAIGHT).to_dict()
+
+
+def _places(geometry: BundleGeometry) -> np.ndarray:
+    """Returns the streamlines of a straight bundle along x, (S, N, 2) across it."""
+    points = create_bundle(geometry).points.astype(np.float64)
+    return points.reshape(geometry.num_streamlines, geometry.num_points, 3)[..., 1:]
+
+
+def test_a_tangle_slides_a_streamline_between_its_two_places() -> None:
+    # The points are 0.5 mm apart, so a slide of 10 mm takes 20 of them.
+    geometry = BundleGeometry(
+        np.array([[0.0, 0, 0], [40, 0, 0]]),
+        num_streamlines=5000,
+        radius=3.0,
+        num_points=81,
+        seed=1,
+        tangle_mm=10.0,
+    )
+    places = _places(geometry)
+    plain = BundleGeometry(
+        geometry.control_points,
+        num_streamlines=5000,
+        radius=3.0,
+        num_points=81,
+        seed=1,
+    )
+    # It starts where the untangled one stays, and is opposite after two slides.
+    np.testing.assert_allclose(places[:, 0], _places(plain)[:, 0], atol=1e-4)
+    np.testing.assert_allclose(places[:, 40], -places[:, 0], atol=1e-4)
+    # After one slide it is somewhere unrelated.
+    assert abs(np.corrcoef(places[:, 0, 0], places[:, 20, 0])[0, 1]) < 0.05
+
+
+@pytest.mark.parametrize(
+    ("shape", "first", "second"),
+    [
+        ({"radius": 3.0}, 3.0, 3.0),
+        ({"rings": np.array([[0.0, 8, 2, 0], [1.0, 8, 2, 0]])}, 2.0, 8.0),
+    ],
+    ids=["round", "flat"],
+)
+def test_a_tangle_keeps_the_spread_and_only_some_streamlines_pass_the_edge(
+    shape: dict[str, Any], first: float, second: float
+) -> None:
+    geometry = BundleGeometry(
+        STRAIGHT, num_streamlines=20000, seed=1, tangle_mm=20.0, **shape
+    )
+    places = _places(geometry)
+    sizes = np.array([first, second])
+    np.testing.assert_allclose(places.std(axis=0) / sizes, CUT_SD, rtol=0.02)
+    shares = np.linalg.norm(places / sizes, axis=2)
+    assert shares[:, 0].max() <= 1.0 + 1e-4
+    assert np.mean(shares > 1 + 1e-4, axis=0).max() == pytest.approx(0.02, abs=0.005)
+    assert shares.max() <= np.sqrt(2) + 1e-4
+
+
+def test_a_tangle_tilts_streamlines_by_radius_over_tangle() -> None:
+    geometry = BundleGeometry(
+        np.array([[0.0, 0, 0], [40, 0, 0]]),
+        num_streamlines=2000,
+        radius=3.0,
+        num_points=400,
+        seed=1,
+        tangle_mm=10.0,
+    )
+    points = create_bundle(geometry).points.astype(np.float64).reshape(2000, 400, 3)
+    steps = np.diff(points, axis=1)
+    tilt = np.degrees(np.arctan2(np.hypot(steps[..., 1], steps[..., 2]), steps[..., 0]))
+    assert tilt.mean() == pytest.approx(40 * 3.0 / 10.0, abs=1.0)
+
+
+def test_the_fold_guard_shrinks_the_folds_of_a_tangled_bundle(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    corner = np.array([[-25.0, -15, 0], [15, -15, 0], [15, 25, 0]])
+    geometry = BundleGeometry(
+        corner, num_streamlines=2000, radius=12.0, seed=1, tangle_mm=15.0
+    )
+
+    def fold() -> float:
+        points = create_bundle(geometry).points.astype(np.float64)
+        return _deepest_fold(points.reshape(2000, 100, 3), corner)
+
+    guarded = fold()
+    monkeypatch.setattr(bundles, "FOLD_LIMIT", 1e6)
+    assert fold() > 5 * guarded
+
+
+def test_a_tangle_too_short_for_the_points_is_refused() -> None:
+    ends = np.array([[0.0, 0, 0], [99.0, 0, 0]])  # points 1 mm apart
+    create_bundle(BundleGeometry(ends, num_streamlines=2, seed=1, tangle_mm=2.0))
+    # Exactly twice the spacing, on a length where the spacing rounds unevenly.
+    other = np.array([[0.0, 0, 0], [40.0, 0, 0]])
+    limit = 2 * 40.0 / 99
+    create_bundle(BundleGeometry(other, num_streamlines=2, seed=1, tangle_mm=limit))
+    with pytest.raises(ValueError, match="too short"):
+        create_bundle(BundleGeometry(ends, num_streamlines=2, seed=1, tangle_mm=1.9))
+    with pytest.raises(ValueError, match="too short"):
+        create_bundle(BundleGeometry(ends, num_streamlines=2, seed=1, tangle_mm=0.25))
+
+
+@pytest.mark.parametrize("tangle_mm", [-1.0, float("nan"), float("inf")])
+def test_a_bad_tangle_is_refused(tangle_mm: float) -> None:
+    with pytest.raises(ValueError, match="tangle_mm"):
+        BundleGeometry(STRAIGHT, tangle_mm=tangle_mm)
+
+
+def test_a_tangle_round_trips_through_plain_values_and_is_left_out_when_off() -> None:
+    values = BundleGeometry(STRAIGHT, seed=1, tangle_mm=12.5).to_dict()
+    assert BundleGeometry.from_dict(json.loads(json.dumps(values))).tangle_mm == 12.5
+    assert "tangle_mm" not in BundleGeometry(STRAIGHT, tangle_mm=0.0).to_dict()
 
 
 def test_dispersion_wanders_inside_and_not_at_the_ends() -> None:

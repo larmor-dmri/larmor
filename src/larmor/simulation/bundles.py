@@ -19,6 +19,9 @@ FOLD_KNEE = 0.6
 # How far a bend is averaged on each side of a point, as a share of the centreline.
 FOLD_WINDOW = 0.03
 
+# The shortest tangle, in spacings of a streamline's points.
+MIN_TANGLE_SPACINGS = 2.0
+
 
 @dataclass(frozen=True, eq=False)
 class BundleGeometry:
@@ -65,11 +68,22 @@ class BundleGeometry:
             crossed with the x axis, or the y axis if the tangent is near x.
             Between rows each value follows a monotone curve, so it stays between
             its neighbours. Defaults to None.
+        tangle_mm: The distance along the centreline over which each streamline
+            slides from one place across the bundle to another, in mm; 0 for none.
+            The slide is a regular wave, so the section repeats every 4 tangle_mm.
+            The spread across the bundle keeps its standard deviation, but halfway
+            through a slide about 2% of the streamlines pass the edge, by up to
+            about a third of the radius. A tube's fill does not change. A straight
+            round bundle's streamlines lie about 40 radius / tangle_mm degrees from
+            the centreline on average, up to about 25 degrees, and they turn
+            sharply at each point below about 2 sqrt(spacing radius), where
+            spacing is the distance between points. Defaults to 0.0.
 
     Raises:
         ValueError: If the control points are not (K, 3) finite values with
             K >= 2, a count or size is out of range, the rings are not as
-            described above, or the rings come with a non-zero fan.
+            described above, the rings come with a non-zero fan, or tangle_mm is
+            negative or not finite.
     """
 
     control_points: np.ndarray
@@ -82,6 +96,7 @@ class BundleGeometry:
     dispersion: float = 0.0
     seed: int | None = field(default=None)
     rings: np.ndarray | None = None
+    tangle_mm: float = 0.0
 
     def __post_init__(self) -> None:
         """Checks the values and makes the control points a read-only array."""
@@ -107,6 +122,8 @@ class BundleGeometry:
             if self.fan_start != 0 or self.fan_end != 0:
                 raise ValueError("A bundle takes rings or a fan, not both.")
             object.__setattr__(self, "rings", _checked_rings(self.rings))
+        if not (math.isfinite(self.tangle_mm) and self.tangle_mm >= 0):
+            raise ValueError("tangle_mm must be finite and >= 0.")
 
     @property
     def is_tube(self) -> bool:
@@ -117,8 +134,8 @@ class BundleGeometry:
         """Returns the geometry as plain values that can be saved as JSON.
 
         Returns:
-            A dict of the fields, with the control points and rings as lists, and
-            without the rings if there are none.
+            A dict of the fields, with the control points and rings as lists,
+            without the rings if there are none and the tangle if it is 0.
         """
         values: dict[str, object] = {
             name: getattr(self, name) for name in self.__dataclass_fields__
@@ -128,6 +145,8 @@ class BundleGeometry:
             del values["rings"]
         else:
             values["rings"] = self.rings.tolist()
+        if self.tangle_mm == 0:
+            del values["tangle_mm"]
         return values
 
     @classmethod
@@ -279,6 +298,9 @@ def create_bundle(geometry: BundleGeometry, *, index: int = 0) -> Tractogram:
     Returns:
         A tractogram of num_streamlines streamlines of num_points points each, in
         world coordinates (mm).
+
+    Raises:
+        ValueError: If tangle_mm is under twice the spacing of the points.
     """
     rng = np.random.default_rng(geometry.seed)
     centreline, u_control = centreline_spline(geometry.control_points)
@@ -289,12 +311,12 @@ def create_bundle(geometry: BundleGeometry, *, index: int = 0) -> Tractogram:
     normals, binormals = _transported_frames(tangents)
 
     num = geometry.num_streamlines
-    shares = _gaussian_places(rng, num)
+    shares = _places_along(rng, num, u * centreline.length, geometry.tangle_mm)
     # Each streamline's place across the bundle, (S, N, 2) in the frames' coordinates.
     if geometry.rings is None:
         p = geometry.fan_sharpness
         fan = 1 + geometry.fan_start * (1 - u) ** p + geometry.fan_end * u**p
-        place = fan[None, :, None] * (geometry.radius * shares)[:, None, :]
+        place = fan[None, :, None] * (geometry.radius * shares)
     else:
         place = _ring_places(geometry.rings, u, shares)
     if geometry.dispersion > 0:
@@ -335,19 +357,56 @@ def _gaussian_places(rng: np.random.Generator, count: int) -> np.ndarray:
     return places
 
 
+def _places_along(
+    rng: np.random.Generator, count: int, distance: np.ndarray, tangle_mm: float
+) -> np.ndarray:
+    """Returns each streamline's place along the bundle, as shares of the radii.
+
+    With a tangle, each streamline slides between two places drawn from the same
+    Gaussian. Without one it keeps its first place, and only that place is drawn.
+
+    Args:
+        rng: The random generator.
+        count: The number of streamlines.
+        distance: The distance along the centreline of each point, (N,) in mm.
+        tangle_mm: The distance of a slide from one place to the other, 0 for none.
+
+    Returns:
+        The places, (S, 1, 2) without a tangle and (S, N, 2) with one.
+
+    Raises:
+        ValueError: If the tangle is too short for the spacing of the points, which
+            cannot show the slide: streamlines would zigzag or not move at all.
+    """
+    first = _gaussian_places(rng, count)[:, None]
+    if tangle_mm == 0:
+        return first
+    least = MIN_TANGLE_SPACINGS * (distance[1] - distance[0])
+    # The margin lets through a value of exactly the limit, whatever the rounding.
+    if tangle_mm < least * (1 - 1e-9):
+        raise ValueError(
+            f"A tangle_mm of {tangle_mm:g} is too short for this bundle's points; "
+            f"give it at least {least:.3g} mm or more num_points."
+        )
+    phi = (np.pi / 2) * distance / tangle_mm
+    second = _gaussian_places(rng, count)[:, None]
+    places: np.ndarray = first * np.cos(phi)[:, None] + second * np.sin(phi)[:, None]
+    return places
+
+
 def _ring_places(rings: np.ndarray, u: np.ndarray, shares: np.ndarray) -> np.ndarray:
     """Returns each streamline's place across the bundle, from the rings.
 
     Args:
         rings: The rings, (R, 4).
         u: The positions along the centreline, (N,).
-        shares: Each streamline's place as shares of the two radii, (S, 2).
+        shares: Each streamline's place as shares of the two radii, (S, 1 or N, 2).
 
     Returns:
         The places in mm in the frames' coordinates, (S, N, 2).
     """
     r1, r2, angle = PchipInterpolator(rings[:, 0], rings[:, 1:], axis=0)(u).T
-    first, second = shares[:, :1] * r1, shares[:, 1:] * r2
+    first, second = shares[..., 0] * r1, shares[..., 1] * r2
     cosine, sine = np.cos(np.radians(angle)), np.sin(np.radians(angle))
     return np.stack(
         [first * cosine - second * sine, first * sine + second * cosine], axis=-1
