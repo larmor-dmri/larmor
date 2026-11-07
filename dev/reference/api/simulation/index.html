@@ -697,11 +697,11 @@
 streamlines give the fibre directions there. The share of a voxel that a
 bundle fills is its occupancy, between 0 and 1. A bundle drawn from a
 geometry of one radius fills each voxel by the share of the voxel inside its
-tube. A tractogram, a geometry with a fan, or a geometry with a
+tube. A tractogram, a geometry with a fan or rings, or a geometry with a
 <code class="xref py py-obj docutils literal notranslate"><span class="pre">streamline_area</span></code> fills each voxel with L a / V, capped at 1, where L is the
 length of its streamlines in the voxel (mm), a the cross-section each
-streamline stands for (mm^2) and V the voxel volume (mm^3). A fan keeps its
-streamlines as it widens, so it thins out towards its wide end.</p>
+streamline stands for (mm^2) and V the voxel volume (mm^3). A fan or a ring
+keeps its streamlines as it widens, so the bundle thins out where it is wide.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -752,7 +752,7 @@ the streamlines drawn from a geometry. Defaults to 0.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="larmor.simulation.BundleGeometry">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.simulation.</span></span><span class="sig-name descname"><span class="pre">BundleGeometry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">control_points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_streamlines</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fan_start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fan_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fan_sharpness</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dispersion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.BundleGeometry" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.simulation.</span></span><span class="sig-name descname"><span class="pre">BundleGeometry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">control_points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_streamlines</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fan_start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fan_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fan_sharpness</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dispersion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.BundleGeometry" title="Link to this definition">#</a></dt>
 <dd><p>The shape of a synthetic bundle.</p>
 <p>A geometry describes a bundle by a few control points along its centreline,
 a radius, and how much the bundle fans out at its ends. Each streamline
@@ -765,7 +765,9 @@ standard deviation <code class="xref py py-obj docutils literal notranslate"><sp
 Streamlines on the inside of a bend whose radius is below about twice the
 bundle’s are held back, so they squeeze together and fold far less, though
 they can still turn sharply. A corner that turns within a few per cent of the
-centreline’s length folds as it would without this.</p>
+centreline’s length folds as it would without this. Rings set the section
+along the bundle instead of the radius and fan, so that it can widen, flatten
+and turn. A bundle with rings fills by streamline length, not as a tube.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -785,11 +787,21 @@ keeps it nearer the ends. Defaults to 2.0.</p></li>
 <li><p><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><em>None</em>) – The seed of the random offsets and wander, so that the same seed
 gives the same streamlines; None draws new ones each time. Defaults
 to None.</p></li>
+<li><p><strong>rings</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a><em> | </em><em>None</em>) – (R, 4) rows of u, r1, r2 and angle, which replace <code class="xref py py-obj docutils literal notranslate"><span class="pre">radius</span></code> for the
+bundle’s shape. u is the position along the centreline, rising from 0
+in the first row to 1 in the last. r1 and r2 are the section’s two
+radii in mm. angle turns r1, in degrees and right-handed about the
+tangent, away from the normal of the frame carried along the
+centreline without twist, whose first normal is the first tangent
+crossed with the x axis, or the y axis if the tangent is near x.
+Between rows each value follows a monotone curve, so it stays between
+its neighbours. Defaults to None.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the control points are not (K, 3) finite values with
-    K &gt;= 2, or a count or size is out of range.</p>
+    K &gt;= 2, a count or size is out of range, the rings are not as
+    described above, or the rings come with a non-zero fan.</p>
 </dd>
 </dl>
 <dl class="py property">
@@ -804,7 +816,8 @@ to None.</p></li>
 <dd><p>Returns the geometry as plain values that can be saved as JSON.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>A dict of the fields, with the control points as lists.</p>
+<dd class="field-odd"><p>A dict of the fields, with the control points and rings as lists, and
+without the rings if there are none.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)">object</a>]</p>

@@ -625,8 +625,8 @@ only. Other tissues can also fill tissue maps and the background.</p>
 <li><p><strong>Bundles.</strong> A bundle’s shape is a <a class="reference internal" href="../../reference/api/simulation/#larmor.simulation.BundleGeometry" title="larmor.simulation.BundleGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">BundleGeometry</span></code></a> or a tractogram of your own,
 such as one from <code class="docutils literal notranslate"><span class="pre">load_tractogram</span></code>. The fraction of a voxel that a bundle fills is its occupancy. A geometry of
 one radius fills each voxel by the share of the voxel inside its tube, however dense its streamlines are there. In
-a tractogram, a geometry with a fan, or a geometry given a <code class="docutils literal notranslate"><span class="pre">streamline_area</span></code>, each streamline stands for a piece of
-the bundle’s cross-section, so the occupancy follows the length of streamline in the voxel. Without a
+a tractogram, a geometry with a fan or rings, or a geometry given a <code class="docutils literal notranslate"><span class="pre">streamline_area</span></code>, each streamline stands for a
+piece of the bundle’s cross-section, so the occupancy follows the length of streamline in the voxel. Without a
 <code class="docutils literal notranslate"><span class="pre">streamline_area</span></code>, that piece is set so that the bundle’s dense voxels have an occupancy of <code class="docutils literal notranslate"><span class="pre">densest_fill</span></code>, 0.7 by
 default, and a fan thins out where it widens. Where bundles cross and their occupancies add up to more than the
 voxel, they are scaled down to fit.</p></li>
@@ -635,6 +635,28 @@ such as a grey matter probability. The maps share what the bundles leave of each
 <li><p><strong>Background.</strong> What is left after the bundles and maps goes to the tissue named by <code class="docutils literal notranslate"><span class="pre">background</span></code>, or gives no
 signal when there is none.</p></li>
 </ul>
+</section>
+<section id="changing-the-section-along-a-bundle">
+<h2>Changing the section along a bundle<a class="headerlink" href="#changing-the-section-along-a-bundle" title="Link to this heading">#</a></h2>
+<p>A round bundle has one <code class="docutils literal notranslate"><span class="pre">radius</span></code> all along. <code class="docutils literal notranslate"><span class="pre">rings</span></code> set the section along the bundle instead, so that it can widen,
+flatten and turn. Each row holds a position <code class="docutils literal notranslate"><span class="pre">u</span></code> along the centreline, from 0 at the start to 1 at the end, the
+section’s two radii in mm, and the angle of the first radius in degrees. Between rows each value follows a monotone
+curve, so it stays between its neighbours.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ribbon</span> <span class="o">=</span> <span class="n">BundleGeometry</span><span class="p">(</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">3.0</span><span class="p">,</span> <span class="mf">12.0</span><span class="p">,</span> <span class="mf">12.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">21.0</span><span class="p">,</span> <span class="mf">12.0</span><span class="p">,</span> <span class="mf">12.0</span><span class="p">]]),</span>
+    <span class="n">num_streamlines</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">rings</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">6.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">6.0</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span> <span class="mf">45.0</span><span class="p">]]),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The rings replace <code class="docutils literal notranslate"><span class="pre">radius</span></code>, and a bundle cannot have both rings and a fan. The angle is measured in a frame carried
+along the centreline without twist, described in <a class="reference internal" href="../../reference/api/simulation/#larmor.simulation.BundleGeometry" title="larmor.simulation.BundleGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">BundleGeometry</span></code></a>. The density across
+the section is the same Gaussian, stretched to the two radii. A bundle with rings fills by streamline length, so its
+fill falls towards its edges and where it widens. With the default <code class="docutils literal notranslate"><span class="pre">densest_fill</span></code> it fills about a quarter to a third
+of what a tube of the same size does. A <code class="docutils literal notranslate"><span class="pre">streamline_area</span></code> of about 3 pi r^2 / N, for N streamlines of radius r, brings
+that to more than 90%, whatever N is. The viewer does not read rings yet: it opens such a bundle as a round one with
+its <code class="docutils literal notranslate"><span class="pre">radius</span></code>, runs that, and leaves the rings out when it saves.</p>
 </section>
 <section id="the-phantom-file">
 <h2>The phantom file<a class="headerlink" href="#the-phantom-file" title="Link to this heading">#</a></h2>
@@ -864,6 +886,7 @@ of the models are listed in <a class="reference internal" href="../../about/citi
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#building-a-phantom">Building a phantom</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#changing-the-section-along-a-bundle">Changing the section along a bundle</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-phantom-file">The phantom file</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#running-a-phantom-file">Running a phantom file</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-output-folder">The output folder</a></li>
