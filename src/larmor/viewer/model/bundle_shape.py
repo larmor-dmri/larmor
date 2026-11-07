@@ -343,6 +343,31 @@ def smoothstep(x: float) -> float:
     return t * t * (3 - 2 * t)
 
 
+def followed_radius(value: float, was: float, now: float, share: float = 1.0) -> float:
+    """Returns a radius that takes a share of the change of another one.
+
+    It changes in proportion, but never grows by more than the change itself, so a
+    wide section beside a thin one that is widened does not grow many times over.
+
+    Args:
+        value: The radius, mm.
+        was: The other radius before its change, mm, above 0.
+        now: The other radius after it, mm.
+        share: The part of the change this radius takes, from 0 to 1.
+
+    Returns:
+        The radius, mm.
+    """
+    in_proportion = value * (1 + (now / was - 1) * share)
+    return min(in_proportion, value + max(now - was, 0.0) * share)
+
+
+def _nearest_row(rows: Rows, u: float, near: float, low: float) -> list[float] | None:
+    """Returns the row closest to a position, within near and from low on, if any."""
+    close = [r for r in rows if abs(r[0] - u) <= near and r[0] >= low]
+    return min(close, key=lambda r: abs(r[0] - u), default=None)
+
+
 def brush_rows(
     rows: Rows, u: float, reach_u: float, low: float = 0.0
 ) -> tuple[list[float], list[tuple[list[float], float]]]:
@@ -364,7 +389,7 @@ def brush_rows(
     """
     profile = ring_profile(rows)
     near = min(NEAR_ROW, reach_u * 0.3)
-    ring = next((r for r in rows if abs(r[0] - u) <= near and r[0] >= low), None)
+    ring = _nearest_row(rows, u, near, low)
     if ring is None:
         ring = [u, *profile(u)]
         rows.append(ring)
@@ -398,7 +423,7 @@ def ensure_row(rows: Rows, u: float, reach_u: float, low: float = 0.0) -> list[f
     """
     profile = ring_profile(rows)
     near = min(NEAR_ROW, reach_u * 0.3)
-    ring = next((r for r in rows if abs(r[0] - u) <= near and r[0] >= low), None)
+    ring = _nearest_row(rows, u, near, low)
     place = ring[0] if ring is not None else u
     for at in (place - reach_u, place + reach_u):
         if low < at < 1:

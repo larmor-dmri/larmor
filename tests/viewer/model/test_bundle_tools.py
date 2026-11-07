@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from larmor.viewer import BundleEnd, BundleField, Tool, Viewer, ViewKind
-from larmor.viewer.model.bundle_shape import shape_of
+from larmor.viewer.model.bundle_shape import brush_rows, shape_of
 from larmor.viewer.model.bundle_tools import Plane, Pointer
 from larmor.viewer.model.phantom import (
     BundleSettings,
@@ -426,6 +426,52 @@ def test_a_wider_reach_afterwards_is_not_stopped_by_the_first_drag(
     assert _section(viewer, 0.5 + 30 / 140)[0] != pytest.approx(away, abs=0.1)
 
 
+def test_widening_a_thin_place_does_not_blow_up_the_wide_places_nearby(
+    viewer: Viewer,
+) -> None:
+    _straight(viewer)
+    viewer.set_tool(Tool.WIDTH)
+    viewer.bundle_tools.set_option("reach", 20)
+    tool = Driver(viewer)
+    tool.drag([(43.0, -15.0, 0.0), (50.0, -15.0, 0.0)])
+    tool.drag([(43.0, 15.0, 0.0), (50.0, 15.0, 0.0)])
+    tool.drag([(38.0, 0.0, 0.0), (45.0, 0.0, 0.0)], steps=20)
+    waist = _section(viewer, 0.5)[0]
+    assert waist < 0.5
+    rings = _geometry(viewer).rings
+    assert rings is not None
+    widest = max(r[1] for r in rings)
+    grown = 5.0
+    tool.drag([(40.0 + waist, 0.0, 0.0), (40.0 + waist + grown, 0.0, 0.0)])
+    assert _section(viewer, 0.5)[0] > waist + 2
+    rings = _geometry(viewer).rings
+    assert rings is not None
+    assert max(r[1] for r in rings) <= widest + grown + 0.1
+    np.testing.assert_array_equal(
+        np.array(_geometry(viewer).control_points)[:, 0], 40.0
+    )
+
+
+def test_widening_a_flat_section_seen_edge_on_keeps_its_long_axis_in_hand(
+    viewer: Viewer,
+) -> None:
+    item = _straight(viewer).item_id
+    rows = [[0.0, 10.0, 0.5, 0.0], [1.0, 10.0, 0.5, 0.0]]
+    viewer.set_bundle_rings(item, rows)
+    viewer.set_tool(Tool.WIDTH)
+    Driver(viewer).drag([(40.5, 0.0, 0.0), (43.5, 0.0, 0.0)])
+    r1, r2, _ = _section(viewer, 0.5)
+    assert r2 == pytest.approx(3.5, abs=0.2)
+    assert r1 <= 13.1
+
+
+def test_a_stroke_changes_the_row_nearest_the_pointer(viewer: Viewer) -> None:
+    rows = [[0.0, 3.0, 3.0, 0.0], [0.47, 8.0, 8.0, 0.0], [0.51, 2.0, 2.0, 0.0]]
+    rows.append([1.0, 3.0, 3.0, 0.0])
+    ring, _ = brush_rows(rows, 0.5, 0.2)
+    assert ring[0] == 0.51
+
+
 def test_repeated_width_strokes_do_not_grow_the_rings(viewer: Viewer) -> None:
     _straight(viewer)
     viewer.set_tool(Tool.WIDTH)
@@ -495,6 +541,19 @@ def test_bend_moves_the_place_and_not_the_far_end(viewer: Viewer) -> None:
     after = np.array(_geometry(viewer).control_points)
     assert after[:, 0].max() > 45
     np.testing.assert_allclose(after[0], before[0], atol=0.5)
+
+
+def test_the_bend_marks_follow_the_drag(viewer: Viewer) -> None:
+    _straight(viewer)
+    viewer.set_tool(Tool.BEND)
+    tool = Driver(viewer)
+    assert tool.press((40.0, 0.0, 0.0))
+    tool.move((50.0, 0.0, 0.0))
+    [line] = viewer.bundle_tools.overlay().reaches
+    assert line[:, 0].max() == pytest.approx(50.0, abs=1.0)
+    tool.release((50.0, 0.0, 0.0))
+    [line] = viewer.bundle_tools.overlay().reaches
+    assert line[:, 0].max() == pytest.approx(50.0, abs=1.0)
 
 
 def test_bend_at_full_reach_moves_the_whole_bundle(viewer: Viewer) -> None:

@@ -21,6 +21,7 @@ from larmor.viewer.model.bundle_shape import (
     cut,
     ensure_row,
     extended,
+    followed_radius,
     landed,
     prune_rows,
     read_line,
@@ -927,6 +928,13 @@ class _Bend(_PlaceTool):
             self._bend(grab, delta, final=True)
         self.grab = None
 
+    def _place(self) -> tuple[Shape, float] | None:
+        """Returns the bundle as dragged so far, so that the marks move with it."""
+        grab = self.grab
+        if grab is None or grab.made is None:
+            return super()._place()
+        return shape_of(grab.made, grab.shape.stem_points), grab.u
+
     def _reach_slider(self) -> ToolSlider:
         """Returns the slider of the reach, whose top moves the whole bundle."""
         reach = self._reach()
@@ -1039,19 +1047,20 @@ class _Width(_PlaceTool):
         geometry = shape.geometry
         landing, at_end = _landing_at(geometry, ring[0])
         tangent = frame.tangent
-        k = width / max(grab.width, 0.01)
+        seen = max(grab.width, 0.01)
         if self.tools.flat == pointer.shift:  # Round, unless Shift turns Flat round
-            ring[1] *= k
-            ring[2] *= k
+            ring[1] = followed_radius(ring[1], seen, width)
+            ring[2] = followed_radius(ring[2], seen, width)
             if landing is not None:
+                factors = (ring[1] / was[1], ring[2] / was[2])
                 geometry = with_landing(
-                    geometry, at_end, _scaled(landing, tangent, k, k)
+                    geometry, at_end, _scaled(landing, tangent, *factors)
                 )
         else:
             geometry = self._flat(ring, grab, width, geometry, landing, at_end)
         for other, share in others:
-            other[1] *= 1 + (ring[1] / was[1] - 1) * share
-            other[2] *= 1 + (ring[2] / was[2] - 1) * share
+            other[1] = followed_radius(other[1], was[1], ring[1], share)
+            other[2] = followed_radius(other[2], was[2], ring[2], share)
             # A round row can share a new direction without any twist showing.
             round_row = abs(other[1] - other[2]) < 0.05 * max(other[1], other[2])
             if ring[3] != was[3] and round_row:
