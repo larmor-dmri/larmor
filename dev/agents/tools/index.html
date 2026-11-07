@@ -1965,9 +1965,9 @@ drawn.</p></li>
 <li><p><strong>name</strong> – <code class="docutils literal notranslate"><span class="pre">BundleField.TISSUE</span></code> (a tissue’s name), <code class="docutils literal notranslate"><span class="pre">NUM_STREAMLINES</span></code>,
 <code class="docutils literal notranslate"><span class="pre">RADIUS</span></code> (mm), <code class="docutils literal notranslate"><span class="pre">NUM_POINTS</span></code>, <code class="docutils literal notranslate"><span class="pre">FAN_START</span></code>, <code class="docutils literal notranslate"><span class="pre">FAN_END</span></code>,
 <code class="docutils literal notranslate"><span class="pre">FAN_SHARPNESS</span></code>, <code class="docutils literal notranslate"><span class="pre">DISPERSION</span></code> (mm), <code class="docutils literal notranslate"><span class="pre">SEED</span></code>, <code class="docutils literal notranslate"><span class="pre">STREAMLINE_AREA</span></code>
-(mm^2 per streamline, None for the default: the bundle’s
-cross-section shared by its streamlines) or <code class="docutils literal notranslate"><span class="pre">DENSEST_FILL</span></code> (the
-fill of a loaded tractogram’s dense voxels, in (0, 1]).</p></li>
+(mm^2 per streamline, None for the default, set by the tube or by
+the densest fill) or <code class="docutils literal notranslate"><span class="pre">DENSEST_FILL</span></code> (the fill of the dense voxels
+of a loaded tractogram or a fanned bundle, in (0, 1]).</p></li>
 <li><p><strong>value</strong> – The new value.</p></li>
 </ul>
 </dd>

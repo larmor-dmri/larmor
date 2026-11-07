@@ -2757,9 +2757,9 @@ drawn.</p></li>
 <li><p><strong>name</strong> (<a class="reference internal" href="#larmor.viewer.BundleField" title="larmor.viewer.model.phantom.BundleField"><em>BundleField</em></a>) – <a class="reference internal" href="#larmor.viewer.BundleField.TISSUE" title="larmor.viewer.BundleField.TISSUE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BundleField.TISSUE</span></code></a> (a tissue’s name), <code class="xref py py-obj docutils literal notranslate"><span class="pre">NUM_STREAMLINES</span></code>,
 <code class="xref py py-obj docutils literal notranslate"><span class="pre">RADIUS</span></code> (mm), <code class="xref py py-obj docutils literal notranslate"><span class="pre">NUM_POINTS</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">FAN_START</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">FAN_END</span></code>,
 <code class="xref py py-obj docutils literal notranslate"><span class="pre">FAN_SHARPNESS</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">DISPERSION</span></code> (mm), <code class="xref py py-obj docutils literal notranslate"><span class="pre">SEED</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">STREAMLINE_AREA</span></code>
-(mm^2 per streamline, None for the default: the bundle’s
-cross-section shared by its streamlines) or <code class="xref py py-obj docutils literal notranslate"><span class="pre">DENSEST_FILL</span></code> (the
-fill of a loaded tractogram’s dense voxels, in (0, 1]).</p></li>
+(mm^2 per streamline, None for the default, set by the tube or by
+the densest fill) or <code class="xref py py-obj docutils literal notranslate"><span class="pre">DENSEST_FILL</span></code> (the fill of the dense voxels
+of a loaded tractogram or a fanned bundle, in (0, 1]).</p></li>
 <li><p><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><em>object</em></a>) – The new value.</p></li>
 </ul>
 </dd>

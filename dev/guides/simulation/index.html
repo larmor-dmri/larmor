@@ -623,11 +623,13 @@ on a fibre direction, which only a bundle gives, so a tissue with one of these c
 only. Other tissues can also fill tissue maps and the background.</p>
 </li>
 <li><p><strong>Bundles.</strong> A bundle’s shape is a <a class="reference internal" href="../../reference/api/simulation/#larmor.simulation.BundleGeometry" title="larmor.simulation.BundleGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">BundleGeometry</span></code></a> or a tractogram of your own,
-such as one from <code class="docutils literal notranslate"><span class="pre">load_tractogram</span></code>. The fraction of a voxel that a bundle fills is its occupancy. A geometry
-fills each voxel by the share of the voxel inside its tube, however dense its streamlines are there. In a
-tractogram, or a geometry given a <code class="docutils literal notranslate"><span class="pre">streamline_area</span></code>, each streamline stands for a piece of the bundle’s
-cross-section, so the occupancy follows the length of streamline in the voxel. Where bundles cross and their
-occupancies add up to more than the voxel, they are scaled down to fit.</p></li>
+such as one from <code class="docutils literal notranslate"><span class="pre">load_tractogram</span></code>. The fraction of a voxel that a bundle fills is its occupancy. A geometry of
+one radius fills each voxel by the share of the voxel inside its tube, however dense its streamlines are there. In
+a tractogram, a geometry with a fan, or a geometry given a <code class="docutils literal notranslate"><span class="pre">streamline_area</span></code>, each streamline stands for a piece of
+the bundle’s cross-section, so the occupancy follows the length of streamline in the voxel. Without a
+<code class="docutils literal notranslate"><span class="pre">streamline_area</span></code>, that piece is set so that the bundle’s dense voxels have an occupancy of <code class="docutils literal notranslate"><span class="pre">densest_fill</span></code>, 0.7 by
+default, and a fan thins out where it widens. Where bundles cross and their occupancies add up to more than the
+voxel, they are scaled down to fit.</p></li>
 <li><p><strong>Tissue maps.</strong> A <a class="reference internal" href="../../reference/api/simulation/#larmor.simulation.TissueMap" title="larmor.simulation.TissueMap"><code class="xref py py-class docutils literal notranslate"><span class="pre">TissueMap</span></code></a> is a volume of fractions in [0, 1] on the grid,
 such as a grey matter probability. The maps share what the bundles leave of each voxel.</p></li>
 <li><p><strong>Background.</strong> What is left after the bundles and maps goes to the tissue named by <code class="docutils literal notranslate"><span class="pre">background</span></code>, or gives no

@@ -696,11 +696,12 @@
 <p>A bundle places its tissue in the voxels it passes through, and its
 streamlines give the fibre directions there. The share of a voxel that a
 bundle fills is its occupancy, between 0 and 1. A bundle drawn from a
-geometry fills each voxel by the share of the voxel inside its tube. A
-tractogram, or a geometry with a <code class="xref py py-obj docutils literal notranslate"><span class="pre">streamline_area</span></code>, fills each voxel with
-L a / V, capped at 1, where L is the length of its streamlines in the voxel
-(mm), a the cross-section each streamline stands for (mm^2) and V the voxel
-volume (mm^3).</p>
+geometry of one radius fills each voxel by the share of the voxel inside its
+tube. A tractogram, a geometry with a fan, or a geometry with a
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">streamline_area</span></code> fills each voxel with L a / V, capped at 1, where L is the
+length of its streamlines in the voxel (mm), a the cross-section each
+streamline stands for (mm^2) and V the voxel volume (mm^3). A fan keeps its
+streamlines as it widens, so it thins out towards its wide end.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -710,22 +711,23 @@ example from <code class="xref py py-obj docutils literal notranslate"><span cla
 <li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a><em> | </em><em>None</em>) – The file a tractogram source was read from; <a class="reference internal" href="#larmor.simulation.write_phantom" title="larmor.simulation.write_phantom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_phantom</span></code></a> stores
 it. Defaults to None.</p></li>
 <li><p><strong>streamline_area</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>) – The cross-section a that each streamline stands for,
-in mm^2. Defaults to None, with which a geometry fills its tube and
-a tractogram gets the value that gives the bundle’s dense voxels an
-occupancy of <code class="xref py py-obj docutils literal notranslate"><span class="pre">densest_fill</span></code>. With a value, a geometry’s occupancy
+in mm^2. Defaults to None, with which a geometry of one radius fills
+its tube, and any other bundle gets the value that gives its dense
+voxels an occupancy of <code class="xref py py-obj docutils literal notranslate"><span class="pre">densest_fill</span></code>. With a value, a geometry’s occupancy
 falls towards its edge, where its streamlines are sparse, and dips at
 random where fewer happen to pass.</p></li>
-<li><p><strong>densest_fill</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The occupancy of a tractogram bundle’s dense voxels when
+<li><p><strong>densest_fill</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The occupancy of the bundle’s dense voxels when
 streamline_area is None, in (0, 1]. A voxel is dense when the
 bundle’s streamline length in it reaches the 95th percentile of that
 length over the voxels the bundle reaches; denser voxels are capped
-at 1. Not used for a geometry. Defaults to 0.7.</p></li>
+at 1. Not used for a geometry of one radius, which fills its tube.
+Defaults to 0.7.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If streamline_area is not positive, densest_fill is not in
-    (0, 1], or a geometry of radius 0 has no streamline_area, so it would
-    fill nothing.</p>
+    (0, 1], or a tube of radius 0 has no streamline_area, so it would fill
+    nothing.</p>
 </dd>
 </dl>
 <dl class="py method">
@@ -786,6 +788,12 @@ to None.</p></li>
     K &gt;= 2, or a count or size is out of range.</p>
 </dd>
 </dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="larmor.simulation.BundleGeometry.is_tube">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">is_tube</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a></span><a class="headerlink" href="#larmor.simulation.BundleGeometry.is_tube" title="Link to this definition">#</a></dt>
+<dd><p>Tells whether the bundle is a round tube of one radius all along.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="larmor.simulation.BundleGeometry.to_dict">
 <span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.BundleGeometry.to_dict" title="Link to this definition">#</a></dt>
@@ -2988,6 +2996,7 @@ random and written, so the file always gives the same streamlines.</p>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.BundleGeometry"><code class="docutils literal notranslate"><span class="pre">BundleGeometry</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.BundleGeometry.is_tube"><code class="docutils literal notranslate"><span class="pre">BundleGeometry.is_tube</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.BundleGeometry.to_dict"><code class="docutils literal notranslate"><span class="pre">BundleGeometry.to_dict()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.BundleGeometry.from_dict"><code class="docutils literal notranslate"><span class="pre">BundleGeometry.from_dict()</span></code></a></li>
 </ul>
