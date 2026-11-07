@@ -753,7 +753,7 @@ the streamlines drawn from a geometry. Defaults to 0.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="larmor.simulation.BundleGeometry">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.simulation.</span></span><span class="sig-name descname"><span class="pre">BundleGeometry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">control_points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_streamlines</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fan_start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fan_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fan_sharpness</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dispersion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.BundleGeometry" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.simulation.</span></span><span class="sig-name descname"><span class="pre">BundleGeometry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">control_points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_streamlines</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fan_start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fan_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fan_sharpness</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dispersion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tangle_mm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.BundleGeometry" title="Link to this definition">#</a></dt>
 <dd><p>The shape of a synthetic bundle.</p>
 <p>A geometry describes a bundle by a few control points along its centreline,
 a radius, and how much the bundle fans out at its ends. Each streamline
@@ -797,12 +797,23 @@ centreline without twist, whose first normal is the first tangent
 crossed with the x axis, or the y axis if the tangent is near x.
 Between rows each value follows a monotone curve, so it stays between
 its neighbours. Defaults to None.</p></li>
+<li><p><strong>tangle_mm</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The distance along the centreline over which each streamline
+slides from one place across the bundle to another, in mm; 0 for none.
+The slide is a regular wave, so the section repeats every 4 tangle_mm.
+The spread across the bundle keeps its standard deviation, but halfway
+through a slide about 2% of the streamlines pass the edge, by up to
+about a third of the radius. A tube’s fill does not change. A straight
+round bundle’s streamlines lie about 40 radius / tangle_mm degrees from
+the centreline on average, up to about 25 degrees, and they turn
+sharply at each point below about 2 sqrt(spacing radius), where
+spacing is the distance between points. Defaults to 0.0.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the control points are not (K, 3) finite values with
     K &gt;= 2, a count or size is out of range, the rings are not as
-    described above, or the rings come with a non-zero fan.</p>
+    described above, the rings come with a non-zero fan, or tangle_mm is
+    negative or not finite.</p>
 </dd>
 </dl>
 <dl class="py property">
@@ -836,8 +847,8 @@ tells the size the bundle mostly has.</p>
 <dd><p>Returns the geometry as plain values that can be saved as JSON.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>A dict of the fields, with the control points and rings as lists, and
-without the rings if there are none.</p>
+<dd class="field-odd"><p>A dict of the fields, with the control points and rings as lists,
+without the rings if there are none and the tangle if it is 0.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)">object</a>]</p>
@@ -2365,8 +2376,11 @@ streamline_data[“bundle”]. Defaults to 0.</p></li>
 <dd class="field-even"><p>A tractogram of num_streamlines streamlines of num_points points each, in
 world coordinates (mm).</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="../types/#larmor.types.Tractogram" title="larmor.types.tractogram.Tractogram"><em>Tractogram</em></a></p>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If tangle_mm is under twice the spacing of the points.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="../types/#larmor.types.Tractogram" title="larmor.types.tractogram.Tractogram"><em>Tractogram</em></a></p>
 </dd>
 </dl>
 </dd></dl>

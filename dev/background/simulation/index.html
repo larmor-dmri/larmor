@@ -679,7 +679,9 @@ centreline’s length is too short for this, and its inner streamlines fold back
 follow a Gaussian around the centreline, cut at the bundle’s radius, which is 2.5 standard deviations. Fanning widens
 the bundle towards the ends, so the same streamlines spread over a larger section and fill less of each voxel there,
 and dispersion adds a smooth random wander that is zero at both ends. Rings set the section along the bundle instead
-of the radius and the fan, as two radii and an angle, with the same Gaussian stretched to fit.</p>
+of the radius and the fan, as two radii and an angle, with the same Gaussian stretched to fit. A tangle makes each
+streamline slide between two places across the bundle as it goes, which keeps the standard deviation of the spread but
+lets a few streamlines pass the edge halfway through a slide, and tilts the streamlines away from the centreline.</p>
 </section>
 <section id="tissues-in-a-voxel">
 <h2>Tissues in a voxel<a class="headerlink" href="#tissues-in-a-voxel" title="Link to this heading">#</a></h2>

@@ -663,6 +663,29 @@ makes the whole bundle sparser. <code class="docutils literal notranslate"><span
 <p>The viewer does not read rings yet: it opens such a bundle as a round one with its <code class="docutils literal notranslate"><span class="pre">radius</span></code>, runs that, and leaves the
 rings out when it saves.</p>
 </section>
+<section id="tangling-a-bundle">
+<h2>Tangling a bundle<a class="headerlink" href="#tangling-a-bundle" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">tangle_mm</span></code> makes the streamlines lose their places across the bundle. Each one slides between two places drawn from
+the same Gaussian, reaching the second after <code class="docutils literal notranslate"><span class="pre">tangle_mm</span></code> mm along the centreline, so that a value of 10 means a
+streamline has moved to an unrelated place every 10 mm. It works with a plain radius, a fan or rings. The slide is a
+regular wave, not a random walk: all streamlines share one wavelength of 4 <code class="docutils literal notranslate"><span class="pre">tangle_mm</span></code>, and the whole section repeats
+after that distance.</p>
+<p>The spread across the bundle keeps its standard deviation, but halfway through a slide about 2% of the streamlines
+pass the edge, by up to about a third of the radius. A bundle of one radius still fills its tube, exactly as without
+a tangle. A bundle that fills by streamline length fills up to about 5% more, as the streamlines are longer and reach
+further.</p>
+<p>What matters is the bundle’s radius against <code class="docutils literal notranslate"><span class="pre">tangle_mm</span></code>. In a straight round bundle, the streamlines lie about 40
+radius / <code class="docutils literal notranslate"><span class="pre">tangle_mm</span></code> degrees from the centreline on average, up to about 25 degrees. In a test with the default white
+matter, with no noise, a radius / <code class="docutils literal notranslate"><span class="pre">tangle_mm</span></code> of 0.15 lowers the FA from 0.86 to 0.85, 0.3 to 0.83, 0.6 to 0.72 and
+1.2 to 0.37. How well a crossing is resolved depends strongly on the response. At 90 degrees and SNR 30, with a
+response estimated from an equally tangled bundle, 99% of the voxels show exactly two peaks up to a ratio of 0.4, 92%
+at 0.6 and 65% at 0.86. With a response from an untangled bundle that is 68% at 0.4 and 2% at 0.6.</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">tangle_mm</span></code> under twice the distance between a streamline’s points is refused, because the points cannot show the
+slide. Above that, streamlines turn sharply at each point below about 2 sqrt(spacing radius), where spacing is that
+distance, and more <code class="docutils literal notranslate"><span class="pre">num_points</span></code> cures this. A tangle shorter than the radius makes streamlines more than a quarter
+longer than the centreline. The viewer does not read a tangle yet: it opens such a bundle without one, runs that, and
+leaves it out when it saves.</p>
+</section>
 <section id="the-phantom-file">
 <h2>The phantom file<a class="headerlink" href="#the-phantom-file" title="Link to this heading">#</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">write_phantom</span></code> stores the grid, the tissues, the bundles (their geometry, or the path of their tractogram), the
@@ -892,6 +915,7 @@ of the models are listed in <a class="reference internal" href="../../about/citi
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#building-a-phantom">Building a phantom</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#changing-the-section-along-a-bundle">Changing the section along a bundle</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tangling-a-bundle">Tangling a bundle</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-phantom-file">The phantom file</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#running-a-phantom-file">Running a phantom file</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-output-folder">The output folder</a></li>
