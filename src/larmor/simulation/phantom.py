@@ -32,11 +32,11 @@ class Bundle:
     streamlines give the fibre directions there. The share of a voxel that a
     bundle fills is its occupancy, between 0 and 1. A bundle drawn from a
     geometry of one radius fills each voxel by the share of the voxel inside its
-    tube. A tractogram, a geometry with a fan, or a geometry with a
+    tube. A tractogram, a geometry with a fan or rings, or a geometry with a
     `streamline_area` fills each voxel with L a / V, capped at 1, where L is the
     length of its streamlines in the voxel (mm), a the cross-section each
-    streamline stands for (mm^2) and V the voxel volume (mm^3). A fan keeps its
-    streamlines as it widens, so it thins out towards its wide end.
+    streamline stands for (mm^2) and V the voxel volume (mm^3). A fan or a ring
+    keeps its streamlines as it widens, so the bundle thins out where it is wide.
 
     Args:
         source: A geometry to draw the streamlines from, or a tractogram (for

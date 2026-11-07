@@ -116,18 +116,19 @@ their folds much smaller, although they can still turn sharply there. A corner t
 centreline's length is too short for this, and its inner streamlines fold back as they would otherwise. The offsets
 follow a Gaussian around the centreline, cut at the bundle's radius, which is 2.5 standard deviations. Fanning widens
 the bundle towards the ends, so the same streamlines spread over a larger section and fill less of each voxel there,
-and dispersion adds a smooth random wander that is zero at both ends.
+and dispersion adds a smooth random wander that is zero at both ends. Rings set the section along the bundle instead
+of the radius and the fan, as two radii and an angle, with the same Gaussian stretched to fit.
 
 ## Tissues in a voxel
 
 A voxel is shared between tissues in three steps, and a fraction is never scaled up.
 
 1. Each bundle fills a fraction of the voxel, its occupancy. For a geometry of one radius this is the share of the
-   voxel inside its tube. For a tractogram, a geometry with a fan, or a geometry given a `streamline_area`, it is the
-   length of its streamlines in the voxel times the cross-section each streamline stands for, divided by the voxel's
-   volume, and at most 1. Without a `streamline_area`, the cross-section is set so that the bundle's dense voxels
-   have an occupancy of `densest_fill`. Where bundles together fill more than 1, as in a crossing, their occupancies
-   are scaled down to sum to 1.
+   voxel inside its tube. For a tractogram, a geometry with a fan or rings, or a geometry given a `streamline_area`, it
+   is the length of its streamlines in the voxel times the cross-section each streamline stands for, divided by the
+   voxel's volume, and at most 1. Without a `streamline_area`, the cross-section is set so that the bundle's dense
+   voxels have an occupancy of `densest_fill`. Where bundles together fill more than 1, as in a crossing, their
+   occupancies are scaled down to sum to 1.
 2. The tissue maps share what the bundles leave. Where their values add up to more than that, they are scaled down.
 3. What remains goes to the background tissue, or gives no signal.
 
