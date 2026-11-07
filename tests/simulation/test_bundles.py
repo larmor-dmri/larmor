@@ -1,3 +1,5 @@
+import json
+
 import numpy as np
 import pytest
 from scipy.spatial import cKDTree
@@ -194,6 +196,126 @@ def test_a_bends_limit_follows_its_radius_at_any_number_of_points(
     assert limit[middle] == pytest.approx(bundles.FOLD_LIMIT * 20.0, rel=0.07)
     to_centre = -centreline(u)[middle] / 20.0
     np.testing.assert_allclose(towards[middle], to_centre, atol=0.02)
+
+
+@pytest.mark.parametrize(
+    ("control", "rings"),
+    [
+        (
+            np.array([[-25.0, -15, 0], [15, -15, 0], [15, 25, 0]]),
+            np.array([[0.0, 10, 2, 90], [1.0, 10, 2, 90]]),
+        ),
+        (_quarter_circle(7.0), np.array([[0.0, 14, 2, 90], [1.0, 14, 2, 90]])),
+    ],
+    ids=["three_point_corner", "quarter_circle"],
+)
+def test_the_fold_guard_shrinks_the_folds_of_a_flat_section(
+    control: np.ndarray, rings: np.ndarray, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    geometry = BundleGeometry(control, num_streamlines=2000, seed=1, rings=rings)
+
+    def fold() -> float:
+        points = create_bundle(geometry).points.reshape(2000, 100, 3)
+        return _deepest_fold(points.astype(np.float64), control)
+
+    guarded = fold()
+    monkeypatch.setattr(bundles, "FOLD_LIMIT", 1e6)
+    assert fold() > max(1.0, 5 * guarded)
+
+
+STRAIGHT = np.array([[0.0, 0, 0], [60, 0, 0]])
+# The standard deviation of a Gaussian cut at the radius, as a share of the radius.
+CUT_SD = 0.3702
+
+
+def _along_rings(rings: np.ndarray, num: int = 20000) -> tuple[np.ndarray, np.ndarray]:
+    """Returns the places of a straight bundle's streamlines along r1 and r2.
+
+    The bundle runs along x, where the frame's normal is z and its binormal -y.
+    """
+    geometry = BundleGeometry(STRAIGHT, num_streamlines=num, seed=0, rings=rings)
+    points = create_bundle(geometry).points.reshape(num, 100, 3)
+    return points[..., 2].astype(np.float64), -points[..., 1].astype(np.float64)
+
+
+def test_rings_set_the_width_and_the_density_of_the_section() -> None:
+    rings = np.array(
+        [[0.0, 2, 2, 0], [1 / 3, 8, 2, 0], [2 / 3, 3, 6, 0], [1.0, 5, 5, 0]]
+    )
+    first, second = _along_rings(rings)
+    for row, ring in zip((0, 33, 66, 99), rings, strict=True):
+        for places, radius in ((first, ring[1]), (second, ring[2])):
+            furthest = np.abs(places[:, row]).max()
+            assert 0.97 * radius < furthest <= radius + 1e-4
+            assert places[:, row].std() == pytest.approx(radius * CUT_SD, rel=0.01)
+            inside = np.mean(np.abs(places[:, row]) < 0.4 * radius)
+            assert inside == pytest.approx(0.703, abs=0.01)
+
+
+def test_the_angle_of_a_ring_turns_the_section() -> None:
+    first, second = _along_rings(np.array([[0.0, 6, 2, 0], [1.0, 6, 2, 90]]))
+    for row in (0, 33, 66, 99):
+        vectors = np.linalg.eigh(np.cov(first[:, row], second[:, row]))[1]
+        long_axis = np.degrees(np.arctan2(vectors[1, 1], vectors[0, 1]))
+        assert (long_axis - 90 * row / 99 + 90) % 180 - 90 == pytest.approx(0, abs=1)
+
+
+def test_a_section_stays_between_its_rings_at_a_sudden_change() -> None:
+    rings = np.array(
+        [
+            [0.0, 2, 2, 0],
+            [0.2, 2, 2, 0],
+            [0.25, 10, 2, 0],
+            [0.7, 10, 8, 0],
+            [1.0, 3, 8, 0],
+        ]
+    )
+    first, _ = _along_rings(rings, num=2000)
+    width = np.abs(first).max(axis=0)
+    u = np.linspace(0, 1, 100)
+    assert width.max() <= 10.0 + 1e-4
+    rising, falling = width[u <= 0.25], width[u >= 0.7]
+    assert np.all(np.diff(rising) >= -1e-4) and np.all(np.diff(falling) <= 1e-4)
+
+
+def test_round_rings_of_one_radius_give_the_streamlines_of_that_radius() -> None:
+    control = np.array([[0.0, 0, 0], [10, 2, 0], [20, 0, 0]])
+    rings = np.array([[0.0, 3, 3, 0], [1.0, 3, 3, 0]])
+    ringed = BundleGeometry(control, num_streamlines=50, seed=1, rings=rings)
+    plain = BundleGeometry(control, num_streamlines=50, seed=1, radius=3.0)
+    np.testing.assert_allclose(
+        create_bundle(ringed).points, create_bundle(plain).points, atol=1e-4
+    )
+    assert plain.is_tube and not ringed.is_tube
+
+
+@pytest.mark.parametrize(
+    ("rings", "fan_end", "message"),
+    [
+        ([[0.0, 1, 1, 0], [0.5, 1, 1, 0], [0.4, 1, 1, 0], [1.0, 1, 1, 0]], 0.0, "rise"),
+        ([[0.0, 1, 1, 0], [0.9, 1, 1, 0]], 0.0, "rise"),
+        ([[0.1, 1, 1, 0], [1.0, 1, 1, 0]], 0.0, "rise"),
+        ([[0.0, 1, 1, 0]], 0.0, "rise"),
+        ([[0.0, np.nan, 1, 0], [1.0, 1, 1, 0]], 0.0, "finite"),
+        ([[0.0, 0, 1, 0], [1.0, 1, 1, 0]], 0.0, "positive"),
+        ([[0.0, 1, 1], [1.0, 1, 1]], 0.0, "rows"),
+        ([[0.0, 1, 1, 0], [1.0, 1, 1, 0]], 1.0, "not both"),
+    ],
+)
+def test_bad_rings_are_refused(
+    rings: list[list[float]], fan_end: float, message: str
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        BundleGeometry(STRAIGHT, rings=np.array(rings), fan_end=fan_end)
+
+
+def test_rings_round_trip_through_plain_values() -> None:
+    rings = np.array([[0.0, 2, 2, 0], [0.4, 8, 2, 30], [1.0, 3, 3, 90]])
+    values = BundleGeometry(STRAIGHT, seed=1, rings=rings).to_dict()
+    read = BundleGeometry.from_dict(json.loads(json.dumps(values)))
+    assert read.rings is not None
+    np.testing.assert_array_equal(read.rings, rings)
+    assert "rings" not in BundleGeometry(STRAIGHT).to_dict()
 
 
 def test_dispersion_wanders_inside_and_not_at_the_ends() -> None:

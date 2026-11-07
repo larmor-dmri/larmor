@@ -1,6 +1,7 @@
 import json
 import logging
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pytest
@@ -445,14 +446,24 @@ def test_a_tissue_map_in_another_orientation_keeps_its_world_positions(
     np.testing.assert_array_equal(found, wanted)
 
 
-def test_a_fan_fills_like_a_tractogram_of_its_streamlines() -> None:
+@pytest.mark.parametrize(
+    "shape",
+    [
+        {"radius": 2.0, "fan_end": 2.0},
+        {"rings": np.array([[0.0, 2.0, 2.0, 0.0], [1.0, 6.0, 6.0, 0.0]])},
+    ],
+    ids=["fan", "rings"],
+)
+def test_a_widening_bundle_fills_like_a_tractogram_of_its_streamlines(
+    shape: dict[str, Any],
+) -> None:
     grid = Grid((20, 20, 20), np.eye(4))
     ends = np.array([[-1.0, 10, 10], [21.0, 10, 10]])
-    fan = BundleGeometry(ends, num_streamlines=2000, radius=2.0, fan_end=2.0, seed=0)
+    wide = BundleGeometry(ends, num_streamlines=2000, seed=0, **shape)
     for fill in (0.7, 0.35):
         drawn, given = (
             partition_voxels(Phantom(grid, bundles=(Bundle(s, densest_fill=fill),)))
-            for s in (fan, create_bundle(fan))
+            for s in (wide, create_bundle(wide))
         )
         np.testing.assert_array_equal(drawn.bundle_fractions, given.bundle_fractions)
         np.testing.assert_array_equal(drawn.fibre_weight, given.fibre_weight)
@@ -482,6 +493,26 @@ def test_the_fold_guard_changes_a_fill_only_where_it_follows_the_streamlines(
     monkeypatch.setattr(bundles, "FOLD_LIMIT", 1e6)
     np.testing.assert_array_equal(guarded[0], fill(tube))
     assert not np.array_equal(guarded[1], fill(by_length))
+
+
+def test_rings_are_saved_and_read_back_and_need_no_radius(tmp_path: Path) -> None:
+    rings = np.array(
+        [[0.0, 1.0, 1.0, 0.0], [0.5, 2.0, 1.0, 30.0], [1.0, 1.0, 1.0, 90.0]]
+    )
+    ends = np.array([[-1.0, 3, 3], [7.0, 3, 3]])
+    written = Phantom(
+        GRID, bundles=(Bundle(BundleGeometry(ends, radius=0.0, seed=0, rings=rings)),)
+    )
+    path = tmp_path / "rings.phantom.json"
+    write_phantom(written, path)
+    read = read_phantom(path).phantom
+    source = read.bundles[0].source
+    assert isinstance(source, BundleGeometry) and source.rings is not None
+    np.testing.assert_array_equal(source.rings, rings)
+    np.testing.assert_array_equal(
+        partition_voxels(read).bundle_fractions,
+        partition_voxels(written).bundle_fractions,
+    )
 
 
 def test_a_fan_of_radius_0_fills_the_voxels_of_its_centreline() -> None:

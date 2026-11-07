@@ -35,7 +35,9 @@ class BundleGeometry:
     Streamlines on the inside of a bend whose radius is below about twice the
     bundle's are held back, so they squeeze together and fold far less, though
     they can still turn sharply. A corner that turns within a few per cent of the
-    centreline's length folds as it would without this.
+    centreline's length folds as it would without this. Rings set the section
+    along the bundle instead of the radius and fan, so that it can widen, flatten
+    and turn. A bundle with rings fills by streamline length, not as a tube.
 
     Args:
         control_points: (K, 3) points the centreline passes through, K >= 2, in
@@ -54,10 +56,20 @@ class BundleGeometry:
         seed: The seed of the random offsets and wander, so that the same seed
             gives the same streamlines; None draws new ones each time. Defaults
             to None.
+        rings: (R, 4) rows of u, r1, r2 and angle, which replace `radius` for the
+            bundle's shape. u is the position along the centreline, rising from 0
+            in the first row to 1 in the last. r1 and r2 are the section's two
+            radii in mm. angle turns r1, in degrees and right-handed about the
+            tangent, away from the normal of the frame carried along the
+            centreline without twist, whose first normal is the first tangent
+            crossed with the x axis, or the y axis if the tangent is near x.
+            Between rows each value follows a monotone curve, so it stays between
+            its neighbours. Defaults to None.
 
     Raises:
         ValueError: If the control points are not (K, 3) finite values with
-            K >= 2, or a count or size is out of range.
+            K >= 2, a count or size is out of range, the rings are not as
+            described above, or the rings come with a non-zero fan.
     """
 
     control_points: np.ndarray
@@ -69,6 +81,7 @@ class BundleGeometry:
     fan_sharpness: float = 2.0
     dispersion: float = 0.0
     seed: int | None = field(default=None)
+    rings: np.ndarray | None = None
 
     def __post_init__(self) -> None:
         """Checks the values and makes the control points a read-only array."""
@@ -90,22 +103,31 @@ class BundleGeometry:
             raise ValueError("radius, fans and dispersion must be finite and >= 0.")
         if not self.fan_sharpness > 0:
             raise ValueError("fan_sharpness must be positive.")
+        if self.rings is not None:
+            if self.fan_start != 0 or self.fan_end != 0:
+                raise ValueError("A bundle takes rings or a fan, not both.")
+            object.__setattr__(self, "rings", _checked_rings(self.rings))
 
     @property
     def is_tube(self) -> bool:
         """Tells whether the bundle is a round tube of one radius all along."""
-        return self.fan_start == 0 and self.fan_end == 0
+        return self.rings is None and self.fan_start == 0 and self.fan_end == 0
 
     def to_dict(self) -> dict[str, object]:
         """Returns the geometry as plain values that can be saved as JSON.
 
         Returns:
-            A dict of the fields, with the control points as lists.
+            A dict of the fields, with the control points and rings as lists, and
+            without the rings if there are none.
         """
         values: dict[str, object] = {
             name: getattr(self, name) for name in self.__dataclass_fields__
         }
         values["control_points"] = self.control_points.tolist()
+        if self.rings is None:
+            del values["rings"]
+        else:
+            values["rings"] = self.rings.tolist()
         return values
 
     @classmethod
@@ -124,6 +146,24 @@ class BundleGeometry:
         values = dict(data)
         values["control_points"] = np.asarray(values["control_points"], dtype=float)
         return cls(**values)  # type: ignore[arg-type]
+
+
+def _checked_rings(rings: object) -> np.ndarray:
+    """Returns the rings as a read-only (R, 4) array, or raises ValueError."""
+    array = np.array(rings, dtype=np.float64)
+    if array.ndim != 2 or array.shape[1] != 4:
+        raise ValueError(
+            f"rings must be (R, 4) rows of u, r1, r2 and angle, got {array.shape}."
+        )
+    if not np.all(np.isfinite(array)):
+        raise ValueError("rings must be finite.")
+    u = array[:, 0]
+    if len(u) < 2 or u[0] != 0 or u[-1] != 1 or np.any(np.diff(u) <= 0):
+        raise ValueError("The rings' u must rise from 0 in the first to 1 in the last.")
+    if np.any(array[:, 1:3] <= 0):
+        raise ValueError("The rings' radii must be positive.")
+    array.flags.writeable = False
+    return array
 
 
 # Samples per centreline segment in the table that maps arc length to the curve.
@@ -248,12 +288,15 @@ def create_bundle(geometry: BundleGeometry, *, index: int = 0) -> Tractogram:
     tangents /= np.linalg.norm(tangents, axis=1, keepdims=True)
     normals, binormals = _transported_frames(tangents)
 
-    p = geometry.fan_sharpness
-    fan = 1 + geometry.fan_start * (1 - u) ** p + geometry.fan_end * u**p
     num = geometry.num_streamlines
-    across = geometry.radius * _gaussian_places(rng, num)
+    shares = _gaussian_places(rng, num)
     # Each streamline's place across the bundle, (S, N, 2) in the frames' coordinates.
-    place = fan[None, :, None] * across[:, None, :]
+    if geometry.rings is None:
+        p = geometry.fan_sharpness
+        fan = 1 + geometry.fan_start * (1 - u) ** p + geometry.fan_end * u**p
+        place = fan[None, :, None] * (geometry.radius * shares)[:, None, :]
+    else:
+        place = _ring_places(geometry.rings, u, shares)
     if geometry.dispersion > 0:
         wander = geometry.dispersion * rng.standard_normal((len(u_control), num, 2))
         wander[[0, -1]] = 0.0
@@ -290,6 +333,25 @@ def _gaussian_places(rng: np.random.Generator, count: int) -> np.ndarray:
         [np.cos(angle), np.sin(angle)], axis=1
     )
     return places
+
+
+def _ring_places(rings: np.ndarray, u: np.ndarray, shares: np.ndarray) -> np.ndarray:
+    """Returns each streamline's place across the bundle, from the rings.
+
+    Args:
+        rings: The rings, (R, 4).
+        u: The positions along the centreline, (N,).
+        shares: Each streamline's place as shares of the two radii, (S, 2).
+
+    Returns:
+        The places in mm in the frames' coordinates, (S, N, 2).
+    """
+    r1, r2, angle = PchipInterpolator(rings[:, 0], rings[:, 1:], axis=0)(u).T
+    first, second = shares[:, :1] * r1, shares[:, 1:] * r2
+    cosine, sine = np.cos(np.radians(angle)), np.sin(np.radians(angle))
+    return np.stack(
+        [first * cosine - second * sine, first * sine + second * cosine], axis=-1
+    )
 
 
 def _bend_limits(tangents: np.ndarray, step: float) -> tuple[np.ndarray, np.ndarray]:
