@@ -712,16 +712,17 @@ example from <code class="xref py py-obj docutils literal notranslate"><span cla
 it. Defaults to None.</p></li>
 <li><p><strong>streamline_area</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>) – The cross-section a that each streamline stands for,
 in mm^2. Defaults to None, with which a geometry of one radius fills
-its tube, and any other bundle gets the value that gives its dense
-voxels an occupancy of <code class="xref py py-obj docutils literal notranslate"><span class="pre">densest_fill</span></code>. With a value, a geometry’s occupancy
-falls towards its edge, where its streamlines are sparse, and dips at
-random where fewer happen to pass.</p></li>
+its tube, a geometry with rings gets 3 times its median section
+divided by its number of streamlines, and any other bundle gets the
+value that gives its dense voxels an occupancy of <code class="xref py py-obj docutils literal notranslate"><span class="pre">densest_fill</span></code>. With
+a value, a geometry’s occupancy falls towards its edge, where its
+streamlines are sparse, and dips at random where fewer happen to pass.</p></li>
 <li><p><strong>densest_fill</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The occupancy of the bundle’s dense voxels when
 streamline_area is None, in (0, 1]. A voxel is dense when the
 bundle’s streamline length in it reaches the 95th percentile of that
 length over the voxels the bundle reaches; denser voxels are capped
-at 1. Not used for a geometry of one radius, which fills its tube.
-Defaults to 0.7.</p></li>
+at 1. Not used for a geometry of one radius, which fills its tube, or
+for one with rings. Defaults to 0.7.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
@@ -808,6 +809,25 @@ its neighbours. Defaults to None.</p></li>
 <dt class="sig sig-object py" id="larmor.simulation.BundleGeometry.is_tube">
 <span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">is_tube</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a></span><a class="headerlink" href="#larmor.simulation.BundleGeometry.is_tube" title="Link to this definition">#</a></dt>
 <dd><p>Tells whether the bundle is a round tube of one radius all along.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.simulation.BundleGeometry.median_section">
+<span class="sig-name descname"><span class="pre">median_section</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.BundleGeometry.median_section" title="Link to this definition">#</a></dt>
+<dd><p>Returns the median area of the section the rings set along the bundle.</p>
+<p>A change over less than half of the bundle’s length leaves it alone, so it
+tells the size the bundle mostly has.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The area in mm^2.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the geometry has no rings.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -3014,6 +3034,7 @@ random and written, so the file always gives the same streamlines.</p>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.BundleGeometry"><code class="docutils literal notranslate"><span class="pre">BundleGeometry</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.BundleGeometry.is_tube"><code class="docutils literal notranslate"><span class="pre">BundleGeometry.is_tube</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.BundleGeometry.median_section"><code class="docutils literal notranslate"><span class="pre">BundleGeometry.median_section()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.BundleGeometry.to_dict"><code class="docutils literal notranslate"><span class="pre">BundleGeometry.to_dict()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.BundleGeometry.from_dict"><code class="docutils literal notranslate"><span class="pre">BundleGeometry.from_dict()</span></code></a></li>
 </ul>
