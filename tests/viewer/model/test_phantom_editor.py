@@ -1,6 +1,7 @@
 """The phantom editor through the Viewer's actions, without a window."""
 
 import json
+import math
 import subprocess
 import sys
 import threading
@@ -14,6 +15,7 @@ import larmor.simulation as sim
 from larmor.io import load_volume, save_tractogram
 from larmor.types import Grid, Tractogram, Volume
 from larmor.viewer import (
+    BundleEnd,
     BundleField,
     BvecFrame,
     Category,
@@ -25,12 +27,23 @@ from larmor.viewer import (
     Viewer,
 )
 from larmor.viewer.jobs import SAVING, JobCancelledError, JobRunner, Report
+from larmor.viewer.model.options import TractogramOptions
 from larmor.viewer.model.phantom import (
+    DEFAULT_FULLNESS,
     SIMULATION_FORMAT,
+    TRUE_TUBE_RADII,
+    BundleSettings,
+    GeometrySettings,
+    build_streamlines,
     build_tissue,
+    fullness_of,
+    least_tangle,
     preset_defaults,
     run_simulation,
     simulation_outputs,
+    state_from_json,
+    state_json,
+    true_tube_radius,
 )
 from larmor.viewer.model.shortcuts import Command, run
 from larmor.viewer.phantom_jobs import start_run
@@ -87,7 +100,7 @@ def test_a_saved_phantom_loads_back_the_same(viewer: Viewer, tmp_path: Path) -> 
     assert names == ["Bundle 1", "Bundle 2"]
 
 
-def test_a_file_with_rings_opens_as_a_round_bundle(tmp_path: Path) -> None:
+def test_a_file_with_rings_opens_with_them(tmp_path: Path) -> None:
     rings = np.array([[0.0, 2.0, 2.0, 0.0], [1.0, 6.0, 1.0, 90.0]])
     ends = np.array([[3.0, 12, 12], [21.0, 12, 12]])
     geometry = sim.BundleGeometry(ends, num_streamlines=20, seed=1, rings=rings)
@@ -100,11 +113,55 @@ def test_a_file_with_rings_opens_as_a_round_bundle(tmp_path: Path) -> None:
     state = viewer.phantom
     assert state is not None
     drawn = state.bundles[0].geometry
-    assert drawn is not None and drawn.is_tube
+    assert drawn is not None and drawn.rings is not None
+    np.testing.assert_allclose(drawn.rings, rings)
     assert viewer.check_phantom() == []
 
 
-def test_a_file_with_a_tangle_opens_without_it(tmp_path: Path) -> None:
+def test_a_file_with_a_landing_opens_with_it(tmp_path: Path) -> None:
+    ends = np.array([[3.0, 12, 12], [21.0, 12, 12]])
+    landing = sim.Landing(np.array([[21.0, 4, 12], [21.0, 20, 12]]))
+    geometry = sim.BundleGeometry(ends, num_streamlines=20, seed=1, landing_end=landing)
+    phantom = sim.Phantom(
+        Grid((24, 24, 24), np.eye(4)), bundles=(sim.Bundle(geometry),)
+    )
+    sim.write_phantom(phantom, tmp_path / "landing.phantom.json")
+    viewer = Viewer()
+    viewer.load_phantom(tmp_path / "landing.phantom.json")
+    state = viewer.phantom
+    assert state is not None
+    drawn = state.bundles[0].geometry
+    assert drawn is not None and drawn.landing_end is not None
+    assert drawn.landing_end.line == ((21.0, 4.0, 12.0), (21.0, 20.0, 12.0))
+    assert viewer.check_phantom() == []
+
+
+def test_a_file_with_an_old_fan_and_dispersion_still_opens(tmp_path: Path) -> None:
+    ends = np.array([[3.0, 12, 12], [21.0, 12, 12]])
+    geometry = sim.BundleGeometry(ends, num_streamlines=20, seed=1)
+    phantom = sim.Phantom(
+        Grid((24, 24, 24), np.eye(4)), bundles=(sim.Bundle(geometry),)
+    )
+    path = tmp_path / "old.phantom.json"
+    sim.write_phantom(phantom, path)
+    data = json.loads(path.read_text())
+    data["bundles"][0]["geometry"].update(fan_end=1.0, dispersion=1.0)
+    path.write_text(json.dumps(data))
+    viewer = Viewer()
+    viewer.load_phantom(path)
+    state = viewer.phantom
+    assert state is not None and viewer.check_phantom() == []
+    drawn = state.bundles[0].geometry
+    assert drawn is not None and drawn.rings is not None
+    assert drawn.rings[-1][1] == pytest.approx(4.0)  # the fan's width at the end
+    # A geometry saved in a session by an earlier version converts the same way.
+    old = {"control_points": [[0, 0, 0], [1, 0, 0]], "fan_end": 1.0, "dispersion": 1.0}
+    kept = GeometrySettings.from_json(old)
+    assert kept.rings is not None
+    assert kept.rings[-1][1] == pytest.approx(2 * GeometrySettings().radius)
+
+
+def test_a_file_with_a_tangle_opens_with_it(tmp_path: Path) -> None:
     ends = np.array([[3.0, 12, 12], [21.0, 12, 12]])
     geometry = sim.BundleGeometry(ends, num_streamlines=20, seed=1, tangle_mm=5.0)
     phantom = sim.Phantom(
@@ -116,7 +173,7 @@ def test_a_file_with_a_tangle_opens_without_it(tmp_path: Path) -> None:
     state = viewer.phantom
     assert state is not None
     drawn = state.bundles[0].geometry
-    assert drawn is not None and not hasattr(drawn, "tangle_mm")
+    assert drawn is not None and drawn.tangle_mm == 5.0
     assert viewer.check_phantom() == []
 
 
@@ -679,6 +736,273 @@ def test_a_radius_of_0_is_refused_and_a_tube_too_thin_stops_a_run(
     viewer.set_bundle(bundle, BundleField.RADIUS, 0.05)
     [problem] = viewer.check_phantom()
     assert "too thin" in problem
-    # A fanned bundle has no tube to measure.
-    viewer.set_bundle(bundle, BundleField.FAN_END, 1.0)
+
+
+# The shape's fields: rings, a tangle, landings and branches
+
+
+def _shaped(viewer: Viewer) -> tuple[int, int]:
+    """Gives the first bundle rings, a tangle and two lines, and it a branch."""
+    state = viewer.phantom
+    assert state is not None
+    first, second = (b.item_id for b in state.bundles)
+    rings = [[0.0, 2.0, 2.0, 0.0], [0.5, 3.0, 1.5, 20.0], [1.0, 2.0, 2.0, 20.0]]
+    viewer.set_bundle_rings(first, rings)
+    viewer.set_bundle(first, BundleField.TANGLE_MM, 40.0)
+    viewer.set_bundle_landing(
+        first,
+        BundleEnd.END,
+        [(12.0, -6.0, 0.0), (12.0, 6.0, 0.0)],
+        [(12.0, 0.0, -3.0), (12.0, 0.0, 3.0)],
+        0.6,
+    )
+    viewer.set_bundle_fullness(first, 2.0)
+    return first, second
+
+
+def _streamlines_of(viewer: Viewer, item_id: int) -> np.ndarray:
+    data = viewer.scene.item(item_id).data
+    assert isinstance(data, Tractogram)
+    return np.asarray(data.points)
+
+
+def test_a_phantom_file_keeps_the_shape_and_gives_the_same_streamlines(
+    viewer: Viewer, tmp_path: Path
+) -> None:
+    first, _ = _shaped(viewer)
+    state = viewer.phantom
+    assert state is not None
+    before = state.bundles
+    points = _streamlines_of(viewer, first)
+    viewer.save_phantom(tmp_path / "shaped.phantom.json")
+    other = Viewer()
+    other.load_phantom(tmp_path / "shaped.phantom.json")
+    after = other.phantom
+    assert after is not None
+    assert [b.geometry for b in after.bundles] == [b.geometry for b in before]
+    assert after.bundles[0].streamline_area == pytest.approx(before[0].streamline_area)
+    np.testing.assert_array_equal(
+        _streamlines_of(other, after.bundles[0].item_id), points
+    )
+
+
+def test_a_session_keeps_the_shape(viewer: Viewer, tmp_path: Path) -> None:
+    _shaped(viewer)
+    state = viewer.phantom
+    assert state is not None
+    before = state.bundles
+    assert viewer.save_session(tmp_path / "s.lar.json") == []
+    other = Viewer()
+    assert other.load_session(tmp_path / "s.lar.json").problems == ()
+    after = other.phantom
+    assert after is not None
+    assert [b.geometry for b in after.bundles] == [b.geometry for b in before]
+
+
+def test_an_old_session_opens_with_its_fan_as_rings(
+    viewer: Viewer, caplog: pytest.LogCaptureFixture
+) -> None:
+    state = viewer.phantom
+    assert state is not None
+    data = state_json(state)
+    old = data["bundles"][0]["geometry"]  # type: ignore[index]
+    old.update(fan_start=0.0, fan_end=1.5, fan_sharpness=2.0, dispersion=0.5)
+    restored = state_from_json(data)
+    drawn = restored.bundles[0].geometry
+    assert drawn is not None and drawn.rings is not None
+    radius = GeometrySettings().radius
+    assert drawn.rings[-1][1] == pytest.approx(radius * 2.5)
+    assert "fan" in caplog.text and "dispersion" in caplog.text
+
+
+def _branch_on(viewer: Viewer) -> tuple[int, int]:
+    """Draws a branch on the first bundle with the Pen's own step, by its editor."""
+    state = viewer.phantom
+    assert state is not None
+    parent = state.bundles[0].item_id
+    viewer._phantom.start_branch(parent, 0.5, [(0.0, 2.0, 0.0), (8.0, 10.0, 0.0)])
+    branch = viewer.finish_bundle().id
+    return parent, branch
+
+
+def test_a_branch_takes_half_of_its_parents_streamlines_and_holds_the_stem(
+    viewer: Viewer,
+) -> None:
+    parent, branch = _branch_on(viewer)
+    state = viewer.phantom
+    assert state is not None
+    geometry = state.bundle(branch).geometry
+    other = state.bundle(parent).geometry
+    assert geometry is not None and other is not None
+    assert geometry.num_streamlines + other.num_streamlines == 200
+    assert geometry.control_points[0] == LINE_A[0]
+    assert state.bundle(branch).branch is not None
     assert viewer.check_phantom() == []
+
+
+def test_a_branch_follows_a_parent_that_changes(viewer: Viewer) -> None:
+    parent, branch = _branch_on(viewer)
+    viewer.set_bundle(parent, BundleField.RADIUS, 3.0)
+    state = viewer.phantom
+    assert state is not None
+    geometry = state.bundle(branch).geometry
+    assert geometry is not None and geometry.radius == 3.0
+    rings = [[0.0, 2.0, 2.0, 0.0], [0.5, 6.0, 6.0, 0.0], [1.0, 2.0, 2.0, 0.0]]
+    viewer.set_bundle_rings(parent, rings)
+    state = viewer.phantom
+    assert state is not None
+    geometry = state.bundle(branch).geometry
+    assert geometry is not None and geometry.rings is not None
+    # Where it leaves, it has the section the parent has there.
+    assert max(r[1] for r in geometry.rings) == pytest.approx(6.0, abs=0.1)
+
+
+def test_a_phantom_file_and_a_session_keep_a_branch_on_its_parent(
+    viewer: Viewer, tmp_path: Path
+) -> None:
+    _branch_on(viewer)
+    viewer.save_phantom(tmp_path / "b.phantom.json")
+    viewer.save_session(tmp_path / "b.lar.json")
+    from_file = Viewer()
+    from_file.load_phantom(tmp_path / "b.phantom.json")
+    from_session = Viewer()
+    assert from_session.load_session(tmp_path / "b.lar.json").problems == ()
+    for other in (from_file, from_session):
+        state = other.phantom
+        assert state is not None
+        link = state.bundles[-1].branch
+        assert link is not None and link.parent == state.bundles[0].item_id
+        assert link.at == pytest.approx(0.5)
+
+
+def test_removing_a_parent_keeps_its_branch_with_its_stem(viewer: Viewer) -> None:
+    parent, branch = _branch_on(viewer)
+    viewer.remove(parent)
+    state = viewer.phantom
+    assert state is not None
+    assert state.bundle(branch).branch is None
+    assert state.bundle(branch).geometry is not None
+
+
+def test_the_tangle_stays_valid_against_the_points_of_the_bundle(
+    viewer: Viewer,
+) -> None:
+    state = viewer.phantom
+    assert state is not None
+    item = state.bundles[0].item_id
+    viewer.set_bundle(item, BundleField.TANGLE_MM, 0.01)
+    state = viewer.phantom
+    assert state is not None
+    geometry = state.bundle(item).geometry
+    assert geometry is not None
+    assert geometry.tangle_mm == pytest.approx(least_tangle(geometry))
+    # Fewer points need a longer tangle, and the streamlines still draw.
+    viewer.set_bundle(item, BundleField.NUM_POINTS, 10)
+    state = viewer.phantom
+    assert state is not None
+    geometry = state.bundle(item).geometry
+    assert geometry is not None
+    assert geometry.tangle_mm == pytest.approx(least_tangle(geometry))
+    assert build_streamlines(geometry).num_streamlines == geometry.num_streamlines
+
+
+def test_the_fullness_default_stores_no_area_except_on_a_plain_tube(
+    viewer: Viewer,
+) -> None:
+    state = viewer.phantom
+    assert state is not None
+    item = state.bundles[0].item_id
+    # A plain tube has no default to fall back on, so any fullness stores an area.
+    viewer.set_bundle_fullness(item, DEFAULT_FULLNESS)
+    state = viewer.phantom
+    assert state is not None
+    assert state.bundle(item).streamline_area is not None
+    assert fullness_of(state.bundle(item)) == pytest.approx(DEFAULT_FULLNESS)
+    viewer.set_bundle_fullness(item, None)
+    state = viewer.phantom
+    assert state is not None
+    assert state.bundle(item).streamline_area is None
+    # A shape that fills by length stores none at the default.
+    viewer.set_bundle_rings(item, [[0.0, 2.0, 2.0, 0.0], [1.0, 3.0, 3.0, 0.0]])
+    viewer.set_bundle_fullness(item, 2.0)
+    viewer.set_bundle_fullness(item, DEFAULT_FULLNESS)
+    state = viewer.phantom
+    assert state is not None
+    assert state.bundle(item).streamline_area is None
+
+
+def test_the_viewers_default_fullness_is_the_librarys() -> None:
+    from larmor.simulation.phantom import RINGS_FULLNESS
+
+    assert DEFAULT_FULLNESS == RINGS_FULLNESS
+
+
+def test_a_ringed_bundle_is_not_refused_for_a_thin_radius(viewer: Viewer) -> None:
+    state = viewer.phantom
+    assert state is not None
+    item = state.bundles[0].item_id
+    viewer.set_bundle(item, BundleField.RADIUS, 0.05)
+    assert any("too thin" in p for p in viewer.check_phantom())
+    viewer.set_bundle_rings(item, [[0.0, 2.0, 2.0, 0.0], [1.0, 3.0, 3.0, 0.0]])
+    assert viewer.check_phantom() == []
+
+
+def test_the_pen_waiting_for_a_new_bundle_does_not_stop_a_run(viewer: Viewer) -> None:
+    viewer.start_bundle()
+    assert viewer.check_phantom() == []
+    state = viewer.phantom
+    assert state is not None
+    viewer.add_bundle_point((0.0, 0.0, 0.0))
+    assert any("finish or cancel" in p for p in viewer.check_phantom())
+
+
+def test_a_shaped_phantom_runs(viewer: Viewer, tmp_path: Path) -> None:
+    _shaped(viewer)
+    _branch_on(viewer)
+    viewer.run_phantom(tmp_path / "run")
+    data = json.loads(simulation_outputs(tmp_path / "run").phantom.read_text())
+    assert "rings" in data["bundles"][0]["geometry"]
+    assert "landing_end" in data["bundles"][0]["geometry"]
+
+
+# True-size tubes
+
+
+def test_true_size_tubes_follow_the_area_and_a_plain_tube_shares_its_section(
+    viewer: Viewer,
+) -> None:
+    state = viewer.phantom
+    assert state is not None
+    bundle = state.bundles[0]
+    item = bundle.item_id
+    geometry = bundle.geometry
+    assert geometry is not None
+    # A plain tube has no area: its section is shared out among its streamlines.
+    assert true_tube_radius(bundle) == pytest.approx(
+        geometry.radius / math.sqrt(geometry.num_streamlines)
+    )
+    viewer.set(item, OptionName.TUBE_TRUE_SIZE, True)
+    options = viewer.scene.item(item).options
+    assert isinstance(options, TractogramOptions)
+    assert options.drawn_tube_radius == pytest.approx(true_tube_radius(bundle))
+    viewer.set_bundle_fullness(item, 4.0)
+    state = viewer.phantom
+    assert state is not None
+    options = viewer.scene.item(item).options
+    assert isinstance(options, TractogramOptions)
+    area = state.bundle(item).streamline_area
+    assert area is not None
+    assert options.drawn_tube_radius == pytest.approx(math.sqrt(area / math.pi))
+    assert options.drawn_tube_radius == pytest.approx(
+        2 * geometry.radius / math.sqrt(geometry.num_streamlines)
+    )
+    # It leaves the user's own radius alone.
+    assert options.tube_radius == TractogramOptions().tube_radius
+
+
+def test_true_size_tubes_stay_within_what_can_be_drawn() -> None:
+    low, high = TRUE_TUBE_RADII
+    assert true_tube_radius(BundleSettings(1, streamline_area=1e-12)) == low
+    assert true_tube_radius(BundleSettings(1, streamline_area=1e6)) == high
+    # A loaded tractogram without an area cannot say.
+    assert true_tube_radius(BundleSettings(1)) is None

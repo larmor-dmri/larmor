@@ -36,7 +36,7 @@ NO_DATA = "No images open"  # the centre of the header with nothing to name
 # The workspaces as the switch names them.
 WORKSPACE_NAMES = {
     Workspace.VIEW: "View",
-    Workspace.SIMULATE: "Simulate",
+    Workspace.SIMULATE: "SymDWI",
     Workspace.DISSECT: "Dissect",
 }
 # Each pointer tool's name and key, as its button shows them.
@@ -46,7 +46,12 @@ TOOL_NAMES = {
     Tool.BOX: ("Box ROI", "B"),
     Tool.LABEL_REGION: ("Label region", "L"),
     Tool.ZOOM_BOX: ("Zoom box", "Z"),
-    Tool.DRAW_BUNDLE: ("Draw bundle", "N"),
+    Tool.DRAW_BUNDLE: ("Pen", "P"),
+    Tool.BEND: ("Bend", "B"),
+    Tool.WIDTH: ("Width", "W"),
+    Tool.TWIST: ("Twist", "T"),
+    Tool.FAN: ("Fan", "F"),
+    Tool.ERASE: ("Erase", "E"),
 }
 # The layouts as the toolbar's switch names them, with their tooltips.
 LAYOUT_BUTTONS = {
@@ -59,7 +64,7 @@ LAYOUT_BUTTONS = {
 class Header(QWidget):
     """Shows the workspace switch, the dataset's name and the window's commands.
 
-    The Run button shows only in the Simulate workspace. It is greyed out until
+    The Run button shows only in the SymDWI workspace. It is greyed out until
     the phantom can run, with the first problem as its tooltip, and while a
     simulation runs.
     """
@@ -249,7 +254,7 @@ class ViewToolbar(QWidget):
         self.refresh()
 
     def choose(self, tool: Tool) -> None:
-        """Chooses a pointer tool; Draw bundle also starts a bundle of the phantom."""
+        """Chooses a pointer tool; the Pen also starts a bundle of the phantom."""
         if tool == Tool.DRAW_BUNDLE and not self.viewer.drawing:
             try:
                 self.viewer.start_bundle()

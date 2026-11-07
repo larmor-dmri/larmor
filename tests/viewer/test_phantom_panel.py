@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QCheckBox, QFormLayout, QLabel, QMessageBox
 from pytestqt.qtbot import QtBot
 
 from larmor.types import Volume
-from larmor.viewer import BundleField, Category, TissuePreset, Viewer, ViewKind
+from larmor.viewer import Category, TissuePreset, Viewer, ViewKind
 from larmor.viewer.model.shortcuts import Command
 from larmor.viewer.model.view_state import Workspace
 from larmor.viewer.qt.field import FieldLabel
@@ -52,21 +52,19 @@ def test_a_tissue_field_edits_the_tissue(qtbot: QtBot) -> None:
     assert wm.value("proton_density") == pytest.approx(0.5)
 
 
-def test_the_densest_fill_row_shows_for_a_fan_and_not_for_a_tube(qtbot: QtBot) -> None:
+def test_a_drawn_bundle_shows_no_densest_fill_row(qtbot: QtBot) -> None:
     viewer = Viewer()
     viewer.new_phantom()
     viewer.start_bundle()
     for point in [(-10.0, 0.0, 0.0), (10.0, 0.0, 0.0)]:
         viewer.add_bundle_point(point)
-    bundle = viewer.finish_bundle()
+    viewer.finish_bundle()
     panel = PhantomPanel(viewer)
     qtbot.addWidget(panel)
     panel.bundle_table.selectRow(0)
     panel.sections["Bundles"].more_button.click()
     assert panel.area_box.isVisibleTo(panel)
     assert not panel.fill_box.isVisibleTo(panel)
-    viewer.set_bundle(bundle.id, BundleField.FAN_END, 1.0)
-    assert panel.fill_box.isVisibleTo(panel)
 
 
 def test_the_bundle_tissue_and_preset_combos_edit_the_phantom(

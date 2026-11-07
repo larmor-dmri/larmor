@@ -79,11 +79,10 @@ A phantom has four parts.
 - **Bundles.** A bundle's shape is a {py:class}`~larmor.simulation.BundleGeometry` or a tractogram of your own,
   such as one from `load_tractogram`. The fraction of a voxel that a bundle fills is its occupancy. A geometry of
   one radius fills each voxel by the share of the voxel inside its tube, however dense its streamlines are there. In
-  a tractogram, a geometry with a fan or rings, or a geometry given a `streamline_area`, each streamline stands for a
-  piece of the bundle's cross-section, so the occupancy follows the length of streamline in the voxel. Without a
-  `streamline_area`, that piece is set so that a tractogram's or a fan's dense voxels have an occupancy of
-  `densest_fill`, 0.7 by default, and a fan thins out where it widens. Where bundles cross and their occupancies add
-  up to more than the voxel, they are scaled down to fit.
+  a tractogram, a geometry with rings or a landing, or a geometry given a `streamline_area`, each streamline stands
+  for a piece of the bundle's cross-section, so the occupancy follows the length of streamline in the voxel. Without a
+  `streamline_area`, that piece is set so that a tractogram's dense voxels have an occupancy of `densest_fill`, 0.7 by
+  default. Where bundles cross and their occupancies add up to more than the voxel, they are scaled down to fit.
 - **Tissue maps.** A {py:class}`~larmor.simulation.TissueMap` is a volume of fractions in [0, 1] on the grid,
   such as a grey matter probability. The maps share what the bundles leave of each voxel.
 - **Background.** What is left after the bundles and maps goes to the tissue named by `background`, or gives no
@@ -105,7 +104,7 @@ ribbon = BundleGeometry(
 )
 ```
 
-The rings replace `radius`, and a bundle cannot have both rings and a fan. The angle is measured in a frame carried
+The rings replace `radius`. The angle is measured in a frame carried
 along the centreline without twist, described in {py:class}`~larmor.simulation.BundleGeometry`. The density across
 the section is the same Gaussian, stretched to the two radii.
 
@@ -117,14 +116,11 @@ streamlines thin out where the bundle widens: widening a 3 mm bundle to 6 mm ove
 its 12 mm width at least half, with a faint edge beyond. A larger `streamline_area` fills more of it, and a smaller one
 makes the whole bundle sparser. `densest_fill` does not apply to rings.
 
-The viewer does not read rings yet: it opens such a bundle as a round one with its `radius`, runs that, and leaves the
-rings out when it saves.
-
 ## Tangling a bundle
 
 `tangle_mm` makes the streamlines lose their places across the bundle. Each one slides between two places drawn from
 the same Gaussian, reaching the second after `tangle_mm` mm along the centreline, so that a value of 10 means a
-streamline has moved to an unrelated place every 10 mm. It works with a plain radius, a fan or rings. The slide is a
+streamline has moved to an unrelated place every 10 mm. It works with a plain radius, rings or a landing. The slide is a
 regular wave, not a random walk: all streamlines share one wavelength of 4 `tangle_mm`, and the whole section repeats
 after that distance.
 
@@ -143,14 +139,64 @@ at 0.6 and 65% at 0.86. With a response from an untangled bundle that is 68% at 
 A `tangle_mm` under twice the distance between a streamline's points is refused, because the points cannot show the
 slide. Above that, streamlines turn sharply at each point below about 2 sqrt(spacing radius), where spacing is that
 distance, and more `num_points` cures this. A tangle shorter than the radius makes streamlines more than a quarter
-longer than the centreline. The viewer does not read a tangle yet: it opens such a bundle without one, runs that, and
-leaves it out when it saves.
+longer than the centreline.
+
+## Landing a bundle
+
+A landing bends the streamlines of one end over to a line, while the centreline stays as it is. `landing_start` and
+`landing_end` each take a {py:class}`~larmor.simulation.Landing`, which holds the line in world coordinates (mm) and
+the position `opens_from` along the centreline where the bending starts, from 0 at the centreline's start to 1 at its
+end, whichever end the landing is at.
+
+```python
+from larmor.simulation import Landing
+
+spreading = BundleGeometry(
+    np.array([[3.0, 12.0, 12.0], [21.0, 12.0, 12.0]]),
+    num_streamlines=300,
+    radius=2.0,
+    seed=1,
+    landing_end=Landing(np.array([[21.0, 4.0, 12.0], [21.0, 20.0, 12.0]]), opens_from=0.6),
+)
+```
+
+Each streamline lands at a place along the line given by its place along the section's first radius, so the density
+along the line is the same cut Gaussian. The line sets that radius and the section's angle at that end, from its extent
+across the path. A streamline further out than an end of the line, which only a tangle can make, lands on that end.
+
+With one line, a streamline keeps its offset along the second radius, so the streamlines land on a band around the
+line, as thick as that radius on each side. A `thickness_line` across the first sets that radius too, and the
+streamlines then land on the surface made by moving the first line along it, wherever the thickness line lies.
+
+Without rings, the section keeps `radius` until `opens_from` and then stretches along the line without turning. With
+rings, the landing replaces the values of that end's row, and the section follows the rings between rows, so with only
+two rows it changes along the whole bundle. It also turns to the line's angle between those rows while it widens, which
+makes it bulge out of the line's plane on the way unless the row before already has that angle. A bundle with a landing fills by streamline length, with the same default as rings: its
+streamlines stand for 3 times its median section, which leaves out the landing and is pi r^2 without rings. It fills the
+part before `opens_from` as the same bundle does without a landing. Over the spread, fewer voxels fill up, and more
+voxels are partly filled.
+
+The streamlines are held back on the inside of a tight bend before they bend over to the line, so near such a bend they
+can land a little off it. An `opens_from` close to the end makes them turn sharply: on a 60 mm bundle landing on a line
+40 mm long, most streamlines have a step over 45 degrees when the bending starts within about 1 mm of the end, at 100
+points or 400. A long line along the path's direction, not across it, can make streamlines go back along the path, as
+some must land behind where they would otherwise be.
+
+## Drawing the shape in the viewer
+
+The viewer reads and writes `rings`, `tangle_mm`, `landing_start` and `landing_end`, in a phantom file and in a session.
+Its Width and Twist tools write rings, its Fan tool writes landings, and its fields set `tangle_mm` and
+`streamline_area`, as [Phantoms](../viewer/phantoms.md) explains. A branch drawn there has no field of its own here: its
+geometry holds the path and the section it shares with its parent, and only the viewer block of the file says which
+bundle it left.
 
 ## The phantom file
 
 `write_phantom` stores the grid, the tissues, the bundles (their geometry, or the path of their tractogram), the
 paths of the tissue maps and the protocol in one JSON file, `*.phantom.json`, which you can read and edit. A bundle
 geometry without a seed gets a random one, written to the file, so that the file always gives the same streamlines.
+A file with the `fan_start`, `fan_end` and `fan_sharpness` of earlier versions still opens, with its fan read as rings of
+the same width, and a `dispersion` in it is ignored. Both log a warning.
 {py:func}`~larmor.simulation.read_phantom` reads the file back.
 
 ## Running a phantom file

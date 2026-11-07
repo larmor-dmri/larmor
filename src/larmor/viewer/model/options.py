@@ -99,6 +99,8 @@ class OptionName(StrEnum):
     MODULATE = "modulate"
     STYLE = "style"
     TUBE_RADIUS = "tube_radius"
+    TUBE_TRUE_SIZE = "tube_true_size"
+    TUBE_TRUE_RADIUS = "tube_true_radius"
     AMBIENT_OCCLUSION = "ambient_occlusion"
     RAY_TRACED = "ray_traced"
     COLOUR_BY = "colour_by"
@@ -737,6 +739,26 @@ class TractogramOptions(ItemOptions):
         step=0.05,
         scope=Scope.THREE_D,
         group=OptionGroup.THREE_D,
+        enabled_when=lambda o: not getattr(o, "tube_true_size", False),
+    )
+    tube_true_size: bool = option(
+        False,
+        "True-size tubes",
+        scope=Scope.THREE_D,
+        group=OptionGroup.THREE_D,
+        help="For a drawn bundle of a phantom, draws each streamline as a tube of the "
+        "cross-section it stands for in the bundle's fill, in place of the tube "
+        "radius. Other tractograms keep the tube radius.",
+    )
+    # The radius of true-size tubes, kept up to date by the phantom editor; 0 if the
+    # tractogram is not a bundle it can say this for.
+    tube_true_radius: float = option(
+        0.0,
+        "True tube radius (mm)",
+        minimum=0.0,
+        scope=Scope.THREE_D,
+        panel=False,
+        group=OptionGroup.THREE_D,
     )
     ambient_occlusion: bool = option(
         False,
@@ -755,6 +777,13 @@ class TractogramOptions(ItemOptions):
         "through a voxel grid on the GPU, with shadows; below full opacity, every "
         "layer shows in order.",
     )
+
+    @property
+    def drawn_tube_radius(self) -> float:
+        """The radius the 3D view draws tubes and capsules with, mm."""
+        if self.tube_true_size and self.tube_true_radius > 0:
+            return self.tube_true_radius
+        return self.tube_radius
 
 
 class RegionShape(StrEnum):

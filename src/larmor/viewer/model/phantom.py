@@ -31,6 +31,8 @@ if TYPE_CHECKING:
 # viewer does not load it.
 
 type Vec3 = tuple[float, float, float]
+# A bundle's section at a place along it: u, its two radii in mm, its angle in degrees.
+type Ring = tuple[float, float, float, float]
 # Called by a long job with the steps done, their total and the stage.
 type Report = Callable[[int, int, str], None]
 
@@ -45,6 +47,14 @@ SEED_LIMIT: Final = 2**31
 SIMULATION_INFO: Final = "simulation.json"
 SIMULATION_FORMAT: Final = "larmor-simulation"
 
+
+# The fullness of a bundle that fills by streamline length and has no area of its
+# own; `larmor.simulation.phantom.RINGS_FULLNESS` as a test checks.
+DEFAULT_FULLNESS: Final = 3.0
+# The range of the tangle's slider, mm, its long end first.
+TANGLE_SLIDER_MM: Final = (400.0, 5.0)
+# The radii true-size tubes are drawn with at most and least, mm.
+TRUE_TUBE_RADII: Final = (0.005, 20.0)
 
 # The serial numbers of phantoms, see `PhantomState.serial`.
 _SERIALS = itertools.count(1)
@@ -155,11 +165,8 @@ class BundleField(StrEnum):
     NUM_STREAMLINES = "num_streamlines"
     RADIUS = "radius"
     NUM_POINTS = "num_points"
-    FAN_START = "fan_start"
-    FAN_END = "fan_end"
-    FAN_SHARPNESS = "fan_sharpness"
-    DISPERSION = "dispersion"
     SEED = "seed"
+    TANGLE_MM = "tangle_mm"
     STREAMLINE_AREA = "streamline_area"
     DENSEST_FILL = "densest_fill"
 
@@ -169,12 +176,16 @@ GEOMETRY_FIELDS: Final = (
     BundleField.NUM_STREAMLINES,
     BundleField.RADIUS,
     BundleField.NUM_POINTS,
-    BundleField.FAN_START,
-    BundleField.FAN_END,
-    BundleField.FAN_SHARPNESS,
-    BundleField.DISPERSION,
     BundleField.SEED,
+    BundleField.TANGLE_MM,
 )
+
+
+class BundleEnd(StrEnum):
+    """One end of a bundle, as `Viewer.set_bundle_landing` names it."""
+
+    START = "start"
+    END = "end"
 
 
 @dataclass(frozen=True)
@@ -254,33 +265,95 @@ class TissueSettings:
 
 
 @dataclass(frozen=True)
+class LandingSettings:
+    """A line one end of a bundle lands on (see `larmor.simulation.Landing`)."""
+
+    line: tuple[Vec3, ...]
+    thickness_line: tuple[Vec3, ...] | None = None
+    opens_from: float = 0.5
+
+    def to_json(self) -> dict[str, object]:
+        """Returns the landing as the JSON values `Landing.to_dict` writes."""
+        values: dict[str, object] = {
+            "line": [list(p) for p in self.line],
+            "opens_from": self.opens_from,
+        }
+        if self.thickness_line is not None:
+            values["thickness_line"] = [list(p) for p in self.thickness_line]
+        return values
+
+    @classmethod
+    def from_json(cls, data: Mapping[str, Any]) -> LandingSettings:
+        """Reads a landing from `to_json`'s values; raises KeyError or ValueError."""
+        thickness = data.get("thickness_line")
+        return cls(
+            tuple(_vec3(p) for p in data["line"]),
+            None if thickness is None else tuple(_vec3(p) for p in thickness),
+            _number(data.get("opens_from", 0.5)),
+        )
+
+
+@dataclass(frozen=True)
 class GeometrySettings:
-    """A drawn bundle's shape (see `larmor.simulation.BundleGeometry`)."""
+    """A drawn bundle's shape (see `larmor.simulation.BundleGeometry`).
+
+    It holds tuples and not arrays, so that two equal shapes compare equal.
+    """
 
     control_points: tuple[Vec3, ...] = ()
     num_streamlines: int = 1000
     radius: float = 2.0  # mm
     num_points: int = 100
-    fan_start: float = 0.0
-    fan_end: float = 0.0
-    fan_sharpness: float = 2.0
-    dispersion: float = 0.0  # mm
     seed: int = 0
+    rings: tuple[Ring, ...] | None = None
+    tangle_mm: float = 0.0
+    landing_start: LandingSettings | None = None
+    landing_end: LandingSettings | None = None
 
     @property
     def is_tube(self) -> bool:
         """Tells whether the bundle is a round tube of one radius all along."""
-        return self.fan_start == 0 and self.fan_end == 0
+        return (
+            self.rings is None
+            and self.landing_start is None
+            and self.landing_end is None
+        )
 
     def to_json(self) -> dict[str, object]:
         """Returns the geometry as the JSON values `BundleGeometry.to_dict` writes."""
-        values = {f.name: getattr(self, f.name) for f in fields(self)}
+        values = {
+            f.name: getattr(self, f.name)
+            for f in fields(self)
+            if f.name not in ("rings", "tangle_mm", "landing_start", "landing_end")
+        }
         values["control_points"] = [list(p) for p in self.control_points]
+        if self.rings is not None:
+            values["rings"] = [list(r) for r in self.rings]
+        if self.tangle_mm != 0:
+            values["tangle_mm"] = self.tangle_mm
+        for name in ("landing_start", "landing_end"):
+            landing = getattr(self, name)
+            if landing is not None:
+                values[name] = landing.to_json()
         return values
 
     @classmethod
     def from_json(cls, data: Mapping[str, Any]) -> GeometrySettings:
-        """Reads a geometry from `to_json`'s values; raises KeyError or ValueError."""
+        """Reads a geometry from `to_json`'s values or an earlier version's.
+
+        A fan of an earlier version becomes rings, and its dispersion goes, both
+        with a warning.
+
+        Returns:
+            The geometry.
+
+        Raises:
+            KeyError, TypeError, ValueError: If a value is missing or refused.
+        """
+        if any(name in data for name in _EARLIER_GEOMETRY):
+            from larmor.simulation.phantom_file import geometry_from_file
+
+            data = geometry_from_file(data, "A bundle").to_dict()
         values: dict[str, Any] = {
             f.name: data[f.name] for f in fields(cls) if f.name in data
         }
@@ -292,7 +365,44 @@ class GeometrySettings:
         for name in ("num_streamlines", "num_points"):
             if name in values:
                 values[name] = int(values[name])
+        if data.get("rings") is not None:
+            values["rings"] = tuple(_ring(r) for r in data["rings"])
+        for name in ("landing_start", "landing_end"):
+            if data.get(name) is not None:
+                values[name] = LandingSettings.from_json(data[name])
         return cls(**values)
+
+
+# The fields of a geometry that earlier versions saved.
+_EARLIER_GEOMETRY: Final = ("fan_start", "fan_end", "fan_sharpness", "dispersion")
+
+
+@dataclass(frozen=True)
+class BranchLink:
+    """How a branch hangs on the bundle it leaves.
+
+    The library knows nothing of branches: the branch's own geometry holds the shared
+    stem, in its first control points and rings, and this says how to write them
+    again when the parent changes.
+
+    Attributes:
+        parent: The parent's tractogram item.
+        at: The position u along the parent's centreline where the branch leaves.
+        stem_points: How many of the branch's first control points are the stem.
+    """
+
+    parent: ItemId
+    at: float
+    stem_points: int
+
+    def to_json(self) -> dict[str, object]:
+        """Returns the link as JSON values, with its parent named by its id."""
+        return {"parent": self.parent, "at": self.at, "stem_points": self.stem_points}
+
+    @classmethod
+    def from_json(cls, data: Mapping[str, Any]) -> BranchLink:
+        """Reads a link from `to_json`'s values; raises KeyError or ValueError."""
+        return cls(int(data["parent"]), _number(data["at"]), int(data["stem_points"]))
 
 
 @dataclass(frozen=True)
@@ -307,6 +417,7 @@ class BundleSettings:
     geometry: GeometrySettings | None = None
     streamline_area: float | None = None  # mm^2; None for the library's default
     densest_fill: float = 0.7  # the fill of the densest voxels, when area is None
+    branch: BranchLink | None = None  # the bundle it leaves, for a branch
 
     def to_json(self) -> dict[str, object]:
         """Returns the bundle as JSON values, its item named by its id."""
@@ -316,6 +427,7 @@ class BundleSettings:
             "geometry": None if self.geometry is None else self.geometry.to_json(),
             "streamline_area": self.streamline_area,
             "densest_fill": self.densest_fill,
+            "branch": None if self.branch is None else self.branch.to_json(),
         }
 
     @classmethod
@@ -332,12 +444,14 @@ class BundleSettings:
         """
         geometry = data.get("geometry")
         area = data.get("streamline_area")
+        branch = data.get("branch")
         return cls(
             int(data["item"]),
             str(data["tissue"]),
             None if geometry is None else GeometrySettings.from_json(geometry),
             None if area is None else _number(area),
             _number(data.get("densest_fill", 0.7)),
+            None if branch is None else BranchLink.from_json(branch),
         )
 
 
@@ -489,6 +603,10 @@ class Draft:
         item_id: The preview tractogram item, once it has two points; for an edit,
             the bundle's own item.
         editing: The bundle being edited, as it was; None for a new bundle.
+        branch: How a new bundle or an edited one hangs on its parent, for a branch.
+        placing: Whether the Pen adds to it by single points, so that the next click
+            or stroke lengthens it instead of starting another bundle.
+        at_start: Whether the Pen lengthens it from its first point.
     """
 
     points: tuple[Vec3, ...] = ()
@@ -496,6 +614,19 @@ class Draft:
     tissue: str = "WM"
     item_id: ItemId | None = None
     editing: BundleSettings | None = None
+    branch: BranchLink | None = None
+    placing: bool = False
+    at_start: bool = False
+
+    @property
+    def is_empty(self) -> bool:
+        """Tells whether nothing is drawn yet, as after Enter with the Pen still on."""
+        return not self.points and self.editing is None
+
+    @property
+    def own_points(self) -> tuple[Vec3, ...]:
+        """The points that are its own, without a branch's stem."""
+        return self.points[self.branch.stem_points if self.branch else 0 :]
 
 
 @dataclass(frozen=True, eq=False)
@@ -514,7 +645,7 @@ class PhantomState:
         proxies: (map, overlay item) pairs of the proxy maps shown.
         output: The folder a run writes to; None until chosen.
         show_box: Whether the grid's box is outlined in the views of the
-            Simulate workspace; it is always outlined while a bundle is drawn.
+            SymDWI workspace; it is always outlined while a bundle is drawn.
         serial: A number that tells phantoms apart; a new or loaded phantom gets
             a new one, and an edit keeps it.
     """
@@ -708,6 +839,18 @@ def build_geometry(settings: GeometrySettings) -> BundleGeometry:
 
     values = {f.name: getattr(settings, f.name) for f in fields(settings)}
     values["control_points"] = np.array(settings.control_points, dtype=np.float64)
+    if settings.rings is not None:
+        values["rings"] = np.array(settings.rings, dtype=np.float64)
+    for name in ("landing_start", "landing_end"):
+        landing = values[name]
+        if landing is not None:
+            values[name] = sim.Landing(
+                np.array(landing.line, dtype=np.float64),
+                None
+                if landing.thickness_line is None
+                else np.array(landing.thickness_line, dtype=np.float64),
+                landing.opens_from,
+            )
     return sim.BundleGeometry(**values)
 
 
@@ -716,6 +859,126 @@ def build_streamlines(settings: GeometrySettings, index: int = 0) -> Tractogram:
     import larmor.simulation as sim
 
     return sim.create_bundle(build_geometry(settings), index=index)
+
+
+def least_tangle(settings: GeometrySettings) -> float:
+    """Returns the shortest tangle a bundle's points can show, in mm."""
+    from larmor.simulation.bundles import MIN_TANGLE_SPACINGS, centreline_spline
+
+    if not drawable(settings.control_points):
+        return 0.0
+    curve, _ = centreline_spline(np.array(settings.control_points, dtype=np.float64))
+    return float(MIN_TANGLE_SPACINGS * curve.length / (settings.num_points - 1))
+
+
+def with_valid_tangle(settings: GeometrySettings) -> GeometrySettings:
+    """Returns a geometry whose tangle is at least the shortest its points can show.
+
+    A bundle made longer, or given fewer points, can leave a tangle too short, which
+    `larmor.simulation.create_bundle` refuses.
+    """
+    if settings.tangle_mm == 0:
+        return settings
+    least = least_tangle(settings)
+    if settings.tangle_mm >= least:
+        return settings
+    return replace(settings, tangle_mm=least)
+
+
+def tangle_of_slider(position: int) -> float:
+    """Returns the tangle in mm at a position of its slider, 1 to 100; 0 is off."""
+    if position <= 0:
+        return 0.0
+    longest, shortest = TANGLE_SLIDER_MM
+    return float(longest * (shortest / longest) ** ((position - 1) / 99))
+
+
+def slider_of_tangle(tangle_mm: float) -> int:
+    """Returns the position of the tangle's slider nearest a tangle in mm."""
+    if tangle_mm <= 0:
+        return 0
+    longest, shortest = TANGLE_SLIDER_MM
+    position = 1 + 99 * math.log(tangle_mm / longest) / math.log(shortest / longest)
+    return int(np.clip(round(position), 1, 100))
+
+
+def section_share(settings: GeometrySettings) -> float:
+    """Returns a bundle's median section divided by its streamlines, in mm^2.
+
+    A bundle's fullness is its streamline area in multiples of this.
+    """
+    return float(build_geometry(settings).median_section() / settings.num_streamlines)
+
+
+def fullness_of(bundle: BundleSettings) -> float | None:
+    """Returns a drawn bundle's streamline area in multiples of its section's share.
+
+    Returns:
+        The fullness; None if it has no area of its own, so that a plain tube fills
+        its tube and another shape has `DEFAULT_FULLNESS`.
+    """
+    if bundle.streamline_area is None or bundle.geometry is None:
+        return None
+    return bundle.streamline_area / section_share(bundle.geometry)
+
+
+def bundle_area_for(geometry: GeometrySettings, fullness: float | None) -> float | None:
+    """Returns the streamline area of a fullness; None for the library's default.
+
+    At `DEFAULT_FULLNESS` a shape that fills by streamline length has the default
+    anyway, so it stores none. A plain tube has no such default, as it fills its tube,
+    so it stores the area of any fullness.
+
+    Raises:
+        ValueError: If the fullness is not positive.
+    """
+    if fullness is None:
+        return None
+    if fullness <= 0:
+        raise ValueError(f"A fullness must be positive, got {fullness}.")
+    if not geometry.is_tube and math.isclose(fullness, DEFAULT_FULLNESS):
+        return None
+    return fullness * section_share(geometry)
+
+
+def with_geometry(bundle: BundleSettings, geometry: GeometrySettings) -> BundleSettings:
+    """Returns a bundle with a new shape, at the fullness it had.
+
+    A streamline area of its own is scaled with the section's share, so that a Width
+    stroke or more streamlines do not change how full the bundle is.
+    """
+    geometry = with_valid_tangle(geometry)
+    area = bundle.streamline_area
+    if (
+        area is not None
+        and bundle.geometry is not None
+        and drawable(bundle.geometry.control_points)
+        and drawable(geometry.control_points)
+    ):
+        area *= section_share(geometry) / section_share(bundle.geometry)
+    return replace(bundle, geometry=geometry, streamline_area=area)
+
+
+def true_tube_radius(bundle: BundleSettings) -> float | None:
+    """Returns the radius at which a drawn bundle's streamlines show their true size.
+
+    That is sqrt(a / pi), with a the streamline area that the fill L a / V uses, or
+    for a bundle without one the area the library gives it. A plain tube has none, as
+    it fills its tube: it gets its section shared out among its streamlines, which
+    together then hold the tube's volume. The result is kept within `TRUE_TUBE_RADII`.
+
+    Returns:
+        The radius in mm; None for a loaded tractogram without an area, or a shape
+        that cannot be built yet.
+    """
+    geometry = bundle.geometry
+    area = bundle.streamline_area
+    if area is None:
+        if geometry is None or not drawable(geometry.control_points):
+            return None
+        share = section_share(geometry)
+        area = share if geometry.is_tube else DEFAULT_FULLNESS * share
+    return float(np.clip(math.sqrt(area / math.pi), *TRUE_TUBE_RADII))
 
 
 def drawable(points: Sequence[Vec3]) -> bool:
@@ -931,11 +1194,7 @@ def _bundle_number(name: BundleField, number: float) -> float | int:
         return int(number)
     if name == BundleField.DENSEST_FILL and not 0 < number <= 1:
         raise ValueError("it must be in (0, 1]")
-    if name in (
-        BundleField.STREAMLINE_AREA,
-        BundleField.FAN_SHARPNESS,
-        BundleField.RADIUS,
-    ):
+    if name in (BundleField.STREAMLINE_AREA, BundleField.RADIUS):
         if number <= 0:
             raise ValueError("it must be positive")
     elif number < 0:
@@ -954,7 +1213,7 @@ def with_bundle_value(
                 "A loaded tractogram used as a bundle has no geometry to change."
             )
         change: dict[str, Any] = {name.value: value}
-        return replace(bundle, geometry=replace(bundle.geometry, **change))
+        return with_geometry(bundle, replace(bundle.geometry, **change))
     changes: dict[str, Any] = {name.value: value}
     return replace(bundle, **changes)
 
@@ -1131,7 +1390,7 @@ def run_problems(
         The problems, in the order of the steps; empty if it can run.
     """
     found: list[Problem] = []
-    if state.draft is not None:
+    if state.draft is not None and not state.draft.is_empty:
         found.append(Problem(PhantomStep.BUNDLE, "", DRAFT_PROBLEM))
     if not state.bundles and not state.tissue_maps:
         found.append(
@@ -1192,7 +1451,7 @@ def _bundle_item_problems(
 
 
 def _thin_bundle_problems(state: PhantomState) -> list[Problem]:
-    """Returns a problem for each drawn tube too thin to fill on the grid."""
+    """Returns a problem for each drawn bundle too thin to fill on the grid."""
     from larmor.simulation.voxelise import MIN_TUBE_RADIUS
 
     largest = float(np.linalg.norm(state.grid.affine[:3, :3], axis=0).max())
@@ -1408,7 +1667,7 @@ def _grid_text(grid: Grid) -> str:
 def _bundle_text(state: PhantomState) -> str:
     """Returns the Bundle step's line, such as "2 bundles"."""
     draft = state.draft
-    if draft is not None:
+    if draft is not None and not (draft.is_empty and state.bundles):
         verb = "Editing" if draft.editing is not None else "Drawing"
         return f"{verb}: {_count(len(draft.points), 'point')}"
     if state.bundles:
@@ -1611,7 +1870,9 @@ def run_simulation(
 class LoadedBundle:
     """A bundle read from a phantom file, built and ready to be added."""
 
-    settings: BundleSettings  # its item id is a stand-in until it is added
+    # Its item id is a stand-in until it is added, and so is the parent of its
+    # branch, which is the parent's place among the bundles.
+    settings: BundleSettings
     streamlines: Tractogram
     name: str
     path: Path | None  # the file of a tractogram used as a bundle
@@ -1635,9 +1896,11 @@ def viewer_block(
 ) -> dict[str, object]:
     """Returns the viewer's block of a phantom file.
 
-    It holds the tissue presets, the scan, each bundle's name and options, the
-    proxy maps shown, the output folder and whether the grid's box shows.
+    It holds the tissue presets, the scan, each bundle's name and options and, for a
+    branch, its parent by its place among the bundles, the proxy maps shown, the
+    output folder and whether the grid's box shows.
     """
+    places = {b.item_id: i for i, b in enumerate(state.bundles)}
     return {
         "tissues": [t.to_json() for t in state.tissues],
         "scan": state.scan.to_json(),
@@ -1646,6 +1909,9 @@ def viewer_block(
                 "name": names.get(b.item_id, ""),
                 "options": dict(options.get(b.item_id, {})),
                 "densest_fill": b.densest_fill,
+                "branch": None
+                if b.branch is None or b.branch.parent not in places
+                else replace(b.branch, parent=places[b.branch.parent]).to_json(),
             }
             for b in state.bundles
         ],
@@ -1712,12 +1978,14 @@ def read_phantom_file(path: Path, report: Report | None = None) -> LoadedPhantom
             streamlines = build_streamlines(geometry, index)
         else:
             streamlines = source
+        link = extra.get("branch")
         settings = BundleSettings(
             0,
             bundle.tissue,
             geometry,
             bundle.streamline_area,
             float(extra.get("densest_fill", bundle.densest_fill)),
+            BranchLink.from_json(link) if isinstance(link, dict) and geometry else None,
         )
         name = str(extra.get("name") or f"Bundle {index + 1}")
         options = extra.get("options", {})
@@ -1829,6 +2097,14 @@ def _number(value: object) -> float:
     if not math.isfinite(number):
         raise ValueError(f"{value!r} is not finite")
     return number
+
+
+def _ring(value: object) -> Ring:
+    """Returns a list or tuple of four finite numbers as a row of rings."""
+    if not isinstance(value, (list, tuple)) or len(value) != 4:
+        raise TypeError(f"{value!r} is not four numbers")
+    u, r1, r2, angle = (_number(v) for v in value)
+    return (u, r1, r2, angle)
 
 
 def _vec3(value: object) -> Vec3:

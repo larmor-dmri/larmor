@@ -129,6 +129,11 @@ class Scene:
         self._emit(ItemRemoved(item))
         return item
 
+    def restore(self, item: Item) -> None:
+        """Puts back an item removed earlier, with its id, at the scene tree's end."""
+        self._items[item.id] = item
+        self._emit(ItemAdded(item))
+
     def replace_data(
         self, item_id: ItemId, data: object, value_range: tuple[float, float] | None
     ) -> None:

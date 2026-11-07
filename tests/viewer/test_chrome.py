@@ -10,6 +10,7 @@ from pytestqt.qtbot import QtBot
 from viewer_helpers import zeros_volume
 
 from larmor.viewer import Category, Tool, ViewKind
+from larmor.viewer.model.bundle_tools import DRAWING_TOOLS
 from larmor.viewer.model.view_state import Layout, Workspace
 from larmor.viewer.qt.docks import Panel
 from larmor.viewer.qt.header import NO_DATA
@@ -109,7 +110,7 @@ def test_the_toolbar_offers_each_workspaces_tools_and_sets_them(
     assert tools[Tool.BOX].isChecked() and not tools[Tool.CURSOR].isChecked()
     window.viewer.set_workspace(Workspace.SIMULATE)
     shown = {t for t, b in tools.items() if b.isVisible()}
-    assert shown == {Tool.CURSOR, Tool.DRAW_BUNDLE}
+    assert shown == {Tool.CURSOR, *DRAWING_TOOLS}
     assert tools[Tool.CURSOR].isChecked()
 
 
@@ -184,7 +185,7 @@ def test_the_view_menu_sets_the_layout_and_the_workspace(window: MainWindow) -> 
     next(a for a in layouts.actions() if a.text() == "One view").trigger()
     assert window.viewer.scene.view.layout == Layout.ONE
     workspaces = _submenu(window, "Workspace")
-    next(a for a in workspaces.actions() if a.text() == "&Simulate").trigger()
+    next(a for a in workspaces.actions() if a.text() == "&SymDWI").trigger()
     assert window.viewer.scene.view.workspace == Workspace.SIMULATE
 
 

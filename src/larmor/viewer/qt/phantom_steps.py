@@ -1,4 +1,4 @@
-"""The Simulate workspace's panels: the steps of a phantom, and the page of one."""
+"""The SymDWI workspace's panels: the steps of a phantom, and the page of one."""
 
 from dataclasses import dataclass
 from enum import StrEnum
@@ -81,9 +81,9 @@ PAGES: dict[Page, PageInfo] = {
     ),
     PhantomStep.BUNDLE: PageInfo(
         "Bundle",
-        "Choose Draw bundle (N) and click in a 2D view to place the points of a "
-        "bundle, one per click in that slice. Three or four points are enough, and "
-        "Enter finishes the bundle.",
+        "Choose the Pen (P) and drag in a 2D view to draw a bundle, or click to place "
+        "its points on that slice, and Enter finishes it. Bend, Width, Twist, Fan and "
+        "Erase in the toolbar then shape what shows in a 2D view.",
         ("Bundles",),
     ),
     PhantomStep.TISSUE: PageInfo(
@@ -133,7 +133,7 @@ def _mark(ready: bool) -> QIcon:
 
 
 class StepNavigator(QObject):
-    """Holds the page of the steps shown, which the two panels of Simulate share.
+    """Holds the page of the steps shown, which the two panels of SymDWI share.
 
     A new phantom starts again at the first step, and starting a bundle shows
     the Bundle step.

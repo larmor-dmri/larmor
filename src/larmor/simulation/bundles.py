@@ -22,25 +22,73 @@ FOLD_WINDOW = 0.03
 # The shortest tangle, in spacings of a streamline's points.
 MIN_TANGLE_SPACINGS = 2.0
 
+# The smallest radius a landing's line gives the section, mm.
+MIN_LANDING_RADIUS = 0.25
+
+
+@dataclass(frozen=True, eq=False)
+class Landing:
+    """A line that the streamlines of one end of a bundle bend over to.
+
+    The centreline stays as it is. The section at that end takes its first radius
+    and its angle from the line, and each streamline lands at a place along the
+    line given by its place along that radius. One further out than an end of the
+    line lands on that end. A streamline keeps its offset along the second radius,
+    unless a thickness line sets that radius and carries the offset along itself.
+
+    Args:
+        line: (P, 3) points of the line, in world coordinates in mm.
+        thickness_line: (P, 3) points of a second line across the first, whose
+            shape and direction count but not where it lies: the streamlines land
+            on the surface made by moving the first line along it. Defaults to
+            None.
+        opens_from: The position u along the centreline, from 0 at its start to 1
+            at its end, where the bending starts, in (0, 1). Defaults to 0.5.
+
+    Raises:
+        ValueError: If a line is not (P, 3) finite values with P >= 2 and some
+            length, or opens_from is outside (0, 1).
+    """
+
+    line: np.ndarray
+    thickness_line: np.ndarray | None = None
+    opens_from: float = 0.5
+
+    def __post_init__(self) -> None:
+        """Checks the values and makes the lines read-only arrays."""
+        object.__setattr__(self, "line", _checked_line(self.line))
+        if self.thickness_line is not None:
+            thickness = _checked_line(self.thickness_line)
+            object.__setattr__(self, "thickness_line", thickness)
+        if not 0 < self.opens_from < 1:
+            raise ValueError(f"opens_from must be in (0, 1), got {self.opens_from}.")
+
+    def to_dict(self) -> dict[str, object]:
+        """Returns the landing as plain values, without a thickness line if none."""
+        values: dict[str, object] = {
+            "line": self.line.tolist(),
+            "opens_from": self.opens_from,
+        }
+        if self.thickness_line is not None:
+            values["thickness_line"] = self.thickness_line.tolist()
+        return values
+
 
 @dataclass(frozen=True, eq=False)
 class BundleGeometry:
     """The shape of a synthetic bundle.
 
-    A geometry describes a bundle by a few control points along its centreline,
-    a radius, and how much the bundle fans out at its ends. Each streamline
-    follows the centreline (see `centreline_spline`) at a fixed offset across
-    it, drawn from a Gaussian around the centreline that is cut at `radius`, so
-    the streamlines are densest at the centre. The offset is scaled by
-    1 + fan_start (1 - u)^p + fan_end u^p, where u in [0, 1] is the position
-    along the centreline and p is fan_sharpness. A smooth random wander of
-    standard deviation `dispersion`, zero at both ends, is added along the way.
-    Streamlines on the inside of a bend whose radius is below about twice the
+    A geometry describes a bundle by a few control points along its centreline
+    and a radius. Each streamline follows the centreline (see
+    `centreline_spline`) at an offset across it, drawn from a Gaussian around the
+    centreline that is cut at `radius`, so the streamlines are densest at the
+    centre. Streamlines on the inside of a bend whose radius is below about twice the
     bundle's are held back, so they squeeze together and fold far less, though
     they can still turn sharply. A corner that turns within a few per cent of the
     centreline's length folds as it would without this. Rings set the section
-    along the bundle instead of the radius and fan, so that it can widen, flatten
-    and turn. A bundle with rings fills by streamline length, not as a tube.
+    along the bundle instead of the radius, so that it can widen, flatten and turn,
+    and landings bend the streamlines of an end over to a line. A bundle with
+    either fills by streamline length, not as a tube.
 
     Args:
         control_points: (K, 3) points the centreline passes through, K >= 2, in
@@ -49,16 +97,8 @@ class BundleGeometry:
         radius: The bundle's radius in mm, 2.5 standard deviations of the
             Gaussian. Defaults to 2.0.
         num_points: Points per streamline. Defaults to 100.
-        fan_start: Extra spread at the first control point, where the bundle has
-            the radius radius (1 + fan_start). Defaults to 0.0.
-        fan_end: Extra spread at the last control point, in the same way.
-            Defaults to 0.0.
-        fan_sharpness: p, how close to the ends the fanning stays; a larger p
-            keeps it nearer the ends. Defaults to 2.0.
-        dispersion: Standard deviation of the wander, mm. Defaults to 0.0.
-        seed: The seed of the random offsets and wander, so that the same seed
-            gives the same streamlines; None draws new ones each time. Defaults
-            to None.
+        seed: The seed of the random offsets, so that the same seed gives the same
+            streamlines; None draws new ones each time. Defaults to None.
         rings: (R, 4) rows of u, r1, r2 and angle, which replace `radius` for the
             bundle's shape. u is the position along the centreline, rising from 0
             in the first row to 1 in the last. r1 and r2 are the section's two
@@ -78,25 +118,30 @@ class BundleGeometry:
             the centreline on average, up to about 25 degrees, and they turn
             sharply at each point below about 2 sqrt(spacing radius), where
             spacing is the distance between points. Defaults to 0.0.
+        landing_start: Where the streamlines bend over to at the first point, or
+            None. It replaces the first radius and the angle of that end's row of
+            rings, and the second radius if it has a thickness line, so that the
+            section turns to the line between rows. Without rings, the section keeps
+            `radius` until `opens_from` and then stretches along the line without
+            turning. Defaults to None.
+        landing_end: The same at the last point. Defaults to None.
 
     Raises:
         ValueError: If the control points are not (K, 3) finite values with
             K >= 2, a count or size is out of range, the rings are not as
-            described above, the rings come with a non-zero fan, or tangle_mm is
-            negative or not finite.
+            described above, a landing has neither rings nor a radius above 0, or
+            tangle_mm is negative or not finite.
     """
 
     control_points: np.ndarray
     num_streamlines: int = 1000
     radius: float = 2.0
     num_points: int = 100
-    fan_start: float = 0.0
-    fan_end: float = 0.0
-    fan_sharpness: float = 2.0
-    dispersion: float = 0.0
     seed: int | None = field(default=None)
     rings: np.ndarray | None = None
     tangle_mm: float = 0.0
+    landing_start: Landing | None = None
+    landing_end: Landing | None = None
 
     def __post_init__(self) -> None:
         """Checks the values and makes the control points a read-only array."""
@@ -113,37 +158,37 @@ class BundleGeometry:
         object.__setattr__(self, "control_points", points)
         if self.num_streamlines < 1 or self.num_points < 2:
             raise ValueError("num_streamlines must be >= 1 and num_points >= 2.")
-        sizes = (self.radius, self.fan_start, self.fan_end, self.dispersion)
-        if not all(math.isfinite(s) and s >= 0 for s in sizes):
-            raise ValueError("radius, fans and dispersion must be finite and >= 0.")
-        if not self.fan_sharpness > 0:
-            raise ValueError("fan_sharpness must be positive.")
+        if not (math.isfinite(self.radius) and self.radius >= 0):
+            raise ValueError("radius must be finite and >= 0.")
         if self.rings is not None:
-            if self.fan_start != 0 or self.fan_end != 0:
-                raise ValueError("A bundle takes rings or a fan, not both.")
             object.__setattr__(self, "rings", _checked_rings(self.rings))
         if not (math.isfinite(self.tangle_mm) and self.tangle_mm >= 0):
             raise ValueError("tangle_mm must be finite and >= 0.")
+        if self.has_landing and self.rings is None and self.radius == 0:
+            raise ValueError("A landing needs rings or a radius above 0.")
+
+    @property
+    def has_landing(self) -> bool:
+        """Tells whether either end of the bundle has a landing."""
+        return self.landing_start is not None or self.landing_end is not None
 
     @property
     def is_tube(self) -> bool:
         """Tells whether the bundle is a round tube of one radius all along."""
-        return self.rings is None and self.fan_start == 0 and self.fan_end == 0
+        return self.rings is None and not self.has_landing
 
     def median_section(self) -> float:
-        """Returns the median area of the section the rings set along the bundle.
+        """Returns the median area of the bundle's section, leaving out its landings.
 
         A change over less than half of the bundle's length leaves it alone, so it
-        tells the size the bundle mostly has.
+        tells the size the bundle mostly has. Without rings it is the area of a
+        circle of `radius`.
 
         Returns:
             The area in mm^2.
-
-        Raises:
-            ValueError: If the geometry has no rings.
         """
         if self.rings is None:
-            raise ValueError("A geometry without rings has no median section.")
+            return math.pi * self.radius**2
         u = np.linspace(0.0, 1.0, self.num_points)
         radii = PchipInterpolator(self.rings[:, 0], self.rings[:, 1:3], axis=0)(u)
         return float(np.pi * np.median(np.prod(radii, axis=1)))
@@ -152,8 +197,8 @@ class BundleGeometry:
         """Returns the geometry as plain values that can be saved as JSON.
 
         Returns:
-            A dict of the fields, with the control points and rings as lists,
-            without the rings if there are none and the tangle if it is 0.
+            A dict of the fields, with the arrays as lists, without the rings and
+            landings if there are none and the tangle if it is 0.
         """
         values: dict[str, object] = {
             name: getattr(self, name) for name in self.__dataclass_fields__
@@ -165,6 +210,11 @@ class BundleGeometry:
             values["rings"] = self.rings.tolist()
         if self.tangle_mm == 0:
             del values["tangle_mm"]
+        for name in ("landing_start", "landing_end"):
+            landing = getattr(self, name)
+            del values[name]
+            if landing is not None:
+                values[name] = landing.to_dict()
         return values
 
     @classmethod
@@ -182,7 +232,21 @@ class BundleGeometry:
         """
         values = dict(data)
         values["control_points"] = np.asarray(values["control_points"], dtype=float)
+        for name in ("landing_start", "landing_end"):
+            if values.get(name) is not None:
+                values[name] = Landing(**values[name])  # type: ignore[arg-type]
         return cls(**values)  # type: ignore[arg-type]
+
+
+def _checked_line(points: object) -> np.ndarray:
+    """Returns a landing's line as a read-only (P, 3) array, or raises ValueError."""
+    line = np.array(points, dtype=np.float64)
+    if line.ndim != 2 or line.shape[1] != 3 or len(line) < 2:
+        raise ValueError(f"A landing's line must be (P, 3), got {line.shape}.")
+    if not np.isfinite(line).all() or not np.ptp(line, axis=0).any():
+        raise ValueError("A landing's line must be finite and have some length.")
+    line.flags.writeable = False
+    return line
 
 
 def _checked_rings(rings: object) -> np.ndarray:
@@ -321,7 +385,7 @@ def create_bundle(geometry: BundleGeometry, *, index: int = 0) -> Tractogram:
         ValueError: If tangle_mm is under twice the spacing of the points.
     """
     rng = np.random.default_rng(geometry.seed)
-    centreline, u_control = centreline_spline(geometry.control_points)
+    centreline, _ = centreline_spline(geometry.control_points)
     u = np.linspace(0.0, 1.0, geometry.num_points)
     centre = centreline(u)
     tangents = centreline.derivative()(u)
@@ -330,26 +394,132 @@ def create_bundle(geometry: BundleGeometry, *, index: int = 0) -> Tractogram:
 
     num = geometry.num_streamlines
     shares = _places_along(rng, num, u * centreline.length, geometry.tangle_mm)
+    rings, landed = _read_landings(geometry, tangents, normals, binormals)
     # Each streamline's place across the bundle, (S, N, 2) in the frames' coordinates.
-    if geometry.rings is None:
-        p = geometry.fan_sharpness
-        fan = 1 + geometry.fan_start * (1 - u) ** p + geometry.fan_end * u**p
-        place = fan[None, :, None] * (geometry.radius * shares)
+    if rings is None:
+        place = geometry.radius * shares
+        for landing, end, ring in landed:
+            opening = _opening(u, landing.opens_from, at_end=end == -1)
+            place = place + opening[None, :, None] * _stretch(
+                ring, shares, geometry.radius
+            )
     else:
-        place = _ring_places(geometry.rings, u, shares)
-    if geometry.dispersion > 0:
-        wander = geometry.dispersion * rng.standard_normal((len(u_control), num, 2))
-        wander[[0, -1]] = 0.0
-        place += np.moveaxis(PchipInterpolator(u_control, wander, axis=0)(u), 0, 1)
+        place = _ring_places(rings, u, shares)
     offsets = place[..., :1] * normals[None] + place[..., 1:] * binormals[None]
     step = centreline.length / (geometry.num_points - 1)
     offsets = _squeeze_inside_bends(offsets, *_bend_limits(tangents, step))
+    for landing, end, ring in landed:
+        # Without rings the places are not yet along the section's radii.
+        along = shares[:, end] if rings is not None else shares[:, end] @ _axes(ring)
+        shift = _landing_shift(landing, ring, normals[end], binormals[end], along)
+        opening = _opening(u, landing.opens_from, at_end=end == -1)
+        offsets = offsets + opening[None, :, None] * (shift - centre[end])[:, None]
     points = (centre[None] + offsets).reshape(-1, 3)  # (S * num_points, 3)
     offsets_index = np.arange(num + 1, dtype=np.int64) * geometry.num_points
     return Tractogram(
         points,
         offsets_index,
         streamline_data={"bundle": np.full(num, index, dtype=np.int64)},
+    )
+
+
+@dataclass(frozen=True, eq=False)
+class BundlePath:
+    """Where a bundle's centreline runs and what its section is along it.
+
+    Attributes:
+        centreline: The curve, which takes u from 0 to 1.
+        control_u: The u of each control point, (K,).
+        u: The positions along the centreline, (N,).
+        centre: The centreline there, (N, 3) in mm.
+        shown: Where the middle of the bundle runs: the centreline bent over to the
+            landings, (N, 3) in mm.
+        tangents: The unit tangents, (N, 3).
+        normals: The normals of the frame carried along without twist, (N, 3).
+        binormals: The binormals of that frame, (N, 3).
+        sections: The section's two radii in mm and its angle in degrees, (N, 3).
+        rings: The rings with what the landings set in their end rows, (R, 4); None
+            without rings.
+        end_rings: What each landing sets at its end, as a row (u, r1, r2, angle),
+            by the index of that end, 0 or -1.
+    """
+
+    centreline: Centreline
+    control_u: np.ndarray
+    u: np.ndarray
+    centre: np.ndarray
+    shown: np.ndarray
+    tangents: np.ndarray
+    normals: np.ndarray
+    binormals: np.ndarray
+    sections: np.ndarray
+    rings: np.ndarray | None
+    end_rings: dict[int, np.ndarray]
+
+
+def bundle_path(geometry: BundleGeometry, num_points: int = 100) -> BundlePath:
+    """Returns where a geometry's bundle runs and how wide it is, without streamlines.
+
+    It follows `create_bundle`, for tools that need the shape of a bundle.
+
+    Args:
+        geometry: The geometry.
+        num_points: The number of positions along the centreline.
+
+    Returns:
+        The path.
+    """
+    centreline, control_u = centreline_spline(geometry.control_points)
+    u = np.linspace(0.0, 1.0, num_points)
+    centre = centreline(u)
+    tangents = centreline.derivative()(u)
+    tangents /= np.linalg.norm(tangents, axis=1, keepdims=True)
+    normals, binormals = _transported_frames(tangents)
+    rings, landed = _read_landings(geometry, tangents, normals, binormals)
+    if rings is None:
+        sections = np.tile([geometry.radius, geometry.radius, 0.0], (num_points, 1))
+        for landing, end, ring in landed:
+            opening = _opening(u, landing.opens_from, at_end=end == -1)
+            sections[:, :2] += opening[:, None] * (ring[1:3] - geometry.radius)
+            sections[opening > 0, 2] = ring[3]
+    else:
+        sections = PchipInterpolator(rings[:, 0], rings[:, 1:], axis=0)(u)
+    shown = centre.copy()
+    for landing, end, ring in landed:
+        middle = _landing_shift(
+            landing, ring, normals[end], binormals[end], np.zeros((1, 2))
+        )[0]
+        opening = _opening(u, landing.opens_from, at_end=end == -1)
+        shown += opening[:, None] * (middle - centre[end])
+    return BundlePath(
+        centreline,
+        control_u,
+        u,
+        centre,
+        shown,
+        tangents,
+        normals,
+        binormals,
+        sections,
+        rings,
+        {end: ring for _, end, ring in landed},
+    )
+
+
+def bundle_places(geometry: BundleGeometry) -> np.ndarray:
+    """Returns where each streamline starts across a bundle, as shares of the radii.
+
+    A streamline keeps these numbers through every change of the bundle's shape, so
+    they tell streamlines apart. They are those `create_bundle` draws.
+
+    Args:
+        geometry: The geometry, with a seed.
+
+    Returns:
+        The places, (S, 2).
+    """
+    return _gaussian_places(
+        np.random.default_rng(geometry.seed), geometry.num_streamlines
     )
 
 
@@ -429,6 +599,120 @@ def _ring_places(rings: np.ndarray, u: np.ndarray, shares: np.ndarray) -> np.nda
     return np.stack(
         [first * cosine - second * sine, first * sine + second * cosine], axis=-1
     )
+
+
+def _read_landings(
+    geometry: BundleGeometry,
+    tangents: np.ndarray,
+    normals: np.ndarray,
+    binormals: np.ndarray,
+) -> tuple[np.ndarray | None, list[tuple[Landing, int, np.ndarray]]]:
+    """Returns a bundle's rings, and for each landing its end and the ring it makes.
+
+    The rings, (R, 4), hold what the landings set in that end's row, and are None
+    if the bundle has none. A ring is (u, r1, r2, angle), with u not used without
+    rings, where the landing's section starts from a circle of the bundle's radius.
+    """
+    rings = None if geometry.rings is None else geometry.rings.copy()
+    landed = []
+    for landing, end, neighbour in (
+        (geometry.landing_end, -1, -2),
+        (geometry.landing_start, 0, 1),
+    ):
+        if landing is not None:
+            radius = geometry.radius
+            ring = np.array([0.0, radius, radius, 0.0]) if rings is None else rings[end]
+            nearest = 0.0 if rings is None else float(rings[neighbour, 3])
+            across, ring[1] = _across_path(landing.line, tangents[end])
+            angle = math.degrees(
+                math.atan2(across @ binormals[end], across @ normals[end])
+            )
+            # A section looks the same turned by half a circle: take the nearest way.
+            ring[3] = angle + 180 * round((nearest - angle) / 180)
+            if landing.thickness_line is not None:
+                ring[2] = _across_path(landing.thickness_line, tangents[end])[1]
+            landed.append((landing, end, ring))
+    return rings, landed
+
+
+def _axes(ring: np.ndarray) -> np.ndarray:
+    """Returns a ring's two radii as the columns of a 2 by 2 array, in the frame."""
+    cosine, sine = math.cos(math.radians(ring[3])), math.sin(math.radians(ring[3]))
+    return np.array([[cosine, -sine], [sine, cosine]])
+
+
+def _stretch(ring: np.ndarray, shares: np.ndarray, radius: float) -> np.ndarray:
+    """Returns what opening a round section to a ring adds to its places.
+
+    `shares` holds the places as shares of `radius`, (S, 1 or N, 2), and so does the
+    result in mm. The section stretches along the ring's radii without turning, so
+    no streamline twists.
+    """
+    axes = _axes(ring)
+    result: np.ndarray = ((shares @ axes) * (ring[1:3] - radius)) @ axes.T
+    return result
+
+
+def _across_path(line: np.ndarray, tangent: np.ndarray) -> tuple[np.ndarray, float]:
+    """Returns the part of a line's chord across the path, and the radius it gives."""
+    chord = line[-1] - line[0]
+    across = chord - tangent * (chord @ tangent)
+    return across, max(float(np.linalg.norm(across)) / 2, MIN_LANDING_RADIUS)
+
+
+def _landing_shift(
+    landing: Landing,
+    ring: np.ndarray,
+    normal: np.ndarray,
+    binormal: np.ndarray,
+    shares: np.ndarray,
+) -> np.ndarray:
+    """Returns each streamline's place on a landing, less its offset in the section.
+
+    Args:
+        landing: The landing.
+        ring: The ring at that end, with what the landing sets in it.
+        normal: The frame's normal at that end.
+        binormal: The frame's binormal at that end.
+        shares: Each streamline's place at that end, as shares of the ring's two
+            radii, (S, 2).
+
+    Returns:
+        The differences in world coordinates, (S, 3).
+    """
+    (cosine, minus_sine), (sine, _) = _axes(ring)
+    first = cosine * normal + sine * binormal
+    shift = _on_line(landing.line, shares[:, 0], ring[1], first)
+    if landing.thickness_line is not None:
+        second = cosine * binormal + minus_sine * normal
+        thickness = landing.thickness_line
+        middle = _on_line(thickness, np.zeros(1), ring[2], second)
+        shift = shift + _on_line(thickness, shares[:, 1], ring[2], second) - middle
+    return shift
+
+
+def _on_line(
+    line: np.ndarray, shares: np.ndarray, radius: float, axis: np.ndarray
+) -> np.ndarray:
+    """Returns where places along a section's radius land on a line, less those places.
+
+    `shares` holds the (S,) places as shares of `radius`, whose direction is `axis`.
+    Shares of -1 and 1 land on the line's ends, and any further out land there too.
+    """
+    sign = 1.0 if (line[-1] - line[0]) @ axis >= 0 else -1.0
+    arc = np.r_[0.0, np.linalg.norm(np.diff(line, axis=0), axis=1).cumsum()]
+    t = arc[-1] * (sign * np.clip(shares, -1.0, 1.0) + 1) / 2
+    lands = np.stack([np.interp(t, arc, column) for column in line.T], axis=-1)
+    result: np.ndarray = lands - (shares * radius)[:, None] * axis
+    return result
+
+
+def _opening(u: np.ndarray, opens_from: float, *, at_end: bool) -> np.ndarray:
+    """Returns how far a landing has bent the streamlines over at u, from 0 to 1."""
+    t = (u - opens_from) / (1 - opens_from) if at_end else 1 - u / opens_from
+    x = np.clip(t, 0.0, 1.0)
+    result: np.ndarray = x * x * (3 - 2 * x)
+    return result
 
 
 def _bend_limits(tangents: np.ndarray, step: float) -> tuple[np.ndarray, np.ndarray]:

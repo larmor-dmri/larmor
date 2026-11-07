@@ -1,6 +1,7 @@
 """The phantom editor's panel, which edits the grid, tissues, bundles and scan."""
 
 from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, cast, override
 
@@ -52,10 +53,16 @@ from larmor.viewer.model.events import (
     ViewStateChanged,
 )
 from larmor.viewer.model.item import Category, ItemId
-from larmor.viewer.model.options import OptionError
+from larmor.viewer.model.options import (
+    OptionError,
+    OptionName,
+    TractogramOptions,
+    TractStyle,
+)
 from larmor.viewer.model.phantom import (
     PROXY_NAMES,
     BundleField,
+    BundleSettings,
     BvecFrame,
     CompartmentKind,
     CompartmentSettings,
@@ -66,22 +73,26 @@ from larmor.viewer.model.phantom import (
     TissuePreset,
     TissueSettings,
     build_tissue,
+    fullness_of,
+    least_tangle,
     preset_defaults,
     run_problems,
+    true_tube_radius,
 )
 from larmor.viewer.model.phantom_editor import item_sources
 from larmor.viewer.model.view_state import Tool, ViewField
 from larmor.viewer.model.viewer import Viewer
+from larmor.viewer.qt.bundle_tool_bar import FullnessField, TangleField
 from larmor.viewer.qt.field import FieldLabel, ItemField, add_field_row
 from larmor.viewer.qt.scene_tree import REMOVE_KEYS
 from larmor.viewer.qt.style import icon_path
 
 # Shown above an empty phantom.
 START_HINT = (
-    "To start, set the grid below or take the grid of a loaded image. Then press N "
-    "and click in a 2D view to place the points of a bundle, and press Enter to "
-    "finish it. Pick the bundle's tissue in the Bundles section, and click Run to "
-    "simulate the phantom."
+    "To start, set the grid below or take the grid of a loaded image. Then press P "
+    "and drag in a 2D view to draw a bundle, or click to place its points, and press "
+    "Enter to finish it. Pick the bundle's tissue in the Bundles section, and click "
+    "Run to simulate the phantom."
 )
 # The sections, by column when the panel is wide; they share fewer columns when
 # it is narrow.
@@ -94,9 +105,10 @@ SECTION_HELP = {
     "each voxel that no bundle fills.",
     "Tissues": "The tissues of the phantom. Each one is a sum of compartments with "
     "their own diffusion and relaxation, and bundles and maps refer to it by name.",
-    "Bundles": "The fibre bundles. A drawn bundle is a tube of streamlines around a "
-    "smooth line through the points you click, and it fills the voxels inside the "
-    "tube with its tissue.",
+    "Bundles": "The fibre bundles. A drawn bundle is a set of streamlines around a "
+    "smooth line, with the Pen's radius or the section the tools give it. A plain tube "
+    "fills the voxels inside it with its tissue; any other shape fills by streamline "
+    "length.",
     "Scan": "The scan the phantom is simulated with: the gradients, the timings and "
     "the noise.",
     "Proxy maps": "Overlays that show what the phantom gives without running it. They "
@@ -128,23 +140,25 @@ HELP = {
     "bundle that uses it.",
     "Streamlines": "How many streamlines make up the bundle. They give the fibre "
     "directions in each voxel.",
-    "Radius (mm)": "The radius of the bundle's tube, in mm.",
+    "Radius (mm)": "The radius of the bundle's tube, in mm. A bundle whose section "
+    "the Width or Twist tool has set takes it from there instead.",
     "Points per streamline": "How many points each streamline has along the bundle.",
-    "Fan at start": "How much wider the bundle is at its first point: 1 makes the "
-    "radius twice as large there.",
-    "Fan at end": "How much wider the bundle is at its last point: 1 makes the radius "
-    "twice as large there.",
-    "Fan sharpness": "How close to the ends the fanning stays. Larger values keep the "
-    "middle of the bundle at its radius.",
-    "Dispersion (mm)": "How far, in mm, the streamlines wander at random from their "
-    "path at the inner points.",
     "Seed": "The seed of the bundle's random streamlines. The same seed always gives "
     "the same streamlines.",
     "Streamline area": "The cross-section in mm^2 that each streamline stands for. "
-    "With default, a drawn bundle fills the voxels inside its tube, and a fanned one "
-    "follows the length of its streamlines.",
-    "Densest fill": "For a loaded tractogram or a fanned bundle, the share of its "
-    "densest voxels that the bundle fills, from 0 to 1.",
+    "With default, a plain tube fills the voxels inside it, and any other shape "
+    "gets 3 times its median section divided by its number of streamlines. Fullness "
+    "sets the same thing in plainer terms.",
+    "Fullness": "How full the bundle is, as its streamlines' area in multiples of its "
+    "median section divided by their number. At 1 they together hold the section, and "
+    "at the default of 3 the core fills up and the edge is soft. A plain tube fills "
+    "the voxels inside it, whatever its streamlines, until you move this.",
+    "Tangle": "How far along the bundle each streamline slides from one place across "
+    "it to another, so that it loses its place. Short distances spread the directions "
+    "in a voxel. A distance too short for the bundle's points is raised to the "
+    "shortest they can show.",
+    "Densest fill": "For a loaded tractogram, the share of its densest voxels that "
+    "the bundle fills, from 0 to 1.",
     "Sequence": "A spin echo weights the signal with T2; a gradient echo weights it "
     "with T2*.",
     "TE (ms)": "The echo time in ms. Several times separated by commas give one image "
@@ -172,6 +186,11 @@ NOISE_HELP = (
 )
 SHOW_BOX_HELP = (
     "Outlines the grid in the views. It is always outlined while you draw a bundle."
+)
+TRUE_SIZE_HELP = (
+    "Draws this bundle's streamlines in the 3D view as tubes of the cross-section each "
+    "stands for, so that you see how much they fill. A plain tube has no such "
+    "area, so its tubes share its section out evenly."
 )
 ADOPT_HELP = (
     "Makes a loaded tractogram a bundle of the phantom, with its streamlines as they "
@@ -326,10 +345,6 @@ GEOMETRY_FORM: tuple[tuple[BundleField, str, float, float, int], ...] = (
     (BundleField.NUM_STREAMLINES, "Streamlines", 1, 100_000, 0),
     (BundleField.RADIUS, "Radius (mm)", 0.01, 100, 2),
     (BundleField.NUM_POINTS, "Points per streamline", 2, 10_000, 0),
-    (BundleField.FAN_START, "Fan at start", 0, 20, 2),
-    (BundleField.FAN_END, "Fan at end", 0, 20, 2),
-    (BundleField.FAN_SHARPNESS, "Fan sharpness", 0.01, 20, 2),
-    (BundleField.DISPERSION, "Dispersion (mm)", 0, 50, 2),
     (BundleField.SEED, "Seed", 0, 2**31 - 1, 0),
 )
 
@@ -941,7 +956,7 @@ class PhantomPanel(QWidget):
 
     def _build_bundle_buttons(self, form: QFormLayout, more: QFormLayout) -> None:
         """Adds Draw, the card of the bundle being drawn, and Edit, Save and Use."""
-        self.draw_button = QPushButton("Draw (N)", self)
+        self.draw_button = QPushButton("Draw (P)", self)
         self.draw_button.clicked.connect(self._draw)
         self.remove_bundle = QPushButton("Remove", self)
         self.remove_bundle.setToolTip("Removes the bundles selected in the table")
@@ -956,7 +971,9 @@ class PhantomPanel(QWidget):
         card.setContentsMargins(10, 6, 6, 6)
         self.placed = QLabel(self.draw_card)
         self.finish_button = QPushButton("Finish (Enter)", self.draw_card)
-        self.finish_button.clicked.connect(lambda: self._act(self.viewer.finish_bundle))
+        self.finish_button.clicked.connect(
+            lambda: self._act(self.viewer.finish_and_draw_on)
+        )
         self.cancel_button = QPushButton("Cancel", self.draw_card)
         self.cancel_button.clicked.connect(lambda: self._act(self.viewer.cancel_bundle))
         card.addWidget(self.placed, 1)
@@ -994,11 +1011,28 @@ class PhantomPanel(QWidget):
             self.geometry_boxes[name] = box
             main = name in (BundleField.NUM_STREAMLINES, BundleField.RADIUS)
             add_field_row(form if main else more, label, HELP[label], box, self)
+        self.fullness = FullnessField(self)
+        self.fullness.chosen.connect(self._edit_fullness)
+        add_field_row(form, "Fullness", HELP["Fullness"], self.fullness, self)
+        form.addRow(self.fullness.below)
+        self.tangle = TangleField(self)
+        self.tangle.chosen.connect(
+            lambda mm: self._edit_bundle_value(BundleField.TANGLE_MM, mm)
+        )
+        # A drag of either slider is one step to undo.
+        for field in (self.fullness, self.tangle):
+            field.drag_begun.connect(self.viewer.begin_bundle_step)
+            field.drag_ended.connect(self.viewer.end_bundle_step)
+        add_field_row(form, "Tangle", HELP["Tangle"], self.tangle, self)
+        self.true_size = QCheckBox("True-size tubes in 3D", self)
+        self.true_size.setToolTip(TRUE_SIZE_HELP)
+        self.true_size.clicked.connect(self._edit_true_size)
+        form.addRow(self.true_size)
         self.area_box = _spin(0, 1000, 4)
         self.area_box.setSpecialValueText("default")
         self.area_box.setToolTip(
             "mm^2 each streamline stands for; default: set by the tube or by the "
-            "densest fill"
+            "bundle's section"
         )
         self.area_box.valueChanged.connect(
             lambda value: self._edit_bundle_value(
@@ -1009,7 +1043,7 @@ class PhantomPanel(QWidget):
             more, "Streamline area", HELP["Streamline area"], self.area_box, self
         )
         self.fill_box = _spin(0.01, 1, 2)
-        self.fill_box.setToolTip("The fill of the bundle's dense voxels")
+        self.fill_box.setToolTip("The fill of a loaded tractogram's dense voxels")
         self.fill_box.valueChanged.connect(
             lambda value: self._edit_bundle_value(BundleField.DENSEST_FILL, value)
         )
@@ -1377,7 +1411,11 @@ class PhantomPanel(QWidget):
             if draft is not None and draft.item_id == bundle.item_id:
                 points = f"{len(draft.points)} (editing)"
             rows.append((bundle.item_id, name, bundle.tissue, points))
-        if draft is not None and draft.editing is None:
+        if (
+            draft is not None
+            and draft.editing is None
+            and not (draft.is_empty and state.bundles)
+        ):
             self._draft_row = len(rows)
             rows.append(
                 (draft.item_id, "(drawing)", draft.tissue, str(len(draft.points)))
@@ -1408,7 +1446,9 @@ class PhantomPanel(QWidget):
         """Shows the card and the points of the bundle being drawn, if any."""
         draft = state.draft
         drawing = draft is not None
-        self.draw_card.setVisible(drawing)
+        # After Enter the Pen waits for a new bundle, with nothing to finish yet.
+        waiting = draft is not None and draft.is_empty and bool(state.bundles)
+        self.draw_card.setVisible(drawing and not waiting)
         if draft is not None:
             count = len(draft.points)
             self.placed.setText(f"{count} point{'' if count == 1 else 's'} placed")
@@ -1428,7 +1468,7 @@ class PhantomPanel(QWidget):
         """Returns the bundle the form edits, the one being drawn or else selected."""
         if state is None:
             return None
-        if state.draft is not None:
+        if state.draft is not None and not state.draft.is_empty:
             return state.draft.item_id
         selected = self.viewer.scene.view.selected
         if isinstance(selected, int) and any(
@@ -1442,6 +1482,11 @@ class PhantomPanel(QWidget):
         if state is None:
             return
         draft = state.draft
+        if draft is not None and draft.is_empty and state.bundles:
+            # After Enter the Pen waits for a new bundle, and the form shows the last.
+            selected = self.viewer.scene.view.selected
+            if any(b.item_id == selected for b in state.bundles):
+                draft = None
         target = self._bundle_target(state)
         bundle = None
         if draft is None and target is not None:
@@ -1457,12 +1502,17 @@ class PhantomPanel(QWidget):
             self._set_row_visible(box, geometry is not None)
             if geometry is not None:
                 _show(box, float(getattr(geometry, name.value)))
+        if geometry is not None:
+            radius = self.geometry_boxes[BundleField.RADIUS]
+            radius.setEnabled(geometry.rings is None)
+            points = draft.points if draft is not None else geometry.control_points
+            shaped = replace(geometry, control_points=points)
+            self.tangle.show_tangle(geometry.tangle_mm, least_tangle(shaped))
+        self._set_row_visible(self.tangle, geometry is not None)
         settings = bundle if bundle is not None else (draft.editing if draft else None)
+        self._refresh_fill(settings)
         self._set_row_visible(self.area_box, settings is not None)
-        self._set_row_visible(
-            self.fill_box,
-            settings is not None and (geometry is None or not geometry.is_tube),
-        )
+        self._set_row_visible(self.fill_box, settings is not None and geometry is None)
         self._set_row_visible(self.points, draft is not None)
         self._set_row_visible(self._point_buttons, draft is not None)
         if settings is not None:
@@ -1479,6 +1529,55 @@ class PhantomPanel(QWidget):
         )
         self.save_bundle.setEnabled(draft is None and bundle is not None)
         self._select_row_of(target)
+
+    def _refresh_fill(self, settings: BundleSettings | None) -> None:
+        """Shows how full a finished bundle is, and whether its tubes show it."""
+        drawn = settings is not None and settings.geometry is not None
+        self._set_row_visible(self.fullness, drawn)
+        self._set_row_visible(self.fullness.below, drawn)
+        self._set_row_visible(self.true_size, drawn)
+        if settings is None or settings.geometry is None:
+            return
+        self.fullness.show_fullness(fullness_of(settings), settings.geometry.is_tube)
+        options = self.viewer.scene.item(settings.item_id).options
+        assert isinstance(options, TractogramOptions)
+        self.true_size.setChecked(options.tube_true_size)
+        radius = true_tube_radius(settings)
+        words = "True-size tubes in 3D"
+        if radius is not None:
+            words += f" ({radius:.3f} mm)"
+        if options.subset < 100:
+            words += f", of the {options.subset:g}% drawn"
+        self.true_size.setText(words)
+
+    def _edit_fullness(self, fullness: object) -> None:
+        """Sets the fullness of the bundle the form shows; None for the default."""
+        state = self.viewer.phantom
+        if state is None:
+            return
+        target = self._form_target(state)
+        if target is not None:
+            self._act(self.viewer.set_bundle_fullness, target, fullness)
+
+    def _edit_true_size(self, shown: bool) -> None:
+        """Draws the bundle the form shows as true-size tubes, or as lines again."""
+        state = self.viewer.phantom
+        if state is None:
+            return
+        target = self._form_target(state)
+        if target is None:
+            return
+        style = TractStyle.TUBES if shown else TractStyle.LINES
+        self._act(self.viewer.set, target, OptionName.STYLE, style)
+        self._act(self.viewer.set, target, OptionName.TUBE_TRUE_SIZE, shown)
+        self._refresh_bundle(state)
+
+    def _form_target(self, state: PhantomState) -> ItemId | None:
+        """Returns the finished bundle the form shows, also while it is edited."""
+        draft = state.draft
+        if draft is not None and draft.editing is not None:
+            return draft.editing.item_id
+        return self._bundle_target(state)
 
     def _select_row_of(self, target: ItemId | None) -> None:
         """Selects the table row of the bundle the form edits, if not selected yet."""
@@ -1773,7 +1872,18 @@ class PhantomPanel(QWidget):
         self._act(self._remove_items, [i for i in ids if isinstance(i, int)], drawing)
 
     def _remove_items(self, ids: list[ItemId], drawing: bool) -> None:
-        """Removes these bundles' items, and cancels the bundle drawn if drawing."""
+        """Removes these bundles' items, and cancels the bundle drawn if drawing.
+
+        It is one step to undo.
+        """
+        self.viewer.begin_bundle_step()
+        try:
+            self._remove_each(ids, drawing)
+        finally:
+            self.viewer.end_bundle_step()
+
+    def _remove_each(self, ids: list[ItemId], drawing: bool) -> None:
+        """Removes these bundles' items one by one, and cancels the bundle drawn."""
         if drawing:
             self.viewer.cancel_bundle()
         for item_id in ids:
@@ -1801,7 +1911,9 @@ class PhantomPanel(QWidget):
         state = self.viewer.phantom
         if state is None:
             return
-        target = None if state.draft is not None else self._bundle_target(state)
+        target = self._bundle_target(state)
+        if state.draft is not None and not state.draft.is_empty:
+            target = None
         if state.draft is None and target is None:
             return
         self._act(self.viewer.set_bundle, target, name, value)

@@ -61,6 +61,7 @@ if any(
         "viewer/test_dissect_window.py",
         "viewer/test_phantom_steps.py",
         "viewer/test_breakdown_panel.py",
+        "viewer/test_bundle_tools_window.py",
     ]
 # Screenshots need pygfx but no Qt.
 if importlib.util.find_spec("pygfx") is None:
@@ -80,6 +81,7 @@ if importlib.util.find_spec("mcp") is None:
 # which have no GPU, leaves them out with -m "not qt_widgets"; macOS runs them all.
 QT_WIDGET_TESTS = {
     "test_breakdown_panel.py",
+    "test_bundle_tools_window.py",
     "test_chrome.py",
     "test_docks.py",
     "test_help_panel.py",

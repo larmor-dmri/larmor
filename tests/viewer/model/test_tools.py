@@ -6,11 +6,8 @@ from scipy.spatial import cKDTree
 
 from larmor.simulation.bundles import centreline_spline
 from larmor.viewer import Colouring, Tool, Viewer
-from larmor.viewer.model.phantom_editor import (
-    BUNDLE_POINTS_DRAWN,
-    STROKE_POINTS,
-    simplify_stroke,
-)
+from larmor.viewer.model.bundle_shape import STROKE_POINTS, simplify_stroke
+from larmor.viewer.model.phantom_editor import BUNDLE_POINTS_DRAWN
 from larmor.viewer.model.shortcuts import Command, run
 from larmor.viewer.model.view_state import ViewState, Workspace
 

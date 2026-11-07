@@ -2,7 +2,8 @@
 
 import random
 import re
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import replace
 from enum import Enum, auto
 from pathlib import Path
@@ -14,11 +15,20 @@ from larmor._log import LarmorLogger
 from larmor.io import save_tractogram, save_volume
 from larmor.types import Grid, Tractogram, Volume
 from larmor.viewer.model.breakdown import BreakdownTool
+from larmor.viewer.model.bundle_history import BundleHistory, BundleSnapshot
+from larmor.viewer.model.bundle_shape import (
+    branch_geometry,
+    settled,
+    shape_of,
+    with_family,
+)
+from larmor.viewer.model.events import Event, ItemRemoved, OptionChanged
 from larmor.viewer.model.item import Category, Item, ItemId
 from larmor.viewer.model.options import (
     Colormap,
     OptionError,
     OptionName,
+    TractogramOptions,
     option_fields,
 )
 from larmor.viewer.model.phantom import (
@@ -26,12 +36,14 @@ from larmor.viewer.model.phantom import (
     GRADIENT_FIELDS,
     PROXY_NAMES,
     SEED_LIMIT,
+    BranchLink,
     BundleField,
     BundleSettings,
     CompartmentSettings,
     Draft,
     GeometrySettings,
     ItemSource,
+    LandingSettings,
     LoadedPhantom,
     PhantomPart,
     PhantomState,
@@ -48,6 +60,7 @@ from larmor.viewer.model.phantom import (
     build_protocol,
     build_streamlines,
     build_tissue,
+    bundle_area_for,
     bundle_value,
     check_grid_size,
     custom_settings,
@@ -60,8 +73,11 @@ from larmor.viewer.model.phantom import (
     scan_value,
     state_from_json,
     state_json,
+    true_tube_radius,
     viewer_block,
     with_bundle_value,
+    with_geometry,
+    with_valid_tangle,
 )
 from larmor.viewer.model.registry import SUBSETS
 from larmor.viewer.model.view_state import Tool, ViewField
@@ -77,8 +93,6 @@ type Schedule = Callable[[Callable[[], None]], None]
 type ShownBundles = list[tuple[BundleSettings, Tractogram, Path | None]]
 type ShownMaps = list[tuple[str, Volume, Path | None]]
 
-# The most control points one freehand stroke gives.
-STROKE_POINTS = 24
 # The points per streamline a newly drawn bundle is shown with.
 BUNDLE_POINTS_DRAWN = 100
 # The colormap each proxy map starts with.
@@ -93,6 +107,7 @@ class _Rebuild(Enum):
     """Work an edit asks for, done at most once per frame."""
 
     PREVIEW = auto()
+    SHAPES = auto()
     PROXIES = auto()
     BREAKDOWN = auto()
 
@@ -101,7 +116,7 @@ class PhantomEditor:
     """Carries out the Viewer's phantom actions on its scene.
 
     The state lives in `scene.phantom`; this keeps only the rebuilds waiting for
-    the next frame.
+    the next frame, and the undo history of the bundles.
     """
 
     def __init__(self, viewer: Viewer) -> None:
@@ -113,8 +128,27 @@ class PhantomEditor:
         # Whether the item of the bundle being edited shows other streamlines than
         # its own, so that a cancel draws them again.
         self._edited = False
+        # The new shapes of finished bundles that wait for the next frame.
+        self._shapes: dict[ItemId, BundleSettings] = {}
+        # The steps of the bundles' undo and redo, and how many callers hold the
+        # present step open, so that all they change makes one step.
+        self.history = BundleHistory()
+        self._held = 0
+        # Whether a step is being gone back or forward to, which is no new step.
+        self._restoring = False
+        # The items of bundles removed since, which going back may need again.
+        self._gone: dict[ItemId, Item] = {}
         # The Signal breakdown dock's voxel, followed through every edit.
         self.breakdown = BreakdownTool(self)
+        viewer.scene.subscribe(self._follow_scene)
+
+    def _follow_scene(self, event: Event) -> None:
+        """Keeps the item of a bundle that goes, and works out true tube sizes."""
+        if isinstance(event, OptionChanged) and event.name == OptionName.TUBE_TRUE_SIZE:
+            self._sync_tube_radii()
+        elif isinstance(event, ItemRemoved) and self.state is not None:
+            if event.item.id in BundleSnapshot.of(self.state).item_ids():
+                self._gone[event.item.id] = event.item
 
     # State
 
@@ -146,12 +180,157 @@ class PhantomEditor:
             scene.set_view(ViewField.TOOL, Tool.CURSOR)
         if part not in (PhantomPart.PROXIES, PhantomPart.OUTPUT):
             self._request(_Rebuild.BREAKDOWN)
+        if part in (PhantomPart.ALL, PhantomPart.BUNDLES, PhantomPart.DRAFT):
+            self._sync_tube_radii()
+        if part in (PhantomPart.BUNDLES, PhantomPart.DRAFT):
+            self._note_step()
+
+    # Undo and redo
+
+    @contextmanager
+    def one_step(self, *, merge: bool = False) -> Iterator[None]:
+        """Makes everything done inside one step of the undo history.
+
+        Args:
+            merge: Whether it belongs with the step before; one that an outer
+                `one_step` holds open goes by the outer one's choice.
+        """
+        self.begin_step()
+        try:
+            yield
+        except BaseException:
+            merge = False
+            raise
+        finally:
+            self._held -= 1
+            if self._held == 0:
+                self._note_step(merge=merge)
+
+    def begin_step(self) -> None:
+        """Holds the present step of the undo history open, as during a drag."""
+        self._held += 1
+
+    def end_step(self) -> None:
+        """Ends what `begin_step` began; what changed since makes one step."""
+        self._held = max(self._held - 1, 0)
+        if self._held == 0:
+            self._note_step()
+
+    def _note_step(self, *, merge: bool = False) -> None:
+        """Takes the bundles as they now stand into the undo history."""
+        state = self.state
+        if state is None or self._held or self._restoring:
+            return
+        self.history.note(BundleSnapshot.of(state), merge=merge)
+        kept = self.history.item_ids()
+        self._gone = {k: v for k, v in self._gone.items() if k in kept}
+
+    def _start_history(self) -> None:
+        """Starts the undo history again, from the phantom as it stands."""
+        state = self.state
+        self.history.reset(None if state is None else BundleSnapshot.of(state))
+        self._gone.clear()
+        self._held = 0
+
+    def undo(self) -> bool:
+        """Goes a step back in the bundles' history; returns whether it did."""
+        return self._go_to(self.history.back)
+
+    def redo(self) -> bool:
+        """Goes a step forward in the bundles' history; returns whether it did."""
+        return self._go_to(self.history.forward)
+
+    def _go_to(self, step: Callable[[], BundleSnapshot | None]) -> bool:
+        """Takes a step of the history, unless a drag holds the present one open."""
+        if self.state is None or self._held:
+            return False
+        snapshot = step()
+        if snapshot is None:
+            return False
+        self._restoring = True
+        try:
+            self._restore(self.require(), snapshot)
+        finally:
+            self._restoring = False
+        return True
+
+    def _restore(self, state: PhantomState, snapshot: BundleSnapshot) -> None:
+        """Makes the bundles and their items what a snapshot holds.
+
+        Drawn streamlines are made again from their geometries. An item of a drawn
+        bundle that the snapshot does not name goes. A tractogram used as a bundle
+        stays an item when it stops being a bundle.
+        """
+        self._pending.discard(_Rebuild.PREVIEW)
+        before = {b.item_id: b for b in state.bundles}
+        draft = snapshot.draft
+        previewed = state.draft.item_id if state.draft is not None else None
+        wanted = snapshot.item_ids()
+        drawn = [i for i, b in before.items() if b.geometry is not None]
+        for item_id in {*drawn, previewed} - wanted - {None}:
+            assert item_id is not None
+            self.viewer.remove(item_id)
+        present = {i.id for i in self.viewer.scene.items}
+        returned = {i for i in wanted - present if i in self._gone}
+        for item_id in returned:
+            self.viewer.scene.restore(self._gone.pop(item_id))
+        if draft is not None and draft.item_id in wanted - present - returned:
+            draft = replace(draft, item_id=None)
+        bundles = tuple(b for b in snapshot.bundles if b.item_id in present | returned)
+        state = self.require()
+        if draft is None and self.viewer.scene.view.tool == Tool.DRAW_BUNDLE:
+            # The Pen stays chosen, and waits for a stroke as it did.
+            if state.draft is not None and state.draft.is_empty:
+                draft = state.draft
+            else:
+                draft = self._waiting_draft(state)
+        self._set(replace(state, bundles=bundles, draft=draft), PhantomPart.BUNDLES)
+        for index, bundle in enumerate(bundles):
+            old = before.get(bundle.item_id)
+            if bundle.geometry is None or (
+                draft is not None and draft.item_id == bundle.item_id
+            ):
+                continue
+            if (
+                bundle.item_id in returned
+                or bundle.item_id == previewed
+                or old is None
+                or old.geometry != bundle.geometry
+            ):
+                self.viewer.replace_data(
+                    bundle.item_id, build_streamlines(bundle.geometry, index)
+                )
+        if draft is not None and drawable(draft.points):
+            self._edited = draft.editing is not None
+            self._rebuild_preview()
+        self._request(_Rebuild.PROXIES)
+
+    def _sync_tube_radii(self) -> None:
+        """Gives the bundles with true-size tubes the radius their areas ask for."""
+        state = self.state
+        if state is None:
+            return
+        scene = self.viewer.scene
+        draft = state.draft
+        for bundle in state.bundles:
+            if draft is not None and draft.item_id == bundle.item_id:
+                bundle = _edited_bundle(draft)
+            if not any(i.id == bundle.item_id for i in scene.items):
+                continue
+            options = scene.item(bundle.item_id).options
+            if isinstance(options, TractogramOptions) and options.tube_true_size:
+                radius = true_tube_radius(bundle) or 0.0
+                if radius != options.tube_true_radius:
+                    scene.set_option(
+                        bundle.item_id, OptionName.TUBE_TRUE_RADIUS, radius
+                    )
 
     def new(self, grid: Grid) -> None:
         """Starts a phantom on grid, with the default tissues and scan."""
         check_grid_size(grid)
         self.close()
         self._set(PhantomState(grid, default_tissues()), PhantomPart.ALL)
+        self._start_history()
         self.viewer._frame(grid)
 
     def close(self) -> None:
@@ -160,9 +339,11 @@ class PhantomEditor:
         if state is None:
             return
         self._pending.clear()
+        self._shapes.clear()
         self.breakdown.forget()
         owned = state.owned()
         self._set(None, PhantomPart.ALL)
+        self._start_history()
         for item_id in owned:
             if any(i.id == item_id for i in self.viewer.scene.items):
                 self.viewer.remove(item_id)
@@ -343,17 +524,21 @@ class PhantomEditor:
             else:
                 self.cancel()
             state = self.require()
-        last = next(
-            (b.geometry for b in reversed(state.bundles) if b.geometry is not None),
-            GeometrySettings(),
+        self._set(replace(state, draft=self._waiting_draft(state)), PhantomPart.DRAFT)
+
+    def _waiting_draft(self, state: PhantomState) -> Draft:
+        """Returns a new bundle with nothing drawn yet, with the last one's settings."""
+        geometry = replace(
+            _next_bundle_settings(state),
+            control_points=(),
+            seed=random.randrange(SEED_LIMIT),
+            rings=None,
+            tangle_mm=0.0,
+            landing_start=None,
+            landing_end=None,
         )
-        geometry = replace(last, control_points=(), seed=random.randrange(SEED_LIMIT))
         names = [t.name for t in state.tissues]
-        tissue = "WM" if "WM" in names else names[0]
-        self._set(
-            replace(state, draft=Draft(geometry=geometry, tissue=tissue)),
-            PhantomPart.DRAFT,
-        )
+        return Draft(geometry=geometry, tissue="WM" if "WM" in names else names[0])
 
     def draft(self) -> tuple[PhantomState, Draft]:
         """Returns the phantom and the bundle being drawn; raises ValueError if none."""
@@ -374,44 +559,157 @@ class PhantomEditor:
         self._request(_Rebuild.PREVIEW)
 
     def finish(self) -> Item:
-        """Makes the bundle being drawn a bundle of the phantom."""
+        """Makes the bundle being drawn a bundle of the phantom.
+
+        In the undo history it goes with the last stroke, so that going back from
+        here takes the stroke back too.
+
+        Returns:
+            The bundle's item.
+        """
+        with self.one_step(merge=True):
+            return self._finish()
+
+    def _finish(self) -> Item:
+        """Makes the bundle being drawn a bundle, and returns its item."""
         state, draft = self.draft()
         if not drawable(draft.points):
             raise ValueError(
                 "A bundle needs two or more control points, none twice in a row."
             )
+        stem = draft.branch.stem_points if draft.branch else 0
         geometry = replace(draft.geometry, control_points=draft.points)
+        geometry = with_valid_tangle(settled(geometry, stem))
         build_geometry(geometry)  # refused here, before anything changes
         if _Rebuild.PREVIEW in self._pending or draft.item_id is None:
             self._pending.discard(_Rebuild.PREVIEW)
             self._rebuild_preview()
             state, draft = self.draft()
         assert draft.item_id is not None
+        changed: dict[ItemId, BundleSettings] = {}
         if draft.editing is not None:
-            bundle = replace(draft.editing, tissue=draft.tissue, geometry=geometry)
+            bundle = replace(
+                with_geometry(draft.editing, geometry),
+                tissue=draft.tissue,
+                branch=draft.branch,
+            )
             bundles = tuple(
                 bundle if b.item_id == bundle.item_id else b for b in state.bundles
             )
+            bundles = _branches_kept_on(bundles, bundle, stem)
+            changed = with_family(bundles, {bundle.item_id: bundle})
+            del changed[bundle.item_id]
         else:
-            bundle = BundleSettings(draft.item_id, draft.tissue, geometry)
+            bundle = BundleSettings(
+                draft.item_id, draft.tissue, geometry, branch=draft.branch
+            )
             bundles = (*state.bundles, bundle)
+            if draft.branch is not None:
+                changed = _with_share_taken(state, draft.branch, geometry)
         self._edited = False
         self._set(replace(state, bundles=bundles, draft=None), PhantomPart.BUNDLES)
+        if changed:
+            self.set_shapes(changed)
         self._request(_Rebuild.PROXIES)
         return self.viewer.scene.item(bundle.item_id)
+
+    def start_branch(self, parent: ItemId, at: float, own: Sequence[Vec3]) -> None:
+        """Starts a new bundle that leaves another at a place, its stem written in it.
+
+        Args:
+            parent: The bundle it leaves.
+            at: The position along it where it leaves.
+            own: Its own control points, from there on.
+
+        Raises:
+            ValueError: If the parent is not a drawn bundle.
+        """
+        state = self.require()
+        bundle = state.bundle(parent)
+        if bundle.geometry is None:
+            raise ValueError("A branch needs a drawn bundle to leave.")
+        stem = bundle.branch.stem_points if bundle.branch else 0
+        geometry, link, _ = branch_geometry(
+            shape_of(bundle.geometry, stem), at, own, random.randrange(SEED_LIMIT)
+        )
+        draft = Draft(
+            geometry.control_points,
+            geometry,
+            bundle.tissue,
+            branch=replace(link, parent=parent),
+        )
+        self._set(replace(state, draft=draft), PhantomPart.DRAFT)
+        self._request(_Rebuild.PREVIEW)
+
+    def set_draft_shape(self, geometry: GeometrySettings) -> None:
+        """Gives the bundle being drawn a new shape, its points among it."""
+        state, draft = self.draft()
+        draft = replace(draft, points=geometry.control_points, geometry=geometry)
+        self._set(replace(state, draft=draft), PhantomPart.DRAFT)
+        self._request(_Rebuild.PREVIEW)
+
+    def set_placing(self, placing: bool, at_start: bool) -> None:
+        """Says whether the Pen adds single points to the bundle, and at which end."""
+        state, draft = self.draft()
+        draft = replace(draft, placing=placing, at_start=at_start)
+        self._set(replace(state, draft=draft), PhantomPart.DRAFT)
+
+    def set_shapes(
+        self, shapes: Mapping[ItemId, BundleSettings], *, final: bool = True
+    ) -> None:
+        """Gives finished bundles new shapes, and draws them again.
+
+        Args:
+            shapes: The bundles changed, by item.
+            final: Whether this ends the edit. If not, the change waits for the next
+                frame in a window, and the proxy maps are left until the end.
+        """
+        self._shapes.update(shapes)
+        if final or self.schedule is None:
+            self._pending.discard(_Rebuild.SHAPES)
+            self._apply_shapes()
+            if final:
+                self._request(_Rebuild.PROXIES)
+            return
+        self._request(_Rebuild.SHAPES)
+
+    def _apply_shapes(self) -> None:
+        """Puts the shapes that wait in the phantom, and draws those bundles again."""
+        shapes, self._shapes = self._shapes, {}
+        state = self.state
+        if state is None or not shapes:
+            return
+        old = {b.item_id: b for b in state.bundles}
+        bundles = tuple(shapes.get(b.item_id, b) for b in state.bundles)
+        self._set(replace(state, bundles=bundles), PhantomPart.BUNDLES)
+        for index, bundle in enumerate(bundles):
+            before = old[bundle.item_id]
+            if (
+                bundle.item_id not in shapes
+                or bundle.geometry is None
+                or bundle.geometry == before.geometry
+            ):
+                continue
+            try:
+                streamlines = build_streamlines(bundle.geometry, index)
+            except ValueError as e:
+                LarmorLogger.warning(f"The bundle cannot be drawn: {e}")
+                continue
+            self.viewer.replace_data(bundle.item_id, streamlines)
 
     def cancel(self) -> None:
         """Stops drawing: a new bundle is dropped, an edited one drawn as it was."""
         state, draft = self.draft()
         self._pending.discard(_Rebuild.PREVIEW)
-        self._set(replace(state, draft=None), PhantomPart.DRAFT)
-        if draft.editing is None:
-            if draft.item_id is not None:
-                self.viewer.remove(draft.item_id)
-        elif self._edited and draft.editing.geometry is not None:
-            index = state.bundles.index(state.bundle(draft.editing.item_id))
-            streamlines = build_streamlines(draft.editing.geometry, index)
-            self.viewer.replace_data(draft.editing.item_id, streamlines)
+        with self.one_step():
+            self._set(replace(state, draft=None), PhantomPart.DRAFT)
+            if draft.editing is None:
+                if draft.item_id is not None:
+                    self.viewer.remove(draft.item_id)
+            elif self._edited and draft.editing.geometry is not None:
+                index = state.bundles.index(state.bundle(draft.editing.item_id))
+                streamlines = build_streamlines(draft.editing.geometry, index)
+                self.viewer.replace_data(draft.editing.item_id, streamlines)
         self._edited = False
         self._request(_Rebuild.PROXIES)
 
@@ -430,6 +728,7 @@ class PhantomEditor:
             bundle.tissue,
             item_id,
             bundle,
+            bundle.branch,
         )
         self._edited = False
         self._set(replace(state, draft=draft), PhantomPart.DRAFT)
@@ -478,12 +777,71 @@ class PhantomEditor:
             return
         bundle = with_bundle_value(state.bundle(item_id), name, value)
         bundles = tuple(bundle if b.item_id == item_id else b for b in state.bundles)
-        self._set(replace(state, bundles=bundles), PhantomPart.BUNDLES)
-        if name in GEOMETRY_FIELDS:
-            assert bundle.geometry is not None
-            index = bundles.index(bundle)
-            self.viewer.replace_data(item_id, build_streamlines(bundle.geometry, index))
+        with self.one_step():
+            self._set(replace(state, bundles=bundles), PhantomPart.BUNDLES)
+            if name in GEOMETRY_FIELDS:
+                assert bundle.geometry is not None
+                index = bundles.index(bundle)
+                streamlines = build_streamlines(bundle.geometry, index)
+                self.viewer.replace_data(item_id, streamlines)
+                branches = with_family(bundles, {item_id: bundle})
+                del branches[item_id]
+                if branches:
+                    self.set_shapes(branches)
         self._request(_Rebuild.PROXIES)
+
+    def set_fullness(self, item_id: ItemId | None, fullness: float | None) -> None:
+        """Sets a bundle's streamline area from its fullness; None for the default."""
+        state = self.require()
+        draft = state.draft
+        bundle = None
+        if draft is not None and draft.editing is not None:
+            if item_id is None or item_id == draft.item_id:
+                bundle = _edited_bundle(draft)
+        if bundle is None and item_id is not None:
+            bundle = state.bundle(item_id)
+        if bundle is None or bundle.geometry is None:
+            raise ValueError("Only a finished drawn bundle has a fullness.")
+        self.set_bundle(
+            bundle.item_id,
+            BundleField.STREAMLINE_AREA,
+            bundle_area_for(bundle.geometry, fullness),
+        )
+
+    def set_landing(
+        self, item_id: ItemId, at_end: bool, landing: LandingSettings | None
+    ) -> None:
+        """Gives one end of a finished bundle a landing, or takes it away."""
+        bundle = self.require().bundle(item_id)
+        if bundle.geometry is None:
+            raise ValueError("A loaded tractogram used as a bundle has no landing.")
+        if at_end:
+            geometry = replace(bundle.geometry, landing_end=landing)
+        else:
+            geometry = replace(bundle.geometry, landing_start=landing)
+        build_geometry(geometry)  # refused here, before anything changes
+        self._set_shape(bundle, geometry)
+
+    def set_rings(
+        self, item_id: ItemId, rings: Sequence[Sequence[float]] | None
+    ) -> None:
+        """Gives a finished bundle new rings, or takes them away."""
+        bundle = self.require().bundle(item_id)
+        if bundle.geometry is None:
+            raise ValueError("A loaded tractogram used as a bundle has no rings.")
+        made = None
+        if rings is not None:
+            made = tuple(
+                (float(a), float(b), float(c), float(d)) for a, b, c, d in rings
+            )
+        geometry = replace(bundle.geometry, rings=made)
+        build_geometry(geometry)  # refused here, before anything changes
+        self._set_shape(bundle, geometry)
+
+    def _set_shape(self, bundle: BundleSettings, geometry: GeometrySettings) -> None:
+        """Gives a finished bundle a new shape, its branches following."""
+        changed = {bundle.item_id: with_geometry(bundle, geometry)}
+        self.set_shapes(with_family(self.require().bundles, changed))
 
     # Proxy maps
 
@@ -566,6 +924,8 @@ class PhantomEditor:
     def flush(self) -> None:
         """Does the rebuilds asked for since the last frame."""
         pending, self._pending = self._pending, set()
+        if _Rebuild.SHAPES in pending:
+            self._apply_shapes()
         if _Rebuild.PREVIEW in pending:
             self._rebuild_preview()
             pending.add(_Rebuild.PROXIES)  # in this frame too, not the next
@@ -578,6 +938,9 @@ class PhantomEditor:
         """Runs a rebuild at once; a new preview also rebuilds the proxy maps."""
         if kind == _Rebuild.BREAKDOWN:
             self.breakdown.refresh()
+            return
+        if kind == _Rebuild.SHAPES:
+            self._apply_shapes()
             return
         if kind == _Rebuild.PREVIEW:
             self._rebuild_preview()
@@ -593,7 +956,9 @@ class PhantomEditor:
             if draft.item_id is not None and draft.editing is None:
                 self.viewer.remove(draft.item_id)  # forgets it in the draft
             return
-        geometry = replace(draft.geometry, control_points=draft.points)
+        geometry = with_valid_tangle(
+            replace(draft.geometry, control_points=draft.points)
+        )
         index = len(state.bundles)
         if draft.editing is not None:
             index = state.bundles.index(state.bundle(draft.editing.item_id))
@@ -638,12 +1003,19 @@ class PhantomEditor:
         state = self.state
         if state is None:
             return
-        bundles = tuple(b for b in state.bundles if b.item_id != item_id)
+        # A branch holds its stem, so it stays without the bundle it left.
+        bundles = tuple(
+            replace(b, branch=None) if b.branch and b.branch.parent == item_id else b
+            for b in state.bundles
+            if b.item_id != item_id
+        )
         maps = tuple((t, i) for t, i in state.tissue_maps if i != item_id)
         proxies = tuple((k, i) for k, i in state.proxies if i != item_id)
         draft = state.draft
         if draft is not None and draft.item_id == item_id:
             draft = None if draft.editing is not None else replace(draft, item_id=None)
+        if draft is not None and draft.branch and draft.branch.parent == item_id:
+            draft = replace(draft, branch=None)
         if (bundles, maps, proxies, draft) == (
             state.bundles,
             state.tissue_maps,
@@ -729,6 +1101,15 @@ class PhantomEditor:
             self._apply_options(item.id, bundle.options)
             settings = replace(bundle.settings, item_id=item.id)
             bundles.append(settings)
+        # A branch's parent was its place among the bundles until now.
+        bundles = [
+            replace(
+                b, branch=replace(b.branch, parent=bundles[b.branch.parent].item_id)
+            )
+            if b.branch is not None and b.branch.parent < len(bundles)
+            else replace(b, branch=None)
+            for b in bundles
+        ]
         maps = []
         for tissue, volume, path in loaded.maps:
             item = self.viewer.add(
@@ -737,6 +1118,7 @@ class PhantomEditor:
             maps.append((tissue, item.id))
         state = replace(self.require(), bundles=tuple(bundles), tissue_maps=tuple(maps))
         self._set(state, PhantomPart.ALL)
+        self._start_history()
         for kind in loaded.proxies:
             self.show_proxy(kind, True)
 
@@ -779,6 +1161,7 @@ class PhantomEditor:
         """
         self._pending.clear()
         self._set(None, PhantomPart.ALL)
+        self._start_history()
         if block is None:
             return []
         try:
@@ -791,6 +1174,7 @@ class PhantomEditor:
         state = replace(saved, bundles=(), tissue_maps=(), proxies=())
         self._set(state, PhantomPart.ALL)
         bundles = []
+        made: dict[ItemId, ItemId] = {}
         for index, bundle in enumerate(saved.bundles):
             if ids.get(bundle.item_id) in present:
                 bundles.append(replace(bundle, item_id=ids[bundle.item_id]))
@@ -807,7 +1191,9 @@ class PhantomEditor:
                 name=str(extra.get("name") or f"Bundle {index + 1}"),
             )
             self._apply_options(item.id, extra.get("options", {}))
+            made[bundle.item_id] = item.id
             bundles.append(replace(bundle, item_id=item.id))
+        bundles = [_with_parent_of(b, {**ids, **made}) for b in bundles]
         maps = []
         for tissue, item_id in saved.tissue_maps:
             if ids.get(item_id) in present:
@@ -816,6 +1202,7 @@ class PhantomEditor:
                 found.append(f"The map of {tissue} was not opened.")
         state = replace(self.require(), bundles=tuple(bundles), tissue_maps=tuple(maps))
         self._set(state, PhantomPart.ALL)
+        self._start_history()
         for kind, _ in saved.proxies:
             try:
                 self.show_proxy(kind, True)
@@ -883,8 +1270,76 @@ def _edited_bundle(draft: Draft) -> BundleSettings:
     bundle = replace(draft.editing, tissue=draft.tissue)
     if drawable(draft.points) and bundle.geometry is not None:
         geometry = replace(draft.geometry, control_points=draft.points)
-        bundle = replace(bundle, geometry=geometry)
+        bundle = with_geometry(bundle, geometry)
     return bundle
+
+
+def _next_bundle_settings(state: PhantomState) -> GeometrySettings:
+    """Returns the settings a new bundle starts with, those of the last whole bundle.
+
+    A bundle that has branches counts with their streamlines, which it gave them.
+    """
+    for bundle in reversed(state.bundles):
+        if bundle.geometry is not None and bundle.branch is None:
+            count = bundle.geometry.num_streamlines + sum(
+                b.geometry.num_streamlines
+                for b in state.bundles
+                if b.geometry is not None
+                and b.branch is not None
+                and b.branch.parent == bundle.item_id
+            )
+            return replace(bundle.geometry, num_streamlines=count)
+    return GeometrySettings()
+
+
+def _with_share_taken(
+    state: PhantomState, link: BranchLink, branch: GeometrySettings
+) -> dict[ItemId, BundleSettings]:
+    """Returns the parent of a new branch, with the branch's streamlines taken away."""
+    parent = state.bundle(link.parent)
+    if parent.geometry is None:
+        return {}
+    left = max(parent.geometry.num_streamlines - branch.num_streamlines, 1)
+    geometry = replace(parent.geometry, num_streamlines=left)
+    return {parent.item_id: with_geometry(parent, geometry)}
+
+
+def _branches_kept_on(
+    bundles: Sequence[BundleSettings], parent: BundleSettings, stem: int
+) -> tuple[BundleSettings, ...]:
+    """Returns the bundles with each branch of an edited parent still where it was.
+
+    The stretch of the parent a branch leaves can have moved along the parent, so its
+    position is found again from the point its stem ends at.
+    """
+    assert parent.geometry is not None
+    shape = shape_of(parent.geometry, stem)
+    positions = np.linspace(0.0, 1.0, 512)
+    curve = np.array([shape.point(float(u)) for u in positions])
+
+    def kept_on(bundle: BundleSettings) -> BundleSettings:
+        """Returns one bundle, its link changed if it is a branch of the parent."""
+        link = bundle.branch
+        if link is None or link.parent != parent.item_id or bundle.geometry is None:
+            return bundle
+        end = np.array(bundle.geometry.control_points[link.stem_points - 1])
+        k = int(np.argmin(np.linalg.norm(curve - end, axis=1)))
+        return replace(bundle, branch=replace(link, at=float(positions[k])))
+
+    return tuple(kept_on(b) for b in bundles)
+
+
+def _with_parent_of(
+    bundle: BundleSettings, ids: Mapping[ItemId, ItemId]
+) -> BundleSettings:
+    """Returns a restored bundle with its parent's new id; no link if it has gone."""
+    link = bundle.branch
+    if link is None:
+        return bundle
+    parent = ids.get(link.parent)
+    return replace(
+        bundle, branch=None if parent is None else replace(link, parent=parent)
+    )
 
 
 def _as_read(item: Item) -> bool:
@@ -899,82 +1354,6 @@ def distinct_points(points: Sequence[Vec3]) -> tuple[Vec3, ...]:
         if not kept or tuple(point) != tuple(kept[-1]):
             kept.append(point)
     return tuple(kept)
-
-
-def simplify_stroke(
-    points: Sequence[Vec3], tolerance: float, most: int = STROKE_POINTS
-) -> list[Vec3]:
-    """Returns control points for a freehand stroke, evenly spaced along it.
-
-    They are the fewest evenly spaced points, from 2 to `most` and always with
-    the stroke's first and last, whose bundle centreline (see
-    `centreline_spline`) stays within `tolerance` of the stroke; `most` points
-    when no fewer do.
-
-    Args:
-        points: The stroke, world mm, in order.
-        tolerance: How far the centreline may stray from the stroke, mm.
-        most: The most points returned, at least 2.
-
-    Returns:
-        The points, in order; one point for a stroke that never moves.
-    """
-    stroke = np.asarray(points, dtype=float).reshape(-1, 3)
-    if len(stroke) == 0:
-        return []
-    steps = np.linalg.norm(np.diff(stroke, axis=0), axis=1)
-    if not np.any(steps > 0):
-        return [_vec3(stroke[0])]
-    stroke = np.vstack([stroke[:1], stroke[1:][steps > 0]])
-    arc = np.concatenate([[0.0], np.cumsum(steps[steps > 0])])
-    limit = max(tolerance, 1e-9)
-    # The stroke resampled finely enough that nearest samples measure distances.
-    count = int(min(np.ceil(arc[-1] / (limit / 4)), 4000)) + 1
-    dense = _along(stroke, arc, np.linspace(0.0, arc[-1], count))
-    chosen = stroke[[0, -1]]
-    for n in range(2, max(most, 2) + 1):
-        chosen = _along(stroke, arc, np.linspace(0.0, arc[-1], n))
-        chosen[0], chosen[-1] = stroke[0], stroke[-1]
-        if _follows(chosen, dense, limit):
-            break
-    return [_vec3(p) for p in chosen]
-
-
-def _along(stroke: np.ndarray, arc: np.ndarray, at: np.ndarray) -> np.ndarray:
-    """Returns the points of the stroke at the arc lengths `at`, (N, 3).
-
-    Args:
-        stroke: The stroke's points, (M, 3).
-        arc: The arc length at each of them, (M,), increasing.
-        at: The arc lengths wanted, (N,).
-    """
-    return np.column_stack([np.interp(at, arc, stroke[:, k]) for k in range(3)])
-
-
-def _follows(control: np.ndarray, dense: np.ndarray, tolerance: float) -> bool:
-    """Returns whether the centreline through `control` keeps close to a stroke.
-
-    Every point of the centreline must be within `tolerance` of the finely
-    resampled stroke `dense`, and every point of `dense` within `tolerance` of
-    the centreline.
-    """
-    from scipy.spatial import cKDTree
-
-    # Imported here, so that opening the viewer does not load the simulation.
-    from larmor.simulation.bundles import centreline_spline
-
-    if np.any(np.linalg.norm(np.diff(control, axis=0), axis=1) == 0):
-        return False
-    centreline, _ = centreline_spline(control)
-    curve = centreline(np.linspace(0.0, 1.0, len(dense)))
-    stray = cKDTree(dense).query(curve)[0].max()
-    missed = cKDTree(curve).query(dense)[0].max()
-    return bool(max(stray, missed) <= tolerance)
-
-
-def _vec3(point: np.ndarray) -> Vec3:
-    """Returns a point as a tuple of three floats."""
-    return (float(point[0]), float(point[1]), float(point[2]))
 
 
 def item_sources(state: PhantomState, scene: Scene) -> dict[ItemId, ItemSource]:

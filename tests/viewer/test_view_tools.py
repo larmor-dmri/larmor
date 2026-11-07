@@ -278,14 +278,20 @@ def test_dragging_a_control_point_moves_it_in_the_views_plane(
 ) -> None:
     viewer = window.viewer
     viewer.start_bundle()
-    viewer.set_bundle_points([(5.0, 5.0, 3.0), (20.0, 20.0, 9.0)])
+    viewer.set_bundle_points([(1.0, 1.0, 3.0), (5.0, 5.0, 3.0), (20.0, 20.0, 9.0)])
     panel = _panel(window, ViewKind.AXIAL)
     z = viewer.scene.view.cursor[2]
     _drag(panel, _point(panel, (5.0, 5.0, z)), _point(panel, (8.0, 12.0, z)))
     state = viewer.phantom
     assert state is not None and state.draft is not None
     # The point keeps its own depth.
-    np.testing.assert_allclose(state.draft.points[0], (8.0, 12.0, 3.0), atol=0.3)
+    np.testing.assert_allclose(state.draft.points[1], (8.0, 12.0, 3.0), atol=0.3)
+    # An end needs Ctrl, as a plain press there continues the bundle.
+    _drag(panel, _point(panel, (20.0, 20.0, z)), _point(panel, (24.0, 20.0, z)), CTRL)
+    state = viewer.phantom
+    assert state is not None and state.draft is not None
+    assert len(state.draft.points) == 3
+    np.testing.assert_allclose(state.draft.points[2], (24.0, 20.0, 9.0), atol=0.3)
 
 
 # Keys and the menu

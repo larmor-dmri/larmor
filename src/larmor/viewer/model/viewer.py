@@ -18,6 +18,8 @@ from larmor._log import LarmorLogger
 from larmor.io import read_tsf, save_tractogram, save_volume, write_tsf
 from larmor.types import GradientTable, Grid, Tractogram, Volume
 from larmor.viewer.model.breakdown import BreakdownState
+from larmor.viewer.model.bundle_shape import simplify_stroke
+from larmor.viewer.model.bundle_tools import DRAWING_TOOLS, BundleTools
 from larmor.viewer.model.camera import (
     PRESETS,
     Camera2D,
@@ -96,7 +98,9 @@ from larmor.viewer.model.options import (
 from larmor.viewer.model.phantom import (
     DEFAULT_BOX_MM,
     DEFAULT_VOXEL_MM,
+    BundleEnd,
     BundleField,
+    LandingSettings,
     LoadedPhantom,
     PhantomState,
     ProxyMap,
@@ -106,6 +110,7 @@ from larmor.viewer.model.phantom import (
     SimulationOutputs,
     TissuePreset,
     box_grid,
+    build_geometry,
     drawable,
     existing_outputs,
     holds_other_files,
@@ -113,7 +118,7 @@ from larmor.viewer.model.phantom import (
     run_simulation,
     simulation_outputs,
 )
-from larmor.viewer.model.phantom_editor import PhantomEditor, Schedule, simplify_stroke
+from larmor.viewer.model.phantom_editor import PhantomEditor, Schedule
 from larmor.viewer.model.readout import Readout, closest_axis, read_volume
 from larmor.viewer.model.readout import slice_index as volume_slice
 from larmor.viewer.model.regions import (
@@ -243,7 +248,7 @@ SAVABLE: Final = (
 # The pointer tools each workspace offers.
 WORKSPACE_TOOLS: Final = {
     Workspace.VIEW: (Tool.CURSOR, Tool.ZOOM_BOX),
-    Workspace.SIMULATE: (Tool.CURSOR, Tool.DRAW_BUNDLE),
+    Workspace.SIMULATE: (Tool.CURSOR, *DRAWING_TOOLS),
     Workspace.DISSECT: (
         Tool.CURSOR,
         Tool.SPHERE,
@@ -314,6 +319,8 @@ class Viewer:
         self._versions: dict[ItemId, int] = {}
         # Carries out the phantom actions; the phantom itself is `scene.phantom`.
         self._phantom = PhantomEditor(self)
+        # The drawing tools of the SymDWI workspace.
+        self.bundle_tools = BundleTools(self)
         # The grid the detail windows' rectangles are in; they follow it.
         self._boxes_grid: Grid | None = None
         self.scene.subscribe(self._follow_detail_grid)
@@ -1425,6 +1432,23 @@ class Viewer:
         self._point_groups = [*self._current_groups(draft.points), len(kept)]
         return len(kept)
 
+    def note_points(self, added: Sequence[object], *, at_start: bool = False) -> None:
+        """Notes the points a stroke or click adds, so Backspace takes them back whole.
+
+        Args:
+            added: The points about to be added to the bundle being drawn.
+            at_start: Whether they go before its first point rather than after its
+                last.
+        """
+        _, draft = self._phantom.draft()
+        groups = self._current_groups(draft.points)
+        count = len(added)
+        self._point_groups = [count, *groups] if at_start else [*groups, count]
+
+    def forget_point_groups(self) -> None:
+        """Counts the points of the bundle being drawn one by one from now on."""
+        self._point_groups = []
+
     @agent_action
     def remove_bundle_point(self) -> None:
         """Removes the last point or stroke added to the bundle being drawn.
@@ -1435,11 +1459,17 @@ class Viewer:
             ValueError: If no bundle is being drawn.
         """
         _, draft = self._phantom.draft()
-        if not draft.points:
+        own = draft.own_points
+        if not own:
             return
+        stem = draft.points[: len(draft.points) - len(own)]
         groups = self._current_groups(draft.points)
-        last = groups.pop() if groups else 1
-        self._phantom.set_points(draft.points[:-last])
+        if draft.at_start:
+            last = groups.pop(0) if groups else 1
+            self._phantom.set_points((*stem, *own[last:]))
+        else:
+            last = groups.pop() if groups else 1
+            self._phantom.set_points((*stem, *own[: max(len(own) - last, 0)]))
         self._point_groups = groups
 
     def _current_groups(self, points: Sequence[object]) -> list[int]:
@@ -1473,6 +1503,62 @@ class Viewer:
                 points.
         """
         return self._phantom.finish()
+
+    def finish_and_draw_on(self) -> Item:
+        """Finishes the bundle being drawn and keeps the Pen, as Enter does.
+
+        The bundle is selected, and the next stroke or click starts another.
+
+        Returns:
+            The bundle's tractogram item.
+
+        Raises:
+            ValueError: If no bundle is being drawn, or it has fewer than two
+                points.
+        """
+        with self._phantom.one_step(merge=True):
+            item = self._phantom.finish()
+            self._phantom.start_bundle()
+        self.select(item.id)
+        return item
+
+    @agent_action
+    def undo_bundles(self) -> bool:
+        """Takes back the last change to the phantom's bundles.
+
+        A change is a finished stroke or tool edit, or a setting of a bundle such as
+        its tissue, streamlines, radius, tangle or fullness; finishing a bundle goes
+        with its last stroke. The tissues, the scan, the grid and the items' options
+        are not part of it, and a new or opened phantom starts the history again. It
+        keeps the last 100 changes.
+
+        Returns:
+            Whether there was a change to take back; there is none during a drag.
+        """
+        return self._after_step(self._phantom.undo())
+
+    @agent_action
+    def redo_bundles(self) -> bool:
+        """Does again the last change `undo_bundles` took back, if none came since.
+
+        Returns:
+            Whether there was a change to do again; there is none during a drag.
+        """
+        return self._after_step(self._phantom.redo())
+
+    def _after_step(self, moved: bool) -> bool:
+        """Forgets what lay under the pointer, which a step of history can change."""
+        if moved:
+            self.bundle_tools.leave()
+        return moved
+
+    def begin_bundle_step(self) -> None:
+        """Makes all changes to the bundles until `end_bundle_step` one step to undo."""
+        self._phantom.begin_step()
+
+    def end_bundle_step(self) -> None:
+        """Ends what `begin_bundle_step` began."""
+        self._phantom.end_step()
 
     @agent_action
     def cancel_bundle(self) -> None:
@@ -1520,11 +1606,12 @@ class Viewer:
             item_id: The bundle's tractogram item, or None for the bundle being
                 drawn.
             name: `BundleField.TISSUE` (a tissue's name), `NUM_STREAMLINES`,
-                `RADIUS` (mm), `NUM_POINTS`, `FAN_START`, `FAN_END`,
-                `FAN_SHARPNESS`, `DISPERSION` (mm), `SEED`, `STREAMLINE_AREA`
-                (mm^2 per streamline, None for the default, set by the tube or by
-                the densest fill) or `DENSEST_FILL` (the fill of the dense voxels
-                of a loaded tractogram or a fanned bundle, in (0, 1]).
+                `RADIUS` (mm), `NUM_POINTS`, `SEED`, `TANGLE_MM` (the distance of
+                each streamline's slide across the bundle, 0 for none, raised to the
+                shortest the bundle's points can show), `STREAMLINE_AREA` (mm^2 per
+                streamline, None for the default, set by the tube or by the
+                bundle's section) or `DENSEST_FILL` (the fill of a loaded
+                tractogram's dense voxels, in (0, 1]).
             value: The new value.
 
         Raises:
@@ -1533,6 +1620,116 @@ class Viewer:
         """
         _require(name, BundleField)
         self._phantom.set_bundle(item_id, name, value)
+
+    @agent_action
+    def set_bundle_fullness(
+        self, item_id: ItemId | None, fullness: float | None
+    ) -> None:
+        """Sets how full a finished bundle is, by its streamline area.
+
+        The fullness is the area in multiples of the bundle's median section divided
+        by its number of streamlines, and it stays as the bundle changes shape. None
+        goes back to the default: a plain tube then fills its tube, and any other
+        shape has a fullness of 3. Any value on a plain tube makes it fill by
+        streamline length, not as a tube.
+
+        Args:
+            item_id: The bundle's tractogram item, or None for the bundle being
+                edited.
+            fullness: The fullness, above 0, or None for the default.
+
+        Raises:
+            ValueError: If the bundle is not a finished drawn one, or the fullness is
+                not above 0.
+        """
+        self._phantom.set_fullness(item_id, fullness)
+
+    @agent_action
+    def set_bundle_rings(
+        self, item_id: ItemId, rings: list[list[float]] | None
+    ) -> None:
+        """Sets a finished bundle's section along it, or makes it round again.
+
+        Args:
+            item_id: The bundle's tractogram item.
+            rings: Rows of u, the two radii in mm and the angle in degrees, with u
+                rising from 0 to 1 along the centreline; None for none.
+
+        Raises:
+            ValueError: If the bundle is not a drawn one, or the rows are refused.
+        """
+        self._phantom.set_rings(item_id, rings)
+
+    @agent_action
+    def set_bundle_landing(
+        self,
+        item_id: ItemId,
+        end: BundleEnd,
+        line: list[tuple[float, float, float]] | None,
+        thickness_line: list[tuple[float, float, float]] | None = None,
+        opens_from: float = 0.5,
+    ) -> None:
+        """Bends the streamlines of a finished bundle's end over to a line, or stops it.
+
+        Args:
+            item_id: The bundle's tractogram item.
+            end: `BundleEnd.START` or `END`.
+            line: The line's points (x, y, z), world mm; None for no landing.
+            thickness_line: A second line across the first, which sets the thickness.
+            opens_from: The position along the centreline where the bending starts,
+                from 0 at its start to 1 at its end.
+
+        Raises:
+            TypeError: If end is not a BundleEnd.
+            ValueError: If the bundle is not a drawn one, or a value is refused.
+        """
+        _require(end, BundleEnd)
+        landing = None
+        if line is not None:
+            landing = LandingSettings(
+                tuple(_position(p) for p in line),
+                None
+                if thickness_line is None
+                else tuple(_position(p) for p in thickness_line),
+                float(opens_from),
+            )
+        self._phantom.set_landing(item_id, end == BundleEnd.END, landing)
+
+    def bundle_place_values(self, item_id: ItemId) -> np.ndarray | None:
+        """Returns a value per point that tells a drawn bundle's streamlines apart.
+
+        It is each streamline's first direction from the bundle's centre, in radians,
+        which stays with the streamline through every change of shape.
+
+        Args:
+            item_id: The tractogram item.
+
+        Returns:
+            The values, one per point of the item's tractogram; None for an item that
+            is not a drawn bundle.
+        """
+        state = self.scene.phantom
+        if state is None:
+            return None
+        draft = state.draft
+        geometry = None
+        if draft is not None and draft.item_id == item_id:
+            geometry = replace(draft.geometry, control_points=draft.points)
+        else:
+            for bundle in state.bundles:
+                if bundle.item_id == item_id:
+                    geometry = bundle.geometry
+        data = self.scene.item(item_id).data
+        if geometry is None or not isinstance(data, Tractogram):
+            return None
+        from larmor.simulation.bundles import bundle_places
+
+        places = bundle_places(build_geometry(geometry))
+        if len(places) != data.num_streamlines:
+            return None
+        lengths = np.diff(data.offsets)
+        values: np.ndarray = np.repeat(np.arctan2(places[:, 1], places[:, 0]), lengths)
+        return values.astype(np.float32)
 
     @agent_action
     def show_proxy(self, kind: ProxyMap, shown: bool = True) -> Item | None:
@@ -1562,7 +1759,7 @@ class Viewer:
     def show_grid_box(self, shown: bool = True) -> None:
         """Outlines the phantom's grid box in the views, or hides it.
 
-        The box is shown only in the Simulate workspace, and always while a
+        The box is shown only in the SymDWI workspace, and always while a
         bundle is drawn whatever this says; a session keeps the choice.
 
         Args:
@@ -3335,14 +3532,15 @@ class Viewer:
         `Tool.CURSOR` moves the crosshair, `SPHERE` and `BOX` place regions,
         `ZOOM_BOX` opens a rectangle of a 2D view in a detail window,
         `LABEL_REGION` adds the label clicked to a label region and removes it
-        with Shift (`click_label`), and `DRAW_BUNDLE` draws a phantom bundle:
-        choosing it starts one, as `start_bundle` does, and choosing another
+        with Shift (`click_label`), and `DRAW_BUNDLE`, the Pen, draws a phantom
+        bundle: choosing it starts one, as `start_bundle` does, and choosing another
         tool while drawing finishes the bundle if it has two points, else
-        drops it.
+        drops it. `BEND`, `WIDTH`, `TWIST`, `FAN` and `ERASE` change the drawn
+        bundles that show in a 2D view.
 
-        Each workspace offers its own tools: Cursor and Zoom box in View, Cursor
-        and Draw bundle in Simulate, and Cursor, Sphere, Box, Label region and
-        Zoom box in Dissect.
+        Each workspace offers its own tools: Cursor and Zoom box in View, Cursor,
+        Pen, Bend, Width, Twist, Fan and Erase in SymDWI, and Cursor, Sphere, Box,
+        Label region and Zoom box in Dissect.
 
         Args:
             tool: The tool.
@@ -3351,6 +3549,7 @@ class Viewer:
             ValueError: If the workspace shown does not offer the tool.
         """
         tool = Tool(tool)
+        self.bundle_tools.cancel_drag()
         if tool == Tool.DRAW_BUNDLE and self.drawing:
             return
         workspace = self.scene.view.workspace
@@ -3674,7 +3873,7 @@ class Viewer:
 
     @agent_action
     def set_workspace(self, workspace: Workspace) -> None:
-        """Shows the window's View, Simulate or Dissect workspace.
+        """Shows the window's View, SymDWI or Dissect workspace.
 
         A pointer tool the new workspace does not offer goes back to the cursor.
         The region tools are offered only in Dissect.
@@ -3688,7 +3887,12 @@ class Viewer:
             TypeError: If workspace is not a Workspace.
         """
         _require(workspace, Workspace)
+        self.bundle_tools.cancel_drag()
         if self.scene.view.tool not in WORKSPACE_TOOLS[workspace]:
+            # The Pen's empty bundle, left after Enter, does not stay behind.
+            state = self.scene.phantom
+            if state is not None and state.draft is not None and state.draft.is_empty:
+                self._phantom.cancel()
             self.scene.set_view(ViewField.TOOL, Tool.CURSOR)
         self.scene.set_view(ViewField.WORKSPACE, workspace)
 
