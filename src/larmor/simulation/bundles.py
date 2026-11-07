@@ -113,6 +113,24 @@ class BundleGeometry:
         """Tells whether the bundle is a round tube of one radius all along."""
         return self.rings is None and self.fan_start == 0 and self.fan_end == 0
 
+    def median_section(self) -> float:
+        """Returns the median area of the section the rings set along the bundle.
+
+        A change over less than half of the bundle's length leaves it alone, so it
+        tells the size the bundle mostly has.
+
+        Returns:
+            The area in mm^2.
+
+        Raises:
+            ValueError: If the geometry has no rings.
+        """
+        if self.rings is None:
+            raise ValueError("A geometry without rings has no median section.")
+        u = np.linspace(0.0, 1.0, self.num_points)
+        radii = PchipInterpolator(self.rings[:, 0], self.rings[:, 1:3], axis=0)(u)
+        return float(np.pi * np.median(np.prod(radii, axis=1)))
+
     def to_dict(self) -> dict[str, object]:
         """Returns the geometry as plain values that can be saved as JSON.
 

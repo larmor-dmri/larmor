@@ -1,7 +1,6 @@
 import json
 import logging
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 import pytest
@@ -26,6 +25,7 @@ from larmor.simulation import (
     read_phantom,
     write_phantom,
 )
+from larmor.simulation.phantom import RINGS_FULLNESS
 from larmor.simulation.voxelise import tube_fill
 from larmor.types import GradientTable, Grid, Tractogram, Volume
 
@@ -446,20 +446,54 @@ def test_a_tissue_map_in_another_orientation_keeps_its_world_positions(
     np.testing.assert_array_equal(found, wanted)
 
 
-@pytest.mark.parametrize(
-    "shape",
-    [
-        {"radius": 2.0, "fan_end": 2.0},
-        {"rings": np.array([[0.0, 2.0, 2.0, 0.0], [1.0, 6.0, 6.0, 0.0]])},
-    ],
-    ids=["fan", "rings"],
-)
-def test_a_widening_bundle_fills_like_a_tractogram_of_its_streamlines(
-    shape: dict[str, Any],
-) -> None:
+def test_rings_by_default_stand_for_three_times_their_median_section() -> None:
     grid = Grid((20, 20, 20), np.eye(4))
     ends = np.array([[-1.0, 10, 10], [21.0, 10, 10]])
-    wide = BundleGeometry(ends, num_streamlines=2000, seed=0, **shape)
+    rings = np.array([[0.0, 2.0, 2.0, 0.0], [1.0, 6.0, 6.0, 0.0]])
+    wide = BundleGeometry(ends, num_streamlines=2000, seed=0, rings=rings)
+    area = RINGS_FULLNESS * wide.median_section() / 2000
+    drawn, given, other_fill = (
+        partition_voxels(Phantom(grid, bundles=(bundle,))).bundle_fractions
+        for bundle in (
+            Bundle(wide),
+            Bundle(create_bundle(wide), streamline_area=area),
+            Bundle(wide, densest_fill=0.2),
+        )
+    )
+    np.testing.assert_array_equal(drawn, given)
+    np.testing.assert_array_equal(drawn, other_fill)
+    # The same streamlines spread over a wider section thin out.
+    assert drawn[1].sum() / 2.36**2 > drawn[18].sum() / 5.45**2
+
+
+@pytest.mark.parametrize("count", [500, 5000])
+def test_constant_rings_fill_nearly_what_a_tube_of_that_size_does(count: int) -> None:
+    grid = Grid((24, 21, 21), np.eye(4))
+    ends = np.array([[-1.0, 10, 10], [25.0, 10, 10]])
+    rings = np.array([[0.0, 3.0, 3.0, 0.0], [1.0, 3.0, 3.0, 0.0]])
+    tube, ringed = (
+        partition_voxels(
+            Phantom(
+                grid,
+                bundles=(
+                    Bundle(
+                        BundleGeometry(
+                            ends, radius=3.0, num_streamlines=count, seed=1, rings=r
+                        )
+                    ),
+                ),
+            )
+        ).bundle_fractions
+        for r in (None, rings)
+    )
+    assert ringed.sum() == pytest.approx(tube.sum(), rel=0.12)
+    assert ringed[tube >= 1].mean() > 0.97
+
+
+def test_a_fan_fills_like_a_tractogram_of_its_streamlines_by_densest_fill() -> None:
+    grid = Grid((20, 20, 20), np.eye(4))
+    ends = np.array([[-1.0, 10, 10], [21.0, 10, 10]])
+    wide = BundleGeometry(ends, num_streamlines=2000, seed=0, radius=2.0, fan_end=2.0)
     for fill in (0.7, 0.35):
         drawn, given = (
             partition_voxels(Phantom(grid, bundles=(Bundle(s, densest_fill=fill),)))

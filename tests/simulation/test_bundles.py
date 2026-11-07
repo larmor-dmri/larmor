@@ -393,3 +393,43 @@ def test_empty_streamlines_change_nothing_in_the_voxelisation(
 def test_a_bundle_of_empty_streamlines_reaches_no_voxel() -> None:
     empty = Tractogram(np.zeros((0, 3), np.float32), np.array([0, 0, 0]))
     assert len(voxelise([empty], GRID).voxel) == 0
+
+
+@pytest.mark.parametrize(
+    ("rings", "section"),
+    [
+        (
+            [
+                [0, 3, 3, 0],
+                [0.3, 3, 3, 0],
+                [0.5, 6, 6, 0],
+                [0.7, 3, 3, 0],
+                [1, 3, 3, 0],
+            ],
+            9,
+        ),
+        (
+            [
+                [0, 3, 3, 0],
+                [0.3, 3, 3, 0],
+                [0.5, 1, 1, 0],
+                [0.7, 3, 3, 0],
+                [1, 3, 3, 0],
+            ],
+            9,
+        ),
+        ([[0, 8, 2, 40], [1, 8, 2, 90]], 16),
+    ],
+    ids=["widened locally", "narrowed locally", "flat"],
+)
+def test_the_median_section_is_the_size_a_bundle_mostly_has(
+    rings: list[list[float]], section: float
+) -> None:
+    ends = np.array([[0.0, 0, 0], [40.0, 0, 0]])
+    geometry = BundleGeometry(ends, rings=np.array(rings, dtype=float))
+    assert geometry.median_section() == pytest.approx(np.pi * section)
+
+
+def test_a_geometry_without_rings_has_no_median_section() -> None:
+    with pytest.raises(ValueError, match="without rings"):
+        BundleGeometry(np.array([[0.0, 0, 0], [40.0, 0, 0]])).median_section()
