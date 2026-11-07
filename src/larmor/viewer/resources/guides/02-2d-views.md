@@ -21,7 +21,8 @@ Ctrl is Cmd on macOS. The keys act on the selected view, which has a thin frame 
 ## Pointer tools
 
 What a click and a drag do in the views depends on the pointer tool, which you choose with a key. Each workspace
-offers its own tools, and the region tools are offered only in the Dissect workspace. Whatever the tool, Ctrl+drag
+offers its own tools, and the region tools are offered only in the Dissect workspace. B chooses the Box there and
+Bend in SymDWI. Whatever the tool, Ctrl+drag
 pans and the wheel steps the slice, and a press on the edge of a detail window's box takes that instead of the
 tool. In the Dissect workspace, so does a press on the outline or the centre of a region.
 
@@ -31,7 +32,8 @@ tool. In the Dissect workspace, so does a press on the outline or the centre of 
 | O | Sphere | Places a sphere region at the click; a drag from the centre sets its radius (Dissect only) |
 | B | Box | Draws a box region over the rectangle dragged, as deep as a tractogram's slab (Dissect only) |
 | Z | Zoom box | Drags a rectangle that opens in a detail window |
-| N | Draw bundle | Draws a phantom bundle, in the Simulate workspace (see [Phantoms](15-phantoms.md)) |
+| P or N | Pen | Draws a phantom bundle by strokes and clicks, in the SymDWI workspace (see [Phantoms](15-phantoms.md)) |
+| B, W, T, F, E | Bend, Width, Twist, Fan, Erase | Change the drawn bundles that show in the view, in the SymDWI workspace |
 
 Escape returns to the Cursor tool once it has done its other jobs, such as stopping a bundle being drawn. Regions
 and their handles are explained in [Tractograms](05-tractograms.md). The zoom box snaps to the voxels of the main

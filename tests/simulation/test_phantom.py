@@ -6,12 +6,14 @@ import numpy as np
 import pytest
 
 import larmor.simulation.bundles as bundles
+import larmor.simulation.examples as sim_examples
 from larmor.io import load_tractogram, load_volume, save_tractogram, save_volume
 from larmor.simulation import (
     Bundle,
     BundleGeometry,
     Compartment,
     CompartmentModel,
+    Landing,
     Phantom,
     Protocol,
     PulseSequence,
@@ -228,7 +230,12 @@ def test_every_block_round_trips_through_the_file(tmp_path: Path) -> None:
     phantom = Phantom(
         GRID,
         bundles=(
-            Bundle(BundleGeometry(np.array([[0.0, 3, 3], [5.0, 4, 3]]), fan_end=0.5)),
+            Bundle(
+                BundleGeometry(
+                    np.array([[0.0, 3, 3], [5.0, 4, 3]]),
+                    rings=np.array([[0.0, 2.0, 2.0, 0.0], [1.0, 3.0, 3.0, 0.0]]),
+                )
+            ),
             Bundle(load_tractogram(tck_path), path=tck_path, streamline_area=0.5),
         ),
         tissue_maps=(TissueMap("GM", load_volume(gm_path), gm_path),),
@@ -490,24 +497,6 @@ def test_constant_rings_fill_nearly_what_a_tube_of_that_size_does(count: int) ->
     assert ringed[tube >= 1].mean() > 0.97
 
 
-def test_a_fan_fills_like_a_tractogram_of_its_streamlines_by_densest_fill() -> None:
-    grid = Grid((20, 20, 20), np.eye(4))
-    ends = np.array([[-1.0, 10, 10], [21.0, 10, 10]])
-    wide = BundleGeometry(ends, num_streamlines=2000, seed=0, radius=2.0, fan_end=2.0)
-    for fill in (0.7, 0.35):
-        drawn, given = (
-            partition_voxels(Phantom(grid, bundles=(Bundle(s, densest_fill=fill),)))
-            for s in (wide, create_bundle(wide))
-        )
-        np.testing.assert_array_equal(drawn.bundle_fractions, given.bundle_fractions)
-        np.testing.assert_array_equal(drawn.fibre_weight, given.fibre_weight)
-        reached = drawn.bundle_fractions[drawn.bundle_fractions > 0]
-        assert np.percentile(reached, 95) == pytest.approx(fill, rel=1e-6)
-        # The same streamlines spread over a wider section thin out.
-        fractions = drawn.bundle_fractions[..., 0]
-        assert fractions[1, 10, 10] > 2 * fractions[18, 10, 10]
-
-
 def test_the_fold_guard_changes_a_fill_only_where_it_follows_the_streamlines(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -578,22 +567,114 @@ def test_a_tangle_is_saved_and_read_back(tmp_path: Path) -> None:
     )
 
 
-def test_a_fan_of_radius_0_fills_the_voxels_of_its_centreline() -> None:
-    ends = np.array([[-1.0, 3, 3], [7.0, 3, 3]])
-    fan = BundleGeometry(ends, radius=0.0, fan_end=1.0, num_streamlines=10, seed=0)
-    fractions = partition_voxels(Phantom(GRID, bundles=(Bundle(fan),))).bundle_fractions
-    np.testing.assert_allclose(fractions[:, 3, 3, 0], 0.7, rtol=1e-3)
-    assert fractions.sum() == pytest.approx(6 * 0.7, rel=1e-3)
+LANDING_GRID = Grid((30, 30, 30), np.eye(4))
+LANDING_ENDS = np.array([[-2.0, 15, 15], [28.0, 15, 15]])
+LANDING_LINE = np.array([[28.0, 3, 15], [28.0, 27, 15]])
 
 
-def test_a_fans_densest_fill_is_saved_and_read_back(tmp_path: Path) -> None:
-    fan = BundleGeometry(np.array([[-1.0, 3, 3], [7.0, 3, 3]]), fan_end=1.0, seed=0)
-    path = tmp_path / "fan.phantom.json"
-    written = Phantom(GRID, bundles=(Bundle(fan, densest_fill=0.4),))
-    write_phantom(written, path)
-    read = read_phantom(path).phantom
-    assert read.bundles[0].densest_fill == 0.4
-    np.testing.assert_array_equal(
-        partition_voxels(read).bundle_fractions,
-        partition_voxels(written).bundle_fractions,
+def _fill(bundle: Bundle) -> np.ndarray:
+    phantom = Phantom(LANDING_GRID, bundles=(bundle,))
+    fractions: np.ndarray = partition_voxels(phantom, n_jobs=1).bundle_fractions
+    return fractions[..., 0]
+
+
+def test_a_landing_fills_by_length_and_leaves_the_stem_as_it_was() -> None:
+    rings = np.array([[0.0, 3.0, 3.0, 0.0], [1.0, 3.0, 3.0, 0.0]])
+    plain = BundleGeometry(LANDING_ENDS, num_streamlines=2000, seed=1, rings=rings)
+    landed = BundleGeometry(
+        LANDING_ENDS,
+        num_streamlines=2000,
+        seed=1,
+        radius=3.0,
+        landing_end=Landing(LANDING_LINE, opens_from=0.6),
     )
+    assert not landed.is_tube
+    fill = _fill(Bundle(landed))
+    unchanged = _fill(Bundle(plain))
+    # Voxel 15 is the last one wholly before the landing opens, at 16 mm.
+    np.testing.assert_allclose(fill[:16], unchanged[:16], atol=1e-6)
+    # It spreads and thins out near its end, and densest_fill plays no part.
+    end = fill[26], unchanged[26]
+    assert (end[0] > 0).sum() > 2 * (end[1] > 0).sum()
+    assert (end[0][end[0] > 0] >= 1).mean() < 0.7 * (end[1][end[1] > 0] >= 1).mean()
+    np.testing.assert_array_equal(fill, _fill(Bundle(landed, densest_fill=0.2)))
+
+
+def test_a_landing_is_saved_and_read_back(tmp_path: Path) -> None:
+    thickness = np.array([[0.0, 0, -2], [0.0, 0, 2]])
+    geometry = BundleGeometry(
+        LANDING_ENDS,
+        radius=3.0,
+        num_streamlines=50,
+        seed=1,
+        landing_end=Landing(LANDING_LINE, thickness_line=thickness, opens_from=0.7),
+    )
+    path = tmp_path / "landing.phantom.json"
+    write_phantom(Phantom(LANDING_GRID, bundles=(Bundle(geometry),)), path)
+    source = read_phantom(path).phantom.bundles[0].source
+    assert isinstance(source, BundleGeometry) and source.landing_end is not None
+    assert source.landing_end.opens_from == 0.7
+    np.testing.assert_array_equal(source.landing_end.line, LANDING_LINE)
+    np.testing.assert_array_equal(
+        create_bundle(source).points, create_bundle(geometry).points
+    )
+
+
+def _old_file(tmp_path: Path, **old: float) -> Path:
+    """Writes a phantom file whose bundle holds these fields of an earlier version."""
+    ends = np.array([[-1.0, 3, 3], [7.0, 3, 3]])
+    geometry = BundleGeometry(ends, radius=2.0, num_streamlines=20, seed=1)
+    path = tmp_path / "old.phantom.json"
+    write_phantom(
+        Phantom(GRID, bundles=(Bundle(geometry),)),
+        path,
+        viewer={"bundles": [{"name": "Old one"}]},
+    )
+    data = json.loads(path.read_text())
+    data["bundles"][0]["geometry"].update(old)
+    path.write_text(json.dumps(data))
+    return path
+
+
+def test_an_old_file_with_a_fan_reads_as_rings_of_the_same_width(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    path = _old_file(tmp_path, fan_start=1.0, fan_end=3.0, fan_sharpness=2.0)
+    with caplog.at_level(logging.WARNING, logger="larmor"):
+        source = read_phantom(path).phantom.bundles[0].source
+    assert "Old one" in caplog.text and "fan" in caplog.text
+    assert isinstance(source, BundleGeometry) and source.rings is not None
+    u, first, second = source.rings[:, 0], source.rings[:, 1], source.rings[:, 2]
+    assert u[0] == 0 and u[-1] == 1
+    np.testing.assert_allclose(first, 2.0 * (1 + (1 - u) ** 2 + 3 * u**2))
+    np.testing.assert_array_equal(first, second)
+    assert not source.is_tube
+
+
+def test_an_old_file_with_a_dispersion_ignores_it_with_a_warning(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    path = _old_file(tmp_path, dispersion=1.5)
+    with caplog.at_level(logging.WARNING, logger="larmor"):
+        source = read_phantom(path).phantom.bundles[0].source
+    assert "Old one" in caplog.text and "dispersion" in caplog.text
+    assert isinstance(source, BundleGeometry) and source.is_tube
+
+
+def test_an_old_file_whose_fields_are_zero_reads_without_a_word(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    path = _old_file(
+        tmp_path, fan_start=0.0, fan_end=0.0, fan_sharpness=2.0, dispersion=0.0
+    )
+    with caplog.at_level(logging.WARNING, logger="larmor"):
+        source = read_phantom(path).phantom.bundles[0].source
+    assert not caplog.text
+    assert isinstance(source, BundleGeometry) and source.is_tube
+
+
+def test_the_shipped_phantom_holds_only_current_fields() -> None:
+    folder = Path(sim_examples.__file__).parent / "phantoms"
+    for path in folder.glob("*.phantom.json"):
+        for bundle in json.loads(path.read_text())["bundles"]:
+            BundleGeometry.from_dict(bundle["geometry"])

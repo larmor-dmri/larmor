@@ -84,7 +84,7 @@ Grid, Bundle, Tissue, Scan and Run. Each step has a short explanation, and gets 
 the run ends, the images, the masks and the true fibre directions open in the viewer.
 
 ```{image} _static/simulation/phantom-editor.webp
-:alt: The Tissue step of the guided Simulate workspace, with the tissues WM, WM-sparse, GM and CSF of a phantom of the brain and the compartments of WM
+:alt: The Tissue step of the guided SymDWI workspace, with the tissues WM, WM-sparse, GM and CSF of a phantom of the brain and the compartments of WM
 :target: ../_static/simulation/phantom-editor.webp
 ```
 

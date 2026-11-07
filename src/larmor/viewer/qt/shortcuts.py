@@ -94,14 +94,34 @@ class KeyGuard(QObject):
 def _widget_keeps(widget: QWidget | None, event: QKeyEvent) -> bool:
     """Returns whether the focused widget keeps a key that has no Ctrl or Cmd.
 
-    A text field keeps every such key. Any other widget of a panel keeps Tab,
-    which moves the focus on; a view keeps none, so that Tab acts on it.
+    A text field keeps every such key, and also undo and redo while it has typing of
+    its own to take back; once it has none, they act on the phantom. Any other widget
+    of a panel keeps Tab, which moves the focus on; a view keeps none, so that Tab
+    acts on it.
     """
-    if widget is None or event.modifiers() & COMMAND_MODIFIERS:
+    if widget is None:
+        return False
+    if event.key() == Qt.Key.Key_Z and event.modifiers() & COMMAND_MODIFIERS:
+        redo = bool(event.modifiers() & Qt.KeyboardModifier.ShiftModifier)
+        return _has_own_undo(widget, redo=redo)
+    if event.modifiers() & COMMAND_MODIFIERS:
         return False
     if isinstance(widget, TEXT_WIDGETS):
         return True
     return event.key() in FOCUS_KEYS and not isinstance(widget, QRenderWidget)
+
+
+def _has_own_undo(widget: QWidget, *, redo: bool) -> bool:
+    """Returns whether a text field has typing of its own to undo, or else to redo."""
+    if isinstance(widget, (QTextEdit, QPlainTextEdit)):
+        document = widget.document()
+        return document.isRedoAvailable() if redo else document.isUndoAvailable()
+    line = (
+        widget.findChild(QLineEdit) if isinstance(widget, QAbstractSpinBox) else widget
+    )
+    if not isinstance(line, QLineEdit):
+        return False
+    return line.isRedoAvailable() if redo else line.isUndoAvailable()
 
 
 class ShortcutsDialog(QDialog):

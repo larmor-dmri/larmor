@@ -10,6 +10,7 @@ from PySide6.QtGui import QMouseEvent, QNativeGestureEvent, QWheelEvent
 from PySide6.QtWidgets import QFrame, QToolTip, QVBoxLayout, QWidget
 from rendercanvas.qt import QRenderWidget
 
+from larmor.viewer.model.bundle_tools import DRAWING_TOOLS, Pointer
 from larmor.viewer.model.camera import Vec3, screen_axes
 from larmor.viewer.model.detail import (
     VoxelBox,
@@ -37,7 +38,6 @@ from larmor.viewer.model.regions import (
 from larmor.viewer.model.view_state import Tool, Workspace
 from larmor.viewer.model.viewer import Viewer
 from larmor.viewer.render.gpu import finish_gpu_work
-from larmor.viewer.render.phantom_guides import POINT_COLOUR
 from larmor.viewer.render.regions_guides import DETAIL_COLOUR, Sketch
 from larmor.viewer.render.view import ViewRenderer
 from larmor.viewer.render.view_button import ViewButton
@@ -83,8 +83,7 @@ class Drag(Enum):
     PLACE_BOX = auto()
     ZOOM_BOX = auto()
     MOVE_DETAIL = auto()
-    STROKE = auto()  # a freehand stroke of the bundle being drawn
-    MOVE_POINT = auto()  # a control point of the bundle being drawn
+    BUNDLE_TOOL = auto()  # a drawing tool of the SymDWI workspace
     PICK_LABEL = auto()  # a label of a label region, added or removed
 
 
@@ -130,6 +129,36 @@ class ViewPanel(QFrame):
         self.style().polish(self)
 
 
+class ViewPlane:
+    """Tells the drawing tools how a 2D view shows the world, for one mouse event."""
+
+    def __init__(self, view: ViewRenderer, axis: int) -> None:
+        """Remembers the view and the world axis it looks along."""
+        self.view = view
+        self.axis = axis
+        self.mm_per_pixel = view.pixel_size()
+        width, height = view.logical_size()
+        view.camera.set_view_size(width, height)
+        self._size = (width, height)
+        self._matrix = np.asarray(view.camera.camera_matrix, dtype=np.float64)
+
+    def project(self, points: np.ndarray) -> np.ndarray:
+        """Returns where world points (N, 3) show, in logical pixels, (N, 2)."""
+        world = np.column_stack([points, np.ones(len(points))])
+        ndc = world @ self._matrix.T
+        width, height = self._size
+        x = (ndc[:, 0] / ndc[:, 3] + 1) * width / 2
+        y = (1 - ndc[:, 1] / ndc[:, 3]) * height / 2
+        projected: np.ndarray = np.column_stack([x, y])
+        return projected
+
+    def world(self, x: float, y: float, depth: float) -> np.ndarray:
+        """Returns the world point under a pixel, at a depth along the view's axis."""
+        point = np.array(self.view.to_world(x, y), dtype=np.float64)
+        point[self.axis] = depth
+        return point
+
+
 class ViewInput(QObject):
     """Turns the mouse on a view's canvas into actions on the viewer.
 
@@ -158,13 +187,12 @@ class ViewInput(QObject):
         self._wheel = 0  # angle delta not yet turned into slices
         self._last_type: QEvent.Type | None = None  # the last mouse button event
         self._on_button = False  # the pointer is over the enlarge button
-        # What the drag works on: a region or detail id, a point's index, the
-        # world point pressed, the offset of a region's centre from it, a box's
-        # fixed corner, the stroke drawn, and a detail's box when pressed.
+        # What the drag works on: a region or detail id, the world point pressed,
+        # the offset of a region's centre from it, a box's fixed corner, and a
+        # detail's box when pressed.
         self._target: int | None = None
         self._anchor: Vec3 = (0.0, 0.0, 0.0)
         self._offset = np.zeros(3)
-        self._stroke: list[Vec3] = []
         self._box: VoxelBox | None = None
         self._shift = False  # Shift was held when the button went down
         self.sketch = Sketch(panel.view) if self.kind in SLICE_AXIS else None
@@ -200,6 +228,8 @@ class ViewInput(QObject):
                 self.interacted.emit()
                 self._zoom(1.0 + event.value(), event.position())
                 return True
+        elif kind == QEvent.Type.Leave:
+            self.viewer.bundle_tools.leave()
         return False
 
     # Pressing
@@ -220,23 +250,45 @@ class ViewInput(QObject):
         self._shift = bool(event.modifiers() & Qt.KeyboardModifier.ShiftModifier)
         if self.kind not in SLICE_AXIS:
             self._dragging = Drag.ROTATE
+        elif self._bundle_tool_on() and self._press_bundle_tool(event):
+            self._dragging = Drag.BUNDLE_TOOL
         elif event.modifiers() & ZOOM_MODIFIERS:
             self._dragging = Drag.PAN
         else:
             self._press_2d(point)
+
+    def _bundle_tool_on(self) -> bool:
+        """Tells whether a drawing tool of the SymDWI workspace is chosen."""
+        return self.viewer.scene.view.tool in DRAWING_TOOLS
+
+    def _pointer(self, point: QPointF, modifiers: Qt.KeyboardModifier) -> Pointer:
+        """Returns the pointer as the drawing tools take it."""
+        return Pointer(
+            ViewPlane(self.panel.view, SLICE_AXIS[self.kind]),
+            point.x(),
+            point.y(),
+            ctrl=bool(modifiers & ZOOM_MODIFIERS),
+            shift=bool(modifiers & Qt.KeyboardModifier.ShiftModifier),
+        )
+
+    def _press_bundle_tool(self, event: QMouseEvent) -> bool:
+        """Sends a press to the drawing tool; returns whether it takes it."""
+        tools = self.viewer.bundle_tools
+        taken = tools.press(self._pointer(event.position(), event.modifiers()))
+        self._tell_tool_label()
+        return taken
+
+    def _tell_tool_label(self) -> None:
+        """Says what the drawing tool's drag makes, in the status bar."""
+        label = self.viewer.bundle_tools.label
+        if label is not None:
+            self.notice.emit(label)
 
     def _press_2d(self, point: QPointF) -> None:
         """Starts a drag in a 2D view: a handle's, else the tool's."""
         world = self._in_slice(point)
         self._anchor = world
         tool = self.viewer.scene.view.tool
-        if tool == Tool.DRAW_BUNDLE and self.viewer.drawing:
-            index = self._draft_point_at(point)
-            if index is not None:
-                self._target, self._dragging = index, Drag.MOVE_POINT
-            else:
-                self._stroke, self._dragging = [world], Drag.STROKE
-            return
         if self._press_region(point, world) or self._press_detail(point, tool):
             return
         if tool == Tool.SPHERE:
@@ -311,13 +363,20 @@ class ViewInput(QObject):
         return False
 
     def _double_click(self, event: QMouseEvent, pressed: bool) -> None:
-        """Enlarges or restores the view; on the button, a second click of it."""
+        """Enlarges or restores the view; on the button, a second click of it.
+
+        With a drawing tool in a 2D view it is a second press, so that points can be
+        placed quickly.
+        """
         if event.button() != Qt.MouseButton.LeftButton:
             return
         point = event.position()
         if self.panel.button.hit(point.x(), point.y()):
             if not pressed:  # else the second press has clicked the button already
                 self.viewer.toggle_maximised(self.kind)
+            return
+        if self.kind in SLICE_AXIS and self._bundle_tool_on():
+            self._press(event)
             return
         self._dragging = None
         self.viewer.toggle_maximised(self.kind)
@@ -339,6 +398,13 @@ class ViewInput(QObject):
             self.interacted.emit()
         if self._dragging == Drag.CURSOR:
             self._move_cursor(point)
+        elif self._dragging == Drag.BUNDLE_TOOL:
+            self._act(
+                lambda: self.viewer.bundle_tools.move(
+                    self._pointer(point, event.modifiers())
+                )
+            )
+            self._tell_tool_label()
         elif self._dragging == Drag.PAN and self._last is not None:
             self._pan(self._last, point)
         elif self._dragging == Drag.ROTATE and self._last is not None:
@@ -361,12 +427,6 @@ class ViewInput(QObject):
             self._zoom_box(world, event.modifiers())
         elif drag == Drag.MOVE_DETAIL:
             self._move_detail(world)
-        elif drag == Drag.STROKE:
-            self._stroke.append(world)
-            assert self.sketch is not None
-            self.sketch.show_line(self._stroke, POINT_COLOUR)
-        elif drag == Drag.MOVE_POINT:
-            self._move_point(world)
 
     def _move_region(self, world: Vec3) -> None:
         """Moves the region dragged by its centre, in the view's plane."""
@@ -462,18 +522,6 @@ class ViewInput(QObject):
         target = self._target
         self._act(lambda: self.viewer.move_detail(target, moved))
 
-    def _move_point(self, world: Vec3) -> None:
-        """Moves the dragged control point in the view's plane."""
-        state = self.viewer.phantom
-        if state is None or state.draft is None or self._target is None:
-            return
-        points = list(state.draft.points)
-        axis = SLICE_AXIS[self.kind]
-        moved = list(world)
-        moved[axis] = points[self._target][axis]
-        points[self._target] = (moved[0], moved[1], moved[2])
-        self._act(lambda: self.viewer.set_bundle_points(points))
-
     # Releasing
 
     def _release(self, event: QMouseEvent) -> None:
@@ -485,8 +533,9 @@ class ViewInput(QObject):
             return
         if drag == Drag.ROTATE and not self._moved:
             self._click_3d(event.position())
-        elif drag == Drag.STROKE:
-            self._finish_stroke()
+        elif drag == Drag.BUNDLE_TOOL:
+            pointer = self._pointer(event.position(), event.modifiers())
+            self._act(lambda: self.viewer.bundle_tools.release(pointer))
         elif drag == Drag.ZOOM_BOX and self._moved and self._box is not None:
             box = self._box
             self._act(lambda: self.viewer.open_detail(self.kind, box))
@@ -497,8 +546,8 @@ class ViewInput(QObject):
         """Clicks with the tool: places a region, picks a label, or adds a point."""
         region: int | None = None
         if drag == Drag.PAN:
-            if self.viewer.scene.view.tool == Tool.DRAW_BUNDLE and self.viewer.drawing:
-                self._add_point(world)
+            if self.viewer.scene.view.tool == Tool.DRAW_BUNDLE:
+                self._click_here()
         elif drag == Drag.PLACE_SPHERE:
             region = self._act(lambda: self.viewer.add_sphere(self._anchor, apply=True))
         elif drag == Drag.PLACE_BOX:
@@ -509,24 +558,11 @@ class ViewInput(QObject):
         if region is not None:
             self.viewer.select(region)
 
-    def _finish_stroke(self) -> None:
-        """Adds the control points of the stroke drawn, and moves the cursor there."""
-        stroke = self._stroke
-        self._stroke = []
-        added = self._act(lambda: self.viewer.add_bundle_stroke(stroke))
-        if added:
-            state = self.viewer.phantom
-            assert state is not None and state.draft is not None
-            self.viewer.move_cursor(state.draft.points[-1])
-
-    def _add_point(self, world: Vec3) -> None:
-        """Adds one control point where clicked, and moves the cursor there."""
-        try:
-            self.viewer.add_bundle_point(world)
-        except ValueError as e:
-            self.refused.emit(str(e))
-            return
-        self.viewer.move_cursor(world)
+    def _click_here(self) -> None:
+        """Places a point with the Pen where Ctrl or Cmd was clicked."""
+        assert self._pressed_at is not None
+        pointer = self._pointer(self._pressed_at, ZOOM_MODIFIERS)
+        self._act(lambda: self.viewer.bundle_tools.click_here(pointer))
 
     def _click_3d(self, point: QPointF) -> None:
         """Places a region at the point picked in 3D, or selects a region clicked."""
@@ -587,17 +623,6 @@ class ViewInput(QObject):
                 hits.append((distance, region.id, region))
         return min(hits, key=lambda h: (h[0], h[1]))[2] if hits else None
 
-    def _draft_point_at(self, point: QPointF) -> int | None:
-        """Returns the index of the bundle's control point under a canvas point."""
-        state = self.viewer.phantom
-        if state is None or state.draft is None:
-            return None
-        for index, p in enumerate(state.draft.points):
-            x, y = self.panel.view.to_screen(p)
-            if math.hypot(x - point.x(), y - point.y()) <= HANDLE_PIXELS:
-                return index
-        return None
-
     def _region_options(self, region_id: int) -> RegionOptions:
         """Returns a region's options."""
         o = self.viewer.scene.item(region_id).options
@@ -637,6 +662,12 @@ class ViewInput(QObject):
         point = event.position()
         if self.viewer.breakdown is not None and self.kind in SLICE_AXIS:
             self.viewer.hover_breakdown(self._in_slice(point))
+        if self._bundle_tool_on():
+            if self.kind in SLICE_AXIS:
+                self.viewer.bundle_tools.hover(self._pointer(point, event.modifiers()))
+                self._tell_tool_label()
+            else:
+                self.viewer.bundle_tools.leave()
         on_button = self.panel.button.hit(point.x(), point.y())
         if on_button:
             self.panel.canvas.setToolTip(self.panel.tooltip())
@@ -708,7 +739,14 @@ class ViewInput(QObject):
         steps = int(self._wheel / WHEEL_STEP)
         if steps:
             self._wheel -= steps * WHEEL_STEP
+            axis = SLICE_AXIS[self.kind]
+            before = self.viewer.scene.view.cursor[axis]
             self.viewer.step_slice(self.kind, steps)
+            if self._dragging == Drag.BUNDLE_TOOL:
+                self.viewer.bundle_tools.scrolled(
+                    ViewPlane(self.panel.view, axis),
+                    self.viewer.scene.view.cursor[axis] - before,
+                )
 
     def _resize_selected(self, point: QPointF, delta: int) -> bool:
         """Grows or shrinks the selected region under a 3D point; False if none."""

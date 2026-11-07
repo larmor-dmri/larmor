@@ -116,10 +116,6 @@
         "num_streamlines": 1000,
         "radius": 3.0,
         "num_points": 100,
-        "fan_start": 0.0,
-        "fan_end": 0.0,
-        "fan_sharpness": 2.0,
-        "dispersion": 0.0,
         "seed": 1
       }
     },
@@ -147,10 +143,6 @@
         "num_streamlines": 1000,
         "radius": 3.0,
         "num_points": 100,
-        "fan_start": 0.0,
-        "fan_end": 0.0,
-        "fan_sharpness": 2.0,
-        "dispersion": 0.0,
         "seed": 2
       }
     }

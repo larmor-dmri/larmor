@@ -14,7 +14,12 @@ class Tool(StrEnum):
     SPHERE = "sphere"  # places a sphere region
     BOX = "box"  # places a box region
     ZOOM_BOX = "zoom_box"  # opens a rectangle of a 2D view in a detail window
-    DRAW_BUNDLE = "draw_bundle"  # adds the points of a phantom bundle
+    DRAW_BUNDLE = "draw_bundle"  # the Pen: draws a phantom bundle
+    BEND = "bend"  # moves a place along a phantom bundle, and nearby parts follow
+    WIDTH = "width"  # widens or narrows a phantom bundle at a place
+    TWIST = "twist"  # rolls a phantom bundle at a place
+    FAN = "fan"  # draws the line a phantom bundle's end lands on
+    ERASE = "erase"  # removes a phantom bundle, or cuts it
     LABEL_REGION = "label_region"  # adds a label to a label region, Shift removes it
 
 
@@ -22,7 +27,7 @@ class Workspace(StrEnum):
     """The window's workspaces, each with its own panels and tools."""
 
     VIEW = "view"  # the scene tree and the inspector
-    SIMULATE = "simulate"  # the phantom editor's steps
+    SIMULATE = "simulate"  # SymDWI, the phantom editor's steps
     DISSECT = "dissect"  # the steps from FODs to a bundle and its regions
 
 

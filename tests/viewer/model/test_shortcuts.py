@@ -50,7 +50,15 @@ KEYS: dict[Command, tuple[str, ...]] = {
     Command.DELETE_ITEM: ("Delete", "Ctrl+Backspace"),
     Command.NEXT_ROLE: ("Tab",),
     Command.EXPORT: ("Ctrl+Shift+S",),
-    Command.NEW_BUNDLE: ("N",),
+    Command.NEW_BUNDLE: ("P", "N"),
+    Command.TOOL_WIDTH: ("W",),
+    Command.TOOL_TWIST: ("T",),
+    Command.TOOL_FAN: ("F",),
+    Command.TOOL_ERASE: ("E",),
+    Command.TOOL_SMALLER: ("[",),
+    Command.TOOL_LARGER: ("]",),
+    Command.UNDO_BUNDLES: ("Ctrl+Z",),
+    Command.REDO_BUNDLES: ("Ctrl+Shift+Z",),
     Command.FINISH_BUNDLE: ("Return", "Enter"),
     Command.REMOVE_POINT: ("Backspace",),
     Command.LEAVE_DRAW_MODE: ("Escape",),
@@ -338,5 +346,7 @@ def test_the_region_tool_keys_work_only_in_the_dissect_workspace() -> None:
     assert run(viewer, Command.TOOL_SPHERE)
     assert _view(viewer).tool == Tool.SPHERE
     viewer.set_workspace(Workspace.SIMULATE)
-    assert _view(viewer).tool == Tool.CURSOR  # Simulate offers no spheres
-    assert not run(viewer, Command.TOOL_BOX)
+    assert _view(viewer).tool == Tool.CURSOR  # SymDWI offers no spheres
+    assert not run(viewer, Command.TOOL_SPHERE)
+    assert run(viewer, Command.TOOL_BOX)  # its key is Bend's there
+    assert _view(viewer).tool == Tool.BEND

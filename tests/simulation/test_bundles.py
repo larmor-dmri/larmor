@@ -1,4 +1,5 @@
 import json
+from dataclasses import replace
 from typing import Any
 
 import numpy as np
@@ -6,10 +7,12 @@ import pytest
 from scipy.spatial import cKDTree
 
 import larmor.simulation.bundles as bundles
-from larmor.simulation import BundleGeometry, create_bundle
+from larmor.simulation import BundleGeometry, Landing, create_bundle
 from larmor.simulation.bundles import (
     _bend_limits,
     _squeeze_inside_bends,
+    bundle_path,
+    bundle_places,
     centreline_spline,
 )
 from larmor.simulation.voxelise import voxelise
@@ -49,23 +52,6 @@ def test_density_across_a_bundle_is_a_gaussian_cut_at_the_radius() -> None:
         assert np.mean(distance < inside * sd) == pytest.approx(expected, abs=0.01)
     # Round, not stretched along either axis.
     assert across[:, 0].std() == pytest.approx(across[:, 1].std(), rel=0.02)
-
-
-def test_streamlines_stay_within_the_fanned_radius_of_a_straight_bundle() -> None:
-    geometry = BundleGeometry(
-        np.array([[0.0, 0, 0], [10, 0, 0], [20, 0, 0], [30, 0, 0]]),
-        num_streamlines=300,
-        radius=2.0,
-        fan_start=1.0,
-        seed=0,
-    )
-    bundle = create_bundle(geometry)
-    distance = np.hypot(bundle.points[:, 1], bundle.points[:, 2])
-    assert distance.max() <= 2.0 * (1 + 1.0) + 1e-5
-    starts = bundle.points[bundle.offsets[:-1]]
-    ends = bundle.points[bundle.offsets[1:] - 1]
-    assert np.linalg.norm(starts - [0, 0, 0], axis=1).max() <= 4.0 + 1e-5
-    assert np.linalg.norm(ends - [30, 0, 0], axis=1).max() <= 2.0 + 1e-5
 
 
 # Unevenly spaced points of a freehand doodle with loops and sharp turns, mm.
@@ -225,6 +211,7 @@ def test_the_fold_guard_shrinks_the_folds_of_a_flat_section(
 
 
 STRAIGHT = np.array([[0.0, 0, 0], [60, 0, 0]])
+ACROSS_THE_END = np.array([[60.0, -10, 0], [60, 10, 0]])
 # The standard deviation of a Gaussian cut at the radius, as a share of the radius.
 CUT_SD = 0.3702
 
@@ -291,23 +278,20 @@ def test_round_rings_of_one_radius_give_the_streamlines_of_that_radius() -> None
 
 
 @pytest.mark.parametrize(
-    ("rings", "fan_end", "message"),
+    ("rings", "message"),
     [
-        ([[0.0, 1, 1, 0], [0.5, 1, 1, 0], [0.4, 1, 1, 0], [1.0, 1, 1, 0]], 0.0, "rise"),
-        ([[0.0, 1, 1, 0], [0.9, 1, 1, 0]], 0.0, "rise"),
-        ([[0.1, 1, 1, 0], [1.0, 1, 1, 0]], 0.0, "rise"),
-        ([[0.0, 1, 1, 0]], 0.0, "rise"),
-        ([[0.0, np.nan, 1, 0], [1.0, 1, 1, 0]], 0.0, "finite"),
-        ([[0.0, 0, 1, 0], [1.0, 1, 1, 0]], 0.0, "positive"),
-        ([[0.0, 1, 1], [1.0, 1, 1]], 0.0, "rows"),
-        ([[0.0, 1, 1, 0], [1.0, 1, 1, 0]], 1.0, "not both"),
+        ([[0.0, 1, 1, 0], [0.5, 1, 1, 0], [0.4, 1, 1, 0], [1.0, 1, 1, 0]], "rise"),
+        ([[0.0, 1, 1, 0], [0.9, 1, 1, 0]], "rise"),
+        ([[0.1, 1, 1, 0], [1.0, 1, 1, 0]], "rise"),
+        ([[0.0, 1, 1, 0]], "rise"),
+        ([[0.0, np.nan, 1, 0], [1.0, 1, 1, 0]], "finite"),
+        ([[0.0, 0, 1, 0], [1.0, 1, 1, 0]], "positive"),
+        ([[0.0, 1, 1], [1.0, 1, 1]], "rows"),
     ],
 )
-def test_bad_rings_are_refused(
-    rings: list[list[float]], fan_end: float, message: str
-) -> None:
+def test_bad_rings_are_refused(rings: list[list[float]], message: str) -> None:
     with pytest.raises(ValueError, match=message):
-        BundleGeometry(STRAIGHT, rings=np.array(rings), fan_end=fan_end)
+        BundleGeometry(STRAIGHT, rings=np.array(rings))
 
 
 def test_rings_round_trip_through_plain_values() -> None:
@@ -430,18 +414,6 @@ def test_a_tangle_round_trips_through_plain_values_and_is_left_out_when_off() ->
     assert "tangle_mm" not in BundleGeometry(STRAIGHT, tangle_mm=0.0).to_dict()
 
 
-def test_dispersion_wanders_inside_and_not_at_the_ends() -> None:
-    control = np.array([[0.0, 0, 0], [10, 0, 0], [20, 0, 0], [30, 0, 0]])
-    geometry = BundleGeometry(
-        control, num_streamlines=2000, radius=0.0, dispersion=1.5, seed=0
-    )
-    streamlines = create_bundle(geometry).points.reshape(2000, 100, 3)
-    across = streamlines[..., 1:]
-    np.testing.assert_allclose(across[:, [0, -1]], 0.0, atol=1e-12)
-    at_inner_points = across[:, [33, 66]].std(axis=0)  # u = 1/3 and 2/3
-    np.testing.assert_allclose(at_inner_points, 1.5, rtol=0.1)
-
-
 def test_streamline_on_a_voxel_row_fills_that_row_only() -> None:
     # Voxel centres are at the affine's positions, so y = j is row j exactly.
     voxels = voxelise([straight([0.0, 7.0, 3.0], [19.0, 7.0, 3.0])], GRID)
@@ -542,6 +514,268 @@ def test_the_median_section_is_the_size_a_bundle_mostly_has(
     assert geometry.median_section() == pytest.approx(np.pi * section)
 
 
-def test_a_geometry_without_rings_has_no_median_section() -> None:
-    with pytest.raises(ValueError, match="without rings"):
-        BundleGeometry(np.array([[0.0, 0, 0], [40.0, 0, 0]])).median_section()
+def test_a_landing_leaves_the_median_section_as_it_was() -> None:
+    landing = Landing(ACROSS_THE_END)
+    plain = BundleGeometry(STRAIGHT, radius=3.0, landing_end=landing)
+    assert plain.median_section() == pytest.approx(np.pi * 9)
+    rings = np.array([[0.0, 4.0, 2.0, 0.0], [1.0, 4.0, 2.0, 0.0]])
+    ringed = BundleGeometry(STRAIGHT, rings=rings, landing_end=landing)
+    assert ringed.median_section() == pytest.approx(np.pi * 8)
+
+
+def _streamlines(geometry: BundleGeometry) -> np.ndarray:
+    points = create_bundle(geometry).points.astype(np.float64)
+    return points.reshape(geometry.num_streamlines, geometry.num_points, 3)
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        [[60.0, -10, 0], [60, 10, 0]],
+        [[60.0, 15, 5], [60, 35, 5]],
+        [[58.0, -10, 3], [62, 10, -3]],
+        [[60.0, -10, 0], [64, 0, 0], [60, 10, 0], [60, 12, 4]],
+        [[50.0, 0.2, 0], [70, -0.2, 0]],
+        [[50.0, 0, 0], [70, 0, 0]],
+    ],
+    ids=["across", "beside", "oblique", "bent", "nearly_along", "along"],
+)
+def test_streamlines_land_on_a_line_of_any_shape_or_place(
+    line: list[list[float]],
+) -> None:
+    # A very thin second radius leaves only the place along the line.
+    thin = np.array([[0.0, 3.0, 0.001, 0.0], [1.0, 3.0, 0.001, 0.0]])
+    geometry = BundleGeometry(
+        STRAIGHT,
+        num_streamlines=500,
+        seed=1,
+        rings=thin,
+        landing_end=Landing(np.array(line)),
+    )
+    ends = _streamlines(geometry)[:, -1]
+    assert _distance_to_polygon(ends, np.array(line)).max() < 0.01
+
+
+def test_a_landing_keeps_the_gaussian_along_its_line_and_the_second_offset() -> None:
+    geometry = BundleGeometry(
+        STRAIGHT,
+        num_streamlines=20000,
+        radius=3.0,
+        seed=1,
+        landing_end=Landing(ACROSS_THE_END),
+    )
+    ends = _streamlines(geometry)[:, -1]
+    np.testing.assert_allclose(ends[:, 0], 60.0, atol=1e-4)
+    assert np.abs(ends[:, 1]).max() <= 10 + 1e-4
+    assert np.abs(ends[:, 2]).max() <= 3 + 1e-4
+    assert ends[:, 1].std() == pytest.approx(10 * CUT_SD, rel=0.02)
+    assert ends[:, 2].std() == pytest.approx(3 * CUT_SD, rel=0.02)
+
+
+def test_a_streamline_past_the_end_of_a_line_lands_on_that_end() -> None:
+    # Halfway through a slide, a tangle takes a few streamlines past the edge.
+    geometry = BundleGeometry(
+        STRAIGHT,
+        num_streamlines=20000,
+        radius=3.0,
+        seed=1,
+        tangle_mm=120.0,
+        landing_end=Landing(ACROSS_THE_END),
+    )
+    along = np.abs(_streamlines(geometry)[:, -1, 1])
+    assert along.max() <= 10 + 1e-4
+    assert 0 < np.mean(along >= 10 - 1e-4) < 0.01
+
+
+def test_a_plain_section_stretches_along_the_line_without_bulging_out_of_it() -> None:
+    geometry = BundleGeometry(
+        STRAIGHT,
+        num_streamlines=5000,
+        radius=3.0,
+        seed=1,
+        landing_end=Landing(ACROSS_THE_END),
+    )
+    points = _streamlines(geometry)
+    assert np.abs(points[..., 2]).max() <= 3 + 1e-4
+
+
+def test_a_thickness_line_sets_the_second_radius_and_the_surface() -> None:
+    # Where the thickness line lies does not count, and its bend moves the surface.
+    thickness = np.array([[0.0, 5, -4], [3.0, 5, 0], [0.0, 5, 4]])
+    geometry = BundleGeometry(
+        STRAIGHT,
+        num_streamlines=20000,
+        radius=3.0,
+        seed=1,
+        landing_end=Landing(ACROSS_THE_END, thickness_line=thickness),
+    )
+    ends = _streamlines(geometry)[:, -1]
+    assert np.abs(ends[:, 2]).max() <= 4 + 1e-4
+    assert ends[:, 2].std() == pytest.approx(4 * CUT_SD, rel=0.02)
+    assert np.abs(ends[:, 1]).max() <= 10 + 1e-4
+    np.testing.assert_allclose(ends[:, 0], 60 - 3 * np.abs(ends[:, 2]) / 4, atol=1e-3)
+
+
+@pytest.mark.parametrize("at_end", [True, False])
+def test_a_landing_leaves_the_bundle_alone_before_it_opens(at_end: bool) -> None:
+    plain = BundleGeometry(STRAIGHT, num_streamlines=200, radius=3.0, seed=1)
+    opens_from = 0.6 if at_end else 0.4
+    line = ACROSS_THE_END if at_end else np.array([[0.0, -10, 0], [0, 10, 0]])
+    landing = Landing(line, opens_from=opens_from)
+    landed = (
+        replace(plain, landing_end=landing)
+        if at_end
+        else replace(plain, landing_start=landing)
+    )
+    untouched = slice(0, 59) if at_end else slice(41, 100)
+    np.testing.assert_array_equal(
+        _streamlines(landed)[:, untouched], _streamlines(plain)[:, untouched]
+    )
+    moved = -1 if at_end else 0
+    assert np.abs(_streamlines(landed)[:, moved, 1]).max() > 8.0
+
+
+def test_replacing_a_landing_leaves_nothing_behind() -> None:
+    rings = np.array(
+        [[0.0, 3.0, 3.0, 0.0], [0.5, 5.0, 3.0, 20.0], [1.0, 3.0, 3.0, 0.0]]
+    )
+    plain = BundleGeometry(STRAIGHT, num_streamlines=200, seed=1, rings=rings)
+    first = replace(plain, landing_end=Landing(ACROSS_THE_END))
+    other = Landing(np.array([[60.0, 15, 5], [60, 35, 5]]), opens_from=0.8)
+    np.testing.assert_array_equal(
+        create_bundle(replace(first, landing_end=other)).points,
+        create_bundle(replace(plain, landing_end=other)).points,
+    )
+    np.testing.assert_array_equal(
+        create_bundle(replace(first, landing_end=None)).points,
+        create_bundle(plain).points,
+    )
+    # Drawing a landing changes neither the rings nor the centreline it was given.
+    create_bundle(first)
+    assert first.rings is not None
+    np.testing.assert_array_equal(first.rings, rings)
+    np.testing.assert_array_equal(first.control_points, STRAIGHT)
+
+
+def test_landings_work_with_rings_and_a_tangle_at_both_ends() -> None:
+    rings = np.array(
+        [[0.0, 3.0, 2.0, 10.0], [0.5, 5.0, 2.0, 20.0], [1.0, 3.0, 2.0, 0.0]]
+    )
+    start = np.array([[0.0, -8, 0], [0, 8, 0]])
+    geometry = BundleGeometry(
+        STRAIGHT,
+        num_streamlines=2000,
+        seed=1,
+        rings=rings,
+        tangle_mm=30.0,
+        landing_start=Landing(start),
+        landing_end=Landing(ACROSS_THE_END),
+    )
+    points = _streamlines(geometry)
+    np.testing.assert_allclose(points[:, 0, 0], 0.0, atol=1e-3)
+    np.testing.assert_allclose(points[:, -1, 0], 60.0, atol=1e-3)
+    assert np.abs(points[:, 0, 1]).max() <= 8 + 1e-3
+    assert np.abs(points[:, -1, 1]).max() <= 10 + 1e-3
+
+
+def test_the_fold_guard_shrinks_the_folds_of_a_landing_at_a_bend(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    control = _quarter_circle(10.0)
+    # Across the path at its end, and reaching past the bend's centre.
+    line = np.array([[0.0, -8, 0], [0.0, 28, 0]])
+    geometry = BundleGeometry(
+        control,
+        num_streamlines=2000,
+        radius=3.0,
+        seed=1,
+        landing_end=Landing(line, opens_from=0.2),
+    )
+    guarded = _deepest_fold(_streamlines(geometry), control)
+    monkeypatch.setattr(bundles, "FOLD_LIMIT", 1e6)
+    assert _deepest_fold(_streamlines(geometry), control) > 2 * guarded
+
+
+@pytest.mark.parametrize(
+    ("line", "opens_from", "message"),
+    [
+        ([[0.0, 0], [1.0, 0]], 0.5, "must be"),
+        ([[0.0, 0, 0]], 0.5, "must be"),
+        ([[0.0, 0, np.nan], [1.0, 0, 0]], 0.5, "finite"),
+        ([[1.0, 2, 3], [1.0, 2, 3]], 0.5, "length"),
+        ([[0.0, 0, 0], [1.0, 0, 0]], 0.0, "opens_from"),
+        ([[0.0, 0, 0], [1.0, 0, 0]], 1.0, "opens_from"),
+    ],
+)
+def test_a_bad_landing_is_refused(
+    line: list[list[float]], opens_from: float, message: str
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        Landing(np.array(line), opens_from=opens_from)
+    with pytest.raises(ValueError, match=message):
+        Landing(ACROSS_THE_END, thickness_line=np.array(line), opens_from=opens_from)
+
+
+def test_a_landing_on_a_bundle_with_no_size_is_refused() -> None:
+    with pytest.raises(ValueError, match="radius above 0"):
+        BundleGeometry(STRAIGHT, radius=0.0, landing_end=Landing(ACROSS_THE_END))
+
+
+def test_landings_round_trip_through_plain_values_and_are_left_out_when_absent() -> (
+    None
+):
+    thickness = np.array([[0.0, 0, -2], [0.0, 0, 2]])
+    geometry = BundleGeometry(
+        STRAIGHT,
+        num_streamlines=20,
+        seed=1,
+        landing_start=Landing(np.array([[0.0, -8, 0], [0, 8, 0]]), opens_from=0.3),
+        landing_end=Landing(ACROSS_THE_END, thickness_line=thickness),
+    )
+    read = BundleGeometry.from_dict(json.loads(json.dumps(geometry.to_dict())))
+    assert read.landing_start is not None and read.landing_start.opens_from == 0.3
+    assert read.landing_end is not None
+    np.testing.assert_array_equal(read.landing_end.line, ACROSS_THE_END)
+    np.testing.assert_array_equal(
+        create_bundle(read).points, create_bundle(geometry).points
+    )
+    plain = BundleGeometry(STRAIGHT).to_dict()
+    assert "landing_start" not in plain and "landing_end" not in plain
+
+
+def test_the_path_says_where_a_bundle_runs_without_its_streamlines() -> None:
+    points = np.array([[0.0, 0, 0], [50.0, 0, 0]])
+    rings = np.array([[0.0, 2, 2, 0], [0.5, 6, 2, 30], [1.0, 2, 2, 30]])
+    landing = Landing(np.array([[50.0, -10, 0], [50.0, 10, 3]]), opens_from=0.6)
+    geometry = BundleGeometry(points, seed=1, rings=rings, landing_end=landing)
+    path = bundle_path(geometry, 51)
+    # The centreline stays, and where the bundle shows bends over to the line.
+    np.testing.assert_allclose(path.centre[0], points[0], atol=1e-9)
+    np.testing.assert_allclose(path.centre[-1], points[1], atol=1e-9)
+    np.testing.assert_allclose(path.shown[-1], [50.0, 0, 1.5], atol=1e-9)
+    np.testing.assert_allclose(path.shown[:20], path.centre[:20])
+    # The sections follow the rings, with what the landing sets at its end.
+    assert path.sections[25, 0] == pytest.approx(6.0)
+    assert path.rings is not None
+    assert path.sections[-1, 0] == pytest.approx(path.rings[-1, 1])
+    assert path.rings[-1, 1] == pytest.approx(np.hypot(20, 3) / 2, abs=0.2)
+
+
+def test_a_path_without_rings_stretches_its_section_towards_a_landing() -> None:
+    points = np.array([[0.0, 0, 0], [50.0, 0, 0]])
+    landing = Landing(np.array([[50.0, -10, 0], [50.0, 10, 0]]), opens_from=0.6)
+    path = bundle_path(BundleGeometry(points, radius=2.0, landing_end=landing), 51)
+    assert path.rings is None
+    assert path.sections[10, 0] == pytest.approx(2.0)
+    assert path.sections[-1, 0] == pytest.approx(10.0)
+    assert path.sections[-1, 1] == pytest.approx(2.0)
+
+
+def test_a_streamlines_place_is_the_one_it_is_drawn_with() -> None:
+    points = np.array([[0.0, 0, 0], [50.0, 0, 0]])
+    geometry = BundleGeometry(points, num_streamlines=50, radius=2.0, seed=3)
+    tracts = create_bundle(geometry)
+    path = bundle_path(geometry, 2)
+    first = np.asarray(tracts.points)[tracts.offsets[:-1]] - points[0]
+    made = np.column_stack([first @ path.normals[0], first @ path.binormals[0]])
+    np.testing.assert_allclose(made, 2.0 * bundle_places(geometry), atol=1e-9)

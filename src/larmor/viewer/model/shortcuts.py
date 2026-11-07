@@ -52,6 +52,14 @@ class Command(StrEnum):
     DELETE_ITEM = "delete_item"
     NEXT_ROLE = "next_role"
     NEW_BUNDLE = "new_bundle"
+    TOOL_WIDTH = "tool_width"
+    TOOL_TWIST = "tool_twist"
+    TOOL_FAN = "tool_fan"
+    TOOL_ERASE = "tool_erase"
+    TOOL_SMALLER = "tool_smaller"
+    TOOL_LARGER = "tool_larger"
+    UNDO_BUNDLES = "undo_bundles"
+    REDO_BUNDLES = "redo_bundles"
     FINISH_BUNDLE = "finish_bundle"
     REMOVE_POINT = "remove_point"
     LEAVE_DRAW_MODE = "leave_draw_mode"
@@ -146,8 +154,39 @@ def _zoom_box_offered(viewer: Viewer) -> bool:
 
 
 def _in_simulate(viewer: Viewer) -> bool:
-    """Tells whether the Simulate workspace shows, where bundles are drawn."""
+    """Tells whether the SymDWI workspace shows, where bundles are drawn."""
     return viewer.scene.view.workspace == Workspace.SIMULATE
+
+
+def _box_or_bend(viewer: Viewer, view: ViewKind) -> None:
+    """Chooses the Box tool in Dissect, and the Bend tool in SymDWI."""
+    in_dissect = viewer.scene.view.workspace == Workspace.DISSECT
+    viewer.set_tool(Tool.BOX if in_dissect else Tool.BEND)
+
+
+def _in_dissect_or_simulate(viewer: Viewer) -> bool:
+    """Tells whether the workspace shown offers the Box or the Bend tool."""
+    return _in_dissect(viewer) or _in_simulate(viewer)
+
+
+def _drawing_tool_chosen(viewer: Viewer) -> bool:
+    """Tells whether a tool that draws a phantom's bundles is chosen."""
+    return viewer.bundle_tools.current is not None
+
+
+def _undo(viewer: Viewer, view: ViewKind) -> None:
+    """Takes back the last change to the bundles of the phantom."""
+    viewer.undo_bundles()
+
+
+def _redo(viewer: Viewer, view: ViewKind) -> None:
+    """Does again the last change to the bundles that was taken back."""
+    viewer.redo_bundles()
+
+
+def _tool_step(direction: int) -> Callable[[Viewer, ViewKind], None]:
+    """Returns the action that changes the drawing tool's size by a step."""
+    return lambda viewer, _: viewer.bundle_tools.step(direction)
 
 
 def _new_bundle(viewer: Viewer, view: ViewKind) -> None:
@@ -162,10 +201,10 @@ def _drawing(viewer: Viewer) -> bool:
 
 
 def _finish_bundle(viewer: Viewer, view: ViewKind) -> None:
-    """Finishes the bundle being drawn, once it has the points it needs."""
+    """Finishes the bundle being drawn once it has its points, and keeps the Pen."""
     state = viewer.phantom
     if state is not None and state.draft is not None and drawable(state.draft.points):
-        viewer.finish_bundle()
+        viewer.finish_and_draw_on()
 
 
 def _while_drawing(
@@ -194,7 +233,9 @@ def _escapable(viewer: Viewer) -> bool:
 
 
 def _escape(viewer: Viewer, view: ViewKind) -> None:
-    """Stops drawing; else unpins the Signal breakdown's voxel; else picks Cursor."""
+    """Takes back a drag; else stops drawing; else unpins; else picks Cursor."""
+    if viewer.bundle_tools.cancel_drag():
+        return
     if viewer.drawing:
         viewer.cancel_bundle()
     elif _pinned(viewer):
@@ -392,7 +433,7 @@ SHORTCUTS: dict[Command, Shortcut] = {
         Shortcut(
             Command.WORKSPACE_SIMULATE,
             ("Ctrl+2",),
-            "Show the Simulate workspace: the steps of a phantom",
+            "Show the SymDWI workspace: the steps of a phantom",
             VIEW_KINDS,
             _workspace(Workspace.SIMULATE),
         ),
@@ -421,10 +462,11 @@ SHORTCUTS: dict[Command, Shortcut] = {
         Shortcut(
             Command.TOOL_BOX,
             ("B",),
-            "Box tool: a drag in a 2D view draws a box region",
+            "Box tool in Dissect: a drag in a 2D view draws a box region; Bend tool in "
+            "SymDWI: a drag moves a part of a bundle",
             VIEW_KINDS,
-            _tool(Tool.BOX),
-            enabled_when=_in_dissect,
+            _box_or_bend,
+            enabled_when=_in_dissect_or_simulate,
         ),
         Shortcut(
             Command.TOOL_LABEL_REGION,
@@ -465,10 +507,74 @@ SHORTCUTS: dict[Command, Shortcut] = {
         ),
         Shortcut(
             Command.NEW_BUNDLE,
-            ("N",),
-            "Draw a new bundle: strokes or Ctrl+clicks in the 2D views add points",
+            ("P", "N"),
+            "Pen: strokes and clicks in the 2D views draw a new bundle",
             VIEW_KINDS,
             _new_bundle,
+            enabled_when=_in_simulate,
+        ),
+        Shortcut(
+            Command.TOOL_WIDTH,
+            ("W",),
+            "Width tool: a drag widens or narrows a bundle",
+            VIEW_KINDS,
+            _tool(Tool.WIDTH),
+            enabled_when=_in_simulate,
+        ),
+        Shortcut(
+            Command.TOOL_TWIST,
+            ("T",),
+            "Twist tool: a drag across a bundle rolls it",
+            VIEW_KINDS,
+            _tool(Tool.TWIST),
+            enabled_when=_in_simulate,
+        ),
+        Shortcut(
+            Command.TOOL_FAN,
+            ("F",),
+            "Fan tool: a line drawn across the end of a bundle makes it land there",
+            VIEW_KINDS,
+            _tool(Tool.FAN),
+            enabled_when=_in_simulate,
+        ),
+        Shortcut(
+            Command.TOOL_ERASE,
+            ("E",),
+            "Erase tool: a click removes a bundle, a stroke cuts it",
+            VIEW_KINDS,
+            _tool(Tool.ERASE),
+            enabled_when=_in_simulate,
+        ),
+        Shortcut(
+            Command.TOOL_SMALLER,
+            ("[",),
+            "Make the radius of the Pen or the reach of the tool smaller",
+            VIEW_KINDS,
+            _tool_step(-1),
+            enabled_when=_drawing_tool_chosen,
+        ),
+        Shortcut(
+            Command.TOOL_LARGER,
+            ("]",),
+            "Make the radius of the Pen or the reach of the tool larger",
+            VIEW_KINDS,
+            _tool_step(1),
+            enabled_when=_drawing_tool_chosen,
+        ),
+        Shortcut(
+            Command.UNDO_BUNDLES,
+            ("Ctrl+Z",),
+            "Take back the last change to the bundles of the phantom",
+            VIEW_KINDS,
+            _undo,
+            enabled_when=_in_simulate,
+        ),
+        Shortcut(
+            Command.REDO_BUNDLES,
+            ("Ctrl+Shift+Z",),
+            "Do again the last change to the bundles that was taken back",
+            VIEW_KINDS,
+            _redo,
             enabled_when=_in_simulate,
         ),
         Shortcut(
@@ -490,8 +596,9 @@ SHORTCUTS: dict[Command, Shortcut] = {
         Shortcut(
             Command.LEAVE_DRAW_MODE,
             ("Escape",),
-            "Stop drawing: drop the new bundle, or keep an edited one as it was; "
-            "else unpin the voxel of the Signal breakdown; else the Cursor tool",
+            "Take back a drag with a drawing tool; else stop drawing: drop the new "
+            "bundle, or keep an edited one as it was; else unpin the voxel of the "
+            "Signal breakdown; else the Cursor tool",
             VIEW_KINDS,
             _escape,
             enabled_when=_escapable,
@@ -544,19 +651,29 @@ MOUSE_CONTROLS: tuple[MouseControl, ...] = (
         VIEWS_2D,
     ),
     MouseControl(
-        "Drag, while drawing a bundle",
-        "Draw a stroke; its control points are added when you let go",
+        "Drag, Pen",
+        "Draw a stroke: a new bundle, or from a tip a longer one, from the side a "
+        "branch, and over a stretch a new stretch",
+        VIEWS_2D,
+    ),
+    MouseControl("Click, Pen", "Place a point of a bundle", VIEWS_2D),
+    MouseControl(
+        "Ctrl + click, Pen", "Place a point here, even over a bundle", VIEWS_2D
+    ),
+    MouseControl(
+        "Drag a control point, Pen",
+        "Move it in the view's plane; hold Ctrl for the two ends",
         VIEWS_2D,
     ),
     MouseControl(
-        "Ctrl + click, while drawing a bundle",
-        "Add one control point and move the crosshair there",
-        VIEWS_2D,
+        "Scroll during a stroke", "Move on through depth as you draw", VIEWS_2D
     ),
+    MouseControl("Drag, Bend tool", "Move a part of a bundle", VIEWS_2D),
+    MouseControl("Drag, Width tool", "Widen or narrow a bundle", VIEWS_2D),
+    MouseControl("Drag, Twist tool", "Roll a bundle", VIEWS_2D),
+    MouseControl("Drag, Fan tool", "Draw the line a bundle's end lands on", VIEWS_2D),
     MouseControl(
-        "Drag a control point, while drawing",
-        "Move it in the view's plane",
-        VIEWS_2D,
+        "Click or drag, Erase tool", "Remove a bundle, or cut it there", VIEWS_2D
     ),
     MouseControl("Right click", "Add a region or open a zoom box here", VIEW_KINDS),
     MouseControl("Drag", "Turn the scene", (ViewKind.THREE_D,)),

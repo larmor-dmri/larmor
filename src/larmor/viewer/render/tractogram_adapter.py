@@ -1,6 +1,7 @@
 """Draws tractograms as lines in the 2D views, and as lines or tubes in 3D."""
 
 import colorsys
+import math
 import threading
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
@@ -27,7 +28,7 @@ from larmor.viewer.model.options import (
 from larmor.viewer.model.regions import RegionKey, region_filter
 from larmor.viewer.model.registry import SUBSET_SEED
 from larmor.viewer.model.settings import AppSettings
-from larmor.viewer.model.view_state import ViewField
+from larmor.viewer.model.view_state import Tool, ViewField
 from larmor.viewer.model.viewer import Viewer
 from larmor.viewer.render.adapter import Adapter
 from larmor.viewer.render.colour_space import physical_colours
@@ -93,12 +94,14 @@ RECOLOURING = (
 # or ("none", None); and the lines' colours as (colormap, min, max), with no
 # colormap for colours by direction.
 type ValuesKey = tuple[str, str | int | None]
-type ColoursKey = tuple[Colormap | None, float, float]
+type ColoursKey = tuple[Colormap | str | None, float, float]
 # What the drawn lines are: (selection version, count), points per streamline,
 # values and colours. The version counts up with each new region selection, and
 # count is the number of streamlines drawn.
 type LinesKey = tuple[tuple[int, int], int, ValuesKey | None, ColoursKey | None]
 BANDS = len(BAND_QUANTILES) + 1
+# The colours key of a drawn bundle coloured by its streamlines' places.
+PLACE_COLOURS = "place"
 # How near the pointer, in logical pixels, a drawn point of a 3D line is picked.
 PICK_PIXELS = 5.0
 # Vertices the 3D view draws while the user interacts, a random part of the lines
@@ -328,6 +331,9 @@ class TractogramAdapter(Adapter):
                         self._show_slab(kind)
             elif event.name == ViewField.MAXIMISED:
                 self.request_sorts()
+            elif event.name == ViewField.TOOL and Tool.TWIST in (event.old, event.new):
+                self._request_colours()
+                self._show()
 
     def _on_option(self, event: OptionChanged) -> None:
         """Makes again what an option of this item changes, then shows the lines."""
@@ -347,6 +353,8 @@ class TractogramAdapter(Adapter):
         elif event.name in (
             OptionName.STYLE,
             OptionName.TUBE_RADIUS,
+            OptionName.TUBE_TRUE_SIZE,
+            OptionName.TUBE_TRUE_RADIUS,
             OptionName.VISIBLE,
             OptionName.AMBIENT_OCCLUSION,
             OptionName.RAY_TRACED,
@@ -385,6 +393,26 @@ class TractogramAdapter(Adapter):
         self._voxels = self._voxels_of = self._light_of = self.light = None
         self._traced_colours = None
 
+    def take_data(self) -> None:
+        """Draws the item's new data; what shows stays until the new lines are made.
+
+        Starting again from no lines would leave a frame with nothing in it each
+        time, which flickers when a bundle being edited changes at every frame.
+        """
+        t = self.item.data
+        assert isinstance(t, Tractogram)
+        self._selection_worker.cancel()
+        self._full_order = random_order(t.num_streamlines, SUBSET_SEED)
+        self._order = self._full_order
+        self.selection = None
+        self._selection_version += 1  # what is drawn is of the old data
+        self._request_lines()
+        if not self._tubes_fit():
+            self._drop_tubes()
+        if region_filter(self.viewer.scene, self.item) is not None:
+            self._request_selection()
+        self._show()
+
     def reshape(self) -> None:
         """Makes the lines again after a change of the drawing cap, if it counts."""
         if self._drawn_count() != self._count:
@@ -421,7 +449,7 @@ class TractogramAdapter(Adapter):
     def _colour_mode(self) -> tuple[str, tuple[float, ...]]:
         """Returns the materials' colour mode and colour for the item's colouring."""
         o = self._options()
-        if o.colouring in (Colouring.DIRECTION, Colouring.VALUES):
+        if o.colouring in (Colouring.DIRECTION, Colouring.VALUES) or self._by_place():
             return "vertex", (1.0, 1.0, 1.0)
         if o.colouring == Colouring.SINGLE:
             return "uniform", gfx.Color(o.colour).rgb
@@ -509,9 +537,20 @@ class TractogramAdapter(Adapter):
         assert isinstance(t, Tractogram)
         return drawn_count(len(self._order), self._options().subset, self.draw_cap)
 
+    def _by_place(self) -> bool:
+        """Tells whether a drawn bundle shows its streamlines' places, for Twist."""
+        return (
+            self.viewer.scene.view.tool == Tool.TWIST
+            and self.viewer.bundle_place_values(self.item.id) is not None
+        )
+
     def _values(self) -> tuple[ValuesKey, np.ndarray | Volume | None]:
         """Returns where the values to colour by come from, and the values or volume."""
         o = self._options()
+        if self._by_place():
+            return ("place", self.item.id), self.viewer.bundle_place_values(
+                self.item.id
+            )
         if o.values_volume is not None:
             volume = self.viewer.scene.item(o.values_volume).data
             assert isinstance(volume, Volume)
@@ -526,7 +565,10 @@ class TractogramAdapter(Adapter):
         o = self._options()
         values: ValuesKey | None = None
         colours: ColoursKey | None = None
-        if o.colouring == Colouring.VALUES:
+        if self._by_place():
+            values = self._values()[0]
+            colours = (PLACE_COLOURS, -math.pi, math.pi)
+        elif o.colouring == Colouring.VALUES:
             values = self._values()[0]
             colours = (o.colormap, o.minimum, o.maximum)
         elif o.colouring == Colouring.DIRECTION:
@@ -553,6 +595,9 @@ class TractogramAdapter(Adapter):
         colormap, low, high = colours
         if colormap is None:
             return (None, 0.0, 1.0)
+        if colormap == PLACE_COLOURS:
+            return (_place_table(), low, high)
+        assert isinstance(colormap, Colormap)
         return (COLORMAP_MAPS[colormap].texture.data, low, high)
 
     def _pick_line(self, view: ViewRenderer, x: float, y: float) -> np.ndarray | None:
@@ -692,12 +737,13 @@ class TractogramAdapter(Adapter):
             return  # the lines are being made again: their tubes come after them
         if not o.visible or self._closed or ViewKind.THREE_D not in self.views:
             return  # made when shown
+        radius = o.drawn_tube_radius
         asked = self._tubes_asked
-        if asked is not None and asked[0] is self.drawn and asked[1] == o.tube_radius:
+        if asked is not None and asked[0] is self.drawn and asked[1] == radius:
             return
-        key = self._tubes_asked = (self.drawn, o.tube_radius)
+        key = self._tubes_asked = (self.drawn, radius)
         self._tubes_worker.submit(
-            partial(tubes, self.drawn, o.tube_radius),
+            partial(tubes, self.drawn, radius),
             partial(self._take_tubes, of=self.drawn),
             partial(self._tubes_failed, key),
         )
@@ -746,7 +792,7 @@ class TractogramAdapter(Adapter):
             return  # the lines are being made again: their light comes after them
         if not o.visible or self._closed:
             return  # made when shown
-        key = (self.drawn.points, o.tube_radius)
+        key = (self.drawn.points, o.drawn_tube_radius)
         known = self._light_of
         if known is not None and known[0] is key[0] and known[1] == key[1]:
             return
@@ -766,11 +812,11 @@ class TractogramAdapter(Adapter):
         if (
             built is None
             or built[0] is not self.drawn.points
-            or built[1] != o.tube_radius
+            or built[1] != o.drawn_tube_radius
             or (lists and not built[2])
         ):
-            self._voxels.build(self.drawn, o.tube_radius, lists=lists)
-            self._voxels_of = (self.drawn.points, o.tube_radius, lists)
+            self._voxels.build(self.drawn, o.drawn_tube_radius, lists=lists)
+            self._voxels_of = (self.drawn.points, o.drawn_tube_radius, lists)
         return self._voxels
 
     def _trace(self, mode: str, colour: tuple[float, ...], opacity: float) -> bool:
@@ -798,7 +844,7 @@ class TractogramAdapter(Adapter):
             self.traced.render_order = self.order
             self.views[ViewKind.THREE_D].add(self.traced)
         scale = self.light_scale if self._drawn_light() is not None else None
-        self.traced.set_grid(voxels, o.tube_radius, scale)
+        self.traced.set_grid(voxels, o.drawn_tube_radius, scale)
         key = (self.drawn.points, self.drawn.colours, mode, colour)
         if not _same(key, self._traced_colours):
             self.traced.set_colours(self._base_colours(mode, colour))
@@ -970,6 +1016,17 @@ def _lines(
     else:
         lines = reduce(points, offsets, order, n_points, source)
     return recoloured(lines, *colours)
+
+
+def _place_table() -> np.ndarray:
+    """Returns a colour wheel, for colouring streamlines by their angle in a bundle."""
+    a = np.linspace(-math.pi, math.pi, 256)[:, None]
+    wheel = np.hstack(
+        [0.55 + 0.45 * np.cos(a + shift) for shift in (0.0, -2.094, 2.094)]
+        + [np.ones_like(a)]
+    )
+    table: np.ndarray = wheel.astype(np.float32)
+    return table
 
 
 def _line_geometry(lines: Lines) -> gfx.Geometry:

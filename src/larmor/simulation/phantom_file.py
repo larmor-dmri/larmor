@@ -9,6 +9,7 @@ from typing import Any, Final
 
 import numpy as np
 
+from larmor._log import LarmorLogger
 from larmor.io import load_tractogram, load_volume
 from larmor.simulation.bundles import BundleGeometry
 from larmor.simulation.phantom import Bundle, Phantom, TissueMap
@@ -24,6 +25,9 @@ VERSION: Final = 1
 # Upper limit of the bundle seeds the writer draws.
 _SEED_LIMIT = 2**31
 
+# The rows of rings that the fan of an older file becomes.
+_FAN_ROWS = 65
+
 
 @dataclass(frozen=True, eq=False)
 class PhantomFile:
@@ -32,7 +36,7 @@ class PhantomFile:
     Attributes:
         phantom: The phantom.
         protocol: The scan, if the file has one.
-        viewer: The settings of the viewer's Simulate workspace, such as the
+        viewer: The settings of the viewer's SymDWI workspace, such as the
             bundles' names, kept as they are; empty if none.
     """
 
@@ -167,7 +171,10 @@ def read_phantom(path: str | Path) -> PhantomFile:
         raw_grid = data["grid"]
         grid = Grid(tuple(raw_grid["shape"]), np.asarray(raw_grid["affine"], float))
         tissues = tuple(Tissue.from_dict(t) for t in data["tissues"])
-        bundles = tuple(_bundle(b, folder, grid) for b in data.get("bundles", []))
+        bundles = tuple(
+            _bundle(b, folder, grid, _bundle_name(data, i))
+            for i, b in enumerate(data.get("bundles", []))
+        )
         maps = tuple(
             TissueMap(m["tissue"], load_volume(_locate(m, folder)), _locate(m, folder))
             for m in data.get("tissue_maps", [])
@@ -210,14 +217,52 @@ def _locate(entry: Mapping[str, Any], folder: Path) -> Path:
     raise FileNotFoundError(f"Cannot find {relative or absolute} from {folder}.")
 
 
-def _bundle(entry: Mapping[str, Any], folder: Path, grid: Grid) -> Bundle:
+def _bundle_name(data: Mapping[str, Any], index: int) -> str:
+    """Returns a bundle's name from the file's viewer block, or else its number."""
+    viewer = data.get("viewer")
+    saved = viewer.get("bundles") if isinstance(viewer, dict) else None
+    entry = saved[index] if isinstance(saved, list) and index < len(saved) else None
+    name = entry.get("name") if isinstance(entry, dict) else None
+    return name if isinstance(name, str) and name else f"Bundle {index + 1}"
+
+
+def geometry_from_file(values: Mapping[str, Any], name: str) -> BundleGeometry:
+    """Builds a geometry from a file, reading the fields older files can hold.
+
+    A dispersion is ignored with a warning. A fan becomes rings of the same width,
+    radius (1 + fan_start (1 - u)^p + fan_end u^p) with p the fan's sharpness, with
+    a warning since rings fill differently. A fan of radius 0 has no width to keep.
+
+    Returns:
+        The geometry.
+    """
+    current = dict(values)
+    start, end = current.pop("fan_start", 0.0), current.pop("fan_end", 0.0)
+    sharpness = current.pop("fan_sharpness", 2.0)
+    if current.pop("dispersion", 0.0):
+        LarmorLogger.warning("%s: its dispersion is ignored.", name)
+    radius = current.get("radius", BundleGeometry.radius)
+    if (start or end) and radius > 0:
+        # The rows crowd towards the ends, where a sharp fan changes fastest.
+        u = (1 - np.cos(np.linspace(0, np.pi, _FAN_ROWS))) / 2
+        width = radius * (1 + start * (1 - u) ** sharpness + end * u**sharpness)
+        current["rings"] = np.column_stack([u, width, width, 0 * u]).tolist()
+        LarmorLogger.warning(
+            "%s: its fan is read as rings of the same width, which fill by "
+            "streamline length.",
+            name,
+        )
+    return BundleGeometry.from_dict(current)
+
+
+def _bundle(entry: Mapping[str, Any], folder: Path, grid: Grid, name: str) -> Bundle:
     """Returns the bundle of one entry of the file, loading its tractogram."""
     area = entry.get("streamline_area_mm2")
     # Files written before densest_fill was saved have the default.
     fill = entry.get("densest_fill", Bundle.densest_fill)
     if "geometry" in entry:
         return Bundle(
-            BundleGeometry.from_dict(entry["geometry"]),
+            geometry_from_file(entry["geometry"], name),
             tissue=entry["tissue"],
             streamline_area=area,
             densest_fill=fill,

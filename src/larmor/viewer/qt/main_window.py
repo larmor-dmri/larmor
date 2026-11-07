@@ -10,10 +10,12 @@ from PySide6.QtCore import QObject, Qt, QTimer, Signal
 from PySide6.QtGui import QAction, QActionGroup, QCloseEvent, QShowEvent
 from PySide6.QtWidgets import (
     QFileDialog,
+    QLabel,
     QMainWindow,
     QMenu,
     QMessageBox,
     QPushButton,
+    QSizePolicy,
     QStackedWidget,
     QToolBar,
     QWidget,
@@ -72,6 +74,7 @@ from larmor.viewer.phantom_jobs import (
     start_open_simulation,
     start_run,
 )
+from larmor.viewer.qt.bundle_tool_bar import BundleToolBar
 from larmor.viewer.qt.dissect_steps import (
     DissectNavigator,
     DissectStepPage,
@@ -147,8 +150,8 @@ class RunJobBar(JobBar):
 class Workspaces(QObject):
     """Shows the panels of the workspace the view state names either side of the views.
 
-    The Signal breakdown belongs to Simulate: it closes in View and opens again
-    in Simulate if it was open.
+    The Signal breakdown belongs to SymDWI: it closes in View and opens again
+    in SymDWI if it was open.
     """
 
     def __init__(
@@ -169,7 +172,7 @@ class Workspaces(QObject):
             Workspace.SIMULATE: simulate,
             Workspace.DISSECT: dissect,
         }
-        self.breakdown_was_open = False  # in Simulate, when View was last shown
+        self.breakdown_was_open = False  # in SymDWI, when View was last shown
         unsubscribe = viewer.scene.subscribe(self._on_event)
         self.destroyed.connect(lambda *_: unsubscribe())
         self.show()
@@ -295,20 +298,43 @@ class MainWindow(QMainWindow):
         self.right.addWidget(self.dissect_page)
 
     def _create_bars(self) -> None:
-        """Puts the header and, below it, the views' toolbar across the window."""
+        """Puts the header, the views' toolbar and the drawing tools' options on top."""
         self.header = Header(self.viewer, self)
         self.toolbar = ViewToolbar(self.viewer, self)
-        for widget, name in ((self.header, "Header"), (self.toolbar, "Tools")):
-            bar = QToolBar(name, self)
-            bar.setObjectName(f"{name.lower()}Bar")
-            bar.setMovable(False)
-            bar.setFloatable(False)
-            bar.setContextMenuPolicy(Qt.ContextMenuPolicy.PreventContextMenu)
-            bar.toggleViewAction().setVisible(False)
-            bar.addWidget(widget)
-            self.addToolBar(Qt.ToolBarArea.TopToolBarArea, bar)
-            if widget is self.header:
-                self.addToolBarBreak(Qt.ToolBarArea.TopToolBarArea)
+        self.bundle_tool_bar = BundleToolBar(self.viewer, self)
+        self._add_bar(self.header, "Header")
+        self.addToolBarBreak(Qt.ToolBarArea.TopToolBarArea)
+        self._add_bar(self.toolbar, "Tools")
+        self.addToolBarBreak(Qt.ToolBarArea.TopToolBarArea)
+        options = self.bundle_tool_bar
+        bar = self._add_bar(options, "Drawing tool")
+        hint = QLabel(self)
+        hint.setObjectName("toolHint")
+        hint.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self.statusBar().addWidget(hint, 1)
+        viewer = self.viewer  # not `self` in the callback, as for the renderer
+
+        def follow(*_: object) -> None:
+            """Shows the bar only if it has options, and says how to use the tool."""
+            bar.setVisible(options.wanted())
+            in_symdwi = viewer.scene.view.workspace == Workspace.SIMULATE
+            hint.setText(viewer.bundle_tools.hint if in_symdwi else "")
+
+        follow()
+        stop = viewer.scene.subscribe(follow)
+        self.destroyed.connect(lambda *_: stop())
+
+    def _add_bar(self, widget: QWidget, name: str) -> QToolBar:
+        """Puts a widget across the window, in a bar that stays where it is."""
+        bar = QToolBar(name, self)
+        bar.setObjectName(f"{name.lower().replace(' ', '')}Bar")
+        bar.setMovable(False)
+        bar.setFloatable(False)
+        bar.setContextMenuPolicy(Qt.ContextMenuPolicy.PreventContextMenu)
+        bar.toggleViewAction().setVisible(False)
+        bar.addWidget(widget)
+        self.addToolBar(Qt.ToolBarArea.TopToolBarArea, bar)
+        return bar
 
     def _create_loader_and_jobs(self) -> None:
         """Creates the loader, the job runner, their bars and the frame scheduler.
@@ -537,7 +563,7 @@ class MainWindow(QMainWindow):
         workspaces = view.addMenu("&Workspace")
         for command, name in (
             (Command.WORKSPACE_VIEW, "&View"),
-            (Command.WORKSPACE_SIMULATE, "&Simulate"),
+            (Command.WORKSPACE_SIMULATE, "&SymDWI"),
             (Command.WORKSPACE_DISSECT, "&Dissect"),
         ):
             action = self.shortcuts[command]
@@ -971,12 +997,12 @@ class MainWindow(QMainWindow):
     # The phantom editor
 
     def show_phantom(self) -> PhantomPanel:
-        """Shows the Simulate workspace and returns its step page's panel."""
+        """Shows the SymDWI workspace and returns its step page's panel."""
         self.set_workspace(Workspace.SIMULATE)
         return self.step_page.panel
 
     def show_breakdown(self) -> BreakdownPanel:
-        """Opens the Signal breakdown below the views, in the Simulate workspace."""
+        """Opens the Signal breakdown below the views, in the SymDWI workspace."""
         from larmor.viewer.qt.breakdown_panel import BreakdownPanel
 
         self.set_workspace(Workspace.SIMULATE)

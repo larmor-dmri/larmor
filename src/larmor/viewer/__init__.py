@@ -25,6 +25,7 @@ from larmor.viewer.model.options import (
     TractStyle,
 )
 from larmor.viewer.model.phantom import (
+    BundleEnd,
     BundleField,
     BvecFrame,
     EchoKind,
@@ -66,6 +67,7 @@ APP_ID = "larmor.brainviewer"
 __all__ = [
     "MAX_STREAMLINES",
     "Basis",
+    "BundleEnd",
     "BundleField",
     "BvecFrame",
     "CameraPreset",
@@ -156,10 +158,10 @@ def view(
             `Viewer.save_session`). Its files are read in the background, then
             its options and views are restored. Missing files are reported in a
             message box, and the rest still opens.
-        phantom: A phantom file to open in the Simulate workspace, its bundles drawn
+        phantom: A phantom file to open in the SymDWI workspace, its bundles drawn
             in the background.
         simulation: A simulation folder (from `lar simulate` or Run in the
-            Simulate workspace), whose phantom opens in the Simulate workspace
+            SymDWI workspace), whose phantom opens in the SymDWI workspace
             and whose DWI, tissue masks and ground-truth peaks open as items.
         block: Wait until the window is closed. With False, return at once: in
             IPython or Jupyter, run `%gui qt` first so the window stays live; in

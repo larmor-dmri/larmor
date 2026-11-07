@@ -82,7 +82,7 @@ into these groups:
 - **Phantoms**: `new_phantom`, `close_phantom`, `set_phantom_grid`, `set_tissue`, `set_compartments`,
   `remove_tissue`, `set_tissue_map`, `set_background_tissue`, `set_scan`, `start_bundle`, `add_bundle_point`,
   `add_bundle_stroke`, `remove_bundle_point`, `set_bundle_points`, `finish_bundle`, `cancel_bundle`,
-  `edit_bundle`, `use_as_bundle`, `set_bundle`, `show_proxy`, `show_grid_box`, `check_phantom`, `set_run_folder`, `save_phantom`, `load_phantom`,
+  `edit_bundle`, `use_as_bundle`, `set_bundle`, `set_bundle_fullness`, `set_bundle_rings`, `set_bundle_landing`, `undo_bundles`, `redo_bundles`, `show_proxy`, `show_grid_box`, `check_phantom`, `set_run_folder`, `save_phantom`, `load_phantom`,
   `run_phantom`, `open_simulation`.
 - **Images**: `export`, `export_views`, `export_rotation`, which draw with an export preset such as "Website",
   and `screenshot`, `screenshot_views`, `record_rotation`, which take the size and switches themselves. The agent

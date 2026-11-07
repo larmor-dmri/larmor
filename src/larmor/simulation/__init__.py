@@ -6,7 +6,7 @@ from larmor.simulation.breakdown import (
     SignalBreakdown,
     signal_breakdown,
 )
-from larmor.simulation.bundles import BundleGeometry, create_bundle
+from larmor.simulation.bundles import BundleGeometry, Landing, create_bundle
 from larmor.simulation.examples import EXAMPLE_PHANTOMS, example_phantom
 from larmor.simulation.ground_truth import GroundTruth
 from larmor.simulation.instant import SimulatedDWI, simulate
@@ -49,6 +49,7 @@ __all__ = [
     "CompartmentModel",
     "CompartmentSignal",
     "GroundTruth",
+    "Landing",
     "Phantom",
     "PhantomFile",
     "Protocol",

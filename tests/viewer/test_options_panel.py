@@ -154,6 +154,7 @@ TRACT_NAMES = [
     OptionName.COLOUR_BAR,
     OptionName.STYLE,
     OptionName.TUBE_RADIUS,
+    OptionName.TUBE_TRUE_SIZE,
     OptionName.AMBIENT_OCCLUSION,
     OptionName.RAY_TRACED,
 ]
@@ -173,6 +174,7 @@ TRACT_LABELS = {
     OptionName.SLAB_THICKNESS: "Slab thickness (mm)",
     OptionName.STYLE: "Style",
     OptionName.TUBE_RADIUS: "Tube radius (mm)",
+    OptionName.TUBE_TRUE_SIZE: "True-size tubes",
     OptionName.AMBIENT_OCCLUSION: "Ambient occlusion",
     OptionName.RAY_TRACED: "Ray traced",
 }
@@ -192,6 +194,7 @@ TRACT_DEFAULTS: dict[OptionName, object] = {
     OptionName.SLAB_THICKNESS: SLAB_THICKNESS,
     OptionName.STYLE: TractStyle.LINES,
     OptionName.TUBE_RADIUS: 0.25,
+    OptionName.TUBE_TRUE_SIZE: False,
     OptionName.AMBIENT_OCCLUSION: False,
     OptionName.RAY_TRACED: False,
 }

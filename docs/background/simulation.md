@@ -114,24 +114,25 @@ offset from the centreline, carried along without twisting, so the bundle keeps 
 radius is less than about twice the bundle's, streamlines on its inside are held back and squeeze together, which makes
 their folds much smaller, although they can still turn sharply there. A corner that turns within a few per cent of the
 centreline's length is too short for this, and its inner streamlines fold back as they would otherwise. The offsets
-follow a Gaussian around the centreline, cut at the bundle's radius, which is 2.5 standard deviations. Fanning widens
-the bundle towards the ends, so the same streamlines spread over a larger section and fill less of each voxel there,
-and dispersion adds a smooth random wander that is zero at both ends. Rings set the section along the bundle instead
-of the radius and the fan, as two radii and an angle, with the same Gaussian stretched to fit. A tangle makes each
-streamline slide between two places across the bundle as it goes, which keeps the standard deviation of the spread but
-lets a few streamlines pass the edge halfway through a slide, and tilts the streamlines away from the centreline.
+follow a Gaussian around the centreline, cut at the bundle's radius, which is 2.5 standard deviations. Rings set the
+section along the bundle instead of the radius, as two radii and an angle, with the same Gaussian stretched to fit, so
+the same streamlines spread over a larger section and fill less of each voxel where the bundle widens. A tangle makes
+each streamline slide between two places across the bundle as it goes, which keeps the standard deviation of the spread
+but lets a few streamlines pass the edge halfway through a slide, and tilts the streamlines away from the centreline.
+A landing bends the streamlines of an end over to a line, smoothly over the stretch it opens on, without moving the
+centreline.
 
 ## Tissues in a voxel
 
 A voxel is shared between tissues in three steps, and a fraction is never scaled up.
 
 1. Each bundle fills a fraction of the voxel, its occupancy. For a geometry of one radius this is the share of the
-   voxel inside its tube. For a tractogram, a geometry with a fan or rings, or a geometry given a `streamline_area`, it
-   is the length of its streamlines in the voxel times the cross-section each streamline stands for, divided by the
-   voxel's volume, and at most 1. Without a `streamline_area`, the cross-section of a geometry with rings is 3 times
-   its median section divided by its number of streamlines, and that of any other bundle is set so that its dense
-   voxels have an occupancy of `densest_fill`. Where bundles together fill more than 1, as in a crossing, their
-   occupancies are scaled down to sum to 1.
+   voxel inside its tube. For a tractogram, a geometry with rings or a landing, or a geometry given a
+   `streamline_area`, it is the length of its streamlines in the voxel times the cross-section each streamline stands
+   for, divided by the voxel's volume, and at most 1. Without a `streamline_area`, the cross-section of a geometry with
+   rings or a landing is 3 times its median section divided by its number of streamlines, and that of a tractogram is
+   set so that its dense voxels have an occupancy of `densest_fill`. Where bundles together fill more than 1, as in a
+   crossing, their occupancies are scaled down to sum to 1.
 2. The tissue maps share what the bundles leave. Where their values add up to more than that, they are scaled down.
 3. What remains goes to the background tissue, or gives no signal.
 
@@ -140,7 +141,7 @@ A voxel filled by one tissue therefore has exactly that tissue's signal, and a v
 the tissues add in proportion to what they fill, each with its own relaxation weight.
 
 The fibres of a bundle in a voxel are the directions of its streamlines there, grouped in cells of about 7
-degrees, each with its share of the bundle's length. A bundle that fans or bends in a voxel therefore has several
+degrees, each with its share of the bundle's length. A bundle that widens or bends in a voxel therefore has several
 fibre directions, and its signal is their average.
 
 ## Relaxation
