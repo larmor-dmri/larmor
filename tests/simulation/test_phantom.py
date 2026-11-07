@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+import larmor.simulation.bundles as bundles
 from larmor.io import load_tractogram, load_volume, save_tractogram, save_volume
 from larmor.simulation import (
     Bundle,
@@ -460,6 +461,27 @@ def test_a_fan_fills_like_a_tractogram_of_its_streamlines() -> None:
         # The same streamlines spread over a wider section thin out.
         fractions = drawn.bundle_fractions[..., 0]
         assert fractions[1, 10, 10] > 2 * fractions[18, 10, 10]
+
+
+def test_the_fold_guard_changes_a_fill_only_where_it_follows_the_streamlines(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    affine = np.diag([2.0, 2.0, 2.0, 1.0])
+    affine[:3, 3] = [-30.0, -40.0, -16.0]
+    grid = Grid((35, 35, 17), affine)
+    corner = np.array([[-25.0, -15, 0], [15, -15, 0], [15, 25, 0]])
+    geometry = BundleGeometry(corner, num_streamlines=2000, radius=10.0, seed=1)
+    tube, by_length = Bundle(geometry), Bundle(geometry, streamline_area=0.15)
+
+    def fill(bundle: Bundle) -> np.ndarray:
+        partition = partition_voxels(Phantom(grid, bundles=(bundle,)))
+        result: np.ndarray = partition.bundle_fractions
+        return result
+
+    guarded = fill(tube), fill(by_length)
+    monkeypatch.setattr(bundles, "FOLD_LIMIT", 1e6)
+    np.testing.assert_array_equal(guarded[0], fill(tube))
+    assert not np.array_equal(guarded[1], fill(by_length))
 
 
 def test_a_fan_of_radius_0_fills_the_voxels_of_its_centreline() -> None:
