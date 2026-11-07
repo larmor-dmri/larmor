@@ -590,88 +590,91 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.GroundTruth" title="larmor.simulation.GroundTruth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GroundTruth</span></code></a></p></td>
 <td><p>What a simulated phantom truly holds, to compare an analysis of its images with.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.Phantom" title="larmor.simulation.Phantom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Phantom</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.Landing" title="larmor.simulation.Landing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Landing</span></code></a></p></td>
+<td><p>A line that the streamlines of one end of a bundle bend over to.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.Phantom" title="larmor.simulation.Phantom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Phantom</span></code></a></p></td>
 <td><p>An object to simulate, made of tissues placed on a voxel grid.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.PhantomFile" title="larmor.simulation.PhantomFile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PhantomFile</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.PhantomFile" title="larmor.simulation.PhantomFile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PhantomFile</span></code></a></p></td>
 <td><p>What a phantom file holds, as <a class="reference internal" href="#larmor.simulation.read_phantom" title="larmor.simulation.read_phantom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_phantom</span></code></a> returns it.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.Protocol" title="larmor.simulation.Protocol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Protocol</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.Protocol" title="larmor.simulation.Protocol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Protocol</span></code></a></p></td>
 <td><p>A diffusion-weighted scan: the gradient table and the pulse timings.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.PulseSequence" title="larmor.simulation.PulseSequence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PulseSequence</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.PulseSequence" title="larmor.simulation.PulseSequence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PulseSequence</span></code></a></p></td>
 <td><p>The kind of echo, which decides whether T2 or T2* weights the signal.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.SignalBreakdown" title="larmor.simulation.SignalBreakdown"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SignalBreakdown</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.SignalBreakdown" title="larmor.simulation.SignalBreakdown"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SignalBreakdown</span></code></a></p></td>
 <td><p>The noise-free signal of one voxel in one volume, split into its factors.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.SimulatedDWI" title="larmor.simulation.SimulatedDWI"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SimulatedDWI</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.SimulatedDWI" title="larmor.simulation.SimulatedDWI"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SimulatedDWI</span></code></a></p></td>
 <td><p>Holds the images that <a class="reference internal" href="#larmor.simulation.simulate" title="larmor.simulation.simulate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simulate</span></code></a> returns, with the scan and the noise.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.SimulationFiles" title="larmor.simulation.SimulationFiles"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SimulationFiles</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.SimulationFiles" title="larmor.simulation.SimulationFiles"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SimulationFiles</span></code></a></p></td>
 <td><p>The files <a class="reference internal" href="#larmor.simulation.save_simulation" title="larmor.simulation.save_simulation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_simulation</span></code></a> writes, all inside one folder.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.Tissue" title="larmor.simulation.Tissue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Tissue</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.Tissue" title="larmor.simulation.Tissue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Tissue</span></code></a></p></td>
 <td><p>A named tissue made of compartments whose fractions sum to 1.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.TissueMap" title="larmor.simulation.TissueMap"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TissueMap</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.TissueMap" title="larmor.simulation.TissueMap"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TissueMap</span></code></a></p></td>
 <td><p>The fraction of one tissue in each voxel, such as a grey matter probability.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.VoxelPartition" title="larmor.simulation.VoxelPartition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">VoxelPartition</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.VoxelPartition" title="larmor.simulation.VoxelPartition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">VoxelPartition</span></code></a></p></td>
 <td><p>How each voxel of a phantom is split between its tissues and fibres.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.add_noise" title="larmor.simulation.add_noise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_noise</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.add_noise" title="larmor.simulation.add_noise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_noise</span></code></a></p></td>
 <td><p>Adds complex Gaussian noise to noise-free signals and takes the magnitude.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.create_bundle" title="larmor.simulation.create_bundle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_bundle</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.create_bundle" title="larmor.simulation.create_bundle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_bundle</span></code></a></p></td>
 <td><p>Creates the streamlines of a synthetic bundle.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.create_gradient_table" title="larmor.simulation.create_gradient_table"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_gradient_table</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.create_gradient_table" title="larmor.simulation.create_gradient_table"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_gradient_table</span></code></a></p></td>
 <td><p>Creates a multi-shell gradient table with evenly spread directions.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.csf_tissue" title="larmor.simulation.csf_tissue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">csf_tissue</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.csf_tissue" title="larmor.simulation.csf_tissue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">csf_tissue</span></code></a></p></td>
 <td><p>Makes a cerebrospinal fluid tissue, <a class="reference internal" href="#larmor.simulation.free_water_tissue" title="larmor.simulation.free_water_tissue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">free_water_tissue</span></code></a> named &quot;CSF&quot;.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.default_tissues" title="larmor.simulation.default_tissues"><code class="xref py py-obj docutils literal notranslate"><span class="pre">default_tissues</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.default_tissues" title="larmor.simulation.default_tissues"><code class="xref py py-obj docutils literal notranslate"><span class="pre">default_tissues</span></code></a></p></td>
 <td><p>Returns the predefined tissues WM (standard model), GM (SANDI) and CSF.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.example_phantom" title="larmor.simulation.example_phantom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">example_phantom</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.example_phantom" title="larmor.simulation.example_phantom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">example_phantom</span></code></a></p></td>
 <td><p>Reads a phantom that ships with Larmor, with its scan.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.free_water_tissue" title="larmor.simulation.free_water_tissue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">free_water_tissue</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.free_water_tissue" title="larmor.simulation.free_water_tissue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">free_water_tissue</span></code></a></p></td>
 <td><p>Makes a free water tissue, one FREE_WATER compartment with signal exp(-b D).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.noddi_tissue" title="larmor.simulation.noddi_tissue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">noddi_tissue</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.noddi_tissue" title="larmor.simulation.noddi_tissue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">noddi_tissue</span></code></a></p></td>
 <td><p>Makes a NODDI white matter tissue: Watson sticks, zeppelin and free water.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.partition_voxels" title="larmor.simulation.partition_voxels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">partition_voxels</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.partition_voxels" title="larmor.simulation.partition_voxels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">partition_voxels</span></code></a></p></td>
 <td><p>Splits each voxel of a phantom between its tissues, fibres and background.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.read_ground_truth" title="larmor.simulation.read_ground_truth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_ground_truth</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.read_ground_truth" title="larmor.simulation.read_ground_truth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_ground_truth</span></code></a></p></td>
 <td><p>Reads the ground truth of a simulation from the folder <a class="reference internal" href="#larmor.simulation.save_simulation" title="larmor.simulation.save_simulation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_simulation</span></code></a> wrote.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.read_phantom" title="larmor.simulation.read_phantom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_phantom</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.read_phantom" title="larmor.simulation.read_phantom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_phantom</span></code></a></p></td>
 <td><p>Reads a phantom file written by <a class="reference internal" href="#larmor.simulation.write_phantom" title="larmor.simulation.write_phantom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_phantom</span></code></a>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.sandi_tissue" title="larmor.simulation.sandi_tissue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sandi_tissue</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.sandi_tissue" title="larmor.simulation.sandi_tissue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sandi_tissue</span></code></a></p></td>
 <td><p>Makes a SANDI grey matter tissue: sphere, powder-averaged stick and ball.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.save_simulation" title="larmor.simulation.save_simulation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_simulation</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.save_simulation" title="larmor.simulation.save_simulation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_simulation</span></code></a></p></td>
 <td><p>Writes a simulation and its ground truth into one self-contained folder.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.signal_breakdown" title="larmor.simulation.signal_breakdown"><code class="xref py py-obj docutils literal notranslate"><span class="pre">signal_breakdown</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.signal_breakdown" title="larmor.simulation.signal_breakdown"><code class="xref py py-obj docutils literal notranslate"><span class="pre">signal_breakdown</span></code></a></p></td>
 <td><p>Splits one voxel's noise-free signal in one volume into its factors.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.simulate" title="larmor.simulation.simulate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simulate</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.simulate" title="larmor.simulation.simulate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simulate</span></code></a></p></td>
 <td><p>Simulates the diffusion-weighted images of a phantom, voxel by voxel.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.simulation_files" title="larmor.simulation.simulation_files"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simulation_files</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.simulation_files" title="larmor.simulation.simulation_files"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simulation_files</span></code></a></p></td>
 <td><p>Returns the files a simulation of this phantom and protocol is saved as.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.standard_model_tissue" title="larmor.simulation.standard_model_tissue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">standard_model_tissue</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.standard_model_tissue" title="larmor.simulation.standard_model_tissue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">standard_model_tissue</span></code></a></p></td>
 <td><p>Makes a standard model tissue of Watson sticks, a zeppelin and free water.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#larmor.simulation.write_phantom" title="larmor.simulation.write_phantom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_phantom</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#larmor.simulation.write_phantom" title="larmor.simulation.write_phantom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_phantom</span></code></a></p></td>
 <td><p>Writes a phantom file (JSON, suggested suffix .phantom.json).</p></td>
 </tr>
 </tbody>
@@ -697,11 +700,11 @@
 streamlines give the fibre directions there. The share of a voxel that a
 bundle fills is its occupancy, between 0 and 1. A bundle drawn from a
 geometry of one radius fills each voxel by the share of the voxel inside its
-tube. A tractogram, a geometry with a fan or rings, or a geometry with a
+tube. A tractogram, a geometry with rings or a landing, or a geometry with a
 <code class="xref py py-obj docutils literal notranslate"><span class="pre">streamline_area</span></code> fills each voxel with L a / V, capped at 1, where L is the
 length of its streamlines in the voxel (mm), a the cross-section each
-streamline stands for (mm^2) and V the voxel volume (mm^3). A fan or a ring
-keeps its streamlines as it widens, so the bundle thins out where it is wide.</p>
+streamline stands for (mm^2) and V the voxel volume (mm^3). The streamlines
+stay as many as a bundle widens, so it thins out where it is wide.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -712,17 +715,16 @@ example from <code class="xref py py-obj docutils literal notranslate"><span cla
 it. Defaults to None.</p></li>
 <li><p><strong>streamline_area</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>) – The cross-section a that each streamline stands for,
 in mm^2. Defaults to None, with which a geometry of one radius fills
-its tube, a geometry with rings gets 3 times its median section
-divided by its number of streamlines, and any other bundle gets the
-value that gives its dense voxels an occupancy of <code class="xref py py-obj docutils literal notranslate"><span class="pre">densest_fill</span></code>. With
-a value, a geometry’s occupancy falls towards its edge, where its
+its tube, a geometry with rings or a landing gets 3 times its median
+section divided by its number of streamlines, and a tractogram gets
+the value that gives its dense voxels an occupancy of <code class="xref py py-obj docutils literal notranslate"><span class="pre">densest_fill</span></code>.
+With a value, a geometry’s occupancy falls towards its edge, where its
 streamlines are sparse, and dips at random where fewer happen to pass.</p></li>
-<li><p><strong>densest_fill</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The occupancy of the bundle’s dense voxels when
+<li><p><strong>densest_fill</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The occupancy of a tractogram’s dense voxels when
 streamline_area is None, in (0, 1]. A voxel is dense when the
 bundle’s streamline length in it reaches the 95th percentile of that
 length over the voxels the bundle reaches; denser voxels are capped
-at 1. Not used for a geometry of one radius, which fills its tube, or
-for one with rings. Defaults to 0.7.</p></li>
+at 1. Not used for a geometry. Defaults to 0.7.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
@@ -753,22 +755,19 @@ the streamlines drawn from a geometry. Defaults to 0.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="larmor.simulation.BundleGeometry">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.simulation.</span></span><span class="sig-name descname"><span class="pre">BundleGeometry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">control_points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_streamlines</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fan_start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fan_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fan_sharpness</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dispersion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tangle_mm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.BundleGeometry" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.simulation.</span></span><span class="sig-name descname"><span class="pre">BundleGeometry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">control_points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_streamlines</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tangle_mm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">landing_start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">landing_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.BundleGeometry" title="Link to this definition">#</a></dt>
 <dd><p>The shape of a synthetic bundle.</p>
-<p>A geometry describes a bundle by a few control points along its centreline,
-a radius, and how much the bundle fans out at its ends. Each streamline
-follows the centreline (see <code class="xref py py-obj docutils literal notranslate"><span class="pre">centreline_spline</span></code>) at a fixed offset across
-it, drawn from a Gaussian around the centreline that is cut at <code class="xref py py-obj docutils literal notranslate"><span class="pre">radius</span></code>, so
-the streamlines are densest at the centre. The offset is scaled by
-1 + fan_start (1 - u)^p + fan_end u^p, where u in [0, 1] is the position
-along the centreline and p is fan_sharpness. A smooth random wander of
-standard deviation <code class="xref py py-obj docutils literal notranslate"><span class="pre">dispersion</span></code>, zero at both ends, is added along the way.
-Streamlines on the inside of a bend whose radius is below about twice the
+<p>A geometry describes a bundle by a few control points along its centreline
+and a radius. Each streamline follows the centreline (see
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">centreline_spline</span></code>) at an offset across it, drawn from a Gaussian around the
+centreline that is cut at <code class="xref py py-obj docutils literal notranslate"><span class="pre">radius</span></code>, so the streamlines are densest at the
+centre. Streamlines on the inside of a bend whose radius is below about twice the
 bundle’s are held back, so they squeeze together and fold far less, though
 they can still turn sharply. A corner that turns within a few per cent of the
 centreline’s length folds as it would without this. Rings set the section
-along the bundle instead of the radius and fan, so that it can widen, flatten
-and turn. A bundle with rings fills by streamline length, not as a tube.</p>
+along the bundle instead of the radius, so that it can widen, flatten and turn,
+and landings bend the streamlines of an end over to a line. A bundle with
+either fills by streamline length, not as a tube.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -778,16 +777,8 @@ world coordinates (RAS+) in mm.</p></li>
 <li><p><strong>radius</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The bundle’s radius in mm, 2.5 standard deviations of the
 Gaussian. Defaults to 2.0.</p></li>
 <li><p><strong>num_points</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Points per streamline. Defaults to 100.</p></li>
-<li><p><strong>fan_start</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Extra spread at the first control point, where the bundle has
-the radius radius (1 + fan_start). Defaults to 0.0.</p></li>
-<li><p><strong>fan_end</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Extra spread at the last control point, in the same way.
-Defaults to 0.0.</p></li>
-<li><p><strong>fan_sharpness</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – p, how close to the ends the fanning stays; a larger p
-keeps it nearer the ends. Defaults to 2.0.</p></li>
-<li><p><strong>dispersion</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Standard deviation of the wander, mm. Defaults to 0.0.</p></li>
-<li><p><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><em>None</em>) – The seed of the random offsets and wander, so that the same seed
-gives the same streamlines; None draws new ones each time. Defaults
-to None.</p></li>
+<li><p><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><em>None</em>) – The seed of the random offsets, so that the same seed gives the same
+streamlines; None draws new ones each time. Defaults to None.</p></li>
 <li><p><strong>rings</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a><em> | </em><em>None</em>) – (R, 4) rows of u, r1, r2 and angle, which replace <code class="xref py py-obj docutils literal notranslate"><span class="pre">radius</span></code> for the
 bundle’s shape. u is the position along the centreline, rising from 0
 in the first row to 1 in the last. r1 and r2 are the section’s two
@@ -807,15 +798,28 @@ round bundle’s streamlines lie about 40 radius / tangle_mm degrees from
 the centreline on average, up to about 25 degrees, and they turn
 sharply at each point below about 2 sqrt(spacing radius), where
 spacing is the distance between points. Defaults to 0.0.</p></li>
+<li><p><strong>landing_start</strong> (<a class="reference internal" href="#larmor.simulation.Landing" title="larmor.simulation.bundles.Landing"><em>Landing</em></a><em> | </em><em>None</em>) – Where the streamlines bend over to at the first point, or
+None. It replaces the first radius and the angle of that end’s row of
+rings, and the second radius if it has a thickness line, so that the
+section turns to the line between rows. Without rings, the section keeps
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">radius</span></code> until <code class="xref py py-obj docutils literal notranslate"><span class="pre">opens_from</span></code> and then stretches along the line without
+turning. Defaults to None.</p></li>
+<li><p><strong>landing_end</strong> (<a class="reference internal" href="#larmor.simulation.Landing" title="larmor.simulation.bundles.Landing"><em>Landing</em></a><em> | </em><em>None</em>) – The same at the last point. Defaults to None.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the control points are not (K, 3) finite values with
     K &gt;= 2, a count or size is out of range, the rings are not as
-    described above, the rings come with a non-zero fan, or tangle_mm is
-    negative or not finite.</p>
+    described above, a landing has neither rings nor a radius above 0, or
+    tangle_mm is negative or not finite.</p>
 </dd>
 </dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="larmor.simulation.BundleGeometry.has_landing">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">has_landing</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a></span><a class="headerlink" href="#larmor.simulation.BundleGeometry.has_landing" title="Link to this definition">#</a></dt>
+<dd><p>Tells whether either end of the bundle has a landing.</p>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="larmor.simulation.BundleGeometry.is_tube">
 <span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">is_tube</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a></span><a class="headerlink" href="#larmor.simulation.BundleGeometry.is_tube" title="Link to this definition">#</a></dt>
@@ -825,18 +829,16 @@ spacing is the distance between points. Defaults to 0.0.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="larmor.simulation.BundleGeometry.median_section">
 <span class="sig-name descname"><span class="pre">median_section</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.BundleGeometry.median_section" title="Link to this definition">#</a></dt>
-<dd><p>Returns the median area of the section the rings set along the bundle.</p>
+<dd><p>Returns the median area of the bundle’s section, leaving out its landings.</p>
 <p>A change over less than half of the bundle’s length leaves it alone, so it
-tells the size the bundle mostly has.</p>
+tells the size the bundle mostly has. Without rings it is the area of a
+circle of <code class="xref py py-obj docutils literal notranslate"><span class="pre">radius</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The area in mm^2.</p>
 </dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the geometry has no rings.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -847,8 +849,8 @@ tells the size the bundle mostly has.</p>
 <dd><p>Returns the geometry as plain values that can be saved as JSON.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>A dict of the fields, with the control points and rings as lists,
-without the rings if there are none and the tangle if it is 0.</p>
+<dd class="field-odd"><p>A dict of the fields, with the arrays as lists, without the rings and
+landings if there are none and the tangle if it is 0.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)">object</a>]</p>
@@ -1381,6 +1383,42 @@ read from a folder.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="larmor.simulation.Landing">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.simulation.</span></span><span class="sig-name descname"><span class="pre">Landing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">line</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thickness_line</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opens_from</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.Landing" title="Link to this definition">#</a></dt>
+<dd><p>A line that the streamlines of one end of a bundle bend over to.</p>
+<p>The centreline stays as it is. The section at that end takes its first radius
+and its angle from the line, and each streamline lands at a place along the
+line given by its place along that radius. One further out than an end of the
+line lands on that end. A streamline keeps its offset along the second radius,
+unless a thickness line sets that radius and carries the offset along itself.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>line</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – (P, 3) points of the line, in world coordinates in mm.</p></li>
+<li><p><strong>thickness_line</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a><em> | </em><em>None</em>) – (P, 3) points of a second line across the first, whose
+shape and direction count but not where it lies: the streamlines land
+on the surface made by moving the first line along it. Defaults to
+None.</p></li>
+<li><p><strong>opens_from</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The position u along the centreline, from 0 at its start to 1
+at its end, where the bending starts, in (0, 1). Defaults to 0.5.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If a line is not (P, 3) finite values with P &gt;= 2 and some
+    length, or opens_from is outside (0, 1).</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="larmor.simulation.Landing.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.Landing.to_dict" title="Link to this definition">#</a></dt>
+<dd><p>Returns the landing as plain values, without a thickness line if none.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="larmor.simulation.Phantom">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.simulation.</span></span><span class="sig-name descname"><span class="pre">Phantom</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tissues</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bundles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tissue_maps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">background</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.Phantom" title="Link to this definition">#</a></dt>
 <dd><p>An object to simulate, made of tissues placed on a voxel grid.</p>
@@ -1464,7 +1502,7 @@ to None.</p></li>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="larmor.simulation.PhantomFile.viewer">
 <span class="sig-name descname"><span class="pre">viewer</span></span><a class="headerlink" href="#larmor.simulation.PhantomFile.viewer" title="Link to this definition">#</a></dt>
-<dd><p>The settings of the viewer’s Simulate workspace, such as the
+<dd><p>The settings of the viewer’s SymDWI workspace, such as the
 bundles’ names, kept as they are; empty if none.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -2198,7 +2236,7 @@ Defaults to None.</p></li>
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">larmor.simulation.</span></span><span class="sig-name descname"><span class="pre">VoxelPartition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tissue_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tissue_fractions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">background</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bundle_fractions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offsets</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fibre_tissue</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fibre_bundle</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fibre_weight</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fibre_direction</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">streamlines</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#larmor.simulation.VoxelPartition" title="Link to this definition">#</a></dt>
 <dd><p>How each voxel of a phantom is split between its tissues and fibres.</p>
 <p>This is the ground truth of a simulation. A fibre is one direction of one
-bundle in one voxel; a bundle that bends or fans out in a voxel has several
+bundle in one voxel; a bundle that bends or widens in a voxel has several
 fibres there. The fibres of all voxels are stored in flat arrays of length
 F, sorted by voxel.</p>
 <dl class="field-list simple">
@@ -3047,6 +3085,7 @@ random and written, so the file always gives the same streamlines.</p>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.BundleGeometry"><code class="docutils literal notranslate"><span class="pre">BundleGeometry</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.BundleGeometry.has_landing"><code class="docutils literal notranslate"><span class="pre">BundleGeometry.has_landing</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.BundleGeometry.is_tube"><code class="docutils literal notranslate"><span class="pre">BundleGeometry.is_tube</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.BundleGeometry.median_section"><code class="docutils literal notranslate"><span class="pre">BundleGeometry.median_section()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.BundleGeometry.to_dict"><code class="docutils literal notranslate"><span class="pre">BundleGeometry.to_dict()</span></code></a></li>
@@ -3107,6 +3146,10 @@ random and written, so the file always gives the same streamlines.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.GroundTruth.peaks"><code class="docutils literal notranslate"><span class="pre">GroundTruth.peaks</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.GroundTruth.bundle_names"><code class="docutils literal notranslate"><span class="pre">GroundTruth.bundle_names</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.GroundTruth.partition"><code class="docutils literal notranslate"><span class="pre">GroundTruth.partition</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.Landing"><code class="docutils literal notranslate"><span class="pre">Landing</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.Landing.to_dict"><code class="docutils literal notranslate"><span class="pre">Landing.to_dict()</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#larmor.simulation.Phantom"><code class="docutils literal notranslate"><span class="pre">Phantom</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">

@@ -557,7 +557,7 @@
 <h1>Phantoms<a class="headerlink" href="#phantoms" title="Link to this heading">#</a></h1>
 <p>A phantom is a made-up subject with a known structure, from which Larmor computes the diffusion images that a
 scanner would record. Because you know what is in every voxel, a phantom lets you test a method against the truth.</p>
-<p>The Simulate workspace edits a phantom for Larmor’s simulation module. Choose <strong>Simulate</strong> in the switch at the
+<p>The SymDWI workspace edits a phantom for Larmor’s simulation module. Choose <strong>SymDWI</strong> in the switch at the
 left of the header, or press <strong>Ctrl+2</strong>. A phantom consists of a voxel grid, tissues, fibre bundles (loaded from files
 or drawn in the 2D views), tissue maps and a scanning protocol. When you run the phantom, the viewer simulates the
 diffusion images and opens the results as ordinary items, which the View workspace shows in the scene tree.</p>
@@ -570,7 +570,7 @@ scan. The default grid, tissues and scan already work, so those three steps are 
 phantom needs only a bundle before it can run. Above the steps, <strong>New</strong> starts a phantom, <strong>Open</strong> reads a phantom
 file or a simulation folder, and <strong>Save</strong> writes the phantom to a file. New and Open ask before they discard a
 phantom that has bundles.</p>
-<p><img alt="The Simulate workspace while a bundle is drawn" src="../../_images/phantom-guided.png" /></p>
+<p><img alt="The SymDWI workspace while a bundle is drawn" src="../../_images/phantom-guided.png" /></p>
 <p>The panel on the right shows the page of the step you are on: a heading, a few sentences on what the step does, and
 the fields that matter for it. The rest of the step’s fields are under a <strong>More</strong> fold at the end of the page, which
 says what it holds. <strong>Next</strong> and <strong>Back</strong> move between the steps, and clicking a step in the list opens it. You can
@@ -578,8 +578,8 @@ go to any step at any time and in any order.</p>
 <p>A first simulation follows the steps in their order.</p>
 <ol class="arabic simple">
 <li><p>Click <strong>New</strong> to start a phantom. It opens on the Grid step, and the grid works as it is, so click <strong>Next</strong>.</p></li>
-<li><p>On the Bundle step, choose <strong>Draw bundle</strong> in the toolbar or press <strong>N</strong>, place three or four points in a 2D view
-and press <strong>Enter</strong> to finish the bundle. The new bundle is filled with the WM tissue, a standard model of white
+<li><p>On the Bundle step, choose the <strong>Pen</strong> in the toolbar or press <strong>P</strong>, drag in a 2D view along the path the bundle
+should take and press <strong>Enter</strong> to finish the bundle. The new bundle is filled with the WM tissue, a standard model of white
 matter. To fill it with another tissue, choose one in the bundle’s row of the bundles table.</p></li>
 <li><p>The Tissue step edits the tissues themselves, with their parameters under More. You can keep them as they are.</p></li>
 <li><p>On the Scan step, the default scan is a single-shell acquisition at b = 1000 s/mm^2 with 32 directions and no
@@ -627,33 +627,52 @@ bundle gives them, while the dot, the ball, free water, the sphere and the powde
 </section>
 <section id="drawing-bundles">
 <h2>Drawing bundles<a class="headerlink" href="#drawing-bundles" title="Link to this heading">#</a></h2>
-<p>To draw a bundle, choose <strong>Draw bundle</strong> in the toolbar, click <strong>Draw (N)</strong> on the Bundle step, or press <strong>N</strong>. There are then two ways
-to add control points in a 2D view, and you can mix them in one bundle. Freehand, the usual way, you press, drag
-along the path the bundle should take, and let go: the stroke becomes the fewest points spaced evenly along it
-whose bundle stays within about one voxel of the stroke, at most 24 of them and always its first and last, and
-these are added after the points already there. Another stroke adds more points. To place control points one at a time, hold Ctrl (Cmd on macOS)
-and click: each click adds a point at that place, while a Ctrl+drag still pans the view. Either way the points lie
-in the view’s slice, and the crosshair moves to the last one, so the other views follow it. Points outside the
-grid box are left out, and the status bar says so when none is inside. A control point already placed can be
-dragged to a new place in the view’s plane. Scrolling still changes the slice. The bundle is drawn again from its
-points as you add them. The keys below work only while you draw, so at other times they keep their usual meaning
-in the scene tree and in dialogs. While you draw, a card on the Bundle step counts
-the points placed and has <strong>Finish</strong> and <strong>Cancel</strong>.</p>
+<p>You draw and shape bundles in the 2D views with the tools in the toolbar, and the options of the tool chosen show in a
+bar below it. The status bar says how the tool works. The 3D view is only for looking: a drag there turns it, whatever
+the tool. A 2D view shows a bundle within its slab, 5 mm around the slice unless you change the slab, and a tool can
+only take what shows. Scrolling moves the slice through depth, also during a stroke, and Ctrl+drag pans. Escape takes
+back the drag going on.</p>
+<p><strong>Ctrl+Z</strong> (Cmd+Z on macOS) takes back the last change to the bundles, and <strong>Ctrl+Shift+Z</strong> does it again. A change is a
+finished stroke or tool edit, a removed bundle, or a setting of a bundle such as its tissue, streamlines, radius, tangle
+or fullness, and a drag of a slider counts as one. Finishing a bundle goes with its last stroke. This also works with
+the focus on one of the bundle’s fields, though a text field keeps its own undo while it has typing to take back. The
+last 100 changes are kept. The tissues, the scan, the grid and the options of the items have no undo, and a new or
+opened phantom starts the history again.</p>
+<section id="the-pen">
+<h3>The Pen<a class="headerlink" href="#the-pen" title="Link to this heading">#</a></h3>
+<p>The <strong>Pen</strong> (<strong>P</strong>, or <strong>Draw (P)</strong> on the Bundle step) draws a bundle in two ways, which you can mix. Dragging draws a
+stroke, which becomes the fewest points spaced evenly along it whose bundle stays within about one voxel of the stroke,
+fewer if you are zoomed in, and at most 24. Clicking places one point at a time on the slice, so that a bundle can pass
+through chosen places. Scrolling during a stroke, or between clicks, carries the path to another depth.</p>
+<p>Where a stroke starts decides what it does:</p>
+<ul class="simple">
+<li><p>From empty space it starts a new bundle, and a bundle you were drawing is finished first.</p></li>
+<li><p>From a tip of a bundle, marked by a white ring when the pointer is over it, it lengthens that bundle. A click on a
+tip goes on from there with single points.</p></li>
+<li><p>From the side of a bundle it makes a branch, which leaves the bundle there and takes half of its streamlines.</p></li>
+<li><p>From one place on a bundle to another it redoes the stretch between, so that a stroke in another view can correct
+the depth of a path drawn in the first.</p></li>
+</ul>
+<p>A plain click on a bundle does nothing. A click with <strong>Ctrl</strong> (Cmd on macOS) places a point right there even over a
+bundle, while Ctrl+drag still pans. The points and the path show in pink in every view until the bundle is finished,
+and the bundle is drawn again from them as they change. You can drag a point to a new place in the view’s plane, and
+the two end points with Ctrl held, as a plain press on an end goes on from there. Points outside the grid box are left
+out, and the status bar says so when none is inside.</p>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Key</p></th>
-<th class="head"><p>What it does while drawing</p></th>
+<th class="head"><p>What it does with the Pen</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><strong>N</strong></p></td>
-<td><p>Starts a new bundle; the one being drawn is finished first</p></td>
+<tr class="row-even"><td><p><strong>Enter</strong></p></td>
+<td><p>Finishes the bundle and selects it; the Pen stays on for the next</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>Enter</strong></p></td>
-<td><p>Finishes the bundle</p></td>
+<tr class="row-odd"><td><p><strong>Backspace</strong></p></td>
+<td><p>Takes back the last stroke or point</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>Backspace</strong></p></td>
-<td><p>Takes back the last stroke, or the last point placed with Ctrl+click</p></td>
+<tr class="row-even"><td><p><strong>[</strong> and <strong>]</strong></p></td>
+<td><p>Make the radius smaller or larger; during a stroke they change it from there on along the stroke</p></td>
 </tr>
 <tr class="row-odd"><td><p><strong>Escape</strong></p></td>
 <td><p>Stops drawing; a new bundle is dropped and an edited one is kept as it was</p></td>
@@ -661,16 +680,59 @@ the points placed and has <strong>Finish</strong> and <strong>Cancel</strong>.</
 </tbody>
 </table>
 </div>
-<p>Choosing another tool (V, O, B or Z) also stops drawing: the bundle is finished if it has two points, else
-dropped.</p>
-<p>A finished bundle is an ordinary tractogram in the scene tree, so all the tractogram options apply to it. Its row in
-the bundles table chooses the tissue that fills it. When you select a bundle, the editor shows its shape (the number
-of streamlines, the radius, the fanning, the dispersion and the seed) so that you can change it, and <strong>Edit</strong> brings
-its points back into draw mode. The bundle keeps its place in the scene tree and its options while you edit it. A
-bundle with fanning fills the voxels by the length of its streamlines, so it thins out where it widens, and its
-<strong>Densest fill</strong> sets how full its densest voxels are. You can also make a loaded tractogram a bundle of the phantom
-with <strong>Use a tractogram…</strong>. To remove bundles, select their rows in the bundles table and click <strong>Remove</strong> or press
-<strong>Delete</strong>; several rows can be selected at once, as in the scene tree.</p>
+<p><strong>Edit</strong> on the Bundle step brings a finished bundle’s points back in the same way, and choosing another tool
+finishes the bundle if it has two points, or else drops it.</p>
+</section>
+<section id="the-other-tools">
+<h3>The other tools<a class="headerlink" href="#the-other-tools" title="Link to this heading">#</a></h3>
+<p>Each of these takes a bundle that shows where you press, and leaves it finished.</p>
+<p><strong>Bend</strong> (<strong>B</strong>) moves the place you grab in the view’s plane, and the parts nearby and any branches follow. <strong>Reach</strong>
+says how far along they follow, and at its top the whole bundle moves.</p>
+<p><strong>Width</strong> (<strong>W</strong>) is a soft brush. Drag out to widen the bundle at that place and in to narrow it. Which way is outwards
+is settled when you press, so dragging on across the centreline keeps narrowing. Reach sets how far along it acts, up
+to 200 mm, and a white line shows that stretch as you hover. <strong>Round</strong> changes the whole section, and <strong>Flat</strong>, or
+Shift during a Round stroke, changes only the width you see in this view. Repeating a stroke at one place does not pile
+up the rings that hold the section.</p>
+<p><strong>Twist</strong> (<strong>T</strong>) rolls the bundle at a place when you drag across it, one degree per pixel, and it turns back to its
+old direction within Reach. Looking along a bundle, circle it instead. While this tool is on, streamlines are coloured
+by their place across the bundle, so a twist shows as colours changing sides.</p>
+<p><strong>Fan</strong> (<strong>F</strong>) makes the streamlines of one end land on a line you draw across it. A white ring marks the end nearest
+the pointer, which is settled when you press, and the slice goes to that end’s depth. Drawing another line replaces the
+first and leaves nothing behind. A line at right angles to the first, from another view, sets the fan’s thickness. A
+line across the bundle well before its end stops the bundle there. <strong>Opens from</strong> says where along the bundle the
+streamlines start to spread.</p>
+<p><strong>Erase</strong> (<strong>E</strong>) removes a bundle and its branches when you click it, and cuts a bundle where you drag across it, and
+the shorter part goes. It only cuts what shows in the view.</p>
+<p><strong>[</strong> and <strong>]</strong> change Reach with Bend, Width and Twist.</p>
+<p>A branch shares its stem with the bundle it leaves: the viewer writes the stem into the branch’s own points and section,
+so a phantom file holds each as a whole path, and a branch follows the bundle it leaves when you bend or widen it. A
+stem’s voxels hold both bundles, which split them between themselves.</p>
+</section>
+<section id="fullness-tangle-and-true-size-tubes">
+<h3>Fullness, tangle and true-size tubes<a class="headerlink" href="#fullness-tangle-and-true-size-tubes" title="Link to this heading">#</a></h3>
+<p>A selected bundle’s row in the bundles table chooses the tissue that fills it, and the form below shows its shape.
+<strong>Fullness</strong> sets how much of the voxels the bundle fills. A plain tube of one radius fills the voxels inside it, and
+the field says so, until you move the slider. Then, as for any bundle that has changed section or has a fan, its
+streamlines fill by their length: each stands for a share of the section, and the unit of the slider is the bundle’s
+median section divided by its number of streamlines. At the default of 3 the core fills up and the edge is soft, and at
+1 the streamlines together hold the section. The fullness stays as you reshape the bundle. <strong>Default</strong> goes back, which
+for a plain tube means filling its tube again.</p>
+<p><strong>Tangle</strong> makes the streamlines lose their places: each slides to another place across the bundle over the distance
+you set, which spreads the directions in a voxel more the shorter it is. A distance too short for the bundle’s points
+is raised to the shortest they can show, and the field says so.</p>
+<p><strong>True-size tubes in 3D</strong> draws the streamlines in the 3D view as tubes of the cross-section each one stands for, of
+radius sqrt(a / pi), where a is the area that gives the fill. The field shows that radius, which follows Fullness. It
+also lies outside the range of the tube radius option when it needs to, between 0.005 and 20 mm. Since a plain tube
+has no such area, its tubes show its section shared out evenly among its streamlines, which together then hold the
+tube’s volume. A bundle with too many streamlines for the tube limit in Settings shows lines instead, as the status
+bar says, and a subset shows that share of them, so it looks emptier than it fills.</p>
+<p>A finished bundle is an ordinary tractogram in the scene tree, so all the tractogram options apply to it. Under More,
+<strong>Streamline area</strong> gives the same fill in mm^2 per streamline. The bundle keeps its place in the scene tree and its
+options while you edit it. You can also make a loaded tractogram a bundle of the phantom with <strong>Use a tractogram…</strong>,
+and its <strong>Densest fill</strong> sets how full its densest voxels are. To remove bundles, select their rows in the bundles table
+and click <strong>Remove</strong> or press <strong>Delete</strong>; several rows can be selected at once, as in the scene tree. A branch whose
+parent you remove this way stays, with its stem.</p>
+</section>
 </section>
 <section id="proxy-maps">
 <h2>Proxy maps<a class="headerlink" href="#proxy-maps" title="Link to this heading">#</a></h2>
@@ -725,7 +787,8 @@ step says that the directions come from the file; editing the shells replaces it
 shells. The SNR is that of a voxel full of WM at b = 0, or of the noise reference tissue chosen under More. A run of
 a phantom file gives the same images as <code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">simulate</span></code> with the noise seed of the Scan step.</p>
 <p><strong>Run</strong> (<strong>Ctrl+R</strong>), on the Run step or in the header, is greyed out until the phantom can run, with the first
-problem as its tooltip; a bundle that is being drawn or edited must be finished or cancelled first. It asks for an
+problem as its tooltip; a bundle that is being drawn or edited must be finished or cancelled first, though the Pen
+waiting for its next bundle does not stop it. It asks for an
 output folder if none is set, and asks before it replaces the outputs of an earlier run or writes into a folder
 that holds other files. The simulation then runs in the background, with its progress and a Cancel button in the
 status bar and on the Run step. Once the files are being saved, the run can no longer be cancelled. A message
@@ -738,7 +801,9 @@ tissue map that was registered when it was opened, or read as a subset of its st
 phantom file as the viewer shows it, so the file reopens it in the same place. From the command line,
 <code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">bv</span> <span class="pre">--phantom</span> <span class="pre">scene.phantom.json</span></code> opens a phantom file, and <code class="docutils literal notranslate"><span class="pre">lar</span> <span class="pre">bv</span> <span class="pre">--simulation</span> <span class="pre">folder</span></code> opens a simulation
 folder with its phantom in the editor. A saved session also keeps the phantom, and opening the session restores
-the editor. A bundle that you are still drawing is not saved with the session, so finish it first.</p>
+the editor. A bundle that you are still drawing is not saved with the session, so finish it first. A phantom file or a
+session from an earlier version opens with its fan read as rings of the same width, and without its dispersion, and
+the log says so.</p>
 <p>The same steps from Python look like this:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">larmor.viewer</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProxyMap</span><span class="p">,</span> <span class="n">Viewer</span>
 
@@ -780,7 +845,12 @@ the editor. A bundle that you are still drawing is not saved with the session, s
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-first-simulation-step-by-step">A first simulation, step by step</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#grid-and-tissues">Grid and tissues</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#drawing-bundles">Drawing bundles</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#drawing-bundles">Drawing bundles</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-pen">The Pen</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-other-tools">The other tools</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fullness-tangle-and-true-size-tubes">Fullness, tangle and true-size tubes</a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#proxy-maps">Proxy maps</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#signal-breakdown">Signal breakdown</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#running-and-saving">Running and saving</a></li>

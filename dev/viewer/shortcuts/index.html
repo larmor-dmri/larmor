@@ -649,7 +649,7 @@ the keyboard focus between a panel’s controls.</p>
 <td><p>any</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+2</span></code></p></td>
-<td><p>Show the Simulate workspace: the steps of a phantom</p></td>
+<td><p>Show the SymDWI workspace: the steps of a phantom</p></td>
 <td><p>any</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+3</span></code></p></td>
@@ -665,7 +665,7 @@ the keyboard focus between a panel’s controls.</p>
 <td><p>any</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">B</span></code></p></td>
-<td><p>Box tool: a drag in a 2D view draws a box region</p></td>
+<td><p>Box tool in Dissect: a drag in a 2D view draws a box region; Bend tool in SymDWI: a drag moves a part of a bundle</p></td>
 <td><p>any</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">L</span></code></p></td>
@@ -688,8 +688,40 @@ the keyboard focus between a panel’s controls.</p>
 <td><p>Give the selected region the next role: include, exclude, within</p></td>
 <td><p>any</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">N</span></code></p></td>
-<td><p>Draw a new bundle: strokes or Ctrl+clicks in the 2D views add points</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">P</span></code>, <code class="docutils literal notranslate"><span class="pre">N</span></code></p></td>
+<td><p>Pen: strokes and clicks in the 2D views draw a new bundle</p></td>
+<td><p>any</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">W</span></code></p></td>
+<td><p>Width tool: a drag widens or narrows a bundle</p></td>
+<td><p>any</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">T</span></code></p></td>
+<td><p>Twist tool: a drag across a bundle rolls it</p></td>
+<td><p>any</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">F</span></code></p></td>
+<td><p>Fan tool: a line drawn across the end of a bundle makes it land there</p></td>
+<td><p>any</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">E</span></code></p></td>
+<td><p>Erase tool: a click removes a bundle, a stroke cuts it</p></td>
+<td><p>any</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">[</span></code></p></td>
+<td><p>Make the radius of the Pen or the reach of the tool smaller</p></td>
+<td><p>any</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">]</span></code></p></td>
+<td><p>Make the radius of the Pen or the reach of the tool larger</p></td>
+<td><p>any</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+Z</span></code></p></td>
+<td><p>Take back the last change to the bundles of the phantom</p></td>
+<td><p>any</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+Shift+Z</span></code></p></td>
+<td><p>Do again the last change to the bundles that was taken back</p></td>
 <td><p>any</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Return</span></code>, <code class="docutils literal notranslate"><span class="pre">Enter</span></code></p></td>
@@ -701,7 +733,7 @@ the keyboard focus between a panel’s controls.</p>
 <td><p>any</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Escape</span></code></p></td>
-<td><p>Stop drawing: drop the new bundle, or keep an edited one as it was; else unpin the voxel of the Signal breakdown; else the Cursor tool</p></td>
+<td><p>Take back a drag with a drawing tool; else stop drawing: drop the new bundle, or keep an edited one as it was; else unpin the voxel of the Signal breakdown; else the Cursor tool</p></td>
 <td><p>any</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+R</span></code></p></td>
@@ -776,39 +808,67 @@ the keyboard focus between a panel’s controls.</p>
 <td><p>Open the rectangle in a detail window; Shift: square, Alt: from the centre</p></td>
 <td><p>2D views</p></td>
 </tr>
-<tr class="row-odd"><td><p>Drag, while drawing a bundle</p></td>
-<td><p>Draw a stroke; its control points are added when you let go</p></td>
+<tr class="row-odd"><td><p>Drag, Pen</p></td>
+<td><p>Draw a stroke: a new bundle, or from a tip a longer one, from the side a branch, and over a stretch a new stretch</p></td>
 <td><p>2D views</p></td>
 </tr>
-<tr class="row-even"><td><p>Ctrl + click, while drawing a bundle</p></td>
-<td><p>Add one control point and move the crosshair there</p></td>
+<tr class="row-even"><td><p>Click, Pen</p></td>
+<td><p>Place a point of a bundle</p></td>
 <td><p>2D views</p></td>
 </tr>
-<tr class="row-odd"><td><p>Drag a control point, while drawing</p></td>
-<td><p>Move it in the view’s plane</p></td>
+<tr class="row-odd"><td><p>Ctrl + click, Pen</p></td>
+<td><p>Place a point here, even over a bundle</p></td>
 <td><p>2D views</p></td>
 </tr>
-<tr class="row-even"><td><p>Right click</p></td>
+<tr class="row-even"><td><p>Drag a control point, Pen</p></td>
+<td><p>Move it in the view’s plane; hold Ctrl for the two ends</p></td>
+<td><p>2D views</p></td>
+</tr>
+<tr class="row-odd"><td><p>Scroll during a stroke</p></td>
+<td><p>Move on through depth as you draw</p></td>
+<td><p>2D views</p></td>
+</tr>
+<tr class="row-even"><td><p>Drag, Bend tool</p></td>
+<td><p>Move a part of a bundle</p></td>
+<td><p>2D views</p></td>
+</tr>
+<tr class="row-odd"><td><p>Drag, Width tool</p></td>
+<td><p>Widen or narrow a bundle</p></td>
+<td><p>2D views</p></td>
+</tr>
+<tr class="row-even"><td><p>Drag, Twist tool</p></td>
+<td><p>Roll a bundle</p></td>
+<td><p>2D views</p></td>
+</tr>
+<tr class="row-odd"><td><p>Drag, Fan tool</p></td>
+<td><p>Draw the line a bundle’s end lands on</p></td>
+<td><p>2D views</p></td>
+</tr>
+<tr class="row-even"><td><p>Click or drag, Erase tool</p></td>
+<td><p>Remove a bundle, or cut it there</p></td>
+<td><p>2D views</p></td>
+</tr>
+<tr class="row-odd"><td><p>Right click</p></td>
 <td><p>Add a region or open a zoom box here</p></td>
 <td><p>any</p></td>
 </tr>
-<tr class="row-odd"><td><p>Drag</p></td>
+<tr class="row-even"><td><p>Drag</p></td>
 <td><p>Turn the scene</p></td>
 <td><p>3D</p></td>
 </tr>
-<tr class="row-even"><td><p>Scroll, or pinch</p></td>
+<tr class="row-odd"><td><p>Scroll, or pinch</p></td>
 <td><p>Zoom</p></td>
 <td><p>3D</p></td>
 </tr>
-<tr class="row-odd"><td><p>Click, Sphere or Box tool</p></td>
+<tr class="row-even"><td><p>Click, Sphere or Box tool</p></td>
 <td><p>Place the region on the streamline, slice or surface under the pointer</p></td>
 <td><p>3D</p></td>
 </tr>
-<tr class="row-even"><td><p>Click a region, Cursor tool</p></td>
+<tr class="row-odd"><td><p>Click a region, Cursor tool</p></td>
 <td><p>Select the region</p></td>
 <td><p>3D</p></td>
 </tr>
-<tr class="row-odd"><td><p>Scroll over the selected region</p></td>
+<tr class="row-even"><td><p>Scroll over the selected region</p></td>
 <td><p>Resize it</p></td>
 <td><p>3D</p></td>
 </tr>

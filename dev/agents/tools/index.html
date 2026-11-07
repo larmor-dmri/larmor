@@ -1466,6 +1466,17 @@ is not finite, duration is not positive, or fps is not positive.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">redo_bundles</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span></dt>
+<dd><p>Does again the last change <code class="docutils literal notranslate"><span class="pre">undo_bundles</span></code> took back, if none came since.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Whether there was a change to do again; there is none during a drag.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Removes an item, or every item of a category.</p>
 <p>When the main volume is removed, the next volume in scene tree order becomes
@@ -1963,11 +1974,12 @@ file cannot be read or does not match the tractogram.</p></li>
 <li><p><strong>item_id</strong> – The bundle’s tractogram item, or None for the bundle being
 drawn.</p></li>
 <li><p><strong>name</strong> – <code class="docutils literal notranslate"><span class="pre">BundleField.TISSUE</span></code> (a tissue’s name), <code class="docutils literal notranslate"><span class="pre">NUM_STREAMLINES</span></code>,
-<code class="docutils literal notranslate"><span class="pre">RADIUS</span></code> (mm), <code class="docutils literal notranslate"><span class="pre">NUM_POINTS</span></code>, <code class="docutils literal notranslate"><span class="pre">FAN_START</span></code>, <code class="docutils literal notranslate"><span class="pre">FAN_END</span></code>,
-<code class="docutils literal notranslate"><span class="pre">FAN_SHARPNESS</span></code>, <code class="docutils literal notranslate"><span class="pre">DISPERSION</span></code> (mm), <code class="docutils literal notranslate"><span class="pre">SEED</span></code>, <code class="docutils literal notranslate"><span class="pre">STREAMLINE_AREA</span></code>
-(mm^2 per streamline, None for the default, set by the tube or by
-the densest fill) or <code class="docutils literal notranslate"><span class="pre">DENSEST_FILL</span></code> (the fill of the dense voxels
-of a loaded tractogram or a fanned bundle, in (0, 1]).</p></li>
+<code class="docutils literal notranslate"><span class="pre">RADIUS</span></code> (mm), <code class="docutils literal notranslate"><span class="pre">NUM_POINTS</span></code>, <code class="docutils literal notranslate"><span class="pre">SEED</span></code>, <code class="docutils literal notranslate"><span class="pre">TANGLE_MM</span></code> (the distance of
+each streamline’s slide across the bundle, 0 for none, raised to the
+shortest the bundle’s points can show), <code class="docutils literal notranslate"><span class="pre">STREAMLINE_AREA</span></code> (mm^2 per
+streamline, None for the default, set by the tube or by the
+bundle’s section) or <code class="docutils literal notranslate"><span class="pre">DENSEST_FILL</span></code> (the fill of a loaded
+tractogram’s dense voxels, in (0, 1]).</p></li>
 <li><p><strong>value</strong> – The new value.</p></li>
 </ul>
 </dd>
@@ -1975,6 +1987,54 @@ of a loaded tractogram or a fanned bundle, in (0, 1]).</p></li>
 <dd class="field-even"><ul class="simple">
 <li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If name is not a BundleField.</p></li>
 <li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the bundle or the value is refused.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">set_bundle_fullness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fullness</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Sets how full a finished bundle is, by its streamline area.</p>
+<p>The fullness is the area in multiples of the bundle’s median section divided
+by its number of streamlines, and it stays as the bundle changes shape. None
+goes back to the default: a plain tube then fills its tube, and any other
+shape has a fullness of 3. Any value on a plain tube makes it fill by
+streamline length, not as a tube.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>item_id</strong> – The bundle’s tractogram item, or None for the bundle being
+edited.</p></li>
+<li><p><strong>fullness</strong> – The fullness, above 0, or None for the default.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the bundle is not a finished drawn one, or the fullness is
+not above 0.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">set_bundle_landing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thickness_line</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opens_from</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Bends the streamlines of a finished bundle’s end over to a line, or stops it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>item_id</strong> – The bundle’s tractogram item.</p></li>
+<li><p><strong>end</strong> – <code class="docutils literal notranslate"><span class="pre">BundleEnd.START</span></code> or <code class="docutils literal notranslate"><span class="pre">END</span></code>.</p></li>
+<li><p><strong>line</strong> – The line’s points (x, y, z), world mm; None for no landing.</p></li>
+<li><p><strong>thickness_line</strong> – A second line across the first, which sets the thickness.</p></li>
+<li><p><strong>opens_from</strong> – The position along the centreline where the bending starts,
+from 0 at its start to 1 at its end.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If end is not a BundleEnd.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the bundle is not a drawn one, or a value is refused.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1991,6 +2051,24 @@ of a loaded tractogram or a fanned bundle, in (0, 1]).</p></li>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If no bundle is being drawn, or a point is not three
 finite numbers.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">set_bundle_rings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rings</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Sets a finished bundle’s section along it, or makes it round again.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>item_id</strong> – The bundle’s tractogram item.</p></li>
+<li><p><strong>rings</strong> – Rows of u, the two radii in mm and the angle in degrees, with u
+rising from 0 to 1 along the centreline; None for none.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the bundle is not a drawn one, or the rows are refused.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -2237,13 +2315,14 @@ a map can use.</p>
 <p><code class="docutils literal notranslate"><span class="pre">Tool.CURSOR</span></code> moves the crosshair, <code class="docutils literal notranslate"><span class="pre">SPHERE</span></code> and <code class="docutils literal notranslate"><span class="pre">BOX</span></code> place regions,
 <code class="docutils literal notranslate"><span class="pre">ZOOM_BOX</span></code> opens a rectangle of a 2D view in a detail window,
 <code class="docutils literal notranslate"><span class="pre">LABEL_REGION</span></code> adds the label clicked to a label region and removes it
-with Shift (<code class="docutils literal notranslate"><span class="pre">click_label</span></code>), and <code class="docutils literal notranslate"><span class="pre">DRAW_BUNDLE</span></code> draws a phantom bundle:
-choosing it starts one, as <code class="docutils literal notranslate"><span class="pre">start_bundle</span></code> does, and choosing another
+with Shift (<code class="docutils literal notranslate"><span class="pre">click_label</span></code>), and <code class="docutils literal notranslate"><span class="pre">DRAW_BUNDLE</span></code>, the Pen, draws a phantom
+bundle: choosing it starts one, as <code class="docutils literal notranslate"><span class="pre">start_bundle</span></code> does, and choosing another
 tool while drawing finishes the bundle if it has two points, else
-drops it.</p>
-<p>Each workspace offers its own tools: Cursor and Zoom box in View, Cursor
-and Draw bundle in Simulate, and Cursor, Sphere, Box, Label region and
-Zoom box in Dissect.</p>
+drops it. <code class="docutils literal notranslate"><span class="pre">BEND</span></code>, <code class="docutils literal notranslate"><span class="pre">WIDTH</span></code>, <code class="docutils literal notranslate"><span class="pre">TWIST</span></code>, <code class="docutils literal notranslate"><span class="pre">FAN</span></code> and <code class="docutils literal notranslate"><span class="pre">ERASE</span></code> change the drawn
+bundles that show in a 2D view.</p>
+<p>Each workspace offers its own tools: Cursor and Zoom box in View, Cursor,
+Pen, Bend, Width, Twist, Fan and Erase in SymDWI, and Cursor, Sphere, Box,
+Label region and Zoom box in Dissect.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>tool</strong> – The tool.</p>
@@ -2257,7 +2336,7 @@ Zoom box in Dissect.</p>
 <dl class="py function">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">set_workspace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace</span></span></em><span class="sig-paren">)</span></dt>
-<dd><p>Shows the window’s View, Simulate or Dissect workspace.</p>
+<dd><p>Shows the window’s View, SymDWI or Dissect workspace.</p>
 <p>A pointer tool the new workspace does not offer goes back to the cursor.
 The region tools are offered only in Dissect.</p>
 <dl class="field-list simple">
@@ -2276,7 +2355,7 @@ The region tools are offered only in Dissect.</p>
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">show_grid_box</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shown</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Outlines the phantom’s grid box in the views, or hides it.</p>
-<p>The box is shown only in the Simulate workspace, and always while a
+<p>The box is shown only in the SymDWI workspace, and always while a
 bundle is drawn whatever this says; a session keeps the choice.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -2393,6 +2472,22 @@ nothing happens.</p>
 <dd><p>Shows or hides the text and colour bars drawn over the views.</p>
 <p>The text is the orientation letters at the edges and the crosshair’s
 readout.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">undo_bundles</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span></dt>
+<dd><p>Takes back the last change to the phantom’s bundles.</p>
+<p>A change is a finished stroke or tool edit, or a setting of a bundle such as
+its tissue, streamlines, radius, tangle or fullness; finishing a bundle goes
+with its last stroke. The tissues, the scan, the grid and the items’ options
+are not part of it, and a new or opened phantom starts the history again. It
+keeps the last 100 changes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Whether there was a change to take back; there is none during a drag.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
